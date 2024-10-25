@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>disable</Nullable>
+        <AssemblyName>Qenex.QSuite.Variable</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Variable</RootNamespace>
+    </PropertyGroup>
+
+</Project>
