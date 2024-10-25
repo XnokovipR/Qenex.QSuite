@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.Driver</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Driver</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Protocols\Protocol\Protocol.csproj" />
+      <ProjectReference Include="..\..\Specification\Specification.csproj" />
+    </ItemGroup>
+
+</Project>
