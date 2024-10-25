@@ -6,14 +6,13 @@ namespace Qenex.QSuite.Module;
 
 public class ModuleBase : IModuleBase
 {
-    public ModuleBase(ISpecification specification)
+    public ModuleBase()
     {
-        Specification = specification;
+        Specification = new Specification.Specification();
         Variables = new List<IVariableBase>();
-        
     }
     
     public ISpecification Specification { get; }
     public IList<IVariableBase> Variables { get; }
-    public IDriverBase Driver { get; set; }
+    public IDriverBase? Driver { get; set; }
 }
