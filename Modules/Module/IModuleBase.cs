@@ -8,6 +8,6 @@ public interface IModuleBase
 {
     ISpecification Specification { get; }
     IList<IVariableBase> Variables { get; }
-    IDriverBase Driver { get; set; }
+    IDriverBase? Driver { get; set; }
     
 }
