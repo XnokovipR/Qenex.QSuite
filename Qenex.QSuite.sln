@@ -2,6 +2,18 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Specification", "Specification\Specification.csproj", "{907D7315-E9EF-4E45-AE01-1105BA16F634}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Variables", "Variables", "{8E1871C8-3703-4F96-942B-4195A9FF9FEA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Variable", "Variables\Variable\Variable.csproj", "{6F7CDDD2-D887-4215-9297-9367E2B0B58B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protocols", "Protocols", "{2F390566-E2DF-4D8B-93D9-FEEC53923D27}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Drivers", "Drivers", "{B09CCB8B-5629-4D0B-AC0D-15CCE50F17C6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{A79FF5AB-1798-446C-9B72-83F32C976FF1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Protocol", "Protocols\Protocol\Protocol.csproj", "{5B880E82-FB1B-444E-899E-E1D961EBCFD6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +24,17 @@ Global
 		{907D7315-E9EF-4E45-AE01-1105BA16F634}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{907D7315-E9EF-4E45-AE01-1105BA16F634}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{907D7315-E9EF-4E45-AE01-1105BA16F634}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F7CDDD2-D887-4215-9297-9367E2B0B58B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F7CDDD2-D887-4215-9297-9367E2B0B58B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F7CDDD2-D887-4215-9297-9367E2B0B58B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F7CDDD2-D887-4215-9297-9367E2B0B58B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B880E82-FB1B-444E-899E-E1D961EBCFD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B880E82-FB1B-444E-899E-E1D961EBCFD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B880E82-FB1B-444E-899E-E1D961EBCFD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B880E82-FB1B-444E-899E-E1D961EBCFD6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6F7CDDD2-D887-4215-9297-9367E2B0B58B} = {8E1871C8-3703-4F96-942B-4195A9FF9FEA}
+		{5B880E82-FB1B-444E-899E-E1D961EBCFD6} = {2F390566-E2DF-4D8B-93D9-FEEC53923D27}
 	EndGlobalSection
 EndGlobal
