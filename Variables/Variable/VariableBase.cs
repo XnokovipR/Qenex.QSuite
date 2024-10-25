@@ -2,7 +2,7 @@
 
 namespace Qenex.QSuite.Variable;
 
-public abstract class VariableBase<T> : IVariable
+public abstract class VariableBase<T> : IVariableBase
 {
     public int Id { get; set; }
     public string Guid { get; set; }

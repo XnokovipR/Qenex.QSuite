@@ -1,6 +1,6 @@
 ﻿namespace Qenex.QSuite.Variable;
 
-public interface IVariable
+public interface IVariableBase
 {
     int Id { get; set; }
     string Guid { get; set; }
