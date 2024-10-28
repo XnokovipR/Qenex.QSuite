@@ -4,8 +4,11 @@ using Qenex.QSuite.Specification;
 
 namespace Qenex.QSuite.Driver;
 
-public class DriverBase : IDriverBase
+public abstract class DriverBase : IDriverBase
 {
+    public bool IsEnabled { get; set; }
+    public bool IsStarted { get; set; }
+    
     public DriverBase(ISpecification specification)
     {
         Specification = specification;
@@ -14,6 +17,10 @@ public class DriverBase : IDriverBase
 
     public ISpecification Specification { get; set; }
     public IList<IProtocolBase> Protocols { get; }
+    
+    public abstract Task StartAsync();
+    public abstract Task StopAsync();
+    public abstract void Dispose();
     
     public virtual void AddProtocol(IProtocolBase protocol)
     {
