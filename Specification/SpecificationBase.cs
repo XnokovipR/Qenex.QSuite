@@ -1,6 +1,6 @@
 namespace Qenex.QSuite.Specification;
 
-public class Specification : ISpecification
+public class SpecificationBase : ISpecification
 {
     public string Guid { get; }
     public string Name { get; }
