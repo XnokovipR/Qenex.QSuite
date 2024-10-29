@@ -11,7 +11,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\Protocols\Protocol\Protocol.csproj" />
-      <ProjectReference Include="..\..\Specification\Specification.csproj" />
+      <ProjectReference Include="..\..\Specifications\Specification\Specification.csproj" />
     </ItemGroup>
 
 </Project>
