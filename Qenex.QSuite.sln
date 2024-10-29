@@ -1,7 +1,5 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Specification", "Specification\Specification.csproj", "{907D7315-E9EF-4E45-AE01-1105BA16F634}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Variables", "Variables", "{8E1871C8-3703-4F96-942B-4195A9FF9FEA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Variable", "Variables\Variable\Variable.csproj", "{6F7CDDD2-D887-4215-9297-9367E2B0B58B}"
@@ -22,16 +20,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{FA456E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreComm", "Common\CoreComm\CoreComm.csproj", "{93E9AB59-FCDB-46C4-A69F-22A5E6928390}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Specifications", "Specifications", "{3AE6C5F0-420F-42AA-B120-BABCD6A6E1F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProtocolVariableSpecification", "Specifications\ProtocolVariableSpecification\ProtocolVariableSpecification.csproj", "{51885D12-F559-4723-BE39-CFAAF114283B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Specification", "Specifications\Specification\Specification.csproj", "{FFDCF39F-834A-4EEC-A5A7-FB12247D56FA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{907D7315-E9EF-4E45-AE01-1105BA16F634}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{907D7315-E9EF-4E45-AE01-1105BA16F634}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{907D7315-E9EF-4E45-AE01-1105BA16F634}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{907D7315-E9EF-4E45-AE01-1105BA16F634}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6F7CDDD2-D887-4215-9297-9367E2B0B58B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6F7CDDD2-D887-4215-9297-9367E2B0B58B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F7CDDD2-D887-4215-9297-9367E2B0B58B}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -52,6 +52,14 @@ Global
 		{93E9AB59-FCDB-46C4-A69F-22A5E6928390}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{93E9AB59-FCDB-46C4-A69F-22A5E6928390}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{93E9AB59-FCDB-46C4-A69F-22A5E6928390}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51885D12-F559-4723-BE39-CFAAF114283B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51885D12-F559-4723-BE39-CFAAF114283B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51885D12-F559-4723-BE39-CFAAF114283B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51885D12-F559-4723-BE39-CFAAF114283B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFDCF39F-834A-4EEC-A5A7-FB12247D56FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFDCF39F-834A-4EEC-A5A7-FB12247D56FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFDCF39F-834A-4EEC-A5A7-FB12247D56FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFDCF39F-834A-4EEC-A5A7-FB12247D56FA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6F7CDDD2-D887-4215-9297-9367E2B0B58B} = {8E1871C8-3703-4F96-942B-4195A9FF9FEA}
@@ -59,5 +67,7 @@ Global
 		{A67FF8A0-4FC9-40F4-BB8C-D3E91326A19A} = {B09CCB8B-5629-4D0B-AC0D-15CCE50F17C6}
 		{839C85C0-019D-4D63-B794-5ED0A0994C0F} = {A79FF5AB-1798-446C-9B72-83F32C976FF1}
 		{93E9AB59-FCDB-46C4-A69F-22A5E6928390} = {FA456E72-5D93-4641-9B58-DB7F4F1855F2}
+		{51885D12-F559-4723-BE39-CFAAF114283B} = {3AE6C5F0-420F-42AA-B120-BABCD6A6E1F2}
+		{FFDCF39F-834A-4EEC-A5A7-FB12247D56FA} = {3AE6C5F0-420F-42AA-B120-BABCD6A6E1F2}
 	EndGlobalSection
 EndGlobal
