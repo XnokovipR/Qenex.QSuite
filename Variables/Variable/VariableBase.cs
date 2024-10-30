@@ -1,4 +1,5 @@
-﻿using Qenex.QSuite.ProtocolVariableSpecification;
+﻿using Qenex.QSuite.CoreModule;
+using Qenex.QSuite.ProtocolVariableSpecification;
 using Qenex.QSuite.Variable;
 
 namespace Qenex.QSuite.Variable;
@@ -14,7 +15,9 @@ public abstract class VariableBase<T> : IVariableBase
     public string Name { get; set; }
     public string Description { get; set; }
     public ICommSpecification Specification { get; set; }
-    
+
+    public List<ICoreModuleBase> CommModules { get; set; }
+
     /// <summary>
     /// Generic value of the variable.
     /// </summary>

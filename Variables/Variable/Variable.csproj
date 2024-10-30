@@ -9,4 +9,9 @@
         <RootNamespace>Qenex.QSuite.Variable</RootNamespace>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\Modules\CoreModule\CoreModule.csproj" />
+      <ProjectReference Include="..\..\Specifications\ProtocolVariableSpecification\ProtocolVariableSpecification.csproj" />
+    </ItemGroup>
+
 </Project>
