@@ -3,7 +3,7 @@ using Qenex.QSuite.Specification;
 
 namespace Qenex.QSuite.Protocol;
 
-public interface IProtocolBase : ICoreCommunication
+public interface IProtocolBase
 {
     ISpecification Specification { get;  }
 }
