@@ -1,10 +1,11 @@
-﻿using Qenex.QSuite.Driver;
+﻿using Qenex.QSuite.CoreModule;
+using Qenex.QSuite.Driver;
 using Qenex.QSuite.Specification;
 using Qenex.QSuite.Variable;
 
 namespace Qenex.QSuite.Module;
 
-public abstract class ModuleBase : IModuleBase
+public abstract class ModuleBase : ICoreModuleBase, IModuleBase
 {
     public ModuleBase()
     {
