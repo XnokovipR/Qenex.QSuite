@@ -10,4 +10,10 @@ public interface IModuleBase : ICoreModuleBase, ICoreCommunication
 {
     IList<IVariableBase> Variables { get; }
     IDriverBase? Driver { get; set; }
+    
+    void AddVariable(IVariableBase variable);
+    void AddVariableRange(IEnumerable<IVariableBase> variables);
+    void RemoveVariable(IVariableBase variable);
+    void AddDriver(IDriverBase driver);
+    void RemoveDriver();
 }
