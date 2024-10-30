@@ -5,6 +5,6 @@ public interface ICoreCommunication : IDisposable
     bool IsEnabled { get; set; }
     bool IsStarted { get; set; }
     
-    Task StartAsync();
-    Task StopAsync();
+    Task StartAsync(CancellationToken cancellationToken);
+    Task StopAsync(CancellationToken cancellationToken);
 }

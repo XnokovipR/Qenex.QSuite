@@ -18,8 +18,8 @@ public abstract class DriverBase : IDriverBase
     public ISpecification Specification { get; set; }
     public IList<IProtocolBase> Protocols { get; }
     
-    public abstract Task StartAsync();
-    public abstract Task StopAsync();
+    public abstract Task StartAsync(CancellationToken ct = default);
+    public abstract Task StopAsync(CancellationToken ct = default);
     public abstract void Dispose();
     
     public virtual void AddProtocol(IProtocolBase protocol)
