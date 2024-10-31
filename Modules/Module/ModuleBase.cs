@@ -7,18 +7,10 @@ namespace Qenex.QSuite.Module;
 
 public abstract class ModuleBase : ICoreModuleBase, IModuleBase
 {
-    public ModuleBase()
-    {
-        IsEnabled = false;
-        IsStarted = false;
-        Specification = new Specification.SpecificationBase();
-        Variables = new List<IVariableBase>();
-    }
-    
-    public bool IsEnabled { get; set; }
-    public bool IsStarted { get; set; }
-    public ISpecification Specification { get; }
-    public IList<IVariableBase> Variables { get; }
+    public bool IsEnabled { get; set; } = false;
+    public bool IsStarted { get; set; } = false;
+    public ISpecification Specification { get; } = new SpecificationBase();
+    public IList<IVariableBase> Variables { get; } = new List<IVariableBase>();
     public IDriverBase? Driver { get; set; }
 
     public abstract void AddVariable(IVariableBase variable);

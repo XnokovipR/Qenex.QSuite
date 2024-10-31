@@ -8,16 +8,10 @@ public abstract class DriverBase : IDriverBase
 {
     public bool IsEnabled { get; set; }
     public bool IsStarted { get; set; }
-    
-    public DriverBase(ISpecification specification)
-    {
-        Specification = specification;
-        Protocols = new List<IProtocolBase>();
-    }
 
-    public ISpecification Specification { get; set; }
-    public IList<IProtocolBase> Protocols { get; }
-    
+    public ISpecification Specification { get; set; } = new SpecificationBase();
+    public IList<IProtocolBase> Protocols { get; } = new List<IProtocolBase>();
+
     public abstract Task StartAsync(CancellationToken ct = default);
     public abstract Task StopAsync(CancellationToken ct = default);
     public abstract void Dispose();
