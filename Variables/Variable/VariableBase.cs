@@ -13,10 +13,13 @@ public abstract class VariableBase<T> : IVariableBase
     public int Id { get; set; }
     public string Guid { get; set; }
     public string Name { get; set; }
+    public string Caption { get; set; }
     public string Description { get; set; }
-    public ICommSpecification Specification { get; set; }
 
-    public List<ICoreModuleBase> CommModules { get; set; }
+    /// <summary>
+    /// Reference to the modules to which the variable data will be sent.
+    /// </summary>
+    public IList<ICoreModuleBase> CommModules { get; set; }
 
     /// <summary>
     /// Generic value of the variable.

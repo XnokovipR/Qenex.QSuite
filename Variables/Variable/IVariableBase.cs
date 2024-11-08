@@ -24,14 +24,14 @@ public interface IVariableBase
     string Name { get; set; }
     
     /// <summary>
+    /// Caption of the variable (in most case name and caption differs].
+    /// </summary>
+    string Caption { get; set; }
+    
+    /// <summary>
     /// Description of the variable.
     /// </summary>
     string Description { get; set; }
     
-    /// <summary>
-    /// The specification of the variable.
-    /// </summary>
-    ICommSpecification Specification { get; set; }
-    
-    List<ICoreModuleBase> CommModules { get; set; }
+    IList<ICoreModuleBase> CommModules { get; set; }
 }

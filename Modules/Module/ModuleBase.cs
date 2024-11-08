@@ -5,7 +5,7 @@ using Qenex.QSuite.Variable;
 
 namespace Qenex.QSuite.Module;
 
-public abstract class ModuleBase : ICoreModuleBase, IModuleBase
+public abstract class ModuleBase : IModuleBase
 {
     public bool IsEnabled { get; set; } = false;
     public bool IsStarted { get; set; } = false;

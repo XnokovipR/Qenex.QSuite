@@ -1,5 +1,8 @@
 ﻿namespace Qenex.QSuite.CoreComm;
 
+/// <summary>
+/// Common interface to modules, drivers...
+/// </summary>
 public interface ICoreCommunication : IDisposable
 {
     bool IsEnabled { get; set; }

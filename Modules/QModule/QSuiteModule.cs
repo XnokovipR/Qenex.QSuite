@@ -7,6 +7,8 @@ namespace Qenex.QSuite.QModule;
 
 public class QSuiteModule : ModuleBase
 {
+    #region Variables
+
     public override void AddVariable(IVariableBase variable)
     {
         Variables.Add(variable);
@@ -25,6 +27,10 @@ public class QSuiteModule : ModuleBase
         Variables.Remove(variable);
     }
 
+    #endregion
+
+    #region Driver
+
     public override void AddDriver(IDriverBase driver)
     {
         Driver ??= driver;
@@ -34,6 +40,10 @@ public class QSuiteModule : ModuleBase
     {
         Driver = null;
     }
+
+    #endregion
+
+    #region Module control
 
     public override Task StartAsync(CancellationToken ct = default)
     {
@@ -51,4 +61,6 @@ public class QSuiteModule : ModuleBase
     {
         Driver?.Dispose();
     }
+
+    #endregion
 }
