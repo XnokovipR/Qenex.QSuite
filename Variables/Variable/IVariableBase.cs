@@ -33,5 +33,8 @@ public interface IVariableBase
     /// </summary>
     string Description { get; set; }
     
-    IList<IComponentSpecification> CommModules { get; set; }
+    /// <summary>
+    /// Reference to the components (modules / drivers) to which the variable data will be sent.
+    /// </summary>
+    IList<IComponentSpecification> CommComponents { get; set; }
 }

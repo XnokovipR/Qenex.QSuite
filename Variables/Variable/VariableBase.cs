@@ -19,7 +19,7 @@ public abstract class VariableBase<T> : IVariableBase
     /// <summary>
     /// Reference to the modules to which the variable data will be sent.
     /// </summary>
-    public IList<IComponentSpecification> CommModules { get; set; }
+    public IList<IComponentSpecification> CommComponents { get; set; }
 
     /// <summary>
     /// Generic value of the variable.
