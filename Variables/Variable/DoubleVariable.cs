@@ -1,8 +1,5 @@
 ﻿namespace Qenex.QSuite.Variable;
 
-public class DoubleVariable : VariableBase<double>
+public class DoubleVariable : RangeVariable<double>
 {
-    public ValueRange<double> RawRange { get; set; }
-    public ValueRange<double> EngRange { get; set; }
-    public string Unit { get; set; }
 }
