@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.CoreModule</AssemblyName>
-        <RootNamespace>Qenex.QSuite.CoreModule</RootNamespace>
+        <AssemblyName>Qenex.QSuite.ComponentSpecification</AssemblyName>
+        <RootNamespace>Qenex.QSuite.ComponentSpecification</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

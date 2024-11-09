@@ -1,11 +1,11 @@
 ﻿using Qenex.QSuite.Specification;
 
-namespace Qenex.QSuite.CoreModule;
+namespace Qenex.QSuite.ComponentSpecification;
 
 /// <summary>
 /// Basic module specification 
 /// </summary>
-public interface ICoreModuleBase
+public interface IComponentSpecification
 {
     ISpecification Specification { get; }
 }

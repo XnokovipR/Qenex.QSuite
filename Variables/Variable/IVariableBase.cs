@@ -1,4 +1,4 @@
-﻿using Qenex.QSuite.CoreModule;
+﻿using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.ProtocolVariableSpecification;
 
 namespace Qenex.QSuite.Variable;
@@ -33,5 +33,5 @@ public interface IVariableBase
     /// </summary>
     string Description { get; set; }
     
-    IList<ICoreModuleBase> CommModules { get; set; }
+    IList<IComponentSpecification> CommModules { get; set; }
 }
