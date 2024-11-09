@@ -33,33 +33,36 @@ public class QSuiteModule : ModuleBase
 
     public override void AddDriver(IDriverBase driver)
     {
-        Driver ??= driver;
+        Drivers.Add(driver);
     }
 
-    public override void RemoveDriver()
+    public override void RemoveDriver(IDriverBase driver)
     {
-        Driver = null;
+        Drivers.Remove(driver);
     }
 
     #endregion
 
     #region Module control
 
-    public override Task StartAsync(CancellationToken ct = default)
+    public override async Task StartAsync(CancellationToken ct = default)
     {
-        var task = Driver?.StartAsync(ct);
-        return task ?? Task.CompletedTask;
+        var tasks = Drivers.Select(driver => driver.StartAsync(ct));
+        await Task.WhenAll(tasks);
     }
 
-    public override Task StopAsync(CancellationToken ct = default)
+    public override async Task StopAsync(CancellationToken ct = default)
     {
-        var task = Driver?.StopAsync(ct);
-        return task ?? Task.CompletedTask;
+        var tasks = Drivers.Select(driver => driver.StopAsync(ct));
+        await Task.WhenAll(tasks);
     }
 
     public override void Dispose()
     {
-        Driver?.Dispose();
+        foreach (var driver in Drivers)
+        {
+            driver.Dispose();
+        }
     }
 
     #endregion
