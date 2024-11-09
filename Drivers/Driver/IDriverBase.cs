@@ -1,12 +1,12 @@
+using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.CoreComm;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.Specification;
 
 namespace Qenex.QSuite.Driver;
 
-public interface IDriverBase : ICoreCommunication
+public interface IDriverBase : ICoreCommunication, IComponentSpecification
 {
-    public ISpecification Specification { get; set; }
     public IList<IProtocolBase> Protocols { get; }
     
     public void AddProtocol(IProtocolBase protocol);
