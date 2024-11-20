@@ -8,25 +8,25 @@ public interface ISpecification
     /// <summary>
     /// A unique identifier of the specification.
     /// </summary>
-    string Guid { get; }
+    Guid Gid { get; init;  }
     
     /// <summary>
     /// A name of the specification.
     /// </summary>
-    string Name { get; }
+    string Name { get; init;  }
     
     /// <summary>
     /// A description of the specification.
     /// </summary>
-    string Description { get; }
+    string Description { get; init; }
     
     /// <summary>
     /// The release date of the specification.
     /// </summary>
-    DateTime ReleaseDate { get; }
+    DateTime ReleaseDate { get; init; }
     
     /// <summary>
     /// The version of the specification.
     /// </summary>
-    Version Version { get; }
+    Version? Version { get; init; }
 }
