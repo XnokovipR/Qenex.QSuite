@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.UnifModule</AssemblyName>
+        <RootNamespace>Qenex.QSuite.UnifModule</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Common\CoreComm\CoreComm.csproj" />
+      <ProjectReference Include="..\..\Drivers\Driver\Driver.csproj" />
+      <ProjectReference Include="..\..\Protocols\Protocol\Protocol.csproj" />
+      <ProjectReference Include="..\..\Specifications\ProtocolVariableSpecification\ProtocolVariableSpecification.csproj" />
+      <ProjectReference Include="..\..\Specifications\Specification\Specification.csproj" />
+      <ProjectReference Include="..\..\Variables\Variable\Variable.csproj" />
+      <ProjectReference Include="..\ComponentSpecification\ComponentSpecification.csproj" />
+      <ProjectReference Include="..\Module\Module.csproj" />
+    </ItemGroup>
+
+</Project>

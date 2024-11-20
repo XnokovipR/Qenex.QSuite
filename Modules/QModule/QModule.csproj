@@ -11,6 +11,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Module\Module.csproj" />
+      <ProjectReference Include="..\UnifModule\UnifModule.csproj" />
     </ItemGroup>
 
 </Project>
