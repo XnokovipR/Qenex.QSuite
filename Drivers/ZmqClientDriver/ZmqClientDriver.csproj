@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.ZmqClientDriver</AssemblyName>
+        <RootNamespace>Qenex.QSuite.ZmqClientDriver</RootNamespace>
+        <AssemblyVersion>1.0.0</AssemblyVersion>
+        <FileVersion>1.0.0</FileVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Driver\Driver.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="NetMQ" Version="4.0.1.13" />
+    </ItemGroup>
+
+</Project>
