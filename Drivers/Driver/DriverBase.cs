@@ -6,10 +6,10 @@ namespace Qenex.QSuite.Driver;
 
 public abstract class DriverBase : IDriverBase
 {
-    public bool IsEnabled { get; set; }
-    public bool IsStarted { get; set; }
+    public bool IsEnabled { get; set; } = true;
+    public bool IsStarted { get; set; } = false;
 
-    public ISpecification Specification { get; set; } = new SpecificationBase();
+    public ISpecification Specification { get; init; } = null!;
     public IList<IProtocolBase> Protocols { get; } = new List<IProtocolBase>();
 
     public abstract Task StartAsync(CancellationToken ct = default);

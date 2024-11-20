@@ -9,9 +9,10 @@ public abstract class ModuleBase : IModuleBase
 {
     public bool IsEnabled { get; set; } = false;
     public bool IsStarted { get; set; } = false;
+    
     public ISpecification Specification { get; } = new SpecificationBase();
     public IList<IVariableBase> Variables { get; } = new List<IVariableBase>();
-    public IList<IDriverBase> Drivers { get; set; } = new List<IDriverBase>();
+    public IList<IDriverBase> Drivers { get; } = new List<IDriverBase>();
 
     public abstract void AddVariable(IVariableBase variable);
     public abstract void AddVariableRange(IEnumerable<IVariableBase> variables);
