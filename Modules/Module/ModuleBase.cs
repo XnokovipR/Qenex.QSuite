@@ -7,6 +7,7 @@ namespace Qenex.QSuite.Module;
 
 public abstract class ModuleBase : IModuleBase
 {
+    public bool ExitRequested { get; set; } = false;
     public bool IsEnabled { get; set; } = false;
     public bool IsStarted { get; set; } = false;
     

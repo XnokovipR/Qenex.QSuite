@@ -6,6 +6,7 @@ namespace Qenex.QSuite.Driver;
 
 public abstract class DriverBase : IDriverBase
 {
+    public bool ExitRequested { get; set; } = false;
     public bool IsEnabled { get; set; } = true;
     public bool IsStarted { get; set; } = false;
 
@@ -21,12 +22,12 @@ public abstract class DriverBase : IDriverBase
         Protocols.Add(protocol);
     }
 
-    public void RemoveProtocol(IProtocolBase protocol)
+    public virtual void RemoveProtocol(IProtocolBase protocol)
     {
         Protocols.Remove(protocol);
     }
 
-    public void RemoveProtocol(string protocolName)
+    public virtual void RemoveProtocol(string protocolName)
     {
         Protocols.Remove(Protocols.FirstOrDefault(p => p.Specification.Name == protocolName) ??
                          throw new InvalidEnumArgumentException("Protocol not found"));
