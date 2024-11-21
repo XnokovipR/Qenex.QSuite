@@ -7,9 +7,11 @@ public class Logger : ILogger
 {
 	private readonly List<ILogSubscriber> subscribers;
 	private bool isLogEnabled = true;
+	private LogLevel minimumLogLevel = LogLevel.Warn;
 
-	public Logger()
+	public Logger(LogLevel minLogLevel)
 	{
+		minimumLogLevel = minLogLevel;
 		subscribers = new List<ILogSubscriber>();
 	}
 
@@ -26,10 +28,11 @@ public class Logger : ILogger
 
 	public void Log(ILogMessage message)
 	{
-		if (!isLogEnabled)
+		if (!isLogEnabled || message.Level < minimumLogLevel)
 		{
 			return;
 		}
+		
 
 		foreach (var subscriber in subscribers)
 		{
@@ -39,7 +42,7 @@ public class Logger : ILogger
 
 	public async Task LogAsync(ILogMessage message, CancellationToken ct = default)
 	{
-		if (!isLogEnabled)
+		if (!isLogEnabled || message.Level < minimumLogLevel)
 		{
 			return;
 		}
