@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.Specification;
 
@@ -6,6 +7,13 @@ namespace Qenex.QSuite.Driver;
 
 public abstract class DriverBase : IDriverBase
 {
+    private ILogSubscriber? logSubscriber;
+    
+    public DriverBase(ILogSubscriber? logSubscriber = null)
+    {
+        this.logSubscriber = logSubscriber;
+    }
+    
     public bool ExitRequested { get; set; } = false;
     public bool IsEnabled { get; set; } = true;
     public bool IsStarted { get; set; } = false;

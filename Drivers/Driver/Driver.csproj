@@ -10,6 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\LogSystems\LogSystem\LogSystem.csproj" />
       <ProjectReference Include="..\..\Protocols\Protocol\Protocol.csproj" />
       <ProjectReference Include="..\..\Specifications\Specification\Specification.csproj" />
     </ItemGroup>
