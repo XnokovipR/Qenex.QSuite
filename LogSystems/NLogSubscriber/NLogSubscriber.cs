@@ -34,7 +34,7 @@ public class NLogSubscriber : ILogSubscriber
 
 	private void LogMessage(ILogMessage message)
 	{
-		var msg = message is NLogMessage ? "NLogMessage: " + message.Message : message.Message;
+		var msg = message is LogMessage ? "NLogMessage: " + message.Message : message.Message;
 		logLevelToActionConverter[message.Level]?.Invoke(message.Exception, msg);
 	}
 }
