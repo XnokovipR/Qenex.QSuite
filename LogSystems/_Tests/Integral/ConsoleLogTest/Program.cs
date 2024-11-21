@@ -10,11 +10,14 @@ class Program
 {
     static void Main(string[] args)
     {
-        Logger logger = new Logger();
+        Logger logger = new Logger(LogLevel.Debug);
         logger.RegisterSubscriber(new ConsoleSubscriber());
-
-        var logMessage = new ConsoleMessage(LogLevel.Info, "Hello, World!");
-        logger.Log(logMessage);
+        
+        logger.Log(new LogMessage(LogLevel.Debug, "Debug msg"));
+        logger.Log(new LogMessage(LogLevel.Info, "Info msg"));
+        logger.Log(new LogMessage(LogLevel.Warn, "Warning msg"));
+        logger.Log(new LogMessage(LogLevel.Error, "Error msg"));
+        logger.Log(new LogMessage(LogLevel.Fatal, "Fatal msg"));
             
         Console.WriteLine("End!");
     }
