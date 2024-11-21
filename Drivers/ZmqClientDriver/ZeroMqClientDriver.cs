@@ -9,25 +9,29 @@ namespace Qenex.QSuite.ZmqClientDriver;
 /// </summary>
 public class ZeroMqClientDriver : DriverBase
 {
-    public ZeroMqClientDriver()
+    public ZeroMqClientDriver() : base()
     {
         Specification = new SpecificationBase()
         {
             Gid = new Guid("4f225c91-7f02-4577-bb5e-a9e3a3ead56e"),
             Name = "ZeroMQ Client Driver",
             Description = "ZeroMQ Client Driver",
-            ReleaseDate = new DateTime(2021, 10, 1),
+            ReleaseDate = new DateTime(2021, 11, 21),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0)
         };
     }
 
     public override async Task StartAsync(CancellationToken ct = default)
     {
+        if (!IsEnabled) return;
+        
+        ExitRequested = false;
         await RunClientAsync(ct);
     }
 
     public override Task StopAsync(CancellationToken ct = default)
     {
+        ExitRequested = true;
         return Task.CompletedTask;
     }
 
@@ -41,12 +45,14 @@ public class ZeroMqClientDriver : DriverBase
         await Task.Run(() =>
         {
             IsStarted = true;
-            while (!ct.IsCancellationRequested)
+            while (!ct.IsCancellationRequested || !ExitRequested)
             {
                 // Do something
                 Thread.Sleep(100);
             }
+            
             IsStarted = false;
         }, ct);
+        ExitRequested = false;
     }
 }
