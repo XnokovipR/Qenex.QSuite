@@ -1,0 +1,54 @@
+{
+  "name": "ModuleTest",
+  "description": "This is a test module",
+  "version": "1.0.1",
+  "author": "John Doe",
+  "company": "Doe Inc.",
+  "createdOn": "2021-11-22",
+  
+  
+  "variables": [
+    {
+      "id": 1,
+      "guid": "f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3b",
+      "name": "stringVariable",
+      "caption": "Test String Variable",
+      "type": "string",
+      "description": "This is a test string variable"
+    },
+    {
+      "id": 2,
+      "guid": "f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b2c",
+      "name": "doubleVariable",
+      "caption": "Test Double Variable",
+      "type": "double",
+      "description": "This is a test double variable",
+      "rawRange": {
+        "minimum":  0.0,
+        "maximum":  100.0
+      },
+      "engineeringRange": {
+        "minimum":  -550.0,
+        "maximum":  550.0
+      },
+      "unit": "m/s"
+    },
+    {
+        "id": 3,
+        "guid": "c1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3d",
+        "name": "intVariable",
+        "caption": "Test Integer Variable",
+        "type": "int",
+        "description": "This is a test integer variable",
+        "rawRange": {
+            "minimum":  -10,
+            "maximum":  10
+        },
+        "engineeringRange": {
+            "minimum":  -330,
+            "maximum":  330
+        },
+        "unit": "kg"
+    }
+  ]
+}
