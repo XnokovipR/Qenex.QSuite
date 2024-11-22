@@ -14,8 +14,16 @@ class Program
             WriteIndented = true
         };
         
-        string filePath = "ModuleTest.json";
-        var json = File.ReadAllText(filePath);
+        // Deserialize settings from file
+        var json = File.ReadAllText("ModuleTest.json");
         var moduleSettings = JsonSerializer.Deserialize<ModuleSettings>(json, options);
+        
+        // Serialize settings to file
+        var jsonModuleSettings = JsonSerializer.Serialize(moduleSettings, options);
+        File.WriteAllText("ModuleTest_Output.json", jsonModuleSettings);
+        
+        // Deserialize settings from newly written file
+        var json2 = File.ReadAllText("ModuleTest_Output.json");
+        var moduleSettings2 = JsonSerializer.Deserialize<ModuleSettings>(json, options);
     }
 }
