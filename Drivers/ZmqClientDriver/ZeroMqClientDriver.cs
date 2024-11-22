@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Qenex.QSuite.Driver;
+using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Specification;
 
 namespace Qenex.QSuite.ZmqClientDriver;
@@ -9,7 +10,7 @@ namespace Qenex.QSuite.ZmqClientDriver;
 /// </summary>
 public class ZeroMqClientDriver : DriverBase
 {
-    public ZeroMqClientDriver() : base()
+    public ZeroMqClientDriver(ILogSubscriber? logSubscriber = null) : base(logSubscriber)
     {
         Specification = new SpecificationBase()
         {
@@ -17,7 +18,7 @@ public class ZeroMqClientDriver : DriverBase
             Name = "ZeroMQ Client Driver",
             Description = "ZeroMQ Client Driver",
             ReleaseDate = new DateTime(2021, 11, 21),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0)
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 1)
         };
     }
 

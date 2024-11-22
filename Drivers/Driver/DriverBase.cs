@@ -7,16 +7,16 @@ namespace Qenex.QSuite.Driver;
 
 public abstract class DriverBase : IDriverBase
 {
-    private ILogSubscriber? logSubscriber;
-    
     public DriverBase(ILogSubscriber? logSubscriber = null)
     {
-        this.logSubscriber = logSubscriber;
+        this.LogSubscriber = logSubscriber;
     }
+ 
+    protected ILogSubscriber? LogSubscriber;
+    protected bool ExitRequested { get; set; } = false;
     
-    public bool ExitRequested { get; set; } = false;
     public bool IsEnabled { get; set; } = true;
-    public bool IsStarted { get; set; } = false;
+    public bool IsStarted { get; protected set; } = false;
 
     public ISpecification Specification { get; init; } = null!;
     public IList<IProtocolBase> Protocols { get; } = new List<IProtocolBase>();
