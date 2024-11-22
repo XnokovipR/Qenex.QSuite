@@ -5,9 +5,8 @@
 /// </summary>
 public interface ICoreCommunication : IDisposable
 {
-    bool ExitRequested { get; set; }
-    bool IsEnabled { get; set; }
-    bool IsStarted { get; set; }
+    bool IsEnabled { get; }
+    bool IsStarted { get; }
     
     Task StartAsync(CancellationToken cancellationToken);
     Task StopAsync(CancellationToken cancellationToken);
