@@ -17,7 +17,7 @@ public class ZeroMqClientDriver : DriverBase
             Gid = new Guid("4f225c91-7f02-4577-bb5e-a9e3a3ead56e"),
             Name = "ZeroMQ Client Driver",
             Description = "ZeroMQ Client Driver",
-            ReleaseDate = new DateTime(2021, 11, 21),
+            CreatedOn = new DateTime(2021, 11, 21),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 1)
         };
     }
