@@ -1,5 +1,9 @@
 ﻿namespace Qenex.QSuite.Variable;
 
-public class StringVariableBase : VariableBase<string>
+public class StringVariable : VariableBase<string>
 {
+    public StringVariable()
+    {
+        Value = string.Empty;
+    }
 }
