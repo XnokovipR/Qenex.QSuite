@@ -133,7 +133,6 @@ public class VariableTypeConverter : JsonConverter<IVariableBase>
 
     public override void Write(Utf8JsonWriter writer, IVariableBase value, JsonSerializerOptions options)
     {
-        
         writer.WriteStartObject();
 
         writer.WriteNumber("id", value.Id);
@@ -144,12 +143,29 @@ public class VariableTypeConverter : JsonConverter<IVariableBase>
 
         string type = value switch
         {
-            Int32Variable _ => "int32",
+            Int32Variable _ => "int",
             DoubleVariable _ => "double",
             StringVariable _ => "string",
             _ => throw new JsonException($"Unknown variable type: {value.GetType().Name}")
         };
         writer.WriteString("type", type);
+
+        if (value is RangeVariable<int> intVar)
+        {
+            writer.WritePropertyName("rawRange");
+            JsonSerializer.Serialize(writer, intVar.RawRange, options);
+            writer.WritePropertyName("engineeringRange");
+            JsonSerializer.Serialize(writer, intVar.EngRange, options);
+            writer.WriteString("unit", intVar.Unit);
+        }
+        else if (value is RangeVariable<double> doubleVar)
+        {
+            writer.WritePropertyName("rawRange");
+            JsonSerializer.Serialize(writer, doubleVar.RawRange, options);
+            writer.WritePropertyName("engineeringRange");
+            JsonSerializer.Serialize(writer, doubleVar.EngRange, options);
+            writer.WriteString("unit", doubleVar.Unit);
+        }
 
         writer.WriteEndObject();
     }
