@@ -1,4 +1,5 @@
-﻿using Qenex.QSuite.ComponentSpecification;
+﻿using System.Text.Json.Serialization;
+using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.Driver;
 using Qenex.QSuite.Specification;
 using Qenex.QSuite.Variable;
@@ -7,13 +8,23 @@ namespace Qenex.QSuite.Module;
 
 public abstract class ModuleBase : IModuleBase
 {
+    [JsonIgnore]
     public bool ExitRequested { get; set; } = false;
+    
+    [JsonIgnore]
     public bool IsEnabled { get; set; } = false;
+    
+    [JsonIgnore]
     public bool IsStarted { get; set; } = false;
     
-    public ISpecification Specification { get; } = new SpecificationBase();
-    public IList<IVariableBase> Variables { get; } = new List<IVariableBase>();
-    public IList<IDriverBase> Drivers { get; } = new List<IDriverBase>();
+    [JsonPropertyName("specification")]
+    public ISpecification Specification { get; init; } = null!;
+    
+    [JsonPropertyName("variables")]
+    public IList<IVariableBase> Variables { get; init; } = null!;
+    
+    [JsonIgnore]
+    public IList<IDriverBase> Drivers { get; init;  } = null!;
 
     public abstract void AddVariable(IVariableBase variable);
     public abstract void AddVariableRange(IEnumerable<IVariableBase> variables);
