@@ -90,7 +90,7 @@ public class VariableTypeConverter : JsonConverter<IVariableBase>
 
             if (reader.TokenType == JsonTokenType.PropertyName)
             {
-                string propertyName = reader.GetString();
+                string propertyName = reader.GetString() ?? throw new InvalidOperationException();
                 reader.Read();
 
                 switch (propertyName)
