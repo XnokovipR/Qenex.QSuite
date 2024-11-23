@@ -17,5 +17,7 @@ public interface IProtocolBase
     /// <summary>
     /// Variables that are communicated with the protocol.
     /// </summary>
-    IList<IProtocolVariable> ProtocolVariables { get; set; }
+    IList<IVariableBase> ProtocolVariables { get; set; }
+    
+    
 }

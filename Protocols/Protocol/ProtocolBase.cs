@@ -1,4 +1,5 @@
-﻿using Qenex.QSuite.CoreComm;
+﻿using System.Text.Json.Serialization;
+using Qenex.QSuite.CoreComm;
 using Qenex.QSuite.Specification;
 using Qenex.QSuite.Variable;
 
@@ -9,7 +10,10 @@ namespace Qenex.QSuite.Protocol;
 /// </summary>
 public abstract class ProtocolBase : IProtocolBase
 {
-    public ISpecification Specification { get; } = new SpecificationBase();
+    [JsonPropertyName("specification")]
+    public ISpecification Specification { get; set; }
     
-    public IList<IProtocolVariable> ProtocolVariables { get; set; }
+    //[JsonPropertyName("protocolVariables")]
+    [JsonIgnore]
+    public IList<IVariableBase> ProtocolVariables { get; set; }
 }
