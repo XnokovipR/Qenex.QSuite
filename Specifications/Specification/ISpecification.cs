@@ -8,7 +8,7 @@ public interface ISpecification
     /// <summary>
     /// A unique identifier of the specification.
     /// </summary>
-    Guid Gid { get; set;  }
+    Guid Gid { get; init;  }
     
     /// <summary>
     /// A name of the specification.

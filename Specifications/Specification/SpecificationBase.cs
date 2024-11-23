@@ -5,7 +5,7 @@ namespace Qenex.QSuite.Specification;
 public class SpecificationBase : ISpecification
 {
     [JsonPropertyName("gid")]
-    public Guid Gid { get; set; }
+    public Guid Gid { get; init; }
     
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
