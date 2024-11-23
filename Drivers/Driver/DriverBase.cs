@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Text.Json.Serialization;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.Specification;
@@ -15,11 +16,17 @@ public abstract class DriverBase : IDriverBase
     protected ILogSubscriber? LogSubscriber;
     protected bool ExitRequested { get; set; } = false;
     
-    public bool IsEnabled { get; set; } = true;
+    [JsonPropertyName("isEnabled")]
+    public bool IsEnabled { get; set; }
+    
+    [JsonIgnore]
     public bool IsStarted { get; protected set; } = false;
 
+    [JsonPropertyName("specification")]
     public ISpecification Specification { get; init; } = null!;
-    public IList<IProtocolBase> Protocols { get; } = new List<IProtocolBase>();
+    
+    [JsonPropertyName("protocols")]
+    public IList<IProtocolBase> Protocols { get; init; } = new List<IProtocolBase>();
 
     public abstract Task StartAsync(CancellationToken ct = default);
     public abstract Task StopAsync(CancellationToken ct = default);
@@ -39,5 +46,17 @@ public abstract class DriverBase : IDriverBase
     {
         Protocols.Remove(Protocols.FirstOrDefault(p => p.Specification.Name == protocolName) ??
                          throw new InvalidEnumArgumentException("Protocol not found"));
+    }
+
+    public abstract void Send<T>(T data);
+
+    public abstract Task SendAsync<T>(T data, CancellationToken ct = default);
+
+    public event EventHandler? OnDataReceived;
+    
+    protected void RaiseOnDataReceive<T>(T data)
+    {
+        var args = new DataReceivedEventArgs<T>(data);
+        OnDataReceived?.Invoke(this, args);
     }
 }
