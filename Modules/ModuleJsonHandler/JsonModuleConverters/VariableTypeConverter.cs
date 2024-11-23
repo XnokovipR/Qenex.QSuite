@@ -52,6 +52,15 @@ public class VariableTypeConverter : JsonConverter<IVariableBase>
                         case "description":
                             variable.Description = (string)property.Value!;
                             break;
+                        case "address":
+                            properties["address"] = (uint)property.Value!;
+                            break;
+                        case "length":
+                            if (variable is not RangeVariable<int> && variable is not RangeVariable<double>)
+                            {
+                                properties["length"] = (uint)property.Value!;    
+                            }
+                            break;
                         case "rawRange":
                             if (variable is RangeVariable<int> intVar)
                             {
@@ -113,6 +122,12 @@ public class VariableTypeConverter : JsonConverter<IVariableBase>
                     case "description":
                         properties["description"] = reader.GetString();
                         break;
+                    case "address":
+                        properties["address"] = reader.GetUInt32();
+                        break;
+                    case "length":
+                        properties["length"] = reader.GetUInt32();
+                        break;
                     case "rawRange":
                         properties["rawRange"] = JsonDocument.ParseValue(ref reader).RootElement.GetRawText();
                         break;
@@ -122,6 +137,7 @@ public class VariableTypeConverter : JsonConverter<IVariableBase>
                     case "unit":
                         properties["unit"] = reader.GetString();
                         break;
+                    
                     default:
                         throw new JsonException($"Unknown property: {propertyName}");
                 }

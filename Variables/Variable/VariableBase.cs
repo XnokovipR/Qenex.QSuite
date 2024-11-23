@@ -26,6 +26,12 @@ public abstract class VariableBase<T> : IVariableBase
     [JsonPropertyName("description")]
     public string Description { get; set; }
 
+    [JsonPropertyName("address")]
+    public uint? Address { get; set; }
+    
+    [JsonPropertyName("length")]
+    public uint Length { get; set; }
+
     /// <summary>
     /// Reference to the modules to which the variable data will be sent.
     /// </summary>
