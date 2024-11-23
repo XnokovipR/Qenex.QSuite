@@ -14,11 +14,13 @@ public class ZeroMqClientDriver : DriverBase
     {
         Specification = new SpecificationBase()
         {
-            Gid = new Guid("4f225c91-7f02-4577-bb5e-a9e3a3ead56e"),
+            Gid = new Guid("985a0511-bb95-44a3-889c-95bddbcc7483"),
             Name = "ZeroMQ Client Driver",
             Description = "ZeroMQ Client Driver",
             CreatedOn = new DateTime(2021, 11, 21),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 1)
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 1),
+            Author = "Qenex",
+            Company = "QENEX Ltd."
         };
     }
 
@@ -39,7 +41,17 @@ public class ZeroMqClientDriver : DriverBase
     public override void Dispose()
     {
     }
-    
+
+    public override void Send<T>(T data)
+    {
+        
+    }
+
+    public override Task SendAsync<T>(T data, CancellationToken ct = default)
+    {
+        return Task.CompletedTask;
+    }
+
     // All communication with the ZeroMQ library should be done in this method
     private async Task RunClientAsync(CancellationToken ct)
     {
@@ -50,6 +62,7 @@ public class ZeroMqClientDriver : DriverBase
             {
                 // Do something
                 Thread.Sleep(100);
+                //RaiseOnDataReceive("ddd");
             }
             
             IsStarted = false;
