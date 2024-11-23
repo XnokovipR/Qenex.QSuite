@@ -11,7 +11,13 @@ class Program
     {
         var options = new JsonSerializerOptions
         {
-            Converters = { new VariableTypeConverter(), new SpecificationConverter() },
+            Converters =
+            {
+                new VariableTypeConverter(),
+                new SpecificationConverter(),
+                new ProtocolConverter(),
+                new DriverConverter()
+            },
             WriteIndented = true
         };
         

@@ -4,10 +4,22 @@
     "name": "ModuleTest",
     "description": "This is a test module",
     "version": "1.0.1",
-    "author": "John Doe",
-    "company": "Doe Inc.",
+    "author": "Qenex",
+    "company": "QENEX Ltd.",
     "createdOn": "2021-11-22"
   },
+  
+  "drivers": [
+    {
+      "isEnabled": true,
+      "gid": "985a0511-bb95-44a3-889c-95bddbcc7483",
+      "protocols": [
+        {
+          "gid":"dee33606-0965-48a1-a829-020d99b8dd44"
+        }
+      ]
+    }
+  ],
   
   "variables": [
     {
@@ -51,6 +63,23 @@
           "maximum":  330
       },
       "unit": "kg"
+    },
+	{
+      "id": 4,
+      "guid": "c1ffb1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3d",
+      "name": "2-intVariable",
+      "caption": "2-Test Integer Variable",
+      "type": "int",
+      "description": "2-This is a test integer variable",
+      "rawRange": {
+          "minimum":  -1000,
+          "maximum":  1000
+      },
+      "engineeringRange": {
+          "minimum":  -2000,
+          "maximum":  2000
+      },
+      "unit": "kg/m3"
     }
   ]
 }
