@@ -23,7 +23,7 @@ public abstract class ModuleBase : IModuleBase
     [JsonPropertyName("variables")]
     public IList<IVariableBase> Variables { get; init; } = null!;
     
-    [JsonIgnore]
+    [JsonPropertyName("drivers")]
     public IList<IDriverBase> Drivers { get; init;  } = null!;
 
     public abstract void AddVariable(IVariableBase variable);
