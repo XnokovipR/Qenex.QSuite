@@ -14,7 +14,7 @@ public class SimpleOne2OneProtocol : ProtocolBase
             Name = "Simple One to One Protocol",
             Description = "No conversion of data is done. Data is sent as is.",
             CreatedOn = new DateTime(2021, 11, 23),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 1),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? throw new Exception("Version not found"),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };
