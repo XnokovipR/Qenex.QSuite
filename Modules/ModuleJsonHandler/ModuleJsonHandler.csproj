@@ -11,8 +11,9 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\Drivers\Driver\Driver.csproj" />
-      <ProjectReference Include="..\..\Drivers\ZmqClientDriver\ZmqClientDriver.csproj" />
       <ProjectReference Include="..\..\Protocols\SimpleProtocol\SimpleProtocol.csproj" />
+      <ProjectReference Include="..\Module\Module.csproj" />
+      <ProjectReference Include="..\UnifModule\UnifModule.csproj" />
     </ItemGroup>
 
 </Project>
