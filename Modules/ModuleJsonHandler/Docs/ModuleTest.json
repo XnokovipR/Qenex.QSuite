@@ -1,42 +1,53 @@
 {
   "gid": "f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3a",
-  "name": "ModuleTest",
+  "name": "UnifiedModule",
+  "caption": "Testing unified module",
   "description": "This is a test module",
   "version": "1.0.1",
   "author": "Qenex",
   "company": "QENEX Ltd.",
   "createdOn": "2021-11-22",
   
+  "driversRelations": [
+    {
+      "driverRefGid": "985a0511-bb95-44a3-889c-95bddbcc7483",
+      "protocolsRelations": [
+        {
+          "protocolRefGid": "dee33606-0965-48a1-a829-020d99b8dd44",
+            "variablesRefGids": [
+              "f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3b",
+              "f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b2c",
+              "c1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3d",
+              "c1ffb1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3d"
+            ]
+        }
+      ]
+    }
+  ],
+  
   "drivers": [
     {
-      "name": "TestDriver",
+      "name": "ZeroMQ Client Driver",
+      "caption": "Test Driver",
       "version": "1.0.1",
       "isEnabled": true,
-      "gid": "985a0511-bb95-44a3-889c-95bddbcc7483",
-      "protocolsRefs": [
-          "dee33606-0965-48a1-a829-020d99b8dd44"
-      ]
+      "gid": "985a0511-bb95-44a3-889c-95bddbcc7483"
     }
   ],
   
   "protocols": [
     {
-      "name": "TestProtocol",
+      "name": "Simple One to One Protocol",
+      "caption": "Test Protocol",
       "version": "1.0.1",
-      "gid": "dee33606-0965-48a1-a829-020d99b8dd44",
-      "variablesRefs": [
-        "f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3b",
-        "f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b2c",
-        "c1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3d",
-        "c1ffb1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3d"
-      ]
+      "gid": "dee33606-0965-48a1-a829-020d99b8dd44"
     }
   ],
   
   "variables": [
     {
       "id": 1,
-      "guid": "f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3b",
+      "gid": "f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3b",
       "name": "stringVariable",
       "caption": "Test String Variable",
       "type": "string",
@@ -44,7 +55,7 @@
     },
     {
       "id": 2,
-      "guid": "f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b2c",
+      "gid": "f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b2c",
       "name": "doubleVariable",
       "caption": "Test Double Variable",
       "type": "double",
@@ -61,7 +72,7 @@
     },
     {
       "id": 3,
-      "guid": "c1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3d",
+      "gid": "c1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3d",
       "name": "intVariable",
       "caption": "Test Integer Variable",
       "type": "int",
@@ -78,7 +89,7 @@
     },
 	{
       "id": 4,
-      "guid": "c1ffb1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3d",
+      "gid": "c1ffb1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3d",
       "name": "2-intVariable",
       "caption": "2-Test Integer Variable",
       "type": "int",
