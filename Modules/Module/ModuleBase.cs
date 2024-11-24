@@ -8,22 +8,16 @@ namespace Qenex.QSuite.Module;
 
 public abstract class ModuleBase : IModuleBase
 {
-    [JsonIgnore]
     public bool ExitRequested { get; set; } = false;
     
-    [JsonIgnore]
     public bool IsEnabled { get; set; } = false;
     
-    [JsonIgnore]
     public bool IsStarted { get; set; } = false;
     
-    [JsonPropertyName("specification")]
     public ISpecification Specification { get; init; } = null!;
     
-    [JsonPropertyName("variables")]
     public IList<IVariableBase> Variables { get; init; } = null!;
     
-    [JsonPropertyName("drivers")]
     public IList<IDriverBase> Drivers { get; init;  } = null!;
 
     public abstract void AddVariable(IVariableBase variable);
