@@ -8,12 +8,6 @@ namespace Qenex.QSuite.Driver;
 
 public abstract class DriverBase : IDriverBase
 {
-    public DriverBase(ILogger? logger = null)
-    {
-        this.Logger = logger;
-    }
- 
-    protected ILogger? Logger;
     protected bool ExitRequested { get; set; } = false;
     
     [JsonPropertyName("isEnabled")]
