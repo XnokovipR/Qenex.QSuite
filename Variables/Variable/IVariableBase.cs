@@ -16,7 +16,7 @@ public interface IVariableBase
     /// <summary>
     /// Guid of the variable.
     /// </summary>
-    string Guid { get; set; }
+    Guid Gid { get; set; }
     
     /// <summary>
     /// Name of the variable.

@@ -40,8 +40,8 @@ public class VariableTypeConverter : JsonConverter<IVariableBase>
                         case "id":
                             variable.Id = (int)property.Value!;
                             break;
-                        case "guid":
-                            variable.Guid = (string)property.Value!;
+                        case "gid":
+                            variable.Gid = Guid.Parse(property.Value!.ToString()!);
                             break;
                         case "name":
                             variable.Name = (string)property.Value!;
@@ -110,8 +110,8 @@ public class VariableTypeConverter : JsonConverter<IVariableBase>
                     case "id":
                         properties["id"] = reader.GetInt32();
                         break;
-                    case "guid":
-                        properties["guid"] = reader.GetString();
+                    case "gid":
+                        properties["gid"] = Guid.Parse(reader.GetString()!);
                         break;
                     case "name":
                         properties["name"] = reader.GetString();
@@ -152,7 +152,7 @@ public class VariableTypeConverter : JsonConverter<IVariableBase>
         writer.WriteStartObject();
 
         writer.WriteNumber("id", value.Id);
-        writer.WriteString("guid", value.Guid);
+        writer.WriteString("gid", value.Gid);
         writer.WriteString("name", value.Name);
         writer.WriteString("caption", value.Caption);
         writer.WriteString("description", value.Description);

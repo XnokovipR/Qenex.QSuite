@@ -8,8 +8,8 @@ namespace Qenex.QSuite.Module;
 
 public interface IModuleBase : IComponentSpecification, ICoreCommunication
 {
-    IList<IVariableBase> Variables { get; }
-    IList<IDriverBase> Drivers { get; }
+    IList<IVariableBase> Variables { get; set; }
+    IList<IDriverBase> Drivers { get; set; }
     
     void AddVariable(IVariableBase variable);
     void AddVariableRange(IEnumerable<IVariableBase> variables);

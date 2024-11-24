@@ -14,8 +14,8 @@ public abstract class VariableBase<T> : IVariableBase
     [JsonPropertyName("id")]
     public int Id { get; set; }
     
-    [JsonPropertyName("guid")]
-    public string Guid { get; set; }
+    [JsonPropertyName("gid")]
+    public Guid Gid { get; set; }
     
     [JsonPropertyName("name")]
     public string Name { get; set; }

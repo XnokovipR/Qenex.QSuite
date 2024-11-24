@@ -16,6 +16,11 @@ public interface ISpecification
     string Name { get; set;  }
     
     /// <summary>
+    /// Visualised name of the specification.
+    /// </summary>
+    string Caption { get; set; }
+    
+    /// <summary>
     /// A description of the specification.
     /// </summary>
     string Description { get; set; }
