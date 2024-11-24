@@ -17,5 +17,5 @@ public interface ILogSubscriber
 	/// <param name="message">Logged message</param>
 	/// <param name="ct">Cancellation token</param>
 	/// <returns></returns>
-	Task LogAsync(ILogMessage message, CancellationToken ct);
+	Task LogAsync(ILogMessage message, CancellationToken ct = default);
 }

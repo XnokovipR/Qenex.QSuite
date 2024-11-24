@@ -1,7 +1,7 @@
 ﻿using Qenex.QSuite.LogSystem;
 using NLog;
 using Logger = NLog.Logger;
-using SystemLog = Qenex.QSuite.LogSystem;
+using LogSystem = Qenex.QSuite.LogSystem;
 
 namespace Qenex.QSuite.NLogSubscriber;
 
@@ -12,14 +12,14 @@ public class NLogSubscriber : ILogSubscriber
 {
 	private static readonly Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-	private static readonly Dictionary<SystemLog.LogLevel, Action<Exception, string>> logLevelToActionConverter = new()
+	private static readonly Dictionary<LogSystem.LogLevel, Action<Exception, string>> logLevelToActionConverter = new()
 	{
-		{SystemLog.LogLevel.Trace, logger.Trace},
-		{SystemLog.LogLevel.Debug, logger.Debug},
-		{SystemLog.LogLevel.Info, logger.Info},
-		{SystemLog.LogLevel.Warn, logger.Warn},
-		{SystemLog.LogLevel.Error, logger.Error},
-		{SystemLog.LogLevel.Fatal, logger.Fatal}
+		{LogSystem.LogLevel.Trace, logger.Trace},
+		{LogSystem.LogLevel.Debug, logger.Debug},
+		{LogSystem.LogLevel.Info, logger.Info},
+		{LogSystem.LogLevel.Warn, logger.Warn},
+		{LogSystem.LogLevel.Error, logger.Error},
+		{LogSystem.LogLevel.Fatal, logger.Fatal}
 	};
 
 	public void Log(ILogMessage message)
@@ -27,7 +27,7 @@ public class NLogSubscriber : ILogSubscriber
 		LogMessage(message);
 	}
 
-	public async Task LogAsync(ILogMessage message, CancellationToken ct)
+	public async Task LogAsync(ILogMessage message, CancellationToken ct = default)
 	{
 		await Task.Run(() => { LogMessage(message); }, ct);
 	}

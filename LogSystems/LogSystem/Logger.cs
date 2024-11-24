@@ -33,11 +33,15 @@ public class Logger : ILogger
 			return;
 		}
 		
-
 		foreach (var subscriber in subscribers)
 		{
 			subscriber.Log(message);
 		}
+	}
+
+	public void Log(LogLevel level, string message, Exception? exception = default)
+	{
+		Log(new LogMessage(level, message, exception));
 	}
 
 	public async Task LogAsync(ILogMessage message, CancellationToken ct = default)
@@ -51,6 +55,11 @@ public class Logger : ILogger
 		{
 			await subscriber.LogAsync(message, ct);
 		}
+	}
+
+	public async Task LogAsync(LogLevel level, string message, Exception? exception = default, CancellationToken ct = default)
+	{
+		await LogAsync(new LogMessage(level, message, exception), ct);
 	}
 
 	public void Enable()

@@ -29,7 +29,7 @@ public class ConsoleSubscriber : ILogSubscriber
 			msg.ToString());
 	}
 
-	public Task LogAsync(ILogMessage message, CancellationToken ct)
+	public Task LogAsync(ILogMessage message, CancellationToken ct = default)
 	{
 		throw new NotSupportedException("ConsoleSubscriber does not support async logging.");
 	}
