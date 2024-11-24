@@ -10,7 +10,7 @@ namespace Qenex.QSuite.ZmqClientDriver;
 /// </summary>
 public class ZeroMqClientDriver : DriverBase
 {
-    public ZeroMqClientDriver(ILogSubscriber? logSubscriber = null) : base(logSubscriber)
+    public ZeroMqClientDriver(ILogger? logger = null) : base(logger)
     {
         Specification = new SpecificationBase()
         {
