@@ -1,5 +1,7 @@
-﻿using Qenex.QSuite.Driver;
+﻿using System.Reflection;
+using Qenex.QSuite.Driver;
 using Qenex.QSuite.Module;
+using Qenex.QSuite.Specification;
 using Qenex.QSuite.Variable;
 
 namespace Qenex.QSuite.UnifModule;
@@ -9,6 +11,15 @@ namespace Qenex.QSuite.UnifModule;
 /// </summary>
 public class UnifiedModule : ModuleBase
 {
+    public UnifiedModule()
+    {
+        Specification = new SpecificationBase()
+        {
+            Gid = new Guid("f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3a"),
+            Name = "UnifiedModule",
+        };
+    }
+    
     #region Variables
 
     public override void AddVariable(IVariableBase variable)
