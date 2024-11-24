@@ -19,5 +19,7 @@ public interface IProtocolBase
     /// </summary>
     IList<IVariableBase> ProtocolVariables { get; set; }
     
-    
+    public void AddVariable(IVariableBase variable);
+    public void RemoveVariable(IVariableBase variable);
+    public void RemoveVariable(string variableName);
 }
