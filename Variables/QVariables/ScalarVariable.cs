@@ -4,5 +4,6 @@ namespace Qenex.QSuite.QVariables;
 
 public class ScalarVariable : VariableBase
 {
+    public int Size { get; set; }
     public IValuesBase Values { get; set; }
 }
