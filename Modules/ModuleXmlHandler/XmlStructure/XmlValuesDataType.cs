@@ -2,11 +2,10 @@ using System.Xml.Serialization;
 
 namespace Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 
-public enum QDataType
+public enum XmlValuesDataType
 {
-    [XmlEnum("bool")] Bool,
     [XmlEnum("byte")] Byte,
-    [XmlEnum("int32")] Int32,
+    [XmlEnum("int")] Int,
     [XmlEnum("float")] Float,
     [XmlEnum("string")] String,
 }
