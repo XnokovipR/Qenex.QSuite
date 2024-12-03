@@ -6,7 +6,7 @@ namespace Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 [XmlRoot("values")]
 public class XmlValues
 {
-    [XmlAttribute("dataType")] public QDataType DataType { get; set; }
+    [XmlAttribute("dataType")] public XmlValuesDataType DataType { get; set; }
     [XmlAttribute("size")] public int Size { get; set; }
     [XmlAttribute("length")] public int Length { get; set; }
     
