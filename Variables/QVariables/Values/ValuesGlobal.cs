@@ -10,21 +10,21 @@ public class ValuesGlobal
     /// <summary>
     /// Basic data types which of values can be.
     /// </summary>
-    public enum ValueDataType { Undefined = 0, UInt8, UInt16, UInt32, UInt64, Int8, Int16, Int32, Int64, Float, Double, String }
+    public enum ValueDataType { Undefined = 0, Byte, UShort, UInt, ULong, SByte, Short, Int, Long, Float, Double, String }
 
     /// <summary>
     /// Dictionary of ValueDataType and string representation of it.
     /// </summary>
     public static readonly Dictionary<ValueDataType, string> ValueDataTypeDict = new Dictionary<ValueDataType, string>()
     {
-        { ValueDataType.UInt8, "System.Byte" },
-        { ValueDataType.Int8, "System.SByte" },
-        { ValueDataType.UInt16, "System.UInt16" },
-        { ValueDataType.Int16, "System.Int16" },
-        { ValueDataType.UInt32, "System.UInt32" },
-        { ValueDataType.Int32, "System.Int32" },
-        { ValueDataType.UInt64, "System.UInt64" },
-        { ValueDataType.Int64, "System.Int64" },
+        { ValueDataType.Byte, "System.Byte" },
+        { ValueDataType.SByte, "System.SByte" },
+        { ValueDataType.UShort, "System.UInt16" },
+        { ValueDataType.Short, "System.Int16" },
+        { ValueDataType.UInt, "System.UInt32" },
+        { ValueDataType.Int, "System.Int32" },
+        { ValueDataType.ULong, "System.UInt64" },
+        { ValueDataType.Long, "System.Int64" },
         { ValueDataType.Float, "System.Single" },
         { ValueDataType.Double, "System.Double" },
         { ValueDataType.String, "System.String" }
