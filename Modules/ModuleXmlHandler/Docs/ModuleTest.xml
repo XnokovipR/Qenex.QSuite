@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<module name="TestModule" label="Test module">
+<module name="UnifiedModule" label="Test module">
     <description>This is a test module</description>
     <version>1.0.0</version>
     <author>Qenex</author>
@@ -103,28 +103,28 @@
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <variables>
         <scalarVariable id="1" namespace="/Engine" name="OilTemp" label="Oil Temperature" size="4">
-            <decription>Oil Temperature </decription>
-            <values dataType="int32" size="4" length="1">
-                <presentationReference ref="Int32Temperature"/>
+            <description>Oil Temperature </description>
+            <values dataType="int" size="4" length="1">
+                <presentationReference ref="IntTemperature"/>
             </values>
         </scalarVariable>
         <scalarVariable id="2" namespace="/Engine" name="OilPressure" label="Oil Pressure" size="4">
-            <decription>Oil pressure</decription>
+            <description>Oil pressure</description>
             <values dataType="float" size="4" length="1">
                 <presentationReference ref="FloatPressure"/>
             </values>
         </scalarVariable>
         <scalarVariable id="3" namespace="/" name="MachineState" label="Machine state" size="1">
-            <decription>Main machine enum states</decription>
+            <description>Main machine enum states</description>
             <values dataType="byte" size="1" length="1">
                 <presentationReference ref="EngineState"/>
             </values>
         </scalarVariable>
         <stringVariable id="4" namespace="/Info" name="AlertMsg" label="Alert Message">
-            <decription>Details about warnings/errors</decription>
+            <description>Details about warnings/errors</description>
         </stringVariable>
         <scalarVariable id="5" namespace="/Inlet" name="AirPressure" label="Air Pressure" size="4">
-            <decription>Air pressure</decription>
+            <description>Air pressure</description>
             <values dataType="float" size="4" length="1">
                 <presentationReference ref="FloatPressure"/>
             </values>
