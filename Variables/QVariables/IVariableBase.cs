@@ -1,7 +1,7 @@
 ﻿using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.ProtocolVariableSpecification;
 
-namespace Qenex.QSuite.Variable;
+namespace Qenex.QSuite.QVariables;
 
 /// <summary>
 /// The interface for all variables used in the QSuite.
@@ -14,9 +14,9 @@ public interface IVariableBase
     int Id { get; set; }
     
     /// <summary>
-    /// Guid of the variable.
+    /// Namespace specifies the location of the variable.
     /// </summary>
-    Guid Gid { get; set; }
+    string Namespace { get; set; }
     
     /// <summary>
     /// Name of the variable.
@@ -24,24 +24,14 @@ public interface IVariableBase
     string Name { get; set; }
     
     /// <summary>
-    /// Caption of the variable (in most case name and caption differs].
+    /// Label of the variable (in most case name and label differs).
     /// </summary>
-    string Caption { get; set; }
+    string Label { get; set; }
     
     /// <summary>
     /// Description of the variable.
     /// </summary>
     string Description { get; set; }
-    
-    /// <summary>
-    /// Address is needed for communication with the device.
-    /// </summary>
-    uint? Address { get; set; }
-    
-    /// <summary>
-    /// Length of the variable data.
-    /// </summary>
-    uint Length { get; set; }
     
     /// <summary>
     /// Reference to the components (modules / drivers) to which the variable data will be sent.
