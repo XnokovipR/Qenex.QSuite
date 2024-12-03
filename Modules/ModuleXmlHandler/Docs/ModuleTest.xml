@@ -1,0 +1,133 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<module name="TestModule" label="Test module">
+    <description>This is a test module</description>
+    <version>1.0.0</version>
+    <author>Qenex</author>
+    <company>QENEX Ltd.</company>
+    <createdOn>2024-11-27</createdOn>
+    
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <!--+           Module Relations                                  +-->
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <driverReferences>
+        <driverReference ref="EthClientDrv">
+            <protocolReferences>
+                <protocolReference ref="ZeroMqClient">
+                    <variableReferences>
+                        <variableReference ref="1" isCommunicated="true"/>
+                        <variableReference ref="2" isCommunicated="true"/>
+                        <variableReference ref="3" isCommunicated="true"/>
+                        <variableReference ref="4" isCommunicated="true"/>
+                    </variableReferences>
+                </protocolReference>
+        </protocolReferences>
+    </driverReference>  
+    <driverReference ref="PeakCanDrv">
+        <protocolReferences>
+            <protocolReference ref="XCP">
+                <variableReferences>
+                    <variableEmbeddedReference ref="5" isCommunicated="true">
+                        <address>0x12345</address>/>
+                        <eventReference ref="Event100ms"/>
+                    </variableEmbeddedReference>
+                </variableReferences>
+            </protocolReference>
+        </protocolReferences>
+    </driverReference>        
+    </driverReferences>
+    
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <!--+           Drivers                                           +-->
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <drivers>
+        <driver name="EthClientDrv" label="Ethernet client driver">
+            <version>1.0.0</version>
+            <isEnabled>true</isEnabled>
+            <settings>127.0.0.1:5000</settings>
+        </driver>
+        <driver name="PeakCanDrv" label="PEAK-CAN driver">
+            <version>1.0.0</version>
+            <isEnabled>true</isEnabled>
+            <settings/>
+        </driver>
+    </drivers>
+    
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <!--+           Protocols                                         +-->
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <protocols>
+        <protocol name="ZeroMqClient" label="Simple one to one protocol">
+            <version>1.0.0</version>
+        </protocol>
+        <protocol name="XCP" label="XCP protocol">
+            <version>1.0.0</version>
+            <!--<events>
+                <event name="Event100ms" direction="Read" period="100" periodUnit="ms"/>
+                <event name="Event2s" direction="Read" period="2" periodUnit="s"/>
+            </events>-->
+        </protocol>
+    </protocols>
+
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <!--+           Presentations                                     +-->
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <presentations>
+        <presentation name="Int32Temperature" label="Temperature" min="0" max="1000" printFormat="%.2f" unit="°C">
+            <conversionReference ref="OneToOne"/>
+        </presentation>
+        <presentation name="FloatPressure" label="Pressure" min="0" max="1000" printFormat="%.3f" unit="Pa">
+            <conversionReference ref="OneToOne"/>
+        </presentation>
+        <presentation name="EngineState" label="Engine state" unit="">
+            <conversionReference ref="EngineState"/>
+        </presentation>
+    </presentations>
+
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <!--+           Conversions                                       +-->
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <conversions>
+        <linearConversion name="OneToOne" multiplier="1" offset="0"/>
+        <enumConversion name="EngineState">
+            <enums>
+                <enum name="Stopped" value="0"/>
+                <enum name="Starting" value="1"/>
+                <enum name="Running" value="2"/>
+                <enum name="Stopping" value="3"/>
+            </enums>
+        </enumConversion>
+    </conversions>
+    
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <!--+           Variables                                         +-->
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <variables>
+        <scalarVariable id="1" namespace="/Engine" name="OilTemp" label="Oil Temperature" size="4">
+            <decription>Oil Temperature </decription>
+            <values dataType="int32" size="4" length="1">
+                <presentationReference ref="Int32Temperature"/>
+            </values>
+        </scalarVariable>
+        <scalarVariable id="2" namespace="/Engine" name="OilPressure" label="Oil Pressure" size="4">
+            <decription>Oil pressure</decription>
+            <values dataType="float" size="4" length="1">
+                <presentationReference ref="FloatPressure"/>
+            </values>
+        </scalarVariable>
+        <scalarVariable id="3" namespace="/" name="MachineState" label="Machine state" size="1">
+            <decription>Main machine enum states</decription>
+            <values dataType="byte" size="1" length="1">
+                <presentationReference ref="EngineState"/>
+            </values>
+        </scalarVariable>
+        <stringVariable id="4" namespace="/Info" name="AlertMsg" label="Alert Message">
+            <decription>Details about warnings/errors</decription>
+        </stringVariable>
+        <scalarVariable id="5" namespace="/Inlet" name="AirPressure" label="Air Pressure" size="4">
+            <decription>Air pressure</decription>
+            <values dataType="float" size="4" length="1">
+                <presentationReference ref="FloatPressure"/>
+            </values>
+        </scalarVariable>
+    </variables>
+</module>

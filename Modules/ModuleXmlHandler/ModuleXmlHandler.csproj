@@ -5,13 +5,18 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.ModuleJsonHandler</AssemblyName>
-        <RootNamespace>Qenex.QSuite.ModuleJsonHandler</RootNamespace>
+        <AssemblyName>Qenex.QSuite.ModuleXmlHandler</AssemblyName>
+        <RootNamespace>Qenex.QSuite.ModuleXmlHandler</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Qenex.QLibs.XmlInOut" Version="1.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\..\Drivers\Driver\Driver.csproj" />
-      <ProjectReference Include="..\..\Protocols\SimpleProtocol\SimpleProtocol.csproj" />
+      <ProjectReference Include="..\..\LogSystems\LogSystem\LogSystem.csproj" />
+      <ProjectReference Include="..\..\Protocols\Protocol\Protocol.csproj" />
       <ProjectReference Include="..\Module\Module.csproj" />
       <ProjectReference Include="..\UnifModule\UnifModule.csproj" />
     </ItemGroup>

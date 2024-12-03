@@ -2,7 +2,7 @@
 using System.Text.Json.Serialization;
 using Qenex.QSuite.CoreComm;
 using Qenex.QSuite.Specification;
-using Qenex.QSuite.Variable;
+using Qenex.QSuite.QVariables;
 
 namespace Qenex.QSuite.Protocol;
 

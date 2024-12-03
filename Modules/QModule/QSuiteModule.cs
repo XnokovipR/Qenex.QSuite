@@ -1,7 +1,7 @@
 ﻿using System.Drawing;
 using Qenex.QSuite.Driver;
 using Qenex.QSuite.Module;
-using Qenex.QSuite.Variable;
+using Qenex.QSuite.QVariables;
 using Qenex.QSuite.UnifModule;
 
 namespace Qenex.QSuite.QModule;

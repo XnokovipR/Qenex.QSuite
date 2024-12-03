@@ -4,9 +4,8 @@ namespace Qenex.QSuite.Specification;
 
 public class SpecificationBase : ISpecification
 {
-    public Guid Gid { get; init; }
     public string Name { get; set; } = string.Empty;
-    public string Caption { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public DateTime CreatedOn { get; set; }
     public Version Version { get; set; } = null!;

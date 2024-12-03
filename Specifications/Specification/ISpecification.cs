@@ -6,11 +6,6 @@
 public interface ISpecification
 {
     /// <summary>
-    /// A unique identifier of the specification.
-    /// </summary>
-    Guid Gid { get; init;  }
-    
-    /// <summary>
     /// A name of the specification.
     /// </summary>
     string Name { get; set;  }
@@ -18,7 +13,7 @@ public interface ISpecification
     /// <summary>
     /// Visualised name of the specification.
     /// </summary>
-    string Caption { get; set; }
+    string Label { get; set; }
     
     /// <summary>
     /// A description of the specification.

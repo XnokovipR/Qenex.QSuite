@@ -2,7 +2,7 @@
 using Qenex.QSuite.Driver;
 using Qenex.QSuite.Module;
 using Qenex.QSuite.Specification;
-using Qenex.QSuite.Variable;
+using Qenex.QSuite.QVariables;
 
 namespace Qenex.QSuite.UnifModule;
 
@@ -15,7 +15,6 @@ public class UnifiedModule : ModuleBase
     {
         Specification = new SpecificationBase()
         {
-            Gid = new Guid("f1b3b1b3-1b3b-1b3b-1b3b-1b3b1b3b1b3a"),
             Name = "UnifiedModule",
         };
     }

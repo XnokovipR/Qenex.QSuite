@@ -12,7 +12,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\Common\CoreComm\CoreComm.csproj" />
       <ProjectReference Include="..\..\Specifications\Specification\Specification.csproj" />
-      <ProjectReference Include="..\..\Variables\Variable\Variable.csproj" />
+      <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
     </ItemGroup>
 
 </Project>

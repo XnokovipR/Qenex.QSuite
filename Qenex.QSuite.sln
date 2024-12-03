@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Variables", "Variables", "{8E1871C8-3703-4F96-942B-4195A9FF9FEA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Variable", "Variables\Variable\Variable.csproj", "{6F7CDDD2-D887-4215-9297-9367E2B0B58B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QVariables", "Variables\QVariables\QVariables.csproj", "{6F7CDDD2-D887-4215-9297-9367E2B0B58B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protocols", "Protocols", "{2F390566-E2DF-4D8B-93D9-FEEC53923D27}"
 EndProject
@@ -52,13 +52,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integral", "Integral", "{3E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleLogTest", "LogSystems\_Tests\Integral\ConsoleLogTest\ConsoleLogTest.csproj", "{EE64E3FD-C2FC-48A5-AF52-217233F166F8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModuleJsonHandler", "Modules\ModuleJsonHandler\ModuleJsonHandler.csproj", "{35D01DAE-E17E-4A73-A285-BD2A205B0771}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModuleXmlHandler", "Modules\ModuleXmlHandler\ModuleXmlHandler.csproj", "{35D01DAE-E17E-4A73-A285-BD2A205B0771}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Tests", "_Tests", "{E829CEBB-9D85-43D9-9F54-E93C6EBDCF8A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integral", "Integral", "{2C4A806C-0C26-4926-9B7D-C1C0728C3BD2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonSerializationTest", "Modules\_Tests\Integral\JsonSerializationTest\JsonSerializationTest.csproj", "{5624F006-4FE9-4DEB-ACB3-F154DC47E257}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlReadWriteTest", "Modules\_Tests\Integral\XmlReadWriteTest\XmlReadWriteTest.csproj", "{5624F006-4FE9-4DEB-ACB3-F154DC47E257}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleProtocol", "Protocols\SimpleProtocol\SimpleProtocol.csproj", "{673ED106-3B85-48BA-B173-D3D0E8F99E1F}"
 EndProject
@@ -79,6 +79,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BPlugin", "Common\_Tests\Integral\BPlugin\BPlugin.csproj", "{FE98F2DC-2D65-453B-9F3F-07306D201752}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateRealModuleTest", "Modules\_Tests\Integral\CreateRealModuleTest\CreateRealModuleTest.csproj", "{B0BB4CC9-F95D-46AC-8988-95E3045DF55D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Tests", "_Tests", "{28ADD757-3C55-479B-A19B-0D67CC9A1CC1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integral", "Integral", "{FB4D1749-FD58-4102-89B6-895DEED83D72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreateVariableTest", "Variables\CreateVariableTest\CreateVariableTest.csproj", "{60222C96-D5D5-41F0-985A-A01267E2B276}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -182,6 +188,10 @@ Global
 		{B0BB4CC9-F95D-46AC-8988-95E3045DF55D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0BB4CC9-F95D-46AC-8988-95E3045DF55D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0BB4CC9-F95D-46AC-8988-95E3045DF55D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60222C96-D5D5-41F0-985A-A01267E2B276}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60222C96-D5D5-41F0-985A-A01267E2B276}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60222C96-D5D5-41F0-985A-A01267E2B276}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60222C96-D5D5-41F0-985A-A01267E2B276}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6F7CDDD2-D887-4215-9297-9367E2B0B58B} = {8E1871C8-3703-4F96-942B-4195A9FF9FEA}
@@ -217,5 +227,8 @@ Global
 		{B62CCBE8-A253-49D1-BD6E-9935128D968C} = {C8C104B7-362D-4416-BBEE-F5DD20EFDE15}
 		{FE98F2DC-2D65-453B-9F3F-07306D201752} = {C8C104B7-362D-4416-BBEE-F5DD20EFDE15}
 		{B0BB4CC9-F95D-46AC-8988-95E3045DF55D} = {2C4A806C-0C26-4926-9B7D-C1C0728C3BD2}
+		{28ADD757-3C55-479B-A19B-0D67CC9A1CC1} = {8E1871C8-3703-4F96-942B-4195A9FF9FEA}
+		{FB4D1749-FD58-4102-89B6-895DEED83D72} = {28ADD757-3C55-479B-A19B-0D67CC9A1CC1}
+		{60222C96-D5D5-41F0-985A-A01267E2B276} = {FB4D1749-FD58-4102-89B6-895DEED83D72}
 	EndGlobalSection
 EndGlobal

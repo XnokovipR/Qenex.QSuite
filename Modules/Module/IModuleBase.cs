@@ -2,7 +2,7 @@ using Qenex.QSuite.CoreComm;
 using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.Driver;
 using Qenex.QSuite.Specification;
-using Qenex.QSuite.Variable;
+using Qenex.QSuite.QVariables;
 
 namespace Qenex.QSuite.Module;
 

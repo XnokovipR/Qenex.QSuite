@@ -5,6 +5,8 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.CreateRealModuleTest</AssemblyName>
+        <RootNamespace>Qenex.QSuite.CreateRealModuleTest</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -12,7 +14,7 @@
       <ProjectReference Include="..\..\..\..\LogSystems\ConsoleLogSubscriber\ConsoleLogSubscriber.csproj" />
       <ProjectReference Include="..\..\..\..\LogSystems\LogSystem\LogSystem.csproj" />
       <ProjectReference Include="..\..\..\ComponentSpecification\ComponentSpecification.csproj" />
-      <ProjectReference Include="..\..\..\ModuleJsonHandler\ModuleJsonHandler.csproj" />
+      <ProjectReference Include="..\..\..\ModuleXmlHandler\ModuleXmlHandler.csproj" />
       <ProjectReference Include="..\..\..\Module\Module.csproj" />
     </ItemGroup>
 

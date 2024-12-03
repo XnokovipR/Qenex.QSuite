@@ -14,7 +14,6 @@ public class ZeroMqClientDriver : DriverBase
     {
         Specification = new SpecificationBase()
         {
-            Gid = new Guid("985a0511-bb95-44a3-889c-95bddbcc7483"),
             Name = "ZeroMQ Client Driver",
             Description = "ZeroMQ Client Driver",
             CreatedOn = new DateTime(2021, 11, 21),

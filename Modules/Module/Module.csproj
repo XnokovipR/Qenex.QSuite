@@ -12,7 +12,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\Drivers\Driver\Driver.csproj" />
       <ProjectReference Include="..\..\Specifications\Specification\Specification.csproj" />
-      <ProjectReference Include="..\..\Variables\Variable\Variable.csproj" />
+      <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
       <ProjectReference Include="..\ComponentSpecification\ComponentSpecification.csproj" />
     </ItemGroup>
 
