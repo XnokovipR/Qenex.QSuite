@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 
 
-[assembly: InternalsVisibleTo("Qenex.QSuite.Variables.CreateVariableTest")]
+//[assembly: InternalsVisibleTo("Qenex.QSuite.Variables.CreateVariableTest")]
 
 namespace Qenex.QSuite.QVariables;
 
@@ -33,7 +33,7 @@ public class VariablesGlobal
     /// <param name="variableType">Enumerable variable type.</param>
     /// <returns>Created instance of variable.</returns>
     /// /// <exception cref="ArgumentException">Exception is thrown when either a type is not found or instance cannot be created.</exception>
-    internal static IVariableBase CreateInstance(VariablesGlobal.VariableType variableType)
+    public static IVariableBase CreateInstance(VariableType variableType)
     {
         if (!VariableTypeDict.TryGetValue(variableType, out var stringType))
         {
