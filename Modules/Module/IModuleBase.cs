@@ -12,7 +12,7 @@ public interface IModuleBase : IComponentSpecification, ICoreCommunication
     IList<IDriverBase> Drivers { get; set; }
     
     void AddVariable(IVariableBase variable);
-    void AddVariableRange(IEnumerable<IVariableBase> variables);
+    void AddVariables(IEnumerable<IVariableBase> variables);
     void RemoveVariable(IVariableBase variable);
     void AddDriver(IDriverBase driver);
     void RemoveDriver(IDriverBase driver);
