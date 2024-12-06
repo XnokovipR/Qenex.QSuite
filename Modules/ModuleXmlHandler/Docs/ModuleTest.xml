@@ -40,12 +40,12 @@
     <!--+           Drivers                                           +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <drivers>
-        <driver name="EthClientDrv" label="Ethernet client driver">
+        <driver id="1" name="EthClientDrv" label="Ethernet client driver">
             <version>1.0.0</version>
             <isEnabled>true</isEnabled>
             <settings>127.0.0.1:5000</settings>
         </driver>
-        <driver name="PeakCanDrv" label="PEAK-CAN driver">
+        <driver id="2" name="PeakCanDrv" label="PEAK-CAN driver">
             <version>1.0.0</version>
             <isEnabled>true</isEnabled>
             <settings/>
@@ -56,10 +56,10 @@
     <!--+           Protocols                                         +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <protocols>
-        <protocol name="ZeroMqClient" label="Simple one to one protocol">
+        <protocol id="1" name="ZeroMqClient" label="Simple one to one protocol">
             <version>1.0.0</version>
         </protocol>
-        <protocol name="XCP" label="XCP protocol">
+        <protocol id="2" name="XCP" label="XCP protocol">
             <version>1.0.0</version>
             <!--<events>
                 <event name="Event100ms" direction="Read" period="100" periodUnit="ms"/>

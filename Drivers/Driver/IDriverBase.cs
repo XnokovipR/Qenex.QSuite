@@ -8,6 +8,7 @@ namespace Qenex.QSuite.Driver;
 
 public interface IDriverBase : ICoreCommunication, IComponentSpecification
 {
+    int Id { get; set; }
     public IList<IProtocolBase> Protocols { get; init; }
     
     public void AddProtocol(IProtocolBase protocol);
