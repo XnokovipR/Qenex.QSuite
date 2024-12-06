@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel;
-using System.Text.Json.Serialization;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.Specification;
@@ -8,26 +7,59 @@ namespace Qenex.QSuite.Driver;
 
 public abstract class DriverBase : IDriverBase
 {
+
+    #region Constructors
+
+    protected DriverBase(ILogger? logger = null)
+    {
+        Logger = logger;
+    }
+
+    #endregion
+
+    #region Properties
+
     protected bool ExitRequested { get; set; } = false;
     
-    [JsonPropertyName("isEnabled")]
+    // ReSharper disable once MemberCanBePrivate.Global
+    public  ILogger? Logger { get; set; }
+    
+    // The same driver can be used in the same module and communicate with different devices.
+    // So, the driver should have an Id to distinguish between them.
+    public int Id { get; set; }
     public bool IsEnabled { get; set; }
     
-    [JsonIgnore]
     public bool IsStarted { get; protected set; } = false;
-
-    [JsonPropertyName("specification")]
+    
     public ISpecification Specification { get; init; } = null!;
     
-    [JsonPropertyName("protocols")]
     public IList<IProtocolBase> Protocols { get; init; } = new List<IProtocolBase>();
 
-    public abstract Task StartAsync(CancellationToken ct = default);
-    public abstract Task StopAsync(CancellationToken ct = default);
-    public abstract void Dispose();
-    
+    #endregion
+
+    #region Protocols
+
     public virtual void AddProtocol(IProtocolBase protocol)
     {
+        if (Protocols.FirstOrDefault(v => v.Specification.Name == protocol.Specification.Name) != null)
+        {
+            Logger?.Log(LogLevel.Warn, $"Protocol with name {protocol.Specification.Name} already exists.");
+            return;
+        }
+        
+        if (Protocols.FirstOrDefault(v => v.Id == protocol.Id) != null)
+        {
+            Logger?.Log(LogLevel.Warn, $"Protocol with Id {protocol.Id} already exists.");
+            return;
+        }    
+        
+        var highestId = Protocols.Count > 0 ? Protocols.Max(x => x.Id) : 0;
+        if (protocol.Id == 0)
+        {
+            highestId++;
+            protocol.Id = highestId;
+        }
+        
         Protocols.Add(protocol);
     }
 
@@ -41,6 +73,18 @@ public abstract class DriverBase : IDriverBase
         Protocols.Remove(Protocols.FirstOrDefault(p => p.Specification.Name == protocolName) ??
                          throw new InvalidEnumArgumentException("Protocol not found"));
     }
+
+    #endregion
+    
+    #region Driver control
+
+    public abstract Task StartAsync(CancellationToken ct = default);
+
+    public abstract Task StopAsync(CancellationToken ct = default);
+
+    public abstract void Dispose();
+
+    #endregion
 
     public abstract void Send<T>(T data);
 
