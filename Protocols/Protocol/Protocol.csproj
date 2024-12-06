@@ -4,13 +4,14 @@
         <TargetFramework>net8.0</TargetFramework>
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>disable</Nullable>
+        <Nullable>enable</Nullable>
         <AssemblyName>Qenex.QSuite.Protocol</AssemblyName>
         <RootNamespace>Qenex.QSuite.Protocol</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\..\Common\CoreComm\CoreComm.csproj" />
+      <ProjectReference Include="..\..\LogSystems\LogSystem\LogSystem.csproj" />
       <ProjectReference Include="..\..\Specifications\Specification\Specification.csproj" />
       <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
     </ItemGroup>

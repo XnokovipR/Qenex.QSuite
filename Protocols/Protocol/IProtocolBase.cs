@@ -10,6 +10,12 @@ namespace Qenex.QSuite.Protocol;
 public interface IProtocolBase
 {
     /// <summary>
+    /// Id specifies the protocol instance.
+    /// In one driver, there can be only one protocol.
+    /// </summary>
+    int Id { get; set; }
+    
+    /// <summary>
     /// Protocol specification.
     /// </summary>
     ISpecification Specification { get;  }
@@ -17,9 +23,10 @@ public interface IProtocolBase
     /// <summary>
     /// Variables that are communicated with the protocol.
     /// </summary>
-    IList<IVariableBase> ProtocolVariables { get; set; }
+    IList<IProtocolVariable> ProtocolVariables { get; set; }
     
-    public void AddVariable(IVariableBase variable);
-    public void RemoveVariable(IVariableBase variable);
+    public void AddVariable(IProtocolVariable variable);
+    public void AddVariables(IEnumerable<IProtocolVariable> variables);
+    public void RemoveVariable(IProtocolVariable variable);
     public void RemoveVariable(string variableName);
 }
