@@ -26,9 +26,10 @@ public class XmlModuleHandler
     {
         var module = new T();
         
-        if (module.Specification.Name!= xmlModule.Name)
+        // Module xml name must match with the module name
+        if (module.Specification.Name != xmlModule.Name)
         {
-            logger?.Log(LogLevel.Error, "Module Name does not match with the UnifiedModule Name");
+            logger?.Log(LogLevel.Error, "Module Name does not match with the UnifiedModule name.");
             return null;
         }
 
@@ -41,10 +42,8 @@ public class XmlModuleHandler
         module.Specification.CreatedOn = xmlModule.CreatedOn;
         
         // Add variables
-        module.AddVariableRange(CreateVariables(xmlModule.Variables));
-
-
-
+        module.AddVariables(CreateVariables(xmlModule.Variables));
+        
         return module;
     }
 
@@ -56,7 +55,7 @@ public class XmlModuleHandler
         {
             if (!XmlModuleGlobal.TypeOfXmlVariable2VariableEnumDict.TryGetValue(xmlVariable.GetType(), out var variableType))
             {
-                logger?.Log(LogLevel.Error, $"Variable type {xmlVariable.GetType()} is not supported");
+                logger?.Log(LogLevel.Warn, $"Variable type {xmlVariable.GetType()} is not supported.");
                 continue;
             }
 
@@ -80,7 +79,7 @@ public class XmlModuleHandler
             }
             catch (ArgumentException e)
             {
-                logger?.Log(LogLevel.Error, $"Error creating variable {xmlVariable.Name}: {e.Message}");
+                logger?.Log(LogLevel.Error, $"Error creating variable {xmlVariable.Name}: {e.Message}.");
             }
             
         }
@@ -92,8 +91,6 @@ public class XmlModuleHandler
     {
         var values = ValuesGlobal.CreateInstance(Enum.Parse<ValuesGlobal.ValueDataType>(xmlValues.DataType.ToString()));
         
-        
-
         return values;
     }
 
