@@ -23,10 +23,10 @@ public interface IProtocolBase
     /// <summary>
     /// Variables that are communicated with the protocol.
     /// </summary>
-    IList<IProtocolVariable> ProtocolVariables { get; set; }
+    IList<IVariableBase> Variables { get; set; }
     
-    public void AddVariable(IProtocolVariable variable);
-    public void AddVariables(IEnumerable<IProtocolVariable> variables);
-    public void RemoveVariable(IProtocolVariable variable);
+    public void AddVariable(IVariableBase variable);
+    public void AddVariables(IEnumerable<IVariableBase> variables);
+    public void RemoveVariable(IVariableBase variable);
     public void RemoveVariable(string variableName);
 }

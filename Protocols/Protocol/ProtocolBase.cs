@@ -16,7 +16,7 @@ public abstract class ProtocolBase : IProtocolBase
     public ProtocolBase(ILogger? logger = null)
     {
         Logger = logger;
-        ProtocolVariables = new List<IProtocolVariable>();
+        Variables = new List<IVariableBase>();
     }
 
     #endregion
@@ -31,35 +31,35 @@ public abstract class ProtocolBase : IProtocolBase
     
     public ISpecification Specification { get; set; }
     
-    public IList<IProtocolVariable> ProtocolVariables { get; set; }
+    public IList<IVariableBase> Variables { get; set; }
 
     #endregion
 
     #region Variables
 
-    public virtual void AddVariable(IProtocolVariable variable)
+    public virtual void AddVariable(IVariableBase variable)
     {
-        if (ProtocolVariables.FirstOrDefault(v => v.Id == variable.Id) != null)
+        if (Variables.FirstOrDefault(v => v.Id == variable.Id) != null)
         {
             Logger?.Log(LogLevel.Warn, $"Variable with Id {variable.Id} already exists.");
             return;
         }
         
-        var highestId = ProtocolVariables.Count > 0 ? ProtocolVariables.Max(x => x.Id) : 0;
+        var highestId = Variables.Count > 0 ? Variables.Max(x => x.Id) : 0;
         if (variable.Id == 0)
         {
             highestId++;
             variable.Id = highestId;
         }
         
-        ProtocolVariables.Add(variable);
+        Variables.Add(variable);
     }
-    public virtual void AddVariables(IEnumerable<IProtocolVariable> variables)
+    public virtual void AddVariables(IEnumerable<IVariableBase> variables)
     {
-        var highestId = ProtocolVariables.Count > 0 ? ProtocolVariables.Max(x => x.Id) : 0;
+        var highestId = Variables.Count > 0 ? Variables.Max(x => x.Id) : 0;
         foreach (var variable in variables)
         {
-            if (ProtocolVariables.FirstOrDefault(v => v.Id == variable.Id) != null)
+            if (Variables.FirstOrDefault(v => v.Id == variable.Id) != null)
             {
                 Logger?.Log(LogLevel.Warn, $"Variable with Id {variable.Id} already exists.");
                 continue;
@@ -71,18 +71,18 @@ public abstract class ProtocolBase : IProtocolBase
                 variable.Id = highestId;
             }
             
-            ProtocolVariables.Add(variable);
+            Variables.Add(variable);
         }
     }
 
-    public void RemoveVariable(IProtocolVariable variable)
+    public void RemoveVariable(IVariableBase variable)
     {
-        ProtocolVariables.Remove(variable);
+        Variables.Remove(variable);
     }
 
     public void RemoveVariable(string variableName)
     {
-        ProtocolVariables.Remove(ProtocolVariables.FirstOrDefault(v => v.Name == variableName) ??
+        Variables.Remove(Variables.FirstOrDefault(v => v.Name == variableName) ??
                                  throw new InvalidEnumArgumentException("Variable not found"));
     }
 
