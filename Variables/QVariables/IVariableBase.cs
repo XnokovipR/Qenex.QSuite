@@ -34,6 +34,11 @@ public interface IVariableBase
     string Description { get; set; }
     
     /// <summary>
+    /// Communication parameters for the variable: details how to communicate via protocol (e.g. address in communicated device).
+    /// </summary>
+    string CommParams { get; set; }
+    
+    /// <summary>
     /// Reference to the components (modules / drivers) to which the variable data will be sent.
     /// </summary>
     IList<IComponentSpecification> CommComponents { get; set; }

@@ -18,6 +18,8 @@ public abstract class VariableBase : IVariableBase
     public string Label { get; set; }
     
     public string Description { get; set; }
+    
+    public string CommParams { get; set; }
 
     /// <summary>
     /// Reference to the modules to which the variable data will be sent.
