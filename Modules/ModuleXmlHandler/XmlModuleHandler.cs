@@ -42,12 +42,15 @@ public class XmlModuleHandler
         module.Specification.CreatedOn = xmlModule.CreatedOn;
         
         // Add variables
-        module.AddVariables(CreateVariables(xmlModule.Variables));
+        module.AddVariables(GetVariables(xmlModule.Variables));
+        
+        // Add drivers, including protocols and variables
+        module.AddDrivers(GetDrivers(drivers, protocols, module.Variables, xmlModule));
         
         return module;
     }
 
-    private List<IVariableBase> CreateVariables(IEnumerable<XmlVariable> xmlVariables)
+    private List<IVariableBase> GetVariables(IEnumerable<XmlVariable> xmlVariables)
     {
         var variables = new List<IVariableBase>();
         
@@ -67,13 +70,13 @@ public class XmlModuleHandler
                 variable.Name = xmlVariable.Name;
                 variable.Label = xmlVariable.Label;
                 variable.Description = xmlVariable.Description;
+                variable.CommParams = xmlVariable.CommParams;
 
                 if (variable is ScalarVariable scalarVariable && xmlVariable is XmlScalarVariable xmlScalarVariable)
                 {
                     scalarVariable.Size = xmlScalarVariable.Size;
                     scalarVariable.Values = CreateScalarValues(xmlScalarVariable.Values);
                 }
-                
                 
                 variables.Add(variable);
             }
@@ -92,6 +95,84 @@ public class XmlModuleHandler
         var values = ValuesGlobal.CreateInstance(Enum.Parse<ValuesGlobal.ValueDataType>(xmlValues.DataType.ToString()));
         
         return values;
+    }
+
+    private List<IDriverBase> GetDrivers(IList<IDriverBase> realDrivers, IList<IProtocolBase> realProtocols, IList<IVariableBase> variables, XmlModule xmlModule)
+    {
+        var tempDrivers = new List<IDriverBase>();
+        
+        foreach (var driverRef in xmlModule.DriverReferences)
+        {
+            // find xml driver based on reference in driver references
+            var xmlDriver = xmlModule.Drivers.FirstOrDefault(d => d.Name == driverRef.Ref);
+            if (xmlDriver == null)
+            {
+                logger?.Log(LogLevel.Error, $"The driver \"{driverRef.Ref}\" not found in the module file.");
+                continue;
+            }
+            
+            // xml driver found, now find the real driver 
+            var driver = realDrivers.FirstOrDefault(rd => rd.Specification.Name == xmlDriver.Name);
+            if (driver == null)
+            {
+                logger?.Log(LogLevel.Error, $"The driver \"{xmlDriver.Name}\" not found among loaded drivers.");
+                continue;
+            }           
+            
+            driver.AddProtocols(GetProtocols(realProtocols, variables, driverRef.ProtocolReferences, xmlModule));
+            
+            
+            tempDrivers.Add(driver);
+        }
+        
+        return tempDrivers;
+    }
+    
+    private IList<IProtocolBase> GetProtocols(IList<IProtocolBase> realProtocols, IList<IVariableBase> variables, IList<XmlProtocolReference> xmlProtocolReferences, XmlModule xmlModule)
+    {
+        var tempProtocols = new List<IProtocolBase>();
+        foreach (var protocolRef in xmlProtocolReferences)
+        {
+            // find xml protocol based on reference in protocol references
+            var xmlProtocol = xmlModule.Protocols.FirstOrDefault(p => p.Name == protocolRef.Ref);
+            if (xmlProtocol == null)
+            {
+                logger?.Log(LogLevel.Error, $"The protocol \"{protocolRef.Ref}\" not found in the module file.");
+                continue;
+            }
+            
+            var protocol = realProtocols.FirstOrDefault(p => p.Specification.Name == xmlProtocol.Name);
+            if (protocol == null)
+            {
+                logger?.Log(LogLevel.Error, $"The protocol \"{xmlProtocol.Name}\" not found among loaded protocols.");
+                continue;
+            }
+
+            protocol.AddVariables(GetProtocolVariables(variables, protocolRef.VariableReferences));
+            
+            tempProtocols.Add(protocol);
+        }
+        
+        return tempProtocols;
+    }
+    
+    private IList<IVariableBase> GetProtocolVariables(IList<IVariableBase> variables, List<XmlVariableReferenceBase> variableReferences)
+    {
+        var tempVariables = new List<IVariableBase>();
+        
+        foreach (var variableRef in variableReferences)
+        {
+            var variable = variables.FirstOrDefault(v => v.Id == variableRef.Ref);
+            if (variable == null)
+            {
+                logger?.Log(LogLevel.Error, $"Variable {variableRef.Ref} not found.");
+                continue;
+            }
+            
+            tempVariables.Add(variable);
+        }
+        
+        return tempVariables;
     }
 
 }
