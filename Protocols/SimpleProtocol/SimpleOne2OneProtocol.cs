@@ -2,7 +2,7 @@
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.Specification;
 
-namespace SimpleProtocol;
+namespace Qenex.QSuite.Protocols.SimpleProtocol;
 
 public class SimpleOne2OneProtocol : ProtocolBase
 {

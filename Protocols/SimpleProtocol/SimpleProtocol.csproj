@@ -5,6 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.Protocols.SimpleProtocol</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Protocols.SimpleProtocol</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
