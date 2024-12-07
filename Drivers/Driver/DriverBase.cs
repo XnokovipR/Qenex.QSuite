@@ -62,6 +62,33 @@ public abstract class DriverBase : IDriverBase
         
         Protocols.Add(protocol);
     }
+    
+    public virtual void AddProtocols(IEnumerable<IProtocolBase> protocols)
+    {
+        var highestId = Protocols.Count > 0 ? Protocols.Max(x => x.Id) : 0;
+        foreach (var protocol in protocols)
+        {
+            if (Protocols.FirstOrDefault(v => v.Specification.Name == protocol.Specification.Name) != null)
+            {
+                Logger?.Log(LogLevel.Warn, $"Protocol with name {protocol.Specification.Name} already exists.");
+                return;
+            }
+        
+            if (Protocols.FirstOrDefault(v => v.Id == protocol.Id) != null)
+            {
+                Logger?.Log(LogLevel.Warn, $"Protocol with Id {protocol.Id} already exists.");
+                return;
+            }    
+            
+            if (protocol.Id == 0)
+            {
+                highestId++;
+                protocol.Id = highestId;
+            }
+            
+            Protocols.Add(protocol);
+        }
+    }
 
     public virtual void RemoveProtocol(IProtocolBase protocol)
     {

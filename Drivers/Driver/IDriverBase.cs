@@ -12,6 +12,7 @@ public interface IDriverBase : ICoreCommunication, IComponentSpecification
     public IList<IProtocolBase> Protocols { get; init; }
     
     public void AddProtocol(IProtocolBase protocol);
+    void AddProtocols(IEnumerable<IProtocolBase> protocols);
     public void RemoveProtocol(IProtocolBase protocol);
     public void RemoveProtocol(string protocolName);
     
