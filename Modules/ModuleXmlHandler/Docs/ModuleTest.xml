@@ -10,9 +10,9 @@
     <!--+           Module Relations                                  +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <driverReferences>
-        <driverReference ref="EthClientDrv">
+        <driverReference ref="ZeroMQ Client Driver">
             <protocolReferences>
-                <protocolReference ref="ZeroMqClient">
+                <protocolReference ref="Simple One to One Protocol">
                     <variableReferences>
                         <variableReference ref="1" isCommunicated="true"/>
                         <variableReference ref="2" isCommunicated="true"/>
@@ -22,9 +22,9 @@
                 </protocolReference>
         </protocolReferences>
     </driverReference>  
-    <driverReference ref="PeakCanDrv">
+    <driverReference ref="Peak CAN Driver">
         <protocolReferences>
-            <protocolReference ref="XCP">
+            <protocolReference ref="XCP Protocol">
                 <variableReferences>
                     <variableEmbeddedReference ref="5" isCommunicated="true">
                         <address>0x12345</address>/>
@@ -40,12 +40,12 @@
     <!--+           Drivers                                           +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <drivers>
-        <driver id="1" name="EthClientDrv" label="Ethernet client driver">
+        <driver id="1" name="ZeroMQ Client Driver" label="Ethernet client driver">
             <version>1.0.0</version>
             <isEnabled>true</isEnabled>
             <settings>127.0.0.1:5000</settings>
         </driver>
-        <driver id="2" name="PeakCanDrv" label="PEAK-CAN driver">
+        <driver id="2" name="Peak CAN Driver" label="PEAK-CAN driver">
             <version>1.0.0</version>
             <isEnabled>true</isEnabled>
             <settings/>
@@ -56,10 +56,10 @@
     <!--+           Protocols                                         +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <protocols>
-        <protocol id="1" name="ZeroMqClient" label="Simple one to one protocol">
+        <protocol id="1" name="Simple One to One Protocol" label="Simple one to one protocol">
             <version>1.0.0</version>
         </protocol>
-        <protocol id="2" name="XCP" label="XCP protocol">
+        <protocol id="2" name="XCP Protocol" label="XCP protocol">
             <version>1.0.0</version>
             <!--<events>
                 <event name="Event100ms" direction="Read" period="100" periodUnit="ms"/>
@@ -104,27 +104,32 @@
     <variables>
         <scalarVariable id="1" namespace="/Engine" name="OilTemp" label="Oil Temperature" size="4">
             <description>Oil Temperature </description>
+            <commParams>{Driver=MyDriver;Address=0x1121;Type=DAQ}</commParams>
             <values dataType="int" size="4" length="1">
                 <presentationReference ref="IntTemperature"/>
             </values>
         </scalarVariable>
         <scalarVariable id="2" namespace="/Engine" name="OilPressure" label="Oil Pressure" size="4">
             <description>Oil pressure</description>
+            <commParams>{Driver=MyDriver;Address=0x1122;Type=DAQ}</commParams>
             <values dataType="float" size="4" length="1">
                 <presentationReference ref="FloatPressure"/>
             </values>
         </scalarVariable>
         <scalarVariable id="3" namespace="/" name="MachineState" label="Machine state" size="1">
             <description>Main machine enum states</description>
+            <commParams>{Driver=MyDriver;Address=0x1123;Type=DAQ}</commParams>
             <values dataType="byte" size="1" length="1">
                 <presentationReference ref="EngineState"/>
             </values>
         </scalarVariable>
         <stringVariable id="4" namespace="/Info" name="AlertMsg" label="Alert Message">
             <description>Details about warnings/errors</description>
+            <commParams>{Driver=MyDriver;Address=0x1124;Type=DAQ}</commParams>
         </stringVariable>
         <scalarVariable id="5" namespace="/Inlet" name="AirPressure" label="Air Pressure" size="4">
             <description>Air pressure</description>
+            <commParams>{Driver=MyDriver;Address=0x1125;Type=DAQ}</commParams>
             <values dataType="float" size="4" length="1">
                 <presentationReference ref="FloatPressure"/>
             </values>
