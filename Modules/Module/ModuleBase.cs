@@ -21,7 +21,6 @@ public abstract class ModuleBase : IModuleBase
     }
 
     #endregion
-
     
     #region Properties
 
@@ -106,6 +105,26 @@ public abstract class ModuleBase : IModuleBase
             driver.Id = highestId;
         }
         Drivers.Add(driver);
+    }
+    
+    public virtual void AddDrivers(IEnumerable<IDriverBase> drivers)
+    {
+        var highestId = Drivers.Count > 0 ? Drivers.Max(x => x.Id) : 0;
+        foreach (var driver in drivers)
+        {
+            if (Drivers.FirstOrDefault(v => v.Id == driver.Id) != null)
+            {
+                Logger?.Log(LogLevel.Warn, $"Driver with Id {driver.Id} already exists.");
+                return;
+            }
+            
+            if (driver.Id == 0)
+            {
+                highestId++;
+                driver.Id = highestId;
+            }
+            Drivers.Add(driver);
+        }
     }
 
     public virtual void RemoveDriver(IDriverBase driver)

@@ -15,5 +15,6 @@ public interface IModuleBase : IComponentSpecification, ICoreCommunication
     void AddVariables(IEnumerable<IVariableBase> variables);
     void RemoveVariable(IVariableBase variable);
     void AddDriver(IDriverBase driver);
+    void AddDrivers(IEnumerable<IDriverBase> drivers);
     void RemoveDriver(IDriverBase driver);
 }
