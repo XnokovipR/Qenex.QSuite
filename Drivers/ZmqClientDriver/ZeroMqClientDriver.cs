@@ -3,7 +3,7 @@ using Qenex.QSuite.Driver;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Specification;
 
-namespace Qenex.QSuite.ZmqClientDriver;
+namespace Qenex.QSuite.Drivers.ZmqClientDriver;
 
 /// <summary>
 /// ZmqClientDriver is a driver that communicates as a client with the ZeroMQ library (with server). 
