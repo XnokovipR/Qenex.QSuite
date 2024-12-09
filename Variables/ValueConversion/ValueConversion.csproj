@@ -5,12 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.Common.PluginManager</AssemblyName>
-        <RootNamespace>Qenex.QSuite.Common.PluginManager</RootNamespace>
+        <RootNamespace>Qenex.QSuite.ValueConversion</RootNamespace>
+        <AssemblyName>Qenex.QSuite.ValueConversion</AssemblyName>
     </PropertyGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\..\LogSystems\LogSystem\LogSystem.csproj" />
-    </ItemGroup>
 
 </Project>

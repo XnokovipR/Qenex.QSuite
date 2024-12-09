@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.CoreComm</AssemblyName>
-        <RootNamespace>Qenex.QSuite.CoreComm</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Common.CoreComm</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Common.CoreComm</RootNamespace>
     </PropertyGroup>
 
 </Project>
