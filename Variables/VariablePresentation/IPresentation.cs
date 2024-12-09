@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.QVariables.Presentation;
+﻿namespace Qenex.QSuite.Presentation;
 
 public interface IPresentation
 {

@@ -3,7 +3,7 @@ using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.Driver;
 using Qenex.QSuite.Specification;
 using Qenex.QSuite.QVariables;
-using Qenex.QSuite.QVariables.Presentation;
+using Qenex.QSuite.Presentation;
 using Qenex.QSuite.ValueConversion;
 
 namespace Qenex.QSuite.Module;

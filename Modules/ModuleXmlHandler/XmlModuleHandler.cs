@@ -4,7 +4,7 @@ using Qenex.QSuite.Module;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.QVariables;
-using Qenex.QSuite.QVariables.Presentation;
+using Qenex.QSuite.Presentation;
 using Qenex.QSuite.QVariables.Values;
 using Qenex.QSuite.UnifModule;
 using Qenex.QSuite.ValueConversion;

@@ -9,4 +9,8 @@
         <RootNamespace>Qenex.QSuite.Presentation</RootNamespace>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\ValueConversion\ValueConversion.csproj" />
+    </ItemGroup>
+
 </Project>

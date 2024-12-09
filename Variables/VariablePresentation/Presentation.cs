@@ -1,4 +1,6 @@
-﻿namespace Qenex.QSuite.QVariables.Presentation;
+﻿using Qenex.QSuite.ValueConversion;
+
+namespace Qenex.QSuite.Presentation;
 
 public class Presentation : IPresentation
 {
@@ -8,4 +10,7 @@ public class Presentation : IPresentation
     public int Max { get; set; }
     public string PrintFormat { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
+
+    public IValConversion Conversion { get; set; }
+    
 }
