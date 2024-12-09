@@ -4,7 +4,7 @@ using Qenex.QSuite.Module;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.QVariables;
-using Qenex.QSuite.Presentation;
+using Qenex.QSuite.ValuePresentation;
 using Qenex.QSuite.QVariables.Values;
 using Qenex.QSuite.UnifModule;
 using Qenex.QSuite.ValueConversion;
@@ -47,10 +47,10 @@ public class XmlModuleHandler
         module.AddConversions(GetConversions(xmlModule.Conversions));
 
         // Add Presentations
-        module.AddPresentations(GetPresentations(xmlModule.Presentations));
+        module.AddPresentations(GetPresentations(module.Conversions, xmlModule.Presentations));
 
         // Add variables
-        module.AddVariables(GetVariables(xmlModule.Variables));
+        module.AddVariables(GetVariables(module.Presentations, xmlModule.Variables));
         
         
         // Add project drivers structure - including protocols and variables, presentations, conversions
@@ -59,7 +59,7 @@ public class XmlModuleHandler
         return module;
     }
 
-    private List<IVariableBase> GetVariables(IEnumerable<XmlVariable> xmlVariables)
+    private List<IVariableBase> GetVariables(IEnumerable<IPresentation> presentations, IEnumerable<XmlVariable> xmlVariables)
     {
         var variables = new List<IVariableBase>();
         
@@ -84,7 +84,7 @@ public class XmlModuleHandler
                 if (variable is ScalarVariable scalarVariable && xmlVariable is XmlScalarVariable xmlScalarVariable)
                 {
                     scalarVariable.Size = xmlScalarVariable.Size;
-                    scalarVariable.Values = CreateScalarValues(xmlScalarVariable.Values);
+                    scalarVariable.Values = CreateScalarValues(presentations, xmlScalarVariable.Values);
                 }
                 
                 variables.Add(variable);
@@ -132,7 +132,7 @@ public class XmlModuleHandler
             }
             catch (ArgumentException e)
             {
-                logger?.Log(LogLevel.Error, $"Error creating variable {xmlConversion.Name}: {e.Message}.");
+                logger?.Log(LogLevel.Error, $"Error creating conversion {xmlConversion.Name}: {e.Message}.");
             }
             
         }
@@ -140,17 +140,43 @@ public class XmlModuleHandler
         return conversions;
     }
     
-    private List<IPresentation> GetPresentations(IEnumerable<XmlPresentation> xmlPresentations)
+    private List<IPresentation> GetPresentations(IList<IValConversion> conversions, IEnumerable<XmlPresentation> xmlPresentations)
     {
         var presentations = new List<IPresentation>();
         
-
+        foreach (var xmlPresentation in xmlPresentations)
+        {
+            try
+            {
+                var presentation = new Presentation
+                {
+                    Name = xmlPresentation.Name,
+                    Label = xmlPresentation.Label,
+                    Min = xmlPresentation.Min,
+                    Max = xmlPresentation.Max,
+                    Unit = xmlPresentation.Unit,
+                    Conversion = conversions.First(c => c.Name == xmlPresentation.ConversionReference.Ref)
+                };
+                
+                presentations.Add(presentation);
+            }
+            catch (ArgumentException e)
+            {
+                logger?.Log(LogLevel.Error, $"Error creating presentation {xmlPresentation.Name}: {e.Message}.");
+            }
+            
+        }
         return presentations;
     }
 
-    private IValuesBase CreateScalarValues(XmlValues xmlValues)
+    private IValuesBase CreateScalarValues(IEnumerable<IPresentation> presentations, XmlValues xmlValues)
     {
         var values = ValuesGlobal.CreateInstance(Enum.Parse<ValuesGlobal.ValueDataType>(xmlValues.DataType.ToString()));
+        values.ValPresentation = presentations.FirstOrDefault(p => p.Name == xmlValues.PresentationReference.Ref);
+        if (values.ValPresentation == null)
+        {
+            logger?.Log(LogLevel.Error, $"Presentation {xmlValues.PresentationReference.Ref} not found.");
+        }
         
         return values;
     }
