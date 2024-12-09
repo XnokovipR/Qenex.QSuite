@@ -90,7 +90,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeakCanDriver", "Drivers\Pe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XcpProtocol", "Protocols\XcpProtocol\XcpProtocol.csproj", "{E9D2037B-FD8A-4C40-8304-31118C1EBE27}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VariablePresentation", "Variables\VariablePresentation\VariablePresentation.csproj", "{60F53E36-E80C-4148-81F2-E7E7E5D44CB8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValuePresentation", "Variables\ValuePresentation\ValuePresentation.csproj", "{60F53E36-E80C-4148-81F2-E7E7E5D44CB8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValueConversion", "Variables\ValueConversion\ValueConversion.csproj", "{4904097B-EF24-4B5D-993B-0AB264516D1E}"
 EndProject

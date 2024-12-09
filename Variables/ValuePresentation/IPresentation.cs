@@ -1,11 +1,11 @@
-﻿namespace Qenex.QSuite.Presentation;
+﻿namespace Qenex.QSuite.ValuePresentation;
 
 public interface IPresentation
 {
     string Name { get; set; }
     string Label { get; set; }
-    int Min { get; set; }
-    int Max { get; set; }
+    double Min { get; set; }
+    double Max { get; set; }
     string PrintFormat { get; set; }
     string Unit { get; set; }
 }
