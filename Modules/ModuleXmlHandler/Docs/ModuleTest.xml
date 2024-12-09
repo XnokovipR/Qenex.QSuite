@@ -72,7 +72,7 @@
     <!--+           Presentations                                     +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <presentations>
-        <presentation name="Int32Temperature" label="Temperature" min="0" max="1000" printFormat="%.2f" unit="°C">
+        <presentation name="IntTemperature" label="Temperature" min="0" max="1000" printFormat="%.2f" unit="°C">
             <conversionReference ref="OneToOne"/>
         </presentation>
         <presentation name="FloatPressure" label="Pressure" min="0" max="1000" printFormat="%.3f" unit="Pa">
