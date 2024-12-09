@@ -13,6 +13,8 @@
       <ProjectReference Include="..\..\Drivers\Driver\Driver.csproj" />
       <ProjectReference Include="..\..\Specifications\Specification\Specification.csproj" />
       <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
+      <ProjectReference Include="..\..\Variables\ValueConversion\ValueConversion.csproj" />
+      <ProjectReference Include="..\..\Variables\VariablePresentation\VariablePresentation.csproj" />
       <ProjectReference Include="..\ComponentSpecification\ComponentSpecification.csproj" />
     </ItemGroup>
 

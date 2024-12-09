@@ -5,6 +5,8 @@ using Qenex.QSuite.Driver;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Specification;
 using Qenex.QSuite.QVariables;
+using Qenex.QSuite.QVariables.Presentation;
+using Qenex.QSuite.ValueConversion;
 
 namespace Qenex.QSuite.Module;
 
@@ -18,6 +20,8 @@ public abstract class ModuleBase : IModuleBase
         Logger = logger;
         Variables = new List<IVariableBase>();
         Drivers = new List<IDriverBase>();
+        Presentations = new List<IPresentation>();
+        Conversions = new List<IValConversion>();
     }
 
     #endregion
@@ -38,6 +42,10 @@ public abstract class ModuleBase : IModuleBase
     public IList<IVariableBase> Variables { get; set; }
     
     public IList<IDriverBase> Drivers { get; set;  }
+    
+    public IList<IPresentation> Presentations { get; set; }
+
+    public IList<IValConversion> Conversions { get; set; }
 
     #endregion
 
@@ -84,6 +92,62 @@ public abstract class ModuleBase : IModuleBase
     public virtual void RemoveVariable(IVariableBase variable)
     {
         Variables.Remove(variable);
+    }
+
+    #endregion
+
+    #region Presentations
+    
+    public virtual void AddPresentation(IPresentation presentation)
+    {
+        if (Presentations.FirstOrDefault(v => v.Name == presentation.Name) != null)
+        {
+            Logger?.Log(LogLevel.Warn, $"Presentation with Name {presentation.Name} already exists.");
+            return;
+        }
+        
+        Presentations.Add(presentation);
+    }
+    
+    public virtual void AddPresentations(IEnumerable<IPresentation> presentations)
+    {
+        foreach (var presentation in presentations)
+        {
+            AddPresentation(presentation);
+        }
+    }
+    
+    public virtual void RemovePresentation(IPresentation presentation)
+    {
+        Presentations.Remove(presentation);
+    }
+    
+    #endregion
+
+    #region Conversions
+
+    public virtual void AddConversion(IValConversion conversion)
+    {
+        if (Conversions.FirstOrDefault(v => v.Name == conversion.Name) != null)
+        {
+            Logger?.Log(LogLevel.Warn, $"Conversion with Name {conversion.Name} already exists.");
+            return;
+        }
+        
+        Conversions.Add(conversion);
+    }
+    
+    public virtual void AddConversions(IEnumerable<IValConversion> conversions)
+    {
+        foreach (var conversion in conversions)
+        {
+            AddConversion(conversion);
+        }
+    }
+    
+    public virtual void RemoveConversion(IValConversion conversion)
+    {
+        Conversions.Remove(conversion);
     }
 
     #endregion

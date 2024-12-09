@@ -3,6 +3,8 @@ using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.Driver;
 using Qenex.QSuite.Specification;
 using Qenex.QSuite.QVariables;
+using Qenex.QSuite.QVariables.Presentation;
+using Qenex.QSuite.ValueConversion;
 
 namespace Qenex.QSuite.Module;
 
@@ -17,4 +19,12 @@ public interface IModuleBase : IComponentSpecification, ICoreCommunication
     void AddDriver(IDriverBase driver);
     void AddDrivers(IEnumerable<IDriverBase> drivers);
     void RemoveDriver(IDriverBase driver);
+
+    void AddPresentation(IPresentation presentation);
+    void AddPresentations(IEnumerable<IPresentation> presentations);
+    void RemovePresentation(IPresentation presentation);
+    
+    void AddConversion(IValConversion conversion);
+    void AddConversions(IEnumerable<IValConversion> conversions);
+    void RemoveConversion(IValConversion conversion);
 }
