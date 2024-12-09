@@ -4,8 +4,10 @@ using Qenex.QSuite.Module;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.QVariables;
+using Qenex.QSuite.QVariables.Presentation;
 using Qenex.QSuite.QVariables.Values;
 using Qenex.QSuite.UnifModule;
+using Qenex.QSuite.ValueConversion;
 
 namespace Qenex.QSuite.ModuleXmlHandler;
 
@@ -41,10 +43,17 @@ public class XmlModuleHandler
         module.Specification.Company = xmlModule.Company;
         module.Specification.CreatedOn = xmlModule.CreatedOn;
         
+        // Add Conversions
+        module.AddConversions(GetConversions(xmlModule.Conversions));
+
+        // Add Presentations
+        module.AddPresentations(GetPresentations(xmlModule.Presentations));
+
         // Add variables
         module.AddVariables(GetVariables(xmlModule.Variables));
         
-        // Add drivers, including protocols and variables
+        
+        // Add project drivers structure - including protocols and variables, presentations, conversions
         module.AddDrivers(GetDrivers(drivers, protocols, module.Variables, xmlModule));
         
         return module;
@@ -88,6 +97,55 @@ public class XmlModuleHandler
         }
 
         return variables;
+    }
+    
+    private List<IValConversion> GetConversions(IEnumerable<XmlConversion> xmlConversions)
+    {
+        var conversions = new List<IValConversion>();
+        
+        foreach (var xmlConversion in xmlConversions)
+        {
+            if (!XmlModuleGlobal.TypeOfXmlConversion2ConversionEnumDict.TryGetValue(xmlConversion.GetType(), out var conversionType))
+            {
+                logger?.Log(LogLevel.Warn, $"Converion type {xmlConversion.GetType()} is not supported.");
+                continue;
+            }
+
+            try
+            {
+                var conversion = ConversionsGlobal.CreateInstance(conversionType);
+                conversion.Name = xmlConversion.Name;
+                
+                
+                if (conversion is LinearValConversion lc && xmlConversion is XmlLinearConversion xmllc)
+                {
+                    lc.Multiplier = xmllc.Multiplier;
+                    lc.Offset = xmllc.Offset;
+                }
+                else if (conversion is EnumValConversion ec && xmlConversion is XmlEnumConversion xmlec)
+                {
+                    ec.Enums = new List<EnumType>();
+                    xmlec.Enums.ForEach(e => ec.Enums.Add(new EnumType() {Name = e.Name, Value = e.Value}));
+                }
+                
+                conversions.Add(conversion);
+            }
+            catch (ArgumentException e)
+            {
+                logger?.Log(LogLevel.Error, $"Error creating variable {xmlConversion.Name}: {e.Message}.");
+            }
+            
+        }
+
+        return conversions;
+    }
+    
+    private List<IPresentation> GetPresentations(IEnumerable<XmlPresentation> xmlPresentations)
+    {
+        var presentations = new List<IPresentation>();
+        
+
+        return presentations;
     }
 
     private IValuesBase CreateScalarValues(XmlValues xmlValues)
