@@ -36,7 +36,7 @@ public class ValuesGlobal
     /// <param name="valueType">Enumerable type.</param>
     /// <returns>Created generic instance of Values.</returns>
     /// /// <exception cref="ArgumentException">Exception is thrown when either a type is not found or instance cannot be created.</exception>
-    public static IValuesBase CreateInstance(ValuesGlobal.ValueDataType valueType)
+    public static IValuesBase CreateInstance(ValueDataType valueType)
     {
         if (!ValueDataTypeDict.TryGetValue(valueType, out var stringType))
         {
