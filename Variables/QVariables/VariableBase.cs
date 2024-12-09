@@ -19,7 +19,10 @@ public abstract class VariableBase : IVariableBase
     
     public string Description { get; set; }
     
+    //todo Je CommParams a EncryptedTet spravne ve Variable, nema to byt spis v referenci protocolu?
     public string CommParams { get; set; }
+    
+    public string EncryptedText { get; set; }
 
     /// <summary>
     /// Reference to the modules to which the variable data will be sent.
