@@ -1,5 +1,6 @@
 ﻿using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 using Qenex.QSuite.QVariables;
+using Qenex.QSuite.ValueConversion;
 
 namespace Qenex.QSuite.ModuleXmlHandler;
 
@@ -12,6 +13,10 @@ public class XmlModuleGlobal
     };  
     
     
-    
+    public static readonly Dictionary<Type, ConversionsGlobal.ConversionType> TypeOfXmlConversion2ConversionEnumDict = new Dictionary<Type, ConversionsGlobal.ConversionType>()
+    {
+        { typeof(XmlLinearConversion), ConversionsGlobal.ConversionType.Linear },
+        { typeof(XmlEnumConversion), ConversionsGlobal.ConversionType.Enum }
+    };  
 
 }
