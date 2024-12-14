@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Qenex.QSuite.Protocol;
+using Qenex.QSuite.QVariables;
 using Qenex.QSuite.Specification;
 
 namespace Qenex.QSuite.Protocols.SimpleProtocol;
@@ -17,5 +18,16 @@ public class SimpleOne2OneProtocol : ProtocolBase
             Author = "Qenex",
             Company = "QENEX Ltd."
         };
+    }
+
+    public override IProtocolVariable CreateProtocolVariable(IVariableBase variable, string additionalData)
+    {
+        var protocolVariable = new SimpleOne2OneProtocolVariable
+        {
+            Variable = variable,
+            Identifier = $"Identifier: {additionalData}"
+        };
+
+        return protocolVariable;
     }
 }

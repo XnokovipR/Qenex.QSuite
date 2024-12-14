@@ -11,5 +11,4 @@ public abstract class XmlVariable
     [XmlAttribute("label")] public string Label { get; set; } = string.Empty;
     
     [XmlElement("description")] public string Description { get; set; } = string.Empty;
-    [XmlElement("commParams")] public string CommParams { get; set; } = string.Empty;
 }

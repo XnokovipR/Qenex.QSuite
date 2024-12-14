@@ -10,6 +10,5 @@ public class XmlProtocolReference
     
     [XmlArray("variableReferences")]
     [XmlArrayItem(typeof(XmlVariableReference), ElementName = "variableReference")]
-    [XmlArrayItem(typeof(XmlVariableEmbeddedReference), ElementName = "variableEmbeddedReference")]
     public List<XmlVariableReferenceBase> VariableReferences { get; set; }
 }

@@ -52,7 +52,6 @@ public class XmlModuleHandler
         // Add variables
         module.AddVariables(GetVariables(module.Presentations, xmlModule.Variables));
         
-        
         // Add project drivers structure - including protocols and variables, presentations, conversions
         module.AddDrivers(GetDrivers(drivers, protocols, module.Variables, xmlModule));
         
@@ -79,7 +78,6 @@ public class XmlModuleHandler
                 variable.Name = xmlVariable.Name;
                 variable.Label = xmlVariable.Label;
                 variable.Description = xmlVariable.Description;
-                variable.CommParams = xmlVariable.CommParams;
 
                 if (variable is ScalarVariable scalarVariable && xmlVariable is XmlScalarVariable xmlScalarVariable)
                 {
@@ -232,7 +230,18 @@ public class XmlModuleHandler
                 continue;
             }
 
-            protocol.AddVariables(GetProtocolVariables(variables, protocolRef.VariableReferences));
+            foreach (var variableRef in protocolRef.VariableReferences)
+            {
+                var variable = variables.FirstOrDefault(v => v.Id == variableRef.Ref);
+                if (variable == null)
+                {
+                    logger?.Log(LogLevel.Error, $"Variable {variableRef.Ref} not found.");
+                    continue;
+                }
+                
+                var protocolVariable = protocol.CreateProtocolVariable(variable, variableRef.CommParam);
+                protocol.AddVariable(protocolVariable);
+            }
             
             tempProtocols.Add(protocol);
         }
@@ -240,23 +249,5 @@ public class XmlModuleHandler
         return tempProtocols;
     }
     
-    private IList<IVariableBase> GetProtocolVariables(IList<IVariableBase> variables, List<XmlVariableReferenceBase> variableReferences)
-    {
-        var tempVariables = new List<IVariableBase>();
-        
-        foreach (var variableRef in variableReferences)
-        {
-            var variable = variables.FirstOrDefault(v => v.Id == variableRef.Ref);
-            if (variable == null)
-            {
-                logger?.Log(LogLevel.Error, $"Variable {variableRef.Ref} not found.");
-                continue;
-            }
-            
-            tempVariables.Add(variable);
-        }
-        
-        return tempVariables;
-    }
 
 }
