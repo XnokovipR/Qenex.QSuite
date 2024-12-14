@@ -24,9 +24,27 @@ public class Xcp : ProtocolBase
     {
         var protocolVariable = new XcpProtocolVariable
         {
-            Variable = variable,
-            Address = additionalData
+            Variable = variable
         };
+        
+        var separatedData = additionalData.Split(';');
+        
+        foreach (var s in separatedData)
+        {
+            var data = s.Split(':');
+            if (data.Length == 2)
+            {
+                switch (data[0].ToLower())
+                {
+                    case "address":
+                        protocolVariable.Address = data[1];
+                        break;
+                    case "event":
+                        protocolVariable.Event = data[1];
+                        break;
+                }
+            }
+        }
 
         return protocolVariable;
     }

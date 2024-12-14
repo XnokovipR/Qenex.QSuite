@@ -33,7 +33,7 @@
                 </events>-->
                 <variableReferences>
                     <variableReference ref="5" isCommunicated="true">
-                        <commParam>0x12345;</commParam>
+                        <commParam>address:0x12345;event:1</commParam>
                     </variableReference>
                 </variableReferences>
             </protocolReference>
