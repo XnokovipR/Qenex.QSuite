@@ -10,6 +10,16 @@ namespace Qenex.QSuite.Drivers.ZmqClientDriver;
 /// </summary>
 public class ZeroMqClientDriver : DriverBase
 {
+    #region Fields
+
+    private string settings = string.Empty;
+    private string encryptedSettings = string.Empty;
+    private volatile bool exitRequested = false;
+
+    #endregion
+    
+    #region Constructors
+
     public ZeroMqClientDriver()
     {
         Specification = new SpecificationBase()
@@ -23,23 +33,37 @@ public class ZeroMqClientDriver : DriverBase
         };
     }
 
+    #endregion
+
+    public override void SetConfiguration(string rawSettings, string rawEncryptedSettings)
+    {
+        settings = $"zmq-client: {rawSettings}";
+        encryptedSettings = $"encrypted-zmq-client: {rawEncryptedSettings}";
+    }
+
+    #region Driver control
+
     public override async Task StartAsync(CancellationToken ct = default)
     {
         if (!IsEnabled) return;
         
-        ExitRequested = false;
+        exitRequested = false;
         await RunClientAsync(ct);
     }
 
     public override Task StopAsync(CancellationToken ct = default)
     {
-        ExitRequested = true;
+        exitRequested = true;
         return Task.CompletedTask;
     }
 
     public override void Dispose()
     {
     }
+
+    #endregion
+
+    #region Communication
 
     public override void Send<T>(T data)
     {
@@ -51,21 +75,28 @@ public class ZeroMqClientDriver : DriverBase
         return Task.CompletedTask;
     }
 
+    #endregion
+
+    #region Private methods
+
     // All communication with the ZeroMQ library should be done in this method
     private async Task RunClientAsync(CancellationToken ct)
     {
-        await Task.Run(() =>
+        await Task.Run(async () =>
         {
             IsStarted = true;
-            while (!ct.IsCancellationRequested || !ExitRequested)
+            while (!ct.IsCancellationRequested && !exitRequested)
             {
                 // Do something
-                Thread.Sleep(100);
+                await Task.Delay(1000, ct);
+                Console.WriteLine("ZeroMqClientDriver is running...");
                 //RaiseOnDataReceive("ddd");
             }
             
             IsStarted = false;
         }, ct);
-        ExitRequested = false;
+        exitRequested = false;
     }
+
+    #endregion
 }

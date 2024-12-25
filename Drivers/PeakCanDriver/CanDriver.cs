@@ -6,6 +6,15 @@ namespace Qenex.QSuite.Drivers.PeakCanDriver;
 
 public class CanDriver : DriverBase
 {
+    #region Fields
+
+    private string settings = string.Empty;
+    private string encryptedSettings = string.Empty;
+
+    #endregion
+    
+    #region Constructors
+
     public CanDriver()
     {
         Specification = new SpecificationBase()
@@ -18,6 +27,17 @@ public class CanDriver : DriverBase
             Company = "QENEX Ltd."
         };
     }
+
+    #endregion
+
+    public override void SetConfiguration(string rawSettings, string rawEncryptedSettings)
+    {
+        settings = $"can: {rawSettings}";
+        encryptedSettings = $"encrypted-can: {rawEncryptedSettings}";
+    }
+
+    #region Driver control
+
     public override Task StartAsync(CancellationToken ct = default)
     {
         throw new NotImplementedException();
@@ -33,6 +53,10 @@ public class CanDriver : DriverBase
         throw new NotImplementedException();
     }
 
+    #endregion
+
+    #region Communication
+
     public override void Send<T>(T data)
     {
         throw new NotImplementedException();
@@ -42,4 +66,6 @@ public class CanDriver : DriverBase
     {
         throw new NotImplementedException();
     }
+
+    #endregion
 }
