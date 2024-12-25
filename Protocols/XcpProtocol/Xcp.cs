@@ -14,7 +14,7 @@ public class Xcp : ProtocolBase
             Name = "XCP Protocol",
             Description = "XCP Protocol",
             CreatedOn = new DateTime(2021, 11, 23),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? throw new Exception("Version not found"),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? throw new Exception("Version not found."),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };
