@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <module name="UnifiedModule" label="Test module">
     <description>This is a test module</description>
-    <version>1.0.0</version>
+    <version>1.0.0.0</version>
     <author>Qenex</author>
     <company>QENEX Ltd.</company>
     <createdOn>2024-11-27</createdOn>
@@ -10,7 +10,10 @@
     <!--+           Module Relations                                  +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <driverReferences>
-        <driverReference ref="ZeroMQ Client Driver">
+        <driverReference ref="ZeroMQ Client Driver" label="My Ethernet client driver">
+            <isEnabled>true</isEnabled>
+            <settings>127.0.0.1:5000</settings>
+            <encryptedSettings>aiaiai</encryptedSettings>
             <protocolReferences>
                 <protocolReference ref="Simple One to One Protocol">
                     <variableReferences>
@@ -24,7 +27,10 @@
                 </protocolReference>
         </protocolReferences>
     </driverReference>  
-    <driverReference ref="Peak CAN Driver">
+    <driverReference ref="Peak CAN Driver" label="My PEAK-CAN driver">
+        <isEnabled>true</isEnabled>
+        <settings>CAN-FD;500kbps</settings>
+        <encryptedSettings>440</encryptedSettings>
         <protocolReferences>
             <protocolReference ref="XCP Protocol">
                 <!--<events>
@@ -45,15 +51,11 @@
     <!--+           Drivers                                           +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <drivers>
-        <driver id="1" name="ZeroMQ Client Driver" label="Ethernet client driver">
-            <version>1.0.0</version>
-            <isEnabled>true</isEnabled>
-            <settings>127.0.0.1:5000</settings>
+        <driver id="1" name="ZeroMQ Client Driver">
+            <version>1.0.0.0</version>
         </driver>
-        <driver id="2" name="Peak CAN Driver" label="PEAK-CAN driver">
-            <version>1.0.0</version>
-            <isEnabled>true</isEnabled>
-            <settings/>
+        <driver id="2" name="Peak CAN Driver">
+            <version>1.0.0.0</version>
         </driver>
     </drivers>
     
@@ -62,10 +64,10 @@
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <protocols>
         <protocol id="1" name="Simple One to One Protocol" label="Simple one to one protocol">
-            <version>1.0.0</version>
+            <version>1.0.0.0</version>
         </protocol>
         <protocol id="2" name="XCP Protocol" label="XCP protocol">
-            <version>1.0.0</version>
+            <version>1.0.0.0</version>
         </protocol>
     </protocols>
 
