@@ -1,4 +1,5 @@
 ﻿using Qenex.QSuite.ConsoleLogSubscriber;
+using Qenex.QSuite.Driver;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.PluginBase;
 using Qenex.QSuite.PluginManager;
@@ -15,11 +16,8 @@ class Program
         
         Console.WriteLine("Read plugins");
         var pluginManager = new PluginLoader(logger);
-        var plugins = pluginManager.LoadPlugins<IPlugin>("./Plugins");
+        var pluginsInfo = pluginManager.GetPluginDetails<IDriverBase>("./Plugins");
         
-        foreach (var plugin in plugins)
-        {
-            plugin.DisplayInfo();
-        }
+        var pluginLoaded = pluginManager.LoadPlugin<IDriverBase>(pluginsInfo[0].PathName);
     }
 }
