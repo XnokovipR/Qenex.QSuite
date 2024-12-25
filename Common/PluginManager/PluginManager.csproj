@@ -11,6 +11,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\LogSystems\LogSystem\LogSystem.csproj" />
+      <ProjectReference Include="..\..\Modules\ComponentSpecification\ComponentSpecification.csproj" />
     </ItemGroup>
 
 </Project>
