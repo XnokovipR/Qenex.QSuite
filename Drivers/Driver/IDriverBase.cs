@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 using Qenex.QSuite.ComponentSpecification;
-using Qenex.QSuite.CoreComm;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.Specification;
 
@@ -9,15 +9,17 @@ namespace Qenex.QSuite.Driver;
 public interface IDriverBase : ICoreCommunication, IComponentSpecification
 {
     int Id { get; set; }
-    public IList<IProtocolBase> Protocols { get; init; }
+    string Label { get; set; }
+    IList<IProtocolBase> Protocols { get; init; }
     
-    public void AddProtocol(IProtocolBase protocol);
+    void SetConfiguration(string rawSettings, string rawEncryptedSettings);
+    void AddProtocol(IProtocolBase protocol);
     void AddProtocols(IEnumerable<IProtocolBase> protocols);
-    public void RemoveProtocol(IProtocolBase protocol);
-    public void RemoveProtocol(string protocolName);
+    void RemoveProtocol(IProtocolBase protocol);
+    void RemoveProtocol(string protocolName);
     
-    public void Send<T>(T data);
-    public Task SendAsync<T>(T data, CancellationToken ct = default);
+    void Send<T>(T data);
+    Task SendAsync<T>(T data, CancellationToken ct = default);
     
-    public event EventHandler? OnDataReceived; 
+    event EventHandler? OnDataReceived; 
 }

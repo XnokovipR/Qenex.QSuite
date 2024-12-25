@@ -18,8 +18,6 @@ public abstract class DriverBase : IDriverBase
     #endregion
 
     #region Properties
-
-    protected bool ExitRequested { get; set; } = false;
     
     // ReSharper disable once MemberCanBePrivate.Global
     public  ILogger? Logger { get; set; }
@@ -27,6 +25,7 @@ public abstract class DriverBase : IDriverBase
     // The same driver can be used in the same module and communicate with different devices.
     // So, the driver should have an Id to distinguish between them.
     public int Id { get; set; }
+    public string Label { get; set; } = null!;
     public bool IsEnabled { get; set; }
     
     public bool IsStarted { get; protected set; } = false;
@@ -36,6 +35,8 @@ public abstract class DriverBase : IDriverBase
     public IList<IProtocolBase> Protocols { get; init; } = new List<IProtocolBase>();
 
     #endregion
+
+    public abstract void SetConfiguration(string rawSettings, string rawEncryptedSettings);
 
     #region Protocols
 
@@ -113,6 +114,8 @@ public abstract class DriverBase : IDriverBase
 
     #endregion
 
+    #region Communication
+
     public abstract void Send<T>(T data);
 
     public abstract Task SendAsync<T>(T data, CancellationToken ct = default);
@@ -124,4 +127,6 @@ public abstract class DriverBase : IDriverBase
         var args = new DataReceivedEventArgs<T>(data);
         OnDataReceived?.Invoke(this, args);
     }
+
+    #endregion
 }
