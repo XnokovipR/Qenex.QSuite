@@ -1,7 +1,9 @@
-﻿using Qenex.QSuite.Driver;
+﻿using Qenex.QSuite.ComponentSpecification;
+using Qenex.QSuite.Driver;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Module;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
+using Qenex.QSuite.PluginManager;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.QVariables;
 using Qenex.QSuite.ValuePresentation;
@@ -14,13 +16,13 @@ namespace Qenex.QSuite.ModuleXmlHandler;
 public class XmlModuleHandler
 {
     private ILogger? logger;
-    private IList<IDriverBase> drivers;
-    private IList<IProtocolBase> protocols;
+    private IList<PluginDetails> driversDetails;
+    private IList<PluginDetails> protocolsDetails;
     
-    public XmlModuleHandler(IList<IDriverBase> loadedDrivers, IList<IProtocolBase> loadedProtocols, ILogger? logger = null)
+    public XmlModuleHandler(IList<PluginDetails> drvsDetails, IList<PluginDetails> protsDetails, ILogger? logger = null)
     {
-        drivers = loadedDrivers;
-        protocols = loadedProtocols;
+        driversDetails = drvsDetails;
+        protocolsDetails = protsDetails;
         this.logger = logger;
     }
     
@@ -53,7 +55,7 @@ public class XmlModuleHandler
         module.AddVariables(GetVariables(module.Presentations, xmlModule.Variables));
         
         // Add project drivers structure - including protocols and variables, presentations, conversions
-        module.AddDrivers(GetDrivers(drivers, protocols, module.Variables, xmlModule));
+        module.AddDrivers(GetDrivers(driversDetails, protocolsDetails, module.Variables, xmlModule));
         
         return module;
     }
@@ -173,15 +175,17 @@ public class XmlModuleHandler
         values.ValPresentation = presentations.FirstOrDefault(p => p.Name == xmlValues.PresentationReference.Ref);
         if (values.ValPresentation == null)
         {
-            logger?.Log(LogLevel.Error, $"Presentation {xmlValues.PresentationReference.Ref} not found.");
+            logger?.Log(LogLevel.Error, $"Presentation \"{xmlValues.PresentationReference.Ref}\" not found.");
         }
         
         return values;
     }
 
-    private List<IDriverBase> GetDrivers(IList<IDriverBase> realDrivers, IList<IProtocolBase> realProtocols, IList<IVariableBase> variables, XmlModule xmlModule)
+    private List<IDriverBase> GetDrivers(IList<PluginDetails> driversDetails, IList<PluginDetails> protocolsdetails, IList<IVariableBase> variables, XmlModule xmlModule)
     {
         var tempDrivers = new List<IDriverBase>();
+        
+        var pluginManager = new PluginLoader(logger);
         
         foreach (var driverRef in xmlModule.DriverReferences)
         {
@@ -194,14 +198,25 @@ public class XmlModuleHandler
             }
             
             // xml driver found, now find the real driver 
-            var driver = realDrivers.FirstOrDefault(rd => rd.Specification.Name == xmlDriver.Name);
+            var driverPath = driversDetails.FirstOrDefault(p => p.Name == xmlDriver.Name && p.Version.Equals(new Version(xmlDriver.Version)));
+            if (driverPath == null)
+            {
+                logger?.Log(LogLevel.Error, $"The driver \"{xmlDriver.Name}\" and version \"{xmlDriver.Version}\" not found in driver directory.");
+                continue;
+            }
+
+            var driver = pluginManager.LoadPlugin<IDriverBase>(driverPath.PathName);
+            
             if (driver == null)
             {
-                logger?.Log(LogLevel.Error, $"The driver \"{xmlDriver.Name}\" not found among loaded drivers.");
+                logger?.Log(LogLevel.Error, $"The driver \"{xmlDriver.Name}\" could not be loaded.");
                 continue;
-            }           
+            }
             
-            driver.AddProtocols(GetProtocols(realProtocols, variables, driverRef.ProtocolReferences, xmlModule));
+            driver.Label = driverRef.Label;
+            driver.IsEnabled = driverRef.IsEnabled;
+            driver.SetConfiguration(driverRef.Settings, driverRef.EncryptedSettings);
+            driver.AddProtocols(GetProtocols(protocolsdetails, variables, driverRef.ProtocolReferences, xmlModule));
             
             
             tempDrivers.Add(driver);
@@ -210,9 +225,12 @@ public class XmlModuleHandler
         return tempDrivers;
     }
     
-    private IList<IProtocolBase> GetProtocols(IList<IProtocolBase> realProtocols, IList<IVariableBase> variables, IList<XmlProtocolReference> xmlProtocolReferences, XmlModule xmlModule)
+    private IList<IProtocolBase> GetProtocols(IList<PluginDetails> protocolsDetails, IList<IVariableBase> variables, IList<XmlProtocolReference> xmlProtocolReferences, XmlModule xmlModule)
     {
         var tempProtocols = new List<IProtocolBase>();
+        
+        var pluginManager = new PluginLoader(logger);
+        
         foreach (var protocolRef in xmlProtocolReferences)
         {
             // find xml protocol based on reference in protocol references
@@ -223,10 +241,18 @@ public class XmlModuleHandler
                 continue;
             }
             
-            var protocol = realProtocols.FirstOrDefault(p => p.Specification.Name == xmlProtocol.Name);
-            if (protocol == null)
+            var protocolDetails = protocolsDetails.FirstOrDefault(p => p.Name == xmlProtocol.Name && p.Version.Equals(new Version(xmlProtocol.Version)));
+            if (protocolDetails == null)
             {
                 logger?.Log(LogLevel.Error, $"The protocol \"{xmlProtocol.Name}\" not found among loaded protocols.");
+                continue;
+            }
+            
+            var protocol = pluginManager.LoadPlugin<IProtocolBase>(protocolDetails.PathName);
+            
+            if (protocol == null)
+            {
+                logger?.Log(LogLevel.Error, $"The protocol \"{xmlProtocol.Name}\" v. \"{xmlProtocol.Version}\" could not be loaded.");
                 continue;
             }
 
@@ -235,7 +261,7 @@ public class XmlModuleHandler
                 var variable = variables.FirstOrDefault(v => v.Id == variableRef.Ref);
                 if (variable == null)
                 {
-                    logger?.Log(LogLevel.Error, $"Variable {variableRef.Ref} not found.");
+                    logger?.Log(LogLevel.Error, $"the variable \"{variableRef.Ref}\" not found.");
                     continue;
                 }
                 
