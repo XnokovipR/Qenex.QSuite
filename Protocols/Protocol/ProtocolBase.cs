@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel;
-using Qenex.QSuite.CoreComm;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Specification;
 using Qenex.QSuite.QVariables;
