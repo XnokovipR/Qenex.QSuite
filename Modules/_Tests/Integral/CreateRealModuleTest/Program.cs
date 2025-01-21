@@ -6,7 +6,7 @@ using Qenex.QSuite.Driver;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.ModuleXmlHandler;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
-using Qenex.QSuite.PluginManager;
+using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.UnifModule;
 using Qenex.QSuite.Common.CoreComm;
@@ -32,10 +32,10 @@ class Program
         var xmlModuleHandler = new XmlModuleHandler(driversDetails, protocolsDetails, logger);
         var realModule = xmlModuleHandler.CreateModule<UnifiedModule>(xmlModule);
 
-        var zmqDriver = realModule?.Drivers.First(d => d.Specification.Name == "ZeroMQ Client Driver");
-        if (zmqDriver == null) return;
+        var zmqServerDriver = realModule?.Drivers.First(d => d.Specification.Name == "ZeroMQ Server Driver");
+        if (zmqServerDriver == null) return;
         
-        zmqDriver.StartAsync(cts.Token);
+        zmqServerDriver.StartAsync(cts.Token);
 
         Console.WriteLine("Press ESC to exit");
         Console.ReadKey();
@@ -44,9 +44,6 @@ class Program
         //cts.Cancel();
         
         // Correct way to stop the driver
-        zmqDriver.StopAsync(cts.Token);
-        
-        Console.WriteLine("Cancelled");
-        Console.ReadKey();
+        zmqServerDriver.StopAsync(cts.Token);
     }
 }
