@@ -2,6 +2,7 @@
 using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.ProtocolVariableSpecification;
 using Qenex.QSuite.QVariables;
+using Qenex.QSuite.VariableEvents;
 
 namespace Qenex.QSuite.QVariables;
 
@@ -18,7 +19,9 @@ public abstract class VariableBase : IVariableBase
     public string Label { get; set; }
     
     public string Description { get; set; }
-
+    
+    public IVarEvent Event { get; set; }
+    
     /// <summary>
     /// Reference to the modules to which the variable data will be sent.
     /// </summary>

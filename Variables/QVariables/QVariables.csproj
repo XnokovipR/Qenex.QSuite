@@ -13,6 +13,7 @@
       <ProjectReference Include="..\..\Modules\ComponentSpecification\ComponentSpecification.csproj" />
       <ProjectReference Include="..\..\Specifications\ProtocolVariableSpecification\ProtocolVariableSpecification.csproj" />
       <ProjectReference Include="..\ValuePresentation\ValuePresentation.csproj" />
+      <ProjectReference Include="..\VariableEvents\VariableEvents.csproj" />
     </ItemGroup>
 
 </Project>

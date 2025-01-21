@@ -1,5 +1,6 @@
 ﻿using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.ProtocolVariableSpecification;
+using Qenex.QSuite.VariableEvents;
 
 namespace Qenex.QSuite.QVariables;
 
@@ -32,6 +33,11 @@ public interface IVariableBase
     /// Description of the variable.
     /// </summary>
     string Description { get; set; }
+    
+    /// <summary>
+    /// Event specifies how the variable data will be sent.
+    /// </summary>
+    IVarEvent Event { get; set; }
     
     /// <summary>
     /// Reference to the components (modules / drivers) to which the variable data will be sent.

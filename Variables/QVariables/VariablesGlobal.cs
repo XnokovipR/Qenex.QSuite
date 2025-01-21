@@ -25,7 +25,7 @@ public class VariablesGlobal
         { VariableType.Array, "Qenex.QSuite.QVariables.ArrayVariable" },
         { VariableType.Curve, "Qenex.QSuite.QVariables.CurveVariable" },
         { VariableType.Map, "Qenex.QSuite.QVariables.MapVariable" }
-    };    
+    };  
     
     /// <summary>
     /// Create instance of IVariableBase based on VariableType.
