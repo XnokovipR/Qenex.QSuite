@@ -10,11 +10,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\LogSystem\LogSystem.csproj" />
+      <PackageReference Include="Qenex.QLibs.DebugFeatures" Version="1.0.1" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Qenex.CmLibs.DebugFeatures" Version="1.0.1" />
+      <ProjectReference Include="..\LogSystem\LogSystem.csproj" />
     </ItemGroup>
 
 </Project>

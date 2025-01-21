@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text;
-using Qenex.CmLibs.DebugFeatures;
+using Qenex.QLibs.DebugFeatures;
 using Qenex.QSuite.LogSystem;
 
 namespace Qenex.QSuite.ConsoleLogSubscriber;
