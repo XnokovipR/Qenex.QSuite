@@ -44,6 +44,12 @@ public class XmlModule
     [XmlArrayItem(typeof(XmlEnumConversion), ElementName = "enumConversion")]
     public List<XmlConversion> Conversions { get; set; }
     
+    // events
+    [XmlArray("variableEvents")]
+    [XmlArrayItem(typeof(OnRequestXmlVarEvent), ElementName = "onRequestVariableEvent")]
+	[XmlArrayItem(typeof(OnValueChangedXmlVarEvent), ElementName = "onValueChangedVariableEvent")]
+	[XmlArrayItem(typeof(PeriodicXmlVarEvent), ElementName = "periodicVariableEvent")]
+	public List<XmlVarEvent> Events { get; set; }
 
     // Variables
     [XmlArray("variables")]

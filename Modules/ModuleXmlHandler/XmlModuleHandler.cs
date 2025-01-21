@@ -3,6 +3,7 @@ using Qenex.QSuite.Driver;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Module;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
+using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.PluginManager;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.QVariables;
@@ -10,6 +11,7 @@ using Qenex.QSuite.ValuePresentation;
 using Qenex.QSuite.QVariables.Values;
 using Qenex.QSuite.UnifModule;
 using Qenex.QSuite.ValueConversion;
+using Qenex.QSuite.VariableEvents;
 
 namespace Qenex.QSuite.ModuleXmlHandler;
 
@@ -45,6 +47,9 @@ public class XmlModuleHandler
         module.Specification.Company = xmlModule.Company;
         module.Specification.CreatedOn = xmlModule.CreatedOn;
         
+        // Add Events
+        module.AddVarEvents(GetVarEvents(xmlModule.Events));
+        
         // Add Conversions
         module.AddConversions(GetConversions(xmlModule.Conversions));
 
@@ -52,15 +57,15 @@ public class XmlModuleHandler
         module.AddPresentations(GetPresentations(module.Conversions, xmlModule.Presentations));
 
         // Add variables
-        module.AddVariables(GetVariables(module.Presentations, xmlModule.Variables));
+        module.AddVariables(GetVariables(module.Presentations, xmlModule.Variables, module.VarEvents));
         
         // Add project drivers structure - including protocols and variables, presentations, conversions
-        module.AddDrivers(GetDrivers(driversDetails, protocolsDetails, module.Variables, xmlModule));
+        module.AddDrivers(GetDrivers(driversDetails, protocolsDetails, module.Variables, module.VarEvents, xmlModule));
         
         return module;
     }
 
-    private List<IVariableBase> GetVariables(IEnumerable<IPresentation> presentations, IEnumerable<XmlVariable> xmlVariables)
+    private List<IVariableBase> GetVariables(IEnumerable<IPresentation> presentations, IEnumerable<XmlVariable> xmlVariables, IEnumerable<IVarEvent> variableEvents)
     {
         var variables = new List<IVariableBase>();
         
@@ -98,7 +103,48 @@ public class XmlModuleHandler
 
         return variables;
     }
-    
+
+    private List<IVarEvent> GetVarEvents(IEnumerable<XmlVarEvent> xmlEvents)
+    {
+        var varEvents = new List<IVarEvent>();
+
+        foreach (var xmlEvent in xmlEvents)
+        {
+            if (!XmlModuleGlobal.TypeOfXmlEvent2EventEnumDict.TryGetValue(xmlEvent.GetType(), out var varEventType))
+			{
+				logger?.Log(LogLevel.Warn, $"Variable event type {xmlEvent.GetType()} is not supported.");
+				continue;
+			}
+
+            try
+            {
+                var varEvent = EventsGlobal.CreateInstance(varEventType);
+                varEvent.Name = xmlEvent.Name;
+
+                if (varEvent is PeriodicVarEvent periodicVarEvent && xmlEvent is PeriodicXmlVarEvent xmlPeriodicEvent)
+                {
+                    periodicVarEvent.Period = xmlPeriodicEvent.Period;
+                    periodicVarEvent.Unit = Enum.Parse<TimeUnit>(xmlPeriodicEvent.Unit);
+                }
+                else if (varEvent is OnRequestVarEvent onRequestVarEvent)
+                {
+                }
+                else if (varEvent is OnValueChangedVarEvent onValueChangedVarEvent && xmlEvent is OnValueChangedXmlVarEvent xmlOnValueChangedEvent)
+                {
+                    onValueChangedVarEvent.Threshold = xmlOnValueChangedEvent.Threshold;
+                }
+                
+                varEvents.Add(varEvent);
+            }
+            catch (ArgumentException e)
+            {
+                logger?.Log(LogLevel.Error, $"Error creating variable {xmlEvent.Name}: {e.Message}.");
+            }
+        }
+
+        return varEvents;
+    }
+
     private List<IValConversion> GetConversions(IEnumerable<XmlConversion> xmlConversions)
     {
         var conversions = new List<IValConversion>();
@@ -181,7 +227,7 @@ public class XmlModuleHandler
         return values;
     }
 
-    private List<IDriverBase> GetDrivers(IList<PluginDetails> driversDetails, IList<PluginDetails> protocolsdetails, IList<IVariableBase> variables, XmlModule xmlModule)
+    private List<IDriverBase> GetDrivers(IList<PluginDetails> driversDetails, IList<PluginDetails> protocolsdetails, IList<IVariableBase> variables, IList<IVarEvent> varEvents, XmlModule xmlModule)
     {
         var tempDrivers = new List<IDriverBase>();
         
@@ -216,7 +262,7 @@ public class XmlModuleHandler
             driver.Label = driverRef.Label;
             driver.IsEnabled = driverRef.IsEnabled;
             driver.SetConfiguration(driverRef.Settings, driverRef.EncryptedSettings);
-            driver.AddProtocols(GetProtocols(protocolsdetails, variables, driverRef.ProtocolReferences, xmlModule));
+            driver.AddProtocols(GetProtocols(protocolsdetails, variables, varEvents, driverRef.ProtocolReferences, xmlModule));
             
             
             tempDrivers.Add(driver);
@@ -225,7 +271,7 @@ public class XmlModuleHandler
         return tempDrivers;
     }
     
-    private IList<IProtocolBase> GetProtocols(IList<PluginDetails> protocolsDetails, IList<IVariableBase> variables, IList<XmlProtocolReference> xmlProtocolReferences, XmlModule xmlModule)
+    private IList<IProtocolBase> GetProtocols(IList<PluginDetails> protocolsDetails, IList<IVariableBase> variables, IList<IVarEvent> varEvents, IList<XmlProtocolReference> xmlProtocolReferences, XmlModule xmlModule)
     {
         var tempProtocols = new List<IProtocolBase>();
         
@@ -264,7 +310,8 @@ public class XmlModuleHandler
                     logger?.Log(LogLevel.Error, $"the variable \"{variableRef.Ref}\" not found.");
                     continue;
                 }
-                
+
+                AddEventToVariable(variable, varEvents, variableRef.CommParam);
                 var protocolVariable = protocol.CreateProtocolVariable(variable, variableRef.CommParam);
                 protocol.AddVariable(protocolVariable);
             }
@@ -275,5 +322,15 @@ public class XmlModuleHandler
         return tempProtocols;
     }
     
-
+    private void AddEventToVariable(IVariableBase variable, IEnumerable<IVarEvent> varEvents, string commParam)
+    {
+        var eventRefName = commParam.Split(';').FirstOrDefault(e => e.Contains("eventRef"));
+        if (string.IsNullOrEmpty(eventRefName)) return;
+        eventRefName = eventRefName?.Split('=')[1].Trim('"');
+        
+        var varEvent = varEvents.FirstOrDefault(e => e.Name == eventRefName);
+        if (varEvent == null) return;
+        
+        variable.Event = varEvent;
+    }
 }
