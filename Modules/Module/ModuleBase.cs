@@ -7,6 +7,7 @@ using Qenex.QSuite.Specification;
 using Qenex.QSuite.QVariables;
 using Qenex.QSuite.ValuePresentation;
 using Qenex.QSuite.ValueConversion;
+using Qenex.QSuite.VariableEvents;
 
 namespace Qenex.QSuite.Module;
 
@@ -22,6 +23,7 @@ public abstract class ModuleBase : IModuleBase
         Drivers = new List<IDriverBase>();
         Presentations = new List<IPresentation>();
         Conversions = new List<IValConversion>();
+        VarEvents = new List<IVarEvent>();
     }
 
     #endregion
@@ -46,6 +48,8 @@ public abstract class ModuleBase : IModuleBase
     public IList<IPresentation> Presentations { get; set; }
 
     public IList<IValConversion> Conversions { get; set; }
+    
+    public IList<IVarEvent> VarEvents { get; set; }
 
     #endregion
 
@@ -68,7 +72,7 @@ public abstract class ModuleBase : IModuleBase
         Variables.Add(variable);
     }
 
-    public virtual void AddVariables(IEnumerable<IVariableBase> variables)
+    public virtual void AddVariables(IList<IVariableBase> variables)
     {
         var highestId = Variables.Count > 0 ? Variables.Max(x => x.Id) : 0;
         foreach (var variable in variables)
@@ -109,7 +113,7 @@ public abstract class ModuleBase : IModuleBase
         Presentations.Add(presentation);
     }
     
-    public virtual void AddPresentations(IEnumerable<IPresentation> presentations)
+    public virtual void AddPresentations(IList<IPresentation> presentations)
     {
         foreach (var presentation in presentations)
         {
@@ -136,8 +140,8 @@ public abstract class ModuleBase : IModuleBase
         
         Conversions.Add(conversion);
     }
-    
-    public virtual void AddConversions(IEnumerable<IValConversion> conversions)
+
+    public virtual void AddConversions(IList<IValConversion> conversions)
     {
         foreach (var conversion in conversions)
         {
@@ -148,6 +152,34 @@ public abstract class ModuleBase : IModuleBase
     public virtual void RemoveConversion(IValConversion conversion)
     {
         Conversions.Remove(conversion);
+    }
+
+    #endregion
+    
+    #region VarEvents
+
+   
+    public void AddVarEvent(IVarEvent varEvent)
+    {
+        if (VarEvents.FirstOrDefault(v => v.Name == varEvent.Name) != null)
+        {
+            Logger?.Log(LogLevel.Warn, $"VarEvent with Name {varEvent.Name} already exists.");
+            return;
+        }
+        VarEvents.Add(varEvent);
+    }
+
+    public void AddVarEvents(IList<IVarEvent> varEvents)
+    {
+        foreach (var varEvent in varEvents)
+        {
+            AddVarEvent(varEvent);
+        }
+    }
+
+    public void RemoveVarEvent(IVarEvent varEvent)
+    {
+        VarEvents.Remove(varEvent);
     }
 
     #endregion
