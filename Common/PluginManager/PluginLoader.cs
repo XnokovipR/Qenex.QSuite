@@ -1,8 +1,9 @@
 ﻿using System.Reflection;
 using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.LogSystem;
+using Qenex.QSuite.PluginManager;
 
-namespace Qenex.QSuite.PluginManager;
+namespace Qenex.QSuite.Common.PluginManager;
 
 public class PluginLoader(ILogger? logger = null)
 {
