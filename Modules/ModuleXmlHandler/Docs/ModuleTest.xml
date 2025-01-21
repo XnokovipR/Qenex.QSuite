@@ -10,18 +10,33 @@
     <!--+           Module Relations                                  +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <driverReferences>
-        <driverReference ref="ZeroMQ Client Driver" label="My Ethernet client driver">
+        <driverReference ref="ZeroMQ Server Driver" label="ZeroMQ server driver">
             <isEnabled>true</isEnabled>
             <settings>127.0.0.1:5000</settings>
-            <encryptedSettings>aiaiai</encryptedSettings>
+            <encryptedSettings/>
             <protocolReferences>
                 <protocolReference ref="Simple One to One Protocol">
                     <variableReferences>
                         <variableReference ref="1" isCommunicated="true">
-                            <commParam>Zakodovana adresa;</commParam>
+                            <commParam>direction="read";eventRef="Event100ms";multiplier="1";Id="OilTemp"</commParam>
                         </variableReference>
-                        <variableReference ref="2" isCommunicated="true"/>
-                        <variableReference ref="3" isCommunicated="true"/>
+                        <variableReference ref="2" isCommunicated="true">
+                            <commParam>direction="read";eventRef="Event2s";multiplier="1";Id="OilPressure"</commParam>
+                        </variableReference>
+						<variableReference ref="3" isCommunicated="true">
+							<commParam>direction="read";eventRef="OnRequestEvent1";Id="MachineState"</commParam>
+						</variableReference>
+                    </variableReferences>
+                </protocolReference>
+            </protocolReferences>
+        </driverReference>
+        <driverReference ref="ZeroMQ Client Driver" label="My Ethernet client driver">
+            <isEnabled>true</isEnabled>
+            <settings>127.0.0.1:5001</settings>
+            <encryptedSettings/>
+            <protocolReferences>
+                <protocolReference ref="Simple One to One Protocol">
+                    <variableReferences>
                         <variableReference ref="4" isCommunicated="true"/>
                     </variableReferences>
                 </protocolReference>
@@ -33,13 +48,9 @@
         <encryptedSettings>440</encryptedSettings>
         <protocolReferences>
             <protocolReference ref="XCP Protocol">
-                <!--<events>
-                    <event name="Event100ms" direction="Read" period="100" periodUnit="ms"/>
-                    <event name="Event2s" direction="Read" period="2" periodUnit="s"/>
-                </events>-->
                 <variableReferences>
                     <variableReference ref="5" isCommunicated="true">
-                        <commParam>address:0x12345;event:1</commParam>
+                        <commParam>direction="read";eventRef="Event2s";multiplier="1";Address="22"</commParam>
                     </variableReference>
                 </variableReferences>
             </protocolReference>
@@ -51,10 +62,13 @@
     <!--+           Drivers                                           +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <drivers>
-        <driver id="1" name="ZeroMQ Client Driver">
+        <driver id="1" name="ZeroMQ Server Driver">
+            <version>1.0.0.0</version>
+        </driver>        
+        <driver id="2" name="ZeroMQ Client Driver">
             <version>1.0.0.0</version>
         </driver>
-        <driver id="2" name="Peak CAN Driver">
+        <driver id="3" name="Peak CAN Driver">
             <version>1.0.0.0</version>
         </driver>
     </drivers>
@@ -100,7 +114,18 @@
             </enums>
         </enumConversion>
     </conversions>
-    
+
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
+    <!--+           Periodic events, others are not defined in xml    +-->
+    <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->   
+    <variableEvents>
+        <periodicVariableEvent name="Event100ms" period="100" unit="Milisec"/>
+        <periodicVariableEvent name="Event2s" period="2" unit="Sec"/>
+		<onRequestVariableEvent name="OnRequestEvent1"/>
+		<onValueChangedVariableEvent name="OnValueChangedEvent1" threshold="3.14"/>
+		<onValueChangedVariableEvent name="OnValueChangedEvent2" threshold="10"/>
+    </variableEvents>
+
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <!--+           Variables                                         +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
