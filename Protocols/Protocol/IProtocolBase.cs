@@ -2,6 +2,7 @@
 using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.Specification;
 using Qenex.QSuite.QVariables;
+using Qenex.QSuite.VariableEvents;
 
 namespace Qenex.QSuite.Protocol;
 
@@ -21,7 +22,7 @@ public interface IProtocolBase : IComponentSpecification
     /// </summary>
     IList<IProtocolVariable> Variables { get; set; }
 
-    IProtocolVariable CreateProtocolVariable(IVariableBase variable, string additionalData);
+    IProtocolVariable CreateProtocolVariable(IVariableBase variable, string commParams);
     void AddVariable(IProtocolVariable protocolVariable);
     void RemoveProtocolVariable(IProtocolVariable variable);
     void RemoveProtocolVariable(string variableName);

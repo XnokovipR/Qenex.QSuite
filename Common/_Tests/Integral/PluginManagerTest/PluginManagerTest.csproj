@@ -5,8 +5,8 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.PluginManagerTest</AssemblyName>
-        <RootNamespace>Qenex.QSuite.PluginManagerTest</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Common.PluginManagerTest</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Common.PluginManagerTest</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

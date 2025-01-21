@@ -1,10 +1,9 @@
-﻿using Qenex.QSuite.ConsoleLogSubscriber;
+﻿using Qenex.QSuite.Common.PluginManager;
+using Qenex.QSuite.ConsoleLogSubscriber;
 using Qenex.QSuite.Driver;
 using Qenex.QSuite.LogSystem;
-using Qenex.QSuite.PluginBase;
-using Qenex.QSuite.PluginManager;
 
-namespace Qenex.QSuite.PluginManagerTest;
+namespace Qenex.QSuite.Common.PluginManagerTest;
 
 class Program
 {
