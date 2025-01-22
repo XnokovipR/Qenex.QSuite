@@ -17,14 +17,14 @@
             <protocolReferences>
                 <protocolReference ref="Simple One to One Protocol">
                     <variableReferences>
-                        <variableReference ref="1" isCommunicated="true">
-                            <commParam>direction="read";eventRef="Event100ms";multiplier="1";Id="OilTemp"</commParam>
+                       <variableReference ref="1" isCommunicated="true">
+                            <commParam>direction="read";eventRef="Event100ms";multiplier="1";id="OilTemp"</commParam>
                         </variableReference>
                         <variableReference ref="2" isCommunicated="true">
-                            <commParam>direction="read";eventRef="Event2s";multiplier="1";Id="OilPressure"</commParam>
+                            <commParam>direction="read";eventRef="Event2s";multiplier="1";id="OilPressure"</commParam>
                         </variableReference>
 						<variableReference ref="3" isCommunicated="true">
-							<commParam>direction="read";eventRef="OnRequestEvent1";Id="MachineState"</commParam>
+							<commParam>direction="read";eventRef="OnRequestEvent1";multiplier="2";id="MachineState"</commParam>
 						</variableReference>
                     </variableReferences>
                 </protocolReference>
@@ -37,7 +37,7 @@
             <protocolReferences>
                 <protocolReference ref="Simple One to One Protocol">
                     <variableReferences>
-                        <variableReference ref="4" isCommunicated="true"/>
+<!--                        <variableReference ref="4" isCommunicated="true"/>-->
                     </variableReferences>
                 </protocolReference>
         </protocolReferences>
@@ -50,7 +50,7 @@
             <protocolReference ref="XCP Protocol">
                 <variableReferences>
                     <variableReference ref="5" isCommunicated="true">
-                        <commParam>direction="read";eventRef="Event2s";multiplier="1";Address="22"</commParam>
+                        <commParam>direction="read";eventRef="Event2s";multiplier="1";address="22"</commParam>
                     </variableReference>
                 </variableReferences>
             </protocolReference>

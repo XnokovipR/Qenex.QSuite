@@ -22,7 +22,8 @@ public interface IProtocolBase : IComponentSpecification
     /// </summary>
     IList<IProtocolVariable> Variables { get; set; }
 
-    IProtocolVariable CreateProtocolVariable(IVariableBase variable, string commParams);
+    IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated);
+    IProtocolVariable?CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents, string commParams, bool isCommunicated);
     void AddVariable(IProtocolVariable protocolVariable);
     void RemoveProtocolVariable(IProtocolVariable variable);
     void RemoveProtocolVariable(string variableName);

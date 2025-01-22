@@ -12,6 +12,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\Variables\VariableEvents\VariableEvents.csproj" />
       <ProjectReference Include="..\Protocol\Protocol.csproj" />
     </ItemGroup>
 

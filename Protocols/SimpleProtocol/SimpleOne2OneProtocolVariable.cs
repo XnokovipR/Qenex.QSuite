@@ -4,5 +4,5 @@ namespace Qenex.QSuite.Protocols.SimpleProtocol;
 
 public class SimpleOne2OneProtocolVariable : ProtocolVariable
 {
-    public string Identifier { get; set; } = string.Empty;
+    
 }

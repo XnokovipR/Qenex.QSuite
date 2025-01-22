@@ -2,7 +2,9 @@
 
 namespace Qenex.QSuite.Protocol;
 
-public interface IProtocolVariable : IProtVariableSpecification
+public interface IProtocolVariable
 {
-    public IVariableBase Variable { get; set; }
+    bool IsCommunicated { get; set; }
+    IVariableBase Variable { get; set; }
+    IProtVariableSpecification ProtocolVariableSpecification { get; set; }
 }

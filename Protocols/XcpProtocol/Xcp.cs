@@ -1,7 +1,9 @@
 ﻿using System.Reflection;
+using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.QVariables;
 using Qenex.QSuite.Specification;
+using Qenex.QSuite.VariableEvents;
 
 namespace Qenex.QSuite.Protocols.XcpProtocol;
 
@@ -20,32 +22,35 @@ public class Xcp : ProtocolBase
         };
     }
 
-    public override IProtocolVariable CreateProtocolVariable(IVariableBase variable, string additionalData)
+    public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated)
     {
-        var protocolVariable = new XcpProtocolVariable
+        throw new NotImplementedException();
+    }
+    
+    public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents,
+        string commParams, bool isCommunicated)
+    {
+        try
         {
-            Variable = variable
-        };
+            var eventRefName = commParams.Split(';').FirstOrDefault(e => e.Contains("eventRef"));
+            eventRefName = eventRefName?.Split('=')[1].Trim('"');
         
-        var separatedData = additionalData.Split(';');
+            var varEvent = variableEvents.FirstOrDefault(e => e.Name == eventRefName);
         
-        foreach (var s in separatedData)
-        {
-            var data = s.Split(':');
-            if (data.Length == 2)
+            var protocolVariable = new XcpProtocolVariable
             {
-                switch (data[0].ToLower())
-                {
-                    case "address":
-                        protocolVariable.Address = data[1];
-                        break;
-                    case "event":
-                        protocolVariable.Event = data[1];
-                        break;
-                }
-            }
-        }
+                Variable = variable, 
+                IsCommunicated = isCommunicated,
+                ProtocolVariableSpecification = XcpVariableSpecification.Create(varEvent!, commParams)
+            };
 
-        return protocolVariable;
+            return protocolVariable; 
+        }
+        catch (Exception e)
+        {
+            Logger?.Log(LogLevel.Warn, $"Protocol variable specification for variable {variable.Name} could not be created (${e.Message}).");
+            return null;
+        }
+       
     }
 }

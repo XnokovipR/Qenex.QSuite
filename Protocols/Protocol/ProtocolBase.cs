@@ -3,6 +3,7 @@ using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Specification;
 using Qenex.QSuite.QVariables;
+using Qenex.QSuite.VariableEvents;
 
 namespace Qenex.QSuite.Protocol;
 
@@ -25,7 +26,7 @@ public abstract class ProtocolBase : IProtocolBase
     #region Properties
     
     // ReSharper disable once MemberCanBePrivate.Global
-    public  ILogger? Logger { get; set; }
+    protected ILogger? Logger { get; set; }
 
     public int Id { get; set; }
     
@@ -37,15 +38,8 @@ public abstract class ProtocolBase : IProtocolBase
 
     #region Variables
 
-    public virtual IProtocolVariable CreateProtocolVariable(IVariableBase variable, string additionalData)
-    {
-        var protocolVariable = new ProtocolVariable()
-        {
-            Variable = variable,
-        };
-
-        return protocolVariable;
-    }
+    public abstract IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated);
+    public abstract IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents, string commParams, bool isCommunicated);
     
     public virtual void AddVariable(IProtocolVariable protocolVariable)
     {
@@ -74,7 +68,7 @@ public abstract class ProtocolBase : IProtocolBase
     public void RemoveProtocolVariable(string variableName)
     {
         Variables.Remove(Variables.FirstOrDefault(v => v.Variable.Name == variableName) ??
-                                 throw new InvalidEnumArgumentException("Variable not found"));
+                         throw new InvalidEnumArgumentException("Variable not found"));
     }
 
     #endregion
