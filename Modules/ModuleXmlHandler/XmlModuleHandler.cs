@@ -311,8 +311,19 @@ public class XmlModuleHandler
                     continue;
                 }
 
-                AddEventToVariable(variable, varEvents, variableRef.CommParam);
-                var protocolVariable = protocol.CreateProtocolVariable(variable, variableRef.CommParam);
+                var eventRefName = variableRef.CommParam.Split(';').FirstOrDefault(e => e.Contains("eventRef"));
+                
+                var protocolVariable = string.IsNullOrEmpty(eventRefName) ? 
+                    protocol.CreateProtocolVariable(variable, variableRef.CommParam, variableRef.IsCommunicated) : 
+                    protocol.CreateProtocolVariable(variable, varEvents, variableRef.CommParam, variableRef.IsCommunicated);
+                
+                if (protocolVariable == null)
+                {
+                    logger?.Log(LogLevel.Error, $"The protocol variable for \"{variable.Name}\" could not be created.");
+                    continue;
+                }
+                
+                protocolVariable.IsCommunicated = variableRef.IsCommunicated;
                 protocol.AddVariable(protocolVariable);
             }
             
@@ -320,17 +331,5 @@ public class XmlModuleHandler
         }
         
         return tempProtocols;
-    }
-    
-    private void AddEventToVariable(IVariableBase variable, IEnumerable<IVarEvent> varEvents, string commParam)
-    {
-        var eventRefName = commParam.Split(';').FirstOrDefault(e => e.Contains("eventRef"));
-        if (string.IsNullOrEmpty(eventRefName)) return;
-        eventRefName = eventRefName?.Split('=')[1].Trim('"');
-        
-        var varEvent = varEvents.FirstOrDefault(e => e.Name == eventRefName);
-        if (varEvent == null) return;
-        
-        variable.Event = varEvent;
     }
 }
