@@ -20,8 +20,6 @@ public abstract class VariableBase : IVariableBase
     
     public string Description { get; set; }
     
-    public IVarEvent Event { get; set; }
-    
     /// <summary>
     /// Reference to the modules to which the variable data will be sent.
     /// </summary>
