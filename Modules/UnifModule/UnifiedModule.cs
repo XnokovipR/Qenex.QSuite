@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using Qenex.QSuite.Driver;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Module;
 using Qenex.QSuite.Specification;
@@ -17,6 +16,7 @@ public class UnifiedModule : ModuleBase
         Specification = new SpecificationBase()
         {
             Name = "UnifiedModule",
+            Label = "Unified Module"
         };
     }
 }

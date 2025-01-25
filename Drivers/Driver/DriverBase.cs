@@ -3,7 +3,7 @@ using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.Specification;
 
-namespace Qenex.QSuite.Driver;
+namespace Qenex.QSuite.Drivers;
 
 public abstract class DriverBase : IDriverBase
 {

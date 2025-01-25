@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.Driver;
+﻿namespace Qenex.QSuite.Drivers;
 
 public class DataReceivedEventArgs<T> : EventArgs
 {

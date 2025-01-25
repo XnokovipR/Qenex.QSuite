@@ -4,7 +4,7 @@ using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.Specification;
 
-namespace Qenex.QSuite.Driver;
+namespace Qenex.QSuite.Drivers;
 
 public interface IDriverBase : ICoreCommunication, IComponentSpecification
 {

@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using Qenex.QSuite.Driver;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Specification;
 
@@ -24,7 +23,8 @@ public class ZeroMqClientDriver : DriverBase
     {
         Specification = new SpecificationBase()
         {
-            Name = "ZeroMQ Client Driver",
+            Name = "ZeroMQClientDriver",
+            Label = "ZeroMQ Client Driver",
             Description = "ZeroMQ Client Driver",
             CreatedOn = new DateTime(2025, 1, 21),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 1),

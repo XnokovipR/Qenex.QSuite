@@ -13,7 +13,8 @@ public class SimpleOne2OneProtocol : ProtocolBase
     {
         Specification = new SpecificationBase()
         {
-            Name = "Simple One to One Protocol",
+            Name = "SimpleO2OProtocol",
+            Label = "Simple One to One Protocol",
             Description = "No conversion of data is done. Data is sent as is.",
             CreatedOn = new DateTime(2021, 11, 23),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? throw new Exception("Version not found"),

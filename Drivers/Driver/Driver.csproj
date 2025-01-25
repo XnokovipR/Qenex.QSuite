@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.Driver</AssemblyName>
-        <RootNamespace>Qenex.QSuite.Driver</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Drivers</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Drivers</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

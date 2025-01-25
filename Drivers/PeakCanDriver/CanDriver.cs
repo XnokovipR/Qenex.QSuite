@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using Qenex.QSuite.Driver;
 using Qenex.QSuite.Specification;
 
 namespace Qenex.QSuite.Drivers.PeakCanDriver;
@@ -19,7 +18,8 @@ public class CanDriver : DriverBase
     {
         Specification = new SpecificationBase()
         {
-            Name = "Peak CAN Driver",
+            Name = "PeakCANDriver",
+            Label = "Peak CAN Driver",
             Description = "Peak CAN Driver",
             CreatedOn = new DateTime(2021, 11, 21),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 1),

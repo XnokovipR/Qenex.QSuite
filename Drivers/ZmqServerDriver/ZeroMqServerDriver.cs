@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using NetMQ;
 using NetMQ.Sockets;
-using Qenex.QSuite.Driver;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Specification;
 
@@ -27,7 +26,8 @@ public class ZeroMqServerDriver : DriverBase
     {
         Specification = new SpecificationBase()
         {
-            Name = "ZeroMQ Server Driver",
+            Name = "ZeroMQServerDriver",
+            Label = "ZeroMQ Server Driver",
             Description = "ZeroMQ Server Driver",
             CreatedOn = new DateTime(2024, 12, 25),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 1),
