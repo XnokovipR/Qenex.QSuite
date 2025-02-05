@@ -244,7 +244,8 @@ public class XmlModuleHandler
             }
             
             // xml driver found, now find the real driver 
-            var driverPath = driversDetails.FirstOrDefault(p => p.Name == xmlDriver.Name && p.Version.Equals(new Version(xmlDriver.Version)));
+            var xmlDriverVersion = new Version(xmlDriver.Version);
+            var driverPath = driversDetails.FirstOrDefault(p => p.Name == xmlDriver.Name && p.Version.Major.Equals(xmlDriverVersion.Major) && p.Version.Minor.Equals(xmlDriverVersion.Minor));
             if (driverPath == null)
             {
                 logger?.Log(LogLevel.Error, $"The driver \"{xmlDriver.Name}\" and version \"{xmlDriver.Version}\" not found in driver directory.");
@@ -286,8 +287,8 @@ public class XmlModuleHandler
                 logger?.Log(LogLevel.Error, $"The protocol \"{protocolRef.Ref}\" not found in the module file.");
                 continue;
             }
-            
-            var protocolDetails = protocolsDetails.FirstOrDefault(p => p.Name == xmlProtocol.Name && p.Version.Equals(new Version(xmlProtocol.Version)));
+            var xmlProtocolVersion = new Version(xmlProtocol.Version);
+            var protocolDetails = protocolsDetails.FirstOrDefault(p => p.Name == xmlProtocol.Name && p.Version.Major.Equals(xmlProtocolVersion.Major) && p.Version.Minor.Equals(xmlProtocolVersion.Minor));
             if (protocolDetails == null)
             {
                 logger?.Log(LogLevel.Error, $"The protocol \"{xmlProtocol.Name}\" not found among loaded protocols.");
@@ -327,6 +328,7 @@ public class XmlModuleHandler
                 protocol.AddVariable(protocolVariable);
             }
             
+            protocol.SetConfiguration(protocolRef.Settings, protocolRef.EncryptedSettings);
             tempProtocols.Add(protocol);
         }
         

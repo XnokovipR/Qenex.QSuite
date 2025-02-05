@@ -22,7 +22,6 @@ public abstract class ProtocolBase : IProtocolBase
 
     #endregion
 
-
     #region Properties
     
     // ReSharper disable once MemberCanBePrivate.Global
@@ -34,6 +33,11 @@ public abstract class ProtocolBase : IProtocolBase
     
     public IList<IProtocolVariable> Variables { get; set; }
 
+    #endregion
+
+    #region Configuration
+    public abstract void SetConfiguration(string rawSettings, string rawEncryptedSettings);
+    
     #endregion
 
     #region Variables
@@ -70,6 +74,14 @@ public abstract class ProtocolBase : IProtocolBase
         Variables.Remove(Variables.FirstOrDefault(v => v.Variable.Name == variableName) ??
                          throw new InvalidEnumArgumentException("Variable not found"));
     }
+
+    #endregion
+
+    #region Encode & Decode
+
+    public abstract IEnumerable<T> Encode<T>(IEnumerable<IProtocolVariable> protocolVariables);
+
+    public abstract IEnumerable<IProtocolVariable> Decode<T>(IEnumerable<T> data);
 
     #endregion
 }

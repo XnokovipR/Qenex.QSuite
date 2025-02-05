@@ -2,6 +2,7 @@
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.QVariables;
+using Qenex.QSuite.QVariables.Values;
 using Qenex.QSuite.Specification;
 using Qenex.QSuite.VariableEvents;
 
@@ -9,6 +10,12 @@ namespace Qenex.QSuite.Protocols.SimpleProtocol;
 
 public class SimpleOne2OneProtocol : ProtocolBase
 {
+    #region Fields
+    
+    #endregion
+    
+    #region Constructors
+
     public SimpleOne2OneProtocol()
     {
         Specification = new SpecificationBase()
@@ -22,6 +29,18 @@ public class SimpleOne2OneProtocol : ProtocolBase
             Company = "QENEX Ltd."
         };
     }
+
+    #endregion
+    
+    #region Configuration
+
+    public override void SetConfiguration(string rawSettings, string rawEncryptedSettings)
+    {
+    }
+
+    #endregion
+
+    #region Protocol variables
 
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated)
     {

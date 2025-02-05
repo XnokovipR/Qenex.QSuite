@@ -22,6 +22,10 @@ public class Xcp : ProtocolBase
         };
     }
 
+    public override void SetConfiguration(string rawSettings, string rawEncryptedSettings)
+    {
+        
+    }
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated)
     {
         throw new NotSupportedException();
