@@ -129,4 +129,11 @@ public abstract class DriverBase : IDriverBase
     }
 
     #endregion
+
+    #region Process received data
+
+    protected abstract void ProcessReceivedData<T>(T data);
+    protected abstract Task ProcessReceivedDataAsync<T>(T data, CancellationToken ct = default);
+
+    #endregion
 }

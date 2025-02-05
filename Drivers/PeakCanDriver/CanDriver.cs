@@ -22,7 +22,7 @@ public class CanDriver : DriverBase
             Label = "Peak CAN Driver",
             Description = "Peak CAN Driver",
             CreatedOn = new DateTime(2021, 11, 21),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 1),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };
@@ -67,5 +67,17 @@ public class CanDriver : DriverBase
         throw new NotImplementedException();
     }
 
+    #endregion
+    
+    #region Process received data
+    protected override void ProcessReceivedData<T>(T data)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override Task ProcessReceivedDataAsync<T>(T data, CancellationToken ct = default)
+    {
+        throw new NotImplementedException();
+    }
     #endregion
 }

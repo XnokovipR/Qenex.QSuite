@@ -9,7 +9,6 @@ namespace Qenex.QSuite.Drivers.ZmqServerDriver;
 public class ZeroMqServerDriver : DriverBase
 {
     #region Fields
-
     
     private string settings = string.Empty;
     private string encryptedSettings = string.Empty;
@@ -30,7 +29,7 @@ public class ZeroMqServerDriver : DriverBase
             Label = "ZeroMQ Server Driver",
             Description = "ZeroMQ Server Driver",
             CreatedOn = new DateTime(2024, 12, 25),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 1),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };
@@ -38,11 +37,15 @@ public class ZeroMqServerDriver : DriverBase
 
     #endregion
 
+    #region Configuration
+
     public override void SetConfiguration(string rawSettings, string rawEncryptedSettings)
     {
         settings = $"zmq-server: {rawSettings}";
         encryptedSettings = $"encrypted-zmq-server: {rawEncryptedSettings}";
     }
+
+    #endregion
 
     #region Driver control
 
@@ -103,6 +106,18 @@ public class ZeroMqServerDriver : DriverBase
         return Task.CompletedTask;
     }
 
+    #endregion
+    
+    #region Process received data
+    protected override void ProcessReceivedData<T>(T data)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override Task ProcessReceivedDataAsync<T>(T data, CancellationToken ct = default)
+    {
+        throw new NotImplementedException();
+    }
     #endregion
 
     #region Private methods

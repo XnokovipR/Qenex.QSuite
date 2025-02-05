@@ -27,7 +27,7 @@ public class ZeroMqClientDriver : DriverBase
             Label = "ZeroMQ Client Driver",
             Description = "ZeroMQ Client Driver",
             CreatedOn = new DateTime(2025, 1, 21),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 1),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };
@@ -48,7 +48,7 @@ public class ZeroMqClientDriver : DriverBase
         if (!IsEnabled) return;
         
         exitRequested = false;
-        await RunClientAsync(ct);
+        await RunLoopAsync(ct);
     }
 
     public override Task StopAsync(CancellationToken ct = default)
@@ -76,11 +76,23 @@ public class ZeroMqClientDriver : DriverBase
     }
 
     #endregion
+    
+    #region Process received data
+    protected override void ProcessReceivedData<T>(T data)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override Task ProcessReceivedDataAsync<T>(T data, CancellationToken ct = default)
+    {
+        throw new NotImplementedException();
+    }
+    #endregion
 
     #region Private methods
 
     // All communication with the ZeroMQ library should be done in this method
-    private async Task RunClientAsync(CancellationToken ct)
+    private async Task RunLoopAsync(CancellationToken ct)
     {
         await Task.Run(async () =>
         {
