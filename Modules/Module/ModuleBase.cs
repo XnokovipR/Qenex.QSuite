@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Qenex.QSuite.ComponentSpecification;
 using Qenex.QSuite.Drivers;
 using Qenex.QSuite.LogSystem;
+using Qenex.QSuite.Protocol;
 using Qenex.QSuite.Specification;
 using Qenex.QSuite.QVariables;
 using Qenex.QSuite.ValuePresentation;
@@ -158,7 +159,6 @@ public abstract class ModuleBase : IModuleBase
     
     #region VarEvents
 
-   
     public void AddVarEvent(IVarEvent varEvent)
     {
         if (VarEvents.FirstOrDefault(v => v.Name == varEvent.Name) != null)
