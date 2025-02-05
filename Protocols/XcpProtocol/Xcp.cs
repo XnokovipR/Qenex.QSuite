@@ -55,6 +55,25 @@ public class Xcp : ProtocolBase
             Logger?.Log(LogLevel.Warn, $"Protocol variable specification for variable {variable.Name} could not be created (${e.Message}).");
             return null;
         }
-       
+    }
+
+    public override IEnumerable<T> Encode<T>(IEnumerable<IProtocolVariable> protocolVariables)
+    {
+        if (typeof(T) != typeof(byte))
+        {
+            throw new NotSupportedException();
+        }
+        
+        return (new byte[] { 1, 2, 3 } as IEnumerable<T>)!;
+    }
+
+    public override IEnumerable<IProtocolVariable> Decode<T>(IEnumerable<T> data)
+    {
+        if (typeof(T) != typeof(byte))
+        {
+            throw new NotSupportedException();
+        }
+        
+        return new List<IProtocolVariable>();
     }
 }

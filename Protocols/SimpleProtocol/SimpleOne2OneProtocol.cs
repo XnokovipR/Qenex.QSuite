@@ -74,4 +74,53 @@ public class SimpleOne2OneProtocol : ProtocolBase
        
     }
 
+    #endregion
+
+    #region Encoding and decoding
+
+    public override IEnumerable<T> Encode<T>(IEnumerable<IProtocolVariable> protocolVariables)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override IEnumerable<IProtocolVariable> Decode<T>(IEnumerable<T> data)
+    {
+        var protVars = new List<IProtocolVariable>();
+        if (data is IEnumerable<int>)
+        {
+            var periods = data.ToList();
+            if (periods.Count == 0) return protVars;
+            var period = periods[0] as int? ?? 0;
+            var rnd = new Random();
+            var vars = Variables
+                .Where(v => v.ProtocolVariableSpecification is SimpleProtVariableSpecification).Cast<SimpleOne2OneProtocolVariable>();
+                        
+            foreach (var simpleProtVariable in vars)
+            {
+                if (simpleProtVariable.Variable is not ScalarVariable scalarVariable) continue;
+                if (simpleProtVariable.ProtocolVariableSpecification is not SimpleProtVariableSpecification spec) continue;
+                if (spec.VariableEvent is not PeriodicVarEvent periodicVarEvent) continue;
+                if (periodicVarEvent.Period != period) continue;
+                            
+                if (scalarVariable.Values is Values<int> intValues)
+                {
+                    intValues.Value = rnd.Next(-20, 20);
+                }
+                else if (scalarVariable.Values is Values<float> floatValues)
+                {
+                    floatValues.Value = 10 * (float)rnd.NextDouble();
+                }
+                else if (scalarVariable.Values is Values<byte> byteValues)
+                {
+                    byteValues.Value = (byte)rnd.Next(0, 255);
+                }
+                
+                protVars.Add(simpleProtVariable);
+            }           
+        }
+
+        return protVars;
+    }
+
+    #endregion
 }
