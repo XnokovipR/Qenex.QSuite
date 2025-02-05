@@ -10,6 +10,7 @@ using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Protocol;
 using Qenex.QSuite.UnifModule;
 using Qenex.QSuite.Common.CoreComm;
+using Qenex.QSuite.QVariables;
 
 namespace Qenex.QSuite.CreateRealModuleTest;
 
@@ -32,18 +33,37 @@ class Program
         var xmlModuleHandler = new XmlModuleHandler(driversDetails, protocolsDetails, logger);
         var realModule = xmlModuleHandler.CreateModule<UnifiedModule>(xmlModule);
 
-        var zmqServerDriver = realModule?.Drivers.First(d => d.Specification.Name == "ZeroMQ Server Driver");
-        if (zmqServerDriver == null) return;
+        foreach (var drv in realModule.Drivers)
+        {
+            drv.OnDataReceived += (sender, data) =>
+            {
+                if (data is not DataReceivedEventArgs<IEnumerable<IProtocolVariable>> pVars) return;
+                foreach (var v in pVars.Data)
+                {
+                    if (v.Variable is ScalarVariable sv)
+                    {
+                        Console.WriteLine($"{pVars.Timestamp:HH:mm:ss.fff} - {sv.Name} - {sv.Values.ToString()}");
+                    }
+                }
+
+                Console.WriteLine("-------------------------------------------------");
+                
+            };
+        }
+
+
+        var simDataDriver = realModule?.Drivers.First(d => d.Specification.Name == "SimulDataDriver");
+        if (simDataDriver == null) return;
         
-        zmqServerDriver.StartAsync(cts.Token);
+        simDataDriver.StartAsync(cts.Token);
 
         Console.WriteLine("Press ESC to exit");
-        Console.ReadKey();
+        while (Console.ReadKey().Key != ConsoleKey.Q) { };
         
         // Cancel the driver
         //cts.Cancel();
         
         // Correct way to stop the driver
-        zmqServerDriver.StopAsync(cts.Token);
+        simDataDriver.StopAsync(cts.Token);
     }
 }

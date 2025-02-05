@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <module name="UnifiedModule" label="Test module">
     <description>This is a test module</description>
-    <version>1.0.0.0</version>
+    <version>1.0.0</version>
     <author>Qenex</author>
     <company>QENEX Ltd.</company>
     <createdOn>2024-11-27</createdOn>
@@ -10,66 +10,91 @@
     <!--+           Module Relations                                  +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <driverReferences>
-        <driverReference ref="ZeroMQ Server Driver" label="ZeroMQ server driver">
+        <driverReference ref="SimulDataDriver" label="Simulation driver">
             <isEnabled>true</isEnabled>
-            <settings>127.0.0.1:5000</settings>
+            <settings>periodes=1</settings>
             <encryptedSettings/>
             <protocolReferences>
-                <protocolReference ref="Simple One to One Protocol">
+                <protocolReference ref="SimpleO2OProtocol">
+                    <settings/>
+                    <encryptedSettings/>                   
                     <variableReferences>
-                       <variableReference ref="1" isCommunicated="true">
-                            <commParam>direction="read";eventRef="Event100ms";multiplier="1";id="OilTemp"</commParam>
+                        <variableReference ref="1" isCommunicated="true">
+                            <commParam>direction="read";eventRef="Event1s";multiplier="1";id="OilTemp"</commParam>
                         </variableReference>
                         <variableReference ref="2" isCommunicated="true">
-                            <commParam>direction="read";eventRef="Event2s";multiplier="1";id="OilPressure"</commParam>
+                            <commParam>direction="read";eventRef="Event1s";multiplier="1";id="OilPressure"</commParam>
                         </variableReference>
-						<variableReference ref="3" isCommunicated="true">
-							<commParam>direction="read";eventRef="OnRequestEvent1";multiplier="2";id="MachineState"</commParam>
-						</variableReference>
+                        <variableReference ref="3" isCommunicated="true">
+                            <commParam>direction="read";eventRef="Event1s";multiplier="2";id="MachineState"</commParam>
+                        </variableReference>
                     </variableReferences>
                 </protocolReference>
             </protocolReferences>
         </driverReference>
-        <driverReference ref="ZeroMQ Client Driver" label="My Ethernet client driver">
-            <isEnabled>true</isEnabled>
-            <settings>127.0.0.1:5001</settings>
-            <encryptedSettings/>
-            <protocolReferences>
-                <protocolReference ref="Simple One to One Protocol">
-                    <variableReferences>
-<!--                        <variableReference ref="4" isCommunicated="true"/>-->
-                    </variableReferences>
-                </protocolReference>
-        </protocolReferences>
-    </driverReference>  
-    <driverReference ref="Peak CAN Driver" label="My PEAK-CAN driver">
-        <isEnabled>true</isEnabled>
-        <settings>CAN-FD;500kbps</settings>
-        <encryptedSettings>440</encryptedSettings>
-        <protocolReferences>
-            <protocolReference ref="XCP Protocol">
-                <variableReferences>
-                    <variableReference ref="5" isCommunicated="true">
-                        <commParam>direction="read";eventRef="Event2s";multiplier="1";address="22"</commParam>
-                    </variableReference>
-                </variableReferences>
-            </protocolReference>
-        </protocolReferences>
-    </driverReference>        
+<!--        <driverReference ref="ZeroMQServerDriver" label="ZeroMQ server driver">-->
+<!--            <isEnabled>true</isEnabled>-->
+<!--            <settings>127.0.0.1:5000</settings>-->
+<!--            <encryptedSettings/>-->
+<!--            <protocolReferences>-->
+<!--                <protocolReference ref="SimpleO2OProtocol">-->
+<!--                    <variableReferences>-->
+<!--                       <variableReference ref="1" isCommunicated="true">-->
+<!--                            <commParam>direction="read";eventRef="Event100ms";multiplier="1";id="OilTemp"</commParam>-->
+<!--                        </variableReference>-->
+<!--                        <variableReference ref="2" isCommunicated="true">-->
+<!--                            <commParam>direction="read";eventRef="Event2s";multiplier="1";id="OilPressure"</commParam>-->
+<!--                        </variableReference>-->
+<!--						<variableReference ref="3" isCommunicated="true">-->
+<!--							<commParam>direction="read";eventRef="OnRequestEvent1";multiplier="2";id="MachineState"</commParam>-->
+<!--						</variableReference>-->
+<!--                    </variableReferences>-->
+<!--                </protocolReference>-->
+<!--            </protocolReferences>-->
+<!--        </driverReference>-->
+<!--        <driverReference ref="ZeroMQClientDriver" label="My Ethernet client driver">-->
+<!--            <isEnabled>true</isEnabled>-->
+<!--            <settings>127.0.0.1:5001</settings>-->
+<!--            <encryptedSettings/>-->
+<!--            <protocolReferences>-->
+<!--                <protocolReference ref="Simple One to One Protocol">-->
+<!--                    <variableReferences>-->
+<!--&lt;!&ndash;                        <variableReference ref="4" isCommunicated="true"/>&ndash;&gt;-->
+<!--                    </variableReferences>-->
+<!--                </protocolReference>-->
+<!--        </protocolReferences>-->
+<!--    </driverReference>  -->
+<!--        <driverReference ref="PeakCANDriver" label="My PEAK-CAN driver">-->
+<!--        <isEnabled>true</isEnabled>-->
+<!--        <settings>CAN-FD;500kbps</settings>-->
+<!--        <encryptedSettings>440</encryptedSettings>-->
+<!--        <protocolReferences>-->
+<!--            <protocolReference ref="XCP Protocol">-->
+<!--                <variableReferences>-->
+<!--                    <variableReference ref="5" isCommunicated="true">-->
+<!--                        <commParam>direction="read";eventRef="Event2s";multiplier="1";address="22"</commParam>-->
+<!--                    </variableReference>-->
+<!--                </variableReferences>-->
+<!--            </protocolReference>-->
+<!--        </protocolReferences>-->
+<!--    </driverReference>        -->
     </driverReferences>
     
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <!--+           Drivers                                           +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <drivers>
-        <driver id="1" name="ZeroMQ Server Driver">
-            <version>1.0.0.0</version>
-        </driver>        
-        <driver id="2" name="ZeroMQ Client Driver">
-            <version>1.0.0.0</version>
+        <driver id="1" name="SimulDataDriver">
+            <version>1.0.0</version>
         </driver>
-        <driver id="3" name="Peak CAN Driver">
-            <version>1.0.0.0</version>
+        <driver id="2" name="ZeroMQServerDriver">
+            <version>1.0.0</version>
+        </driver>        
+        <driver id="3" name="ZeroMQClientDriver">
+            <version>1.0.0</version>
+        </driver>
+        <driver id="4" name="PeakCANDriver">
+            <version>1.0.0</version>
         </driver>
     </drivers>
     
@@ -77,11 +102,11 @@
     <!--+           Protocols                                         +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
     <protocols>
-        <protocol id="1" name="Simple One to One Protocol" label="Simple one to one protocol">
-            <version>1.0.0.0</version>
+        <protocol id="1" name="SimpleO2OProtocol" label="Simple one to one protocol">
+            <version>1.0.0</version>
         </protocol>
         <protocol id="2" name="XCP Protocol" label="XCP protocol">
-            <version>1.0.0.0</version>
+            <version>1.0.0</version>
         </protocol>
     </protocols>
 
@@ -121,6 +146,7 @@
     <variableEvents>
         <periodicVariableEvent name="Event100ms" period="100" unit="Milisec"/>
         <periodicVariableEvent name="Event2s" period="2" unit="Sec"/>
+        <periodicVariableEvent name="Event1s" period="1" unit="Sec"/>
 		<onRequestVariableEvent name="OnRequestEvent1"/>
 		<onValueChangedVariableEvent name="OnValueChangedEvent1" threshold="3.14"/>
 		<onValueChangedVariableEvent name="OnValueChangedEvent2" threshold="10"/>
