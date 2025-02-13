@@ -3,8 +3,11 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.LogSystem;
+using Qenex.QSuite.Models.AppSettings;
 using Syncfusion.Windows.Shared;
 using Syncfusion.Windows.Tools.Controls;
+using System.Windows.Forms;
+using WinApp = System.Windows.Application;
 
 namespace Qenex.QSuite.ViewModels;
 
@@ -14,6 +17,8 @@ public partial class ShellViewModel
 
     #region Commands
     
+    public RelayCommand<object> OnWinLocationChangedCommand { get; set; }
+    public RelayCommand<object> OnWinSizeChangedCommand { get; set; }
     public RelayCommand<DockingManager> OnLoadedCommand { get; set; }
     public RelayCommand<DockingManager> OnClosingCommand { get; set; }
 
@@ -30,6 +35,8 @@ public partial class ShellViewModel
     
     private void CreateCommands()
     {
+        OnWinLocationChangedCommand = new RelayCommand<object>(OnWindowLocationChanged);
+        OnWinSizeChangedCommand = new RelayCommand<object>(OnWindowSizeChanged);
         OnLoadedCommand = new RelayCommand<DockingManager>(OnLoaded);
         OnClosingCommand = new RelayCommand<DockingManager>(OnClosing);
 
@@ -52,6 +59,20 @@ public partial class ShellViewModel
         });
     }
 
+    private void OnWindowLocationChanged(object obj)
+    {
+        if (WinApp.Current.MainWindow == null) return;
+        appSettings.WinStyle.Top = WinApp.Current.MainWindow.Top;
+        appSettings.WinStyle.Left = WinApp.Current.MainWindow.Left;
+    }
+    private void OnWindowSizeChanged(object obj)
+    {
+        if (WinApp.Current.MainWindow == null) return;
+        appSettings.WinStyle.Height = (int)WinApp.Current.MainWindow.Height;
+        appSettings.WinStyle.Width = (int) WinApp.Current.MainWindow.Width;
+        appSettings.WinStyle.WinState = WinApp.Current.MainWindow.WindowState;
+    }
+
     private void OnLoaded(DockingManager docking)
     {
         if (!File.Exists("QenexEditLayout.xml")) return;
@@ -71,10 +92,29 @@ public partial class ShellViewModel
         try
         {
             docking.SaveDockState("QenexEditLayout.xml");
+
+            //appSettings.WinStyle.ScreenId = GetCurrentWindowScreen();
+            AppSettings.SaveAppSettingsToFile("QSuiteAppSettings.xml", appSettings);
         }
         catch (Exception e)
         {
             eventAggregator.Publish(new LogMessage(LogLevel.Error, e.Message));
         }
+    }
+
+    private int GetCurrentWindowScreen()
+    {
+        var window = WinApp.Current.MainWindow;
+        var windowHandle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+        var screen = System.Windows.Forms.Screen.FromHandle(windowHandle);
+        
+        var screenBounds = screen.Bounds;
+        var workingArea = screen.WorkingArea;
+        bool isPrimary = screen.Primary; 
+
+        var allScreens = System.Windows.Forms.Screen.AllScreens;
+        int screenIndex = Array.IndexOf(allScreens, screen); 
+        
+        return screenIndex;
     }
 }

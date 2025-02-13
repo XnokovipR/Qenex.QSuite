@@ -2,9 +2,7 @@
 using System.Xml.Serialization;
 using Qenex.QLibs.XmlInOut;
 
-
 namespace Qenex.QSuite.Models.AppSettings;
-
 
 [XmlRoot("AppSettings")]
 public class AppSettings
@@ -18,6 +16,7 @@ public class AppSettings
 
 	#region Properties
 
+	[XmlElement("IsAppSettingRead")] public bool IsAppSettingRead { get; set; }
 	[XmlElement("WindowStyle")] public WindowStyle WinStyle { get; set; }
 	[XmlElement("DesignManager")] public DesignManager Design { get; set; }
 
@@ -42,6 +41,8 @@ public class AppSettings
 	{
 		return new AppSettings()
 		{
+			IsAppSettingRead = false,
+			
 			Design = new DesignManager()
 			{
 				Skin = Skin.Light,
@@ -49,17 +50,28 @@ public class AppSettings
 			},
 			WinStyle = new WindowStyle()
 			{
+				ScreenId = 0,
 				Height = 900,
 				Width = 1400,
+				Left = 200,
+				Top = 200,
 				WinState = System.Windows.WindowState.Normal
 			}
 			
 		};
 	}
 
-	public void SaveAppSettingsToFile(string fileName)
+	public static void SaveAppSettingsToFile(string fileName, AppSettings settings)
 	{
-		XmlInOut<AppSettings>.SaveToFile(fileName, this);
+		
+		try
+		{
+			XmlInOut<AppSettings>.SaveToFile(fileName, settings);
+		}
+		catch (Exception e)
+		{
+			
+		}
 	}
 
 	#endregion

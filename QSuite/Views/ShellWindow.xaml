@@ -8,9 +8,6 @@
     xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
     xmlns:viewModels="clr-namespace:Qenex.QSuite.ViewModels"
     mc:Ignorable="d"
-    Height="900" 
-    Width="1400"
-    WindowStartupLocation="CenterScreen"
     Title="QSuite" 
     d:DataContext="{d:DesignInstance viewModels:ShellViewModel, IsDesignTimeCreatable=False}"
     UseNativeChrome="True">
@@ -26,6 +23,14 @@
     
         <i:EventTrigger EventName="Closing">
             <i:InvokeCommandAction Command="{Binding OnClosingCommand}" CommandParameter="{Binding ElementName=DockingManager}"/>
+        </i:EventTrigger>
+        
+        <i:EventTrigger EventName="SizeChanged">
+            <i:InvokeCommandAction Command="{Binding OnWinSizeChangedCommand}"/>
+        </i:EventTrigger>
+        
+        <i:EventTrigger EventName="LocationChanged">
+            <i:InvokeCommandAction Command="{Binding OnWinLocationChangedCommand}"/>
         </i:EventTrigger>
     </i:Interaction.Triggers>
     

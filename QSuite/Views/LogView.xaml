@@ -50,7 +50,7 @@
 
 				<local:LogLevelStyleSelector.DebugLogBackgroundStyle>
 					<Style TargetType="syncfusion:VirtualizingCellsControl">
-						<Setter Property="Foreground" Value="Blue"/>
+						<Setter Property="Foreground" Value="LightSkyBlue"/>
 					</Style>
 				</local:LogLevelStyleSelector.DebugLogBackgroundStyle>
 

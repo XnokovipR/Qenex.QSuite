@@ -12,6 +12,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
       <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
       <PackageReference Include="Qenex.QLibs.QUI.SyncfusionDocking" Version="1.0.0" />
       <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.0" />

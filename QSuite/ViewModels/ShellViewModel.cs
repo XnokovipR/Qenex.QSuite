@@ -3,12 +3,12 @@ using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.SyncfusionDocking;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Models.AppSettings;
+using WindowStyle = System.Windows.WindowStyle;
 
 namespace Qenex.QSuite.ViewModels;
 
 public partial class ShellViewModel : PropertyChangedBaseWithValidation
 {
-
     #region Private
 
     private readonly EventAggregator eventAggregator;
@@ -42,8 +42,9 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
 
     #region Properties
     public SyncfusionDockingManager DockingManager { get; set; }
-    public int WindowHeight { get; set; } = 500;
-    public int WindowWidth { get; set; } = 800;
+    public int WindowHeight { get; set; } = 900;
+    public int WindowWidth { get; set; } = 1600;
+    public WindowState WinState { get; set; } = WindowState.Normal;
     
     #endregion
 
@@ -69,18 +70,39 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     private void ProcessAppSettings(string filename)
     {
         appSettings = AppSettings.LoadAppSettingsFromFile("QSuiteAppSettings.xml") ?? AppSettings.GetDefaultAppSettings();
-        
-        if (appSettings.WinStyle.Height != 0 || appSettings.WinStyle.Width != 0)
+        if (Application.Current.MainWindow != null)
         {
-            if (Application.Current.MainWindow != null)
+            var win = Application.Current.MainWindow;
+            win.Height = appSettings.WinStyle.Height;
+            win.Width = appSettings.WinStyle.Width;
+            win.WindowState = appSettings.WinStyle.WinState;
+            win.Top = appSettings.WinStyle.Top;
+            win.Left = appSettings.WinStyle.Left;
+            
+            if (!appSettings.IsAppSettingRead)
             {
-                Application.Current.MainWindow.Height = appSettings.WinStyle.Height;
-                Application.Current.MainWindow.Width = appSettings.WinStyle.Width;
-                Application.Current.MainWindow.WindowState = appSettings.WinStyle.WinState;
+                win.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                appSettings.WinStyle.ScreenId = 0;
+                appSettings.WinStyle.Height = win.Height;
+                appSettings.WinStyle.Width = win.Width;
+                appSettings.WinStyle.WinState = win.WindowState;
+                appSettings.WinStyle.Top = win.Top;
+                appSettings.WinStyle.Left = win.Left;
+                appSettings.IsAppSettingRead = true;
             }
+            
+            OpenWindowOnDefinedScreen(win, appSettings);
         }
         
+        
         SetSyncfusionTheme(appSettings.Design);
+    }
+
+    private void OpenWindowOnDefinedScreen(Window win, AppSettings appSettings)
+    {
+        var targetScreen = System.Windows.Forms.Screen.AllScreens[appSettings.WinStyle.ScreenId];
+        win.Left = targetScreen.Bounds.Left + appSettings.WinStyle.Left;
+        win.Top = targetScreen.Bounds.Top + appSettings.WinStyle.Top;
     }
 
     #endregion
