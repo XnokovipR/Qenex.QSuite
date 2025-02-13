@@ -26,7 +26,10 @@
                             <commParam>direction="read";eventRef="Event1s";multiplier="1";id="OilPressure"</commParam>
                         </variableReference>
                         <variableReference ref="3" isCommunicated="true">
-                            <commParam>direction="read";eventRef="Event1s";multiplier="2";id="MachineState"</commParam>
+                            <commParam>direction="read";eventRef="Event1s";multiplier="1";id="MachineState"</commParam>
+                        </variableReference>
+                        <variableReference ref="5" isCommunicated="true">
+                            <commParam>direction="read";eventRef="Event1s";multiplier="1";id="AirPressure"</commParam>
                         </variableReference>
                     </variableReferences>
                 </protocolReference>
@@ -145,7 +148,7 @@
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->   
     <variableEvents>
         <periodicVariableEvent name="Event100ms" period="100" unit="Milisec"/>
-        <periodicVariableEvent name="Event2s" period="2" unit="Sec"/>
+        <periodicVariableEvent name="Event3s" period="3" unit="Sec"/>
         <periodicVariableEvent name="Event1s" period="1" unit="Sec"/>
 		<onRequestVariableEvent name="OnRequestEvent1"/>
 		<onValueChangedVariableEvent name="OnValueChangedEvent1" threshold="3.14"/>

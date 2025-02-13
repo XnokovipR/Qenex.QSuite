@@ -42,7 +42,7 @@ class Program
                 {
                     if (v.Variable is ScalarVariable sv)
                     {
-                        Console.WriteLine($"{pVars.Timestamp:HH:mm:ss.fff} - {sv.Name} - {sv.Values.ToString()}");
+                        Console.WriteLine($"{pVars.Timestamp:HH:mm:ss.fff}\t{sv.Label}\t\t{sv.Values.ToString()}");
                     }
                 }
 

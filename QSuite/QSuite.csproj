@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UseWPF>true</UseWPF>
+        <AssemblyName>Qenex.QSuite</AssemblyName>
+        <RootNamespace>Qenex.QSuite</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+      <PackageReference Include="Qenex.QLibs.QUI.SyncfusionDocking" Version="1.0.0" />
+      <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.0" />
+      <PackageReference Include="Qenex.QLibs.XmlInOut" Version="1.0.0" />
+      <PackageReference Include="Syncfusion.Licensing" Version="28.2.4" />
+      <PackageReference Include="Syncfusion.SfGrid.WPF" Version="28.2.4" />
+      <PackageReference Include="Syncfusion.SfSkinManager.WPF" Version="28.2.4" />
+      <PackageReference Include="Syncfusion.Shared.WPF" Version="28.2.4" />
+      <PackageReference Include="Syncfusion.Themes.FluentDark.WPF" Version="28.2.4" />
+      <PackageReference Include="Syncfusion.Themes.FluentLight.WPF" Version="28.2.4" />
+      <PackageReference Include="Syncfusion.Tools.WPF" Version="28.2.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Views\Converters\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\LogSystems\LogSystem\LogSystem.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Models\AppSettings\QSuiteAppSettings.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<AppSettings>
+	<WindowStyle>
+		<Height>900</Height>
+		<Width>1400</Width>
+		<WindowState>Normal</WindowState>
+	</WindowStyle>
+	<DesignManager>
+		<Skin>Dark</Skin>
+		<FontSize>12</FontSize>
+	</DesignManager>
+</AppSettings>
