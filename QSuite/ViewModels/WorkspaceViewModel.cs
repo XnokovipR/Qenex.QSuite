@@ -1,6 +1,8 @@
 ﻿using System.Windows;
 using Qenex.QLibs.QUI;
+using Qenex.QLibs.QUI.Wpf;
 using Syncfusion.UI.Xaml.Diagram;
+using Syncfusion.UI.Xaml.Diagram.Controls;
 using Syncfusion.Windows.Tools.Controls;
 
 namespace Qenex.QSuite.ViewModels;
@@ -8,6 +10,9 @@ namespace Qenex.QSuite.ViewModels;
 public class WorkspaceViewModel : ViewModelBase
 {
     #region Fields
+    
+    private bool diagramLoaded = false;
+    SfDiagram diagram;
 
     #endregion
 
@@ -15,16 +20,19 @@ public class WorkspaceViewModel : ViewModelBase
 
     public WorkspaceViewModel(EventAggregator ea) : base(ea)
     {
-        //Diagram = new SfDiagram();
         DiagramLoadedCommand = new RelayCommand<SfDiagram>(OnDiagramLoaded);
     }
 
     #endregion
     
     #region Properties
- 
+
+    public string Identifier => GenerateWorkspaceIdentifier();
     public RelayCommand<SfDiagram> DiagramLoadedCommand { get; set; }
-    
+    public SfDiagram Diagram { get => diagram; set  { diagram = value; OnPropertyChanged(); }
+}
+
+
     #endregion
     
     #region BaseViewModel implementation
@@ -37,7 +45,7 @@ public class WorkspaceViewModel : ViewModelBase
 
     public override string Name
     {
-        get => "WorkspaceViewModel";
+        get => GenerateWorkspaceIdentifier();
         set { }
     }
 
@@ -48,12 +56,32 @@ public class WorkspaceViewModel : ViewModelBase
     }
 
     public override bool IsDocument => true;
-    public override bool CanClose => false;
+    public override bool CanClose => true;
 
-    #endregion   
+    #endregion
+
+    #region Public methods
     
-    public void OnDiagramLoaded(SfDiagram d)
+    public void OnDiagramLoaded(SfDiagram sfDiagram)
     {
-        EventAggregator.Publish(d);
+        diagram = sfDiagram;
+
+        if (diagramLoaded) return;
+        diagramLoaded = true;
+        
     }
+
+    #endregion
+
+    #region Private methods
+
+    private static string GenerateWorkspaceIdentifier()
+    {
+        var workspaceName = $"WorkspaceViewModel_{Guid.NewGuid():N}";
+        return workspaceName;
+    } 
+    
+
+    #endregion
+    
 }
