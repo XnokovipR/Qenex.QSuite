@@ -14,9 +14,10 @@ public class LogViewModel : ViewModelBase, ILogSubscriber
     }
  
     #region Properties
-
     public ObservableCollection<ILogMessage> LogMessages { get; set; }
 
+    #endregion
+    
     #region BaseViewModel implementation
 
     public override string Header
@@ -39,8 +40,6 @@ public class LogViewModel : ViewModelBase, ILogSubscriber
 
     public override bool IsDocument => false;
     public override bool CanClose => false;
-
-    #endregion
 
     #endregion
 

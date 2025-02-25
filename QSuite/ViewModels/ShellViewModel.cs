@@ -3,6 +3,7 @@ using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.SyncfusionDocking;
 using Qenex.QSuite.LogSystem;
 using Qenex.QSuite.Models.AppSettings;
+using Syncfusion.UI.Xaml.Diagram;
 using WindowStyle = System.Windows.WindowStyle;
 
 namespace Qenex.QSuite.ViewModels;
@@ -15,10 +16,14 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     private Logger loggger;
     private AppSettings appSettings;
 
+    private SfDiagram diagram;
+    
     private SolutionExplorerViewModel solutionExplorerViewModel;
     private LogViewModel logViewModel;
     private PropertiesViewModel propertiesViewModel;
     private ControlsViewModel controlsViewModel;
+    private WorkspaceViewModel workspaceViewModel;
+    
 
     #endregion
 
@@ -29,6 +34,9 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
         ProcessAppSettings("QSuiteAppSettings.xml");
         
         eventAggregator = new EventAggregator();
+        eventAggregator.SubscribeAction<SfDiagram>(BindDiagramFromWorkspaceVm);
+        
+        Diagram = new SfDiagram();
         loggger = new Logger(LogLevel.Trace);
 
         CreateViewModels();
@@ -42,14 +50,28 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
 
     #region Properties
     public SyncfusionDockingManager DockingManager { get; set; }
+    public SfDiagram Diagram
+    {
+        get => diagram;
+        set
+        {
+            diagram = value; 
+            OnPropertyChanged();
+        }
+    }
+    
     public int WindowHeight { get; set; } = 900;
     public int WindowWidth { get; set; } = 1600;
     public WindowState WinState { get; set; } = WindowState.Normal;
     
+    
     #endregion
 
     #region Private
-    
+    public void BindDiagramFromWorkspaceVm(SfDiagram d)
+    {
+        Diagram = d;
+    }
     private void CreateViewModels()
     {
         DockingManager = new SyncfusionDockingManager();
@@ -66,6 +88,9 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
         
         propertiesViewModel = new PropertiesViewModel(eventAggregator);
         DockingManager.Add(propertiesViewModel);
+        
+        workspaceViewModel = new WorkspaceViewModel(eventAggregator);
+        DockingManager.Add(workspaceViewModel);
     }
     private void ProcessAppSettings(string filename)
     {

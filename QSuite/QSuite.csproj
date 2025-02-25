@@ -17,13 +17,15 @@
       <PackageReference Include="Qenex.QLibs.QUI.SyncfusionDocking" Version="1.0.0" />
       <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.0" />
       <PackageReference Include="Qenex.QLibs.XmlInOut" Version="1.0.0" />
-      <PackageReference Include="Syncfusion.Licensing" Version="28.2.4" />
-      <PackageReference Include="Syncfusion.SfGrid.WPF" Version="28.2.4" />
-      <PackageReference Include="Syncfusion.SfSkinManager.WPF" Version="28.2.4" />
-      <PackageReference Include="Syncfusion.Shared.WPF" Version="28.2.4" />
-      <PackageReference Include="Syncfusion.Themes.FluentDark.WPF" Version="28.2.4" />
-      <PackageReference Include="Syncfusion.Themes.FluentLight.WPF" Version="28.2.4" />
-      <PackageReference Include="Syncfusion.Tools.WPF" Version="28.2.4" />
+      <PackageReference Include="Syncfusion.Licensing" Version="28.2.5" />
+      <PackageReference Include="Syncfusion.SfDiagram.WPF" Version="28.2.5" />
+      <PackageReference Include="Syncfusion.SfDiagramRibbon.WPF" Version="28.2.5" />
+      <PackageReference Include="Syncfusion.SfGrid.WPF" Version="28.2.5" />
+      <PackageReference Include="Syncfusion.SfSkinManager.WPF" Version="28.2.5" />
+      <PackageReference Include="Syncfusion.Shared.WPF" Version="28.2.5" />
+      <PackageReference Include="Syncfusion.Themes.FluentDark.WPF" Version="28.2.5" />
+      <PackageReference Include="Syncfusion.Themes.FluentLight.WPF" Version="28.2.5" />
+      <PackageReference Include="Syncfusion.Tools.WPF" Version="28.2.5" />
     </ItemGroup>
 
     <ItemGroup>

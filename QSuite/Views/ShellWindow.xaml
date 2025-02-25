@@ -4,6 +4,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:Qenex.QSuite.Views"
+    xmlns:qenexSyncfusion="clr-namespace:Qenex.QSuite.SyncfusionOverridden"
     xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
     xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
     xmlns:viewModels="clr-namespace:Qenex.QSuite.ViewModels"
@@ -40,28 +41,9 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
-        <syncfusion:Ribbon x:Name="RibbonMenu" Grid.Row="0" RibbonState="Normal">
-            <syncfusion:Ribbon.BackStageButton>
-                <syncfusion:BackStageButton Visibility="Collapsed"/>
-            </syncfusion:Ribbon.BackStageButton>
-            <syncfusion:RibbonTab Caption="File"></syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="View">
-                <syncfusion:RibbonBar Header="Windows">
-                    <syncfusion:RibbonButton
-                        SizeForm="Large"
-                        Label="Solution Explorer"
-                        Command="{Binding OnSolutionExplorerCommand}" CommandParameter="{Binding ElementName=DockingManager}"/>
-                    <syncfusion:RibbonButton SizeForm="Large" Label="Logs"/>
-                </syncfusion:RibbonBar>
-            </syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="Project"></syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="Runtime"></syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="Options"></syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="Extensions"></syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="Help"></syncfusion:RibbonTab>
-        </syncfusion:Ribbon>
-
+    
+        <qenexSyncfusion:QsfDiagramRibbon x:Name="DiagramRibbon" DataContext="{Binding Diagram}" Grid.Row="0"/>
+        
         <Grid Grid.Row="1" Margin="0,0,0,15">
             <syncfusion:DockingManager
                 x:Name="DockingManager" 
@@ -69,5 +51,6 @@
                 ItemsSource="{Binding DockingManager.DockableViewModels}"/>
         </Grid>
         <StatusBar Grid.Row="2"></StatusBar>
+
     </Grid>
 </syncfusion:ChromelessWindow>

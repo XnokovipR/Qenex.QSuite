@@ -7,6 +7,7 @@ using Qenex.QSuite.Models.AppSettings;
 using Syncfusion.Windows.Shared;
 using Syncfusion.Windows.Tools.Controls;
 using System.Windows.Forms;
+using Syncfusion.UI.Xaml.Diagram;
 using WinApp = System.Windows.Application;
 
 namespace Qenex.QSuite.ViewModels;
@@ -17,6 +18,7 @@ public partial class ShellViewModel
 
     #region Commands
     
+    //public RelayCommand<SfDiagram> OnDiagramLoadedCommand { get; set; }
     public RelayCommand<object> OnWinLocationChangedCommand { get; set; }
     public RelayCommand<object> OnWinSizeChangedCommand { get; set; }
     public RelayCommand<DockingManager> OnLoadedCommand { get; set; }
@@ -35,6 +37,7 @@ public partial class ShellViewModel
     
     private void CreateCommands()
     {
+        //OnDiagramLoadedCommand = new RelayCommand<SfDiagram>(OnDiagramLoaded);
         OnWinLocationChangedCommand = new RelayCommand<object>(OnWindowLocationChanged);
         OnWinSizeChangedCommand = new RelayCommand<object>(OnWindowSizeChanged);
         OnLoadedCommand = new RelayCommand<DockingManager>(OnLoaded);
@@ -59,6 +62,11 @@ public partial class ShellViewModel
         });
     }
 
+    private void OnDiagramLoaded(SfDiagram diagram)
+    {
+        Diagram = diagram;
+    }
+    
     private void OnWindowLocationChanged(object obj)
     {
         if (WinApp.Current.MainWindow == null) return;

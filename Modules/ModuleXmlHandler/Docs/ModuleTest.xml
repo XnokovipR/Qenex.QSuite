@@ -12,24 +12,24 @@
     <driverReferences>
         <driverReference ref="SimulDataDriver" label="Simulation driver">
             <isEnabled>true</isEnabled>
-            <settings>periodes=1</settings>
+            <settings>periodes=3</settings>
             <encryptedSettings/>
             <protocolReferences>
                 <protocolReference ref="SimpleO2OProtocol">
                     <settings/>
                     <encryptedSettings/>                   
                     <variableReferences>
-                        <variableReference ref="1" isCommunicated="true">
-                            <commParam>direction="read";eventRef="Event1s";multiplier="1";id="OilTemp"</commParam>
-                        </variableReference>
-                        <variableReference ref="2" isCommunicated="true">
-                            <commParam>direction="read";eventRef="Event1s";multiplier="1";id="OilPressure"</commParam>
-                        </variableReference>
-                        <variableReference ref="3" isCommunicated="true">
-                            <commParam>direction="read";eventRef="Event1s";multiplier="1";id="MachineState"</commParam>
-                        </variableReference>
+                        <!-- <variableReference ref="1" isCommunicated="true"> -->
+                            <!-- <commParam>direction="read";eventRef="Event1s";multiplier="1";id="OilTemp"</commParam> -->
+                        <!-- </variableReference> -->
+                        <!-- <variableReference ref="2" isCommunicated="true"> -->
+                            <!-- <commParam>direction="read";eventRef="Event1s";multiplier="1";id="OilPressure"</commParam> -->
+                        <!-- </variableReference> -->
+                        <!-- <variableReference ref="3" isCommunicated="true"> -->
+                            <!-- <commParam>direction="read";eventRef="Event1s";multiplier="1";id="MachineState"</commParam> -->
+                        <!-- </variableReference> -->
                         <variableReference ref="5" isCommunicated="true">
-                            <commParam>direction="read";eventRef="Event1s";multiplier="1";id="AirPressure"</commParam>
+                            <commParam>direction="read";eventRef="Event3s";multiplier="1";id="AirPressure"</commParam>
                         </variableReference>
                     </variableReferences>
                 </protocolReference>
