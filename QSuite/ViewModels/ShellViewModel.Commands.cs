@@ -18,7 +18,6 @@ public partial class ShellViewModel
 
     #region Commands
     
-    //public RelayCommand<SfDiagram> OnDiagramLoadedCommand { get; set; }
     public RelayCommand<object> OnWinLocationChangedCommand { get; set; }
     public RelayCommand<object> OnWinSizeChangedCommand { get; set; }
     public RelayCommand<DockingManager> OnLoadedCommand { get; set; }
@@ -61,11 +60,7 @@ public partial class ShellViewModel
             }
         });
     }
-
-    private void OnDiagramLoaded(SfDiagram diagram)
-    {
-        Diagram = diagram;
-    }
+    
     
     private void OnWindowLocationChanged(object obj)
     {

@@ -21,7 +21,7 @@
             
             <i:Interaction.Triggers>
                 <i:EventTrigger EventName="Loaded">
-                    <i:InvokeCommandAction Command="{Binding DiagramLoadedCommand}"
+                    <i:InvokeCommandAction Command="{Binding DiagramLoadedCommand }"
                                            CommandParameter="{Binding ElementName=DiagramControl}"/>
                 </i:EventTrigger>
             </i:Interaction.Triggers>
