@@ -34,9 +34,6 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
         ProcessAppSettings("QSuiteAppSettings.xml");
         
         eventAggregator = new EventAggregator();
-        eventAggregator.SubscribeAction<SfDiagram>(BindDiagramFromWorkspaceVm);
-        
-        Diagram = new SfDiagram();
         loggger = new Logger(LogLevel.Trace);
 
         CreateViewModels();
@@ -50,15 +47,6 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
 
     #region Properties
     public SyncfusionDockingManager DockingManager { get; set; }
-    public SfDiagram Diagram
-    {
-        get => diagram;
-        set
-        {
-            diagram = value; 
-            OnPropertyChanged();
-        }
-    }
     
     public int WindowHeight { get; set; } = 900;
     public int WindowWidth { get; set; } = 1600;
@@ -68,10 +56,7 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     #endregion
 
     #region Private
-    public void BindDiagramFromWorkspaceVm(SfDiagram d)
-    {
-        Diagram = d;
-    }
+    
     private void CreateViewModels()
     {
         DockingManager = new SyncfusionDockingManager();
