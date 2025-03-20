@@ -13,7 +13,6 @@ public interface IProtocolBase: IComponentSpecification
 {
     /// <summary>
     /// Id specifies the protocol instance.
-    /// In one driver, there can be only one protocol.
     /// </summary>
     int Id { get; set; }
     
