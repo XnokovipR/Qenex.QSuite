@@ -11,8 +11,6 @@
              d:DesignHeight="300" d:DesignWidth="300"
              d:DataContext="{d:DesignInstance viewModels:WorkspaceViewModel, IsDesignTimeCreatable=False}">
     
-
-    
     <Grid>
         <syncfusion:SfDiagram x:Name="DiagramControl"
                               DefaultConnectorType="Line"
