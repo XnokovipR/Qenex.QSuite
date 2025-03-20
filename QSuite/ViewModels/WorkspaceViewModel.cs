@@ -61,8 +61,8 @@ public class WorkspaceViewModel : ViewModelBase
     #endregion
 
     #region Public methods
-    
-    public void OnDiagramLoaded(SfDiagram sfDiagram)
+
+    private void OnDiagramLoaded(SfDiagram sfDiagram)
     {
         diagram = sfDiagram;
 
