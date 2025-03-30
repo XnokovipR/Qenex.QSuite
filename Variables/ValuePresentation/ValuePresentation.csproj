@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.ValuePresentation</AssemblyName>
-        <RootNamespace>Qenex.QSuite.ValuePresentation</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Variables.ValuePresentation</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Variables.ValuePresentation</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

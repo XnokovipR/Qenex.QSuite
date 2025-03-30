@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.ConsoleLogSubscriber</AssemblyName>
-        <RootNamespace>Qenex.QSuite.ConsoleLogSubscriber</RootNamespace>
+        <AssemblyName>Qenex.QSuite.LogSystems.ConsoleLogSubscriber</AssemblyName>
+        <RootNamespace>Qenex.QSuite.LogSystems.ConsoleLogSubscriber</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

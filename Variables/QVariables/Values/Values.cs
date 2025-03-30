@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.QVariables.Values;
+﻿namespace Qenex.QSuite.Variables.QVariables.Values;
 
 public class Values<T> : ValuesBase
 {

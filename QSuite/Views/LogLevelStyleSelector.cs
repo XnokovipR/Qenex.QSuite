@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 using System.Windows;
-using Qenex.QSuite.LogSystem;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Syncfusion.UI.Xaml.Grid;
 
 namespace Qenex.QSuite.Views;

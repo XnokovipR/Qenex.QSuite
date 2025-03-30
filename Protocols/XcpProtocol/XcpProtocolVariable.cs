@@ -1,4 +1,4 @@
-﻿using Qenex.QSuite.Protocol;
+﻿using Qenex.QSuite.Protocols.Protocol;
 
 namespace Qenex.QSuite.Protocols.XcpProtocol;
 

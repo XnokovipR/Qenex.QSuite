@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.VariableEvents;
+﻿namespace Qenex.QSuite.Variables.VariableEvents;
 
 public interface IVarEvent
 {

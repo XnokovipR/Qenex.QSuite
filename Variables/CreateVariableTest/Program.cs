@@ -1,8 +1,8 @@
-﻿using Qenex.QSuite.QVariables;
-using Qenex.QSuite.QVariables.Values;
-using Qenex.QSuite.QVariables;
+﻿using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.QVariables.Values;
+using Qenex.QSuite.Variables.QVariables;
 
-namespace Qenex.QSuite.Variables.CreateVariableTest;
+namespace Qenex.QSuite.Variables.Tests.CreateVariableTest;
 
 class Program
 {

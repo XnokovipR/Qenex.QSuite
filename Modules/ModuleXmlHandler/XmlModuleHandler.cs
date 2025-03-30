@@ -1,17 +1,17 @@
-﻿using Qenex.QSuite.ComponentSpecification;
-using Qenex.QSuite.Drivers;
-using Qenex.QSuite.LogSystem;
-using Qenex.QSuite.Module;
+﻿using Qenex.QSuite.Specifications.ComponentSpecification;
+using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Modules.Module;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 using Qenex.QSuite.Common.PluginManager;
-using Qenex.QSuite.PluginManager;
-using Qenex.QSuite.Protocol;
-using Qenex.QSuite.QVariables;
-using Qenex.QSuite.ValuePresentation;
-using Qenex.QSuite.QVariables.Values;
+using Qenex.QSuite.Common.PluginManager;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.ValuePresentation;
+using Qenex.QSuite.Variables.QVariables.Values;
 using Qenex.QSuite.UnifModule;
 using Qenex.QSuite.ValueConversion;
-using Qenex.QSuite.VariableEvents;
+using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.ModuleXmlHandler;
 

@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.LogSystem;
+﻿namespace Qenex.QSuite.LogSystems.LogSystem;
 
 public class LogMessage : ILogMessage
 {

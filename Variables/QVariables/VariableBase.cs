@@ -1,10 +1,10 @@
 ﻿using System.Xml.Serialization;
-using Qenex.QSuite.ComponentSpecification;
-using Qenex.QSuite.ProtocolVariableSpecification;
-using Qenex.QSuite.QVariables;
-using Qenex.QSuite.VariableEvents;
+using Qenex.QSuite.Specifications.ComponentSpecification;
+using Qenex.QSuite.Specifications.ProtocolVariableSpecification;
+using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.VariableEvents;
 
-namespace Qenex.QSuite.QVariables;
+namespace Qenex.QSuite.Variables.QVariables;
 
 /// <summary>
 /// The base class for all variables.

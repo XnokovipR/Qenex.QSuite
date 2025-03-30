@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.NLogSubscriber</AssemblyName>
-        <RootNamespace>Qenex.QSuite.NLogSubscriber</RootNamespace>
+        <AssemblyName>Qenex.QSuite.LogSystems.NLogSubscriber</AssemblyName>
+        <RootNamespace>Qenex.QSuite.LogSystems.NLogSubscriber</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

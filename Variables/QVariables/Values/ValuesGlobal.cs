@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Qenex.QSuite.QVariables.Values;
+namespace Qenex.QSuite.Variables.QVariables.Values;
 
 /// <summary>
 /// Global definitions and methods for Values.

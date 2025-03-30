@@ -1,8 +1,8 @@
 ﻿using System.Reflection;
-using Qenex.QSuite.LogSystem;
-using Qenex.QSuite.Module;
-using Qenex.QSuite.Specification;
-using Qenex.QSuite.QVariables;
+using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Modules.Module;
+using Qenex.QSuite.Specifications.Specification;
+using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QSuite.UnifModule;
 

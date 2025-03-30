@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.QModule</AssemblyName>
-        <RootNamespace>Qenex.QSuite.QModule</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Modules.QModule</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Modules.QModule</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.VariableEvents</AssemblyName>
-        <RootNamespace>Qenex.QSuite.VariableEvents</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Variables.VariableEvents</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Variables.VariableEvents</RootNamespace>
     </PropertyGroup>
 
 </Project>

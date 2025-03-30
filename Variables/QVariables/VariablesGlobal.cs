@@ -3,7 +3,7 @@
 
 //[assembly: InternalsVisibleTo("Qenex.QSuite.Variables.CreateVariableTest")]
 
-namespace Qenex.QSuite.QVariables;
+namespace Qenex.QSuite.Variables.QVariables;
 
 /// <summary>
 /// Global definitions and methods for variables.

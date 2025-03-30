@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
-using Qenex.QSuite.Specification;
+using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.PeakCanDriver;
 

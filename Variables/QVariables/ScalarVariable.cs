@@ -1,6 +1,6 @@
-﻿using Qenex.QSuite.QVariables.Values;
+﻿using Qenex.QSuite.Variables.QVariables.Values;
 
-namespace Qenex.QSuite.QVariables;
+namespace Qenex.QSuite.Variables.QVariables;
 
 public class ScalarVariable : VariableBase
 {

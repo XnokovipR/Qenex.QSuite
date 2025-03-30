@@ -1,9 +1,8 @@
-﻿using Qenex.QSuite.LogSystem;
-using NLog;
+﻿using Qenex.QSuite.LogSystems.LogSystem;
 using Logger = NLog.Logger;
-using LogSystem = Qenex.QSuite.LogSystem;
+using LogSystem = Qenex.QSuite.LogSystems.LogSystem;
 
-namespace Qenex.QSuite.NLogSubscriber;
+namespace Qenex.QSuite.LogSystems.NLogSubscriber;
 
 /// <summary>
 /// NLogSubscriber logs message via NLog library into files.
@@ -12,7 +11,7 @@ public class NLogSubscriber : ILogSubscriber
 {
 	private static readonly Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
-	private static readonly Dictionary<LogSystem.LogLevel, Action<Exception, string>> logLevelToActionConverter = new()
+	private static readonly Dictionary<LogSystem.LogLevel, Action<Exception, string>> LogLevelToActionConverter = new()
 	{
 		{LogSystem.LogLevel.Trace, logger.Trace},
 		{LogSystem.LogLevel.Debug, logger.Debug},
@@ -35,6 +34,6 @@ public class NLogSubscriber : ILogSubscriber
 	private void LogMessage(ILogMessage message)
 	{
 		var msg = message is LogMessage ? "NLogMessage: " + message.Message : message.Message;
-		logLevelToActionConverter[message.Level]?.Invoke(message.Exception, msg);
+		LogLevelToActionConverter[message.Level]?.Invoke(message.Exception, msg);
 	}
 }

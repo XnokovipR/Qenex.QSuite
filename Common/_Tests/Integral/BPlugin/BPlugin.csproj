@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.BPlugin</AssemblyName>
-        <RootNamespace>Qenex.QSuite.BPlugin</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Common.Tests.BPlugin</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Common.Tests.BPlugin</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

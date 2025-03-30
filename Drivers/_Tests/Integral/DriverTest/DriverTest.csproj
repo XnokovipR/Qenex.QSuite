@@ -5,6 +5,8 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AssemblyName>QSuite.Drivers.Test.DriverTest</AssemblyName>
+        <RootNamespace>QSuite.Drivers.Test.DriverTest</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.Protocol;
+﻿namespace Qenex.QSuite.Protocols.Protocol;
 
 public enum CommDirection
 {

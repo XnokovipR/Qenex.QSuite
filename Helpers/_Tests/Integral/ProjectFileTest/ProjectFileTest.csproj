@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.Helpers.Tests.ProjectFileTest</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Helpers.Tests.ProjectFileTest</RootNamespace>
+        <LangVersion>latestmajor</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Qenex.QLibs.XmlInOut" Version="1.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\..\Modules\ModuleXmlHandler\ModuleXmlHandler.csproj" />
+      <ProjectReference Include="..\..\..\ProjectFile\ProjectFile.csproj" />
+    </ItemGroup>
+
+</Project>

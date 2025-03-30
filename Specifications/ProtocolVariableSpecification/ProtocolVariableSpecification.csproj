@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.ProtocolVariableSpecification</AssemblyName>
-        <RootNamespace>Qenex.QSuite.ProtocolVariableSpecification</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Specifications.ProtocolVariableSpecification</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Specifications.ProtocolVariableSpecification</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

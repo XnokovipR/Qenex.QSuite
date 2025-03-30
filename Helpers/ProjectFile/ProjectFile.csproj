@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.Helpers.ProjectFile</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Helpers.ProjectFile</RootNamespace>
+        <LangVersion>latestmajor</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Qenex.QLibs.XmlInOut" Version="1.0.0" />
+      <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Modules\ModuleXmlHandler\ModuleXmlHandler.csproj" />
+    </ItemGroup>
+
+</Project>

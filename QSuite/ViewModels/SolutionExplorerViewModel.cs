@@ -1,5 +1,5 @@
 ﻿using Qenex.QLibs.QUI;
-using Qenex.QSuite.LogSystem;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Syncfusion.Windows.Tools.Controls;
 
 namespace Qenex.QSuite.ViewModels;

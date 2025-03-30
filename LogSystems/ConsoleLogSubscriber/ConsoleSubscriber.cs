@@ -1,9 +1,9 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using Qenex.QLibs.DebugFeatures;
-using Qenex.QSuite.LogSystem;
+using Qenex.QSuite.LogSystems.LogSystem;
 
-namespace Qenex.QSuite.ConsoleLogSubscriber;
+namespace Qenex.QSuite.LogSystems.ConsoleLogSubscriber;
 
 public class ConsoleSubscriber : ILogSubscriber
 {

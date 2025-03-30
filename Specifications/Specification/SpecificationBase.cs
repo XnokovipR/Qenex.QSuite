@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Qenex.QSuite.Specification;
+namespace Qenex.QSuite.Specifications.Specification;
 
 public class SpecificationBase : ISpecification
 {

@@ -1,6 +1,6 @@
-﻿using Qenex.QSuite.Specification;
+﻿using Qenex.QSuite.Specifications.Specification;
 
-namespace Qenex.QSuite.ProtocolVariableSpecification;
+namespace Qenex.QSuite.Specifications.ProtocolVariableSpecification;
 
 /// <summary>
 /// The communication specification uniquely identifies a variable in a given protocol.

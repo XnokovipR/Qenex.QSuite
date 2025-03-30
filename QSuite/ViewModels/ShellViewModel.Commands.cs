@@ -2,7 +2,7 @@
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows;
 using Qenex.QLibs.QUI;
-using Qenex.QSuite.LogSystem;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Models.AppSettings;
 using Syncfusion.Windows.Shared;
 using Syncfusion.Windows.Tools.Controls;

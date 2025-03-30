@@ -1,5 +1,5 @@
-﻿using Qenex.QSuite.Protocol;
-using Qenex.QSuite.VariableEvents;
+﻿using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.Protocols.SimpleProtocol;
 

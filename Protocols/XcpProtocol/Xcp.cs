@@ -1,9 +1,9 @@
 ﻿using System.Reflection;
-using Qenex.QSuite.LogSystem;
-using Qenex.QSuite.Protocol;
-using Qenex.QSuite.QVariables;
-using Qenex.QSuite.Specification;
-using Qenex.QSuite.VariableEvents;
+using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Specifications.Specification;
+using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.Protocols.XcpProtocol;
 

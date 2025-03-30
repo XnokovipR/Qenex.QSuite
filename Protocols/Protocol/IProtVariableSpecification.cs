@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.Design;
-using Qenex.QSuite.LogSystem;
+using Qenex.QSuite.LogSystems.LogSystem;
 
-namespace Qenex.QSuite.Protocol;
+namespace Qenex.QSuite.Protocols.Protocol;
 
 public interface IProtVariableSpecification
 {

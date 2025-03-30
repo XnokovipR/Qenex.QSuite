@@ -5,12 +5,12 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>disable</Nullable>
-        <AssemblyName>Qenex.QSuite.QVariables</AssemblyName>
-        <RootNamespace>Qenex.QSuite.QVariables</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Variables.QVariables</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Variables.QVariables</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Modules\ComponentSpecification\ComponentSpecification.csproj" />
+      <ProjectReference Include="..\..\Specifications\ComponentSpecification\ComponentSpecification.csproj" />
       <ProjectReference Include="..\..\Specifications\ProtocolVariableSpecification\ProtocolVariableSpecification.csproj" />
       <ProjectReference Include="..\ValuePresentation\ValuePresentation.csproj" />
       <ProjectReference Include="..\VariableEvents\VariableEvents.csproj" />

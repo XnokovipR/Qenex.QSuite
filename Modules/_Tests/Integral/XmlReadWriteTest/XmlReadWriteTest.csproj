@@ -6,8 +6,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RunPostBuildEvent>Always</RunPostBuildEvent>
-        <AssemblyName>Qenex.QSuite.XmlReadWriteTest</AssemblyName>
-        <RootNamespace>Qenex.QSuite.XmlReadWriteTest</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Modules.Tests.XmlReadWriteTest</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Modules.Tests.XmlReadWriteTest</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

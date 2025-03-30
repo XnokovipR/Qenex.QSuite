@@ -1,10 +1,10 @@
 ﻿using Qenex.QSuite.Common.CoreComm;
-using Qenex.QSuite.ComponentSpecification;
-using Qenex.QSuite.Specification;
-using Qenex.QSuite.QVariables;
-using Qenex.QSuite.VariableEvents;
+using Qenex.QSuite.Specifications.ComponentSpecification;
+using Qenex.QSuite.Specifications.Specification;
+using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.VariableEvents;
 
-namespace Qenex.QSuite.Protocol;
+namespace Qenex.QSuite.Protocols.Protocol;
 
 /// <summary>
 /// Common interface for all protocols.

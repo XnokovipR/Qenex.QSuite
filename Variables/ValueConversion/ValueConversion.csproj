@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>Qenex.QSuite.ValueConversion</RootNamespace>
-        <AssemblyName>Qenex.QSuite.ValueConversion</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Variables.ValueConversion</RootNamespace>
+        <AssemblyName>Qenex.Variables.QSuite.ValueConversion</AssemblyName>
     </PropertyGroup>
 
 </Project>

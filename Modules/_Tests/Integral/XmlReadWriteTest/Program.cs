@@ -1,7 +1,7 @@
 ﻿using Qenex.QLibs.XmlInOut;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 
-namespace Qenex.QSuite.XmlReadWriteTest;
+namespace Qenex.QSuite.Modules.Tests.XmlReadWriteTest;
 
 class Program
 {

@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
-using Qenex.QSuite.ComponentSpecification;
-using Qenex.QSuite.LogSystem;
-using Qenex.QSuite.PluginManager;
+using Qenex.QSuite.Specifications.ComponentSpecification;
+using Qenex.QSuite.LogSystems.LogSystem;
 
 namespace Qenex.QSuite.Common.PluginManager;
 

@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.SyncfusionDocking;
-using Qenex.QSuite.LogSystem;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Models.AppSettings;
 using Syncfusion.UI.Xaml.Diagram;
 using WindowStyle = System.Windows.WindowStyle;

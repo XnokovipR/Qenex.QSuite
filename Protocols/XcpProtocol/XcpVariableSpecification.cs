@@ -1,6 +1,6 @@
-﻿using Qenex.QSuite.LogSystem;
-using Qenex.QSuite.Protocol;
-using Qenex.QSuite.VariableEvents;
+﻿using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.Protocols.XcpProtocol;
 

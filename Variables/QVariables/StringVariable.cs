@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.QVariables;
+﻿namespace Qenex.QSuite.Variables.QVariables;
 
 public class StringVariable : VariableBase
 {

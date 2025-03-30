@@ -1,14 +1,14 @@
 using Qenex.QSuite.Common.CoreComm;
-using Qenex.QSuite.ComponentSpecification;
-using Qenex.QSuite.Drivers;
-using Qenex.QSuite.Protocol;
-using Qenex.QSuite.Specification;
-using Qenex.QSuite.QVariables;
-using Qenex.QSuite.ValuePresentation;
+using Qenex.QSuite.Specifications.ComponentSpecification;
+using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Specifications.Specification;
+using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.ValueConversion;
-using Qenex.QSuite.VariableEvents;
+using Qenex.QSuite.Variables.VariableEvents;
 
-namespace Qenex.QSuite.Module;
+namespace Qenex.QSuite.Modules.Module;
 
 public interface IModuleBase : IComponentSpecification, ICoreCommunication
 {

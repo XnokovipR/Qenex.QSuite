@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.LogSystem</AssemblyName>
-        <RootNamespace>Qenex.QSuite.LogSystem</RootNamespace>
+        <AssemblyName>Qenex.QSuite.LogSystems.LogSystem</AssemblyName>
+        <RootNamespace>Qenex.QSuite.LogSystems.LogSystem</RootNamespace>
     </PropertyGroup>
 
 </Project>

@@ -1,7 +1,7 @@
 ﻿using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
-using Qenex.QSuite.QVariables;
+using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.ValueConversion;
-using Qenex.QSuite.VariableEvents;
+using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.ModuleXmlHandler;
 

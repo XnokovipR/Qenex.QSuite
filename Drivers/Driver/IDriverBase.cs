@@ -1,10 +1,10 @@
 using System.Text.Json.Serialization;
-using Qenex.QSuite.ComponentSpecification;
+using Qenex.QSuite.Specifications.ComponentSpecification;
 using Qenex.QSuite.Common.CoreComm;
-using Qenex.QSuite.Protocol;
-using Qenex.QSuite.Specification;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Specifications.Specification;
 
-namespace Qenex.QSuite.Drivers;
+namespace Qenex.QSuite.Drivers.Driver;
 
 public interface IDriverBase : ICoreCommunication, IComponentSpecification
 {

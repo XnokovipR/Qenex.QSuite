@@ -1,8 +1,9 @@
 ﻿using System.Reflection;
 using NetMQ;
 using NetMQ.Sockets;
-using Qenex.QSuite.LogSystem;
-using Qenex.QSuite.Specification;
+using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.ZmqServerDriver;
 

@@ -1,6 +1,6 @@
-﻿using Qenex.QSuite.QVariables;
+﻿using Qenex.QSuite.Variables.QVariables;
 
-namespace Qenex.QSuite.Protocol;
+namespace Qenex.QSuite.Protocols.Protocol;
 
 public interface IProtocolVariable
 {

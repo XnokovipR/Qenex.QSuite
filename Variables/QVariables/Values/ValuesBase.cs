@@ -1,6 +1,6 @@
-﻿using Qenex.QSuite.ValuePresentation;
+﻿using Qenex.QSuite.Variables.ValuePresentation;
 
-namespace Qenex.QSuite.QVariables.Values;
+namespace Qenex.QSuite.Variables.QVariables.Values;
 
 public class ValuesBase : IValuesBase
 {

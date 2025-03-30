@@ -1,6 +1,6 @@
-﻿using Qenex.QSuite.PluginBase;
+﻿using Qenex.QSuite.Common.Tests.PluginBase;
 
-namespace Qenex.QSuite.APlugin;
+namespace Qenex.QSuite.Common.Tests.APlugin;
 
 public class A1Plugin : Plugin
 {

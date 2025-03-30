@@ -1,9 +1,10 @@
 ﻿using System.ComponentModel;
-using Qenex.QSuite.LogSystem;
-using Qenex.QSuite.Protocol;
-using Qenex.QSuite.Specification;
+using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Specifications.Specification;
+using Qenex.QSuite.Specifications.ComponentSpecification;
 
-namespace Qenex.QSuite.Drivers;
+namespace Qenex.QSuite.Drivers.Driver;
 
 public abstract class DriverBase : IDriverBase
 {

@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.LogSystem;
+﻿namespace Qenex.QSuite.LogSystems.LogSystem;
 
 /// <summary>
 /// Logger servers as a main logger system which logs all incoming messages to all registered subscribers.

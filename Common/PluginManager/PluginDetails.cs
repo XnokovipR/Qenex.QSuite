@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.PluginManager;
+﻿namespace Qenex.QSuite.Common.PluginManager;
 
 public class PluginDetails
 {

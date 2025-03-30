@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.PluginBase;
+﻿namespace Qenex.QSuite.Common.Tests.PluginBase;
 
 public class Plugin : IPlugin
 {

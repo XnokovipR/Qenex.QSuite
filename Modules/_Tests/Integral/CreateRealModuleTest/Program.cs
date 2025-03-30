@@ -1,18 +1,19 @@
 ﻿using System.Text.Json;
 using System.Threading.Channels;
 using Qenex.QLibs.XmlInOut;
-using Qenex.QSuite.ConsoleLogSubscriber;
+using Qenex.QSuite.LogSystems.ConsoleLogSubscriber;
 using Qenex.QSuite.Drivers;
-using Qenex.QSuite.LogSystem;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.ModuleXmlHandler;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 using Qenex.QSuite.Common.PluginManager;
-using Qenex.QSuite.Protocol;
+using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.UnifModule;
 using Qenex.QSuite.Common.CoreComm;
-using Qenex.QSuite.QVariables;
+using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.Variables.QVariables;
 
-namespace Qenex.QSuite.CreateRealModuleTest;
+namespace Qenex.QSuite.Modules.Tests.CreateRealModuleTest;
 
 class Program
 {

@@ -1,7 +1,7 @@
-﻿using Qenex.QSuite.ConsoleLogSubscriber;
-using Qenex.QSuite.LogSystem;
+﻿using Qenex.QSuite.LogSystems.ConsoleLogSubscriber;
+using Qenex.QSuite.LogSystems.LogSystem;
 
-namespace ConsoleLogTest;
+namespace Qenex.QSuite.LogSystems.Tests.ConsoleLogTest;
 
 /// <summary>
 /// Program Test simple console log.

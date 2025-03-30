@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.LogSystem;
+﻿namespace Qenex.QSuite.LogSystems.LogSystem;
 
 /// <summary>
 /// ILogger is a general interface for logging system. 

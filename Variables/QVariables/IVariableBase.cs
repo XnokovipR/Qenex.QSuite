@@ -1,8 +1,8 @@
-﻿using Qenex.QSuite.ComponentSpecification;
-using Qenex.QSuite.ProtocolVariableSpecification;
-using Qenex.QSuite.VariableEvents;
+﻿using Qenex.QSuite.Specifications.ComponentSpecification;
+using Qenex.QSuite.Specifications.ProtocolVariableSpecification;
+using Qenex.QSuite.Variables.VariableEvents;
 
-namespace Qenex.QSuite.QVariables;
+namespace Qenex.QSuite.Variables.QVariables;
 
 /// <summary>
 /// The interface for all variables used in the QSuite.

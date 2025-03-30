@@ -1,6 +1,6 @@
 ﻿using Qenex.QSuite.ValueConversion;
 
-namespace Qenex.QSuite.ValuePresentation;
+namespace Qenex.QSuite.Variables.ValuePresentation;
 
 public class Presentation : IPresentation
 {

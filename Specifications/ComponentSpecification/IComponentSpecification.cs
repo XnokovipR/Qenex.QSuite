@@ -1,6 +1,6 @@
-﻿using Qenex.QSuite.Specification;
+﻿using Qenex.QSuite.Specifications.Specification;
 
-namespace Qenex.QSuite.ComponentSpecification;
+namespace Qenex.QSuite.Specifications.ComponentSpecification;
 
 /// <summary>
 /// Basic module specification 

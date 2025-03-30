@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.Specification;
+﻿namespace Qenex.QSuite.Specifications.Specification;
 
 /// <summary>
 /// The specific interface uniquely identifies Qenex modules, drivers, protocols, and also assigning a protocol to a variable.   

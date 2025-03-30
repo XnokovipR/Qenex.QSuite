@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
-using Qenex.QSuite.Protocol;
-using Qenex.QSuite.Specification;
+using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.SimDataDriver;
 

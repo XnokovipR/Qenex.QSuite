@@ -16,7 +16,6 @@
       <ProjectReference Include="..\..\Specifications\ProtocolVariableSpecification\ProtocolVariableSpecification.csproj" />
       <ProjectReference Include="..\..\Specifications\Specification\Specification.csproj" />
       <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
-      <ProjectReference Include="..\ComponentSpecification\ComponentSpecification.csproj" />
       <ProjectReference Include="..\Module\Module.csproj" />
     </ItemGroup>
 
