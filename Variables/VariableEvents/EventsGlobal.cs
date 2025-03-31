@@ -18,9 +18,9 @@ namespace Qenex.QSuite.Variables.VariableEvents
 		/// </summary>
 		public static readonly Dictionary<VariableEventType, string> VariableEventTypeDict = new Dictionary<VariableEventType, string>()
 		{
-			{ VariableEventType.Periodic, "Qenex.QSuite.VariableEvents.PeriodicVarEvent" },
-			{ VariableEventType.OnRequest, "Qenex.QSuite.VariableEvents.OnRequestVarEvent" },
-			{ VariableEventType.OnValueChanged, "Qenex.QSuite.VariableEvents.OnValueChangedVarEvent" }
+			{ VariableEventType.Periodic, "Qenex.QSuite.Variables.VariableEvents.PeriodicVarEvent" },
+			{ VariableEventType.OnRequest, "Qenex.QSuite.Variables.VariableEvents.OnRequestVarEvent" },
+			{ VariableEventType.OnValueChanged, "Qenex.QSuite.Variables.VariableEvents.OnValueChangedVarEvent" }
 		};
 		
 		public static IVarEvent CreateInstance(VariableEventType eventType)

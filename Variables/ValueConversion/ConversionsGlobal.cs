@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.ValueConversion;
+﻿namespace Qenex.QSuite.Variables.ValueConversion;
 
 public class ConversionsGlobal
 {
@@ -9,8 +9,8 @@ public class ConversionsGlobal
     /// </summary>
     public static readonly Dictionary<ConversionType, string> ConversionTypeDict = new Dictionary<ConversionType, string>()
     {
-        { ConversionType.Linear, "Qenex.QSuite.ValueConversion.LinearValConversion" },
-        { ConversionType.Enum, "Qenex.QSuite.ValueConversion.EnumValConversion" }
+        { ConversionType.Linear, "Qenex.QSuite.Variables.ValueConversion.LinearValConversion" },
+        { ConversionType.Enum, "Qenex.QSuite.Variables.ValueConversion.EnumValConversion" }
     };    
     
     /// <summary>

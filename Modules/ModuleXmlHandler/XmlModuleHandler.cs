@@ -10,7 +10,7 @@ using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.QVariables.Values;
 using Qenex.QSuite.UnifModule;
-using Qenex.QSuite.ValueConversion;
+using Qenex.QSuite.Variables.ValueConversion;
 using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.ModuleXmlHandler;

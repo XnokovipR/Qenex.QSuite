@@ -1,4 +1,4 @@
-﻿using Qenex.QSuite.ValueConversion;
+﻿using Qenex.QSuite.Variables.ValueConversion;
 
 namespace Qenex.QSuite.Variables.ValuePresentation;
 

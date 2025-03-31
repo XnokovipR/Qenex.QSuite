@@ -20,11 +20,11 @@ public class VariablesGlobal
     /// </summary>
     public static readonly Dictionary<VariableType, string> VariableTypeDict = new Dictionary<VariableType, string>()
     {
-        { VariableType.Scalar, "Qenex.QSuite.QVariables.ScalarVariable" },
-        { VariableType.String, "Qenex.QSuite.QVariables.StringVariable" },
-        { VariableType.Array, "Qenex.QSuite.QVariables.ArrayVariable" },
-        { VariableType.Curve, "Qenex.QSuite.QVariables.CurveVariable" },
-        { VariableType.Map, "Qenex.QSuite.QVariables.MapVariable" }
+        { VariableType.Scalar, "Qenex.QSuite.Variables.QVariables.ScalarVariable" },
+        { VariableType.String, "Qenex.QSuite.Variables.QVariables.StringVariable" },
+        { VariableType.Array, "Qenex.QSuite.Variables.QVariables.ArrayVariable" },
+        { VariableType.Curve, "Qenex.QSuite.Variables.QVariables.CurveVariable" },
+        { VariableType.Map, "Qenex.QSuite.Variables.QVariables.MapVariable" }
     };  
     
     /// <summary>

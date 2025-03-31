@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.ValueConversion;
+﻿namespace Qenex.QSuite.Variables.ValueConversion;
 
 public class ValConversion : IValConversion
 {

@@ -5,7 +5,7 @@ using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
-using Qenex.QSuite.ValueConversion;
+using Qenex.QSuite.Variables.ValueConversion;
 using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.Modules.Module;
