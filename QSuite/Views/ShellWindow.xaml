@@ -46,21 +46,16 @@
             <syncfusion:Ribbon.BackStageButton>
                 <syncfusion:BackStageButton Visibility="Collapsed"/>
             </syncfusion:Ribbon.BackStageButton>
-            <syncfusion:RibbonTab Caption="File"></syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="View">
-                <syncfusion:RibbonBar Header="Windows">
+            <syncfusion:RibbonTab Caption="File">
+                <syncfusion:RibbonBar Header="Project">
                     <syncfusion:RibbonButton 
                         SizeForm="Large" 
-                        Label="Solution Explorer" 
-                        Command="{Binding OnSolutionExplorerCommand}" CommandParameter="{Binding ElementName=DockingManager}"/>
-                    <syncfusion:RibbonButton SizeForm="Large" Label="Logs"/>
+                        Label="Open" 
+                        LargeIcon="../Icons/Menu/OpenFIle.png"
+                        Command="{Binding OnOpenProjectCommand}" CommandParameter="{Binding ElementName=DockingManager}"
+                    />
                 </syncfusion:RibbonBar>
             </syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="Project"></syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="Runtime"></syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="Options"></syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="Extensions"></syncfusion:RibbonTab>
-            <syncfusion:RibbonTab Caption="Help"></syncfusion:RibbonTab>
         </syncfusion:Ribbon>
         
         <Grid Grid.Row="1" Margin="0,0,0,15">

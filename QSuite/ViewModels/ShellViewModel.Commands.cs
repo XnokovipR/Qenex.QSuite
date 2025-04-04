@@ -7,6 +7,8 @@ using Qenex.QSuite.Models.AppSettings;
 using Syncfusion.Windows.Shared;
 using Syncfusion.Windows.Tools.Controls;
 using System.Windows.Forms;
+using System.Windows.Interop;
+using Qenex.QSuite.Models.Project;
 using Syncfusion.UI.Xaml.Diagram;
 using WinApp = System.Windows.Application;
 
@@ -14,25 +16,22 @@ namespace Qenex.QSuite.ViewModels;
 
 public partial class ShellViewModel
 {
-    #region Properties
 
-    #region Commands
+    #region Windows command Properties
     
     public RelayCommand<object> OnWinLocationChangedCommand { get; set; }
     public RelayCommand<object> OnWinSizeChangedCommand { get; set; }
     public RelayCommand<DockingManager> OnLoadedCommand { get; set; }
     public RelayCommand<DockingManager> OnClosingCommand { get; set; }
+    
+    #endregion
 
     #region Ribbon Commands
 
-    public RelayCommand<DockingManager> OnSolutionExplorerCommand { get; set; }
-    public RelayCommand<DockingManager> OnLogsCommand { get; set; }
-
-
-    #endregion Ribbon Commands
+    public RelayCommandAsync<DockingManager> OnOpenProjectCommand { get; set; }
     
-    #endregion Commands
-    #endregion Properties    
+    #endregion
+  
     
     private void CreateCommands()
     {
@@ -42,26 +41,39 @@ public partial class ShellViewModel
         OnLoadedCommand = new RelayCommand<DockingManager>(OnLoaded);
         OnClosingCommand = new RelayCommand<DockingManager>(OnClosing);
 
-        OnSolutionExplorerCommand = new RelayCommand<DockingManager>( dm =>
-        {
-            var dockItem = DockingManager.DockableViewModels.FirstOrDefault(d => d.Name == "SolutionExplorerViewModel");
-            if (dockItem != null)
-            {
-                dm.ExecuteRestore(dockItem.Content, DockState.Hidden);
-            }
-        });
-
-        OnLogsCommand = new RelayCommand<DockingManager>( dm =>
-        {
-            var dockItem = DockingManager.DockableViewModels.FirstOrDefault(d => d.Name == "LogViewModel");
-            if (dockItem != null)
-            {
-                dm.ExecuteRestore(dockItem.Content, DockState.Hidden);
-            }
-        });
+        OnOpenProjectCommand = new RelayCommandAsync<DockingManager>(OpenProjectAsync);
+        
     }
-    
-    
+
+    private async Task OpenProjectAsync(DockingManager dockingManager)
+    {
+        var openFileDialog = new System.Windows.Forms.OpenFileDialog
+        {
+            Filter = "QSuite project files (*.zip)|*.zip",
+            Title = "Open QSuite Project",
+            InitialDirectory = @$"{Directory.GetCurrentDirectory()}",
+        };
+
+        if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+        {
+            var filePath = openFileDialog.FileName;
+
+            try
+            {
+                projectData = await ProjectZip.UnzipProjectFileAsync(filePath, logger);
+            }
+            catch (Exception e)
+            {
+                logger?.Log(LogLevel.Warn, $"Failed to load project file \"{Path.GetFileName(filePath)}\" ({e.Message}).");
+                throw;
+            }
+            
+        }
+    }
+
+
+    #region Window command methods
+
     private void OnWindowLocationChanged(object obj)
     {
         if (WinApp.Current.MainWindow == null) return;
@@ -108,16 +120,18 @@ public partial class ShellViewModel
     private int GetCurrentWindowScreen()
     {
         var window = WinApp.Current.MainWindow;
-        var windowHandle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
-        var screen = System.Windows.Forms.Screen.FromHandle(windowHandle);
+        var windowHandle = new WindowInteropHelper(window).Handle;
+        var screen = Screen.FromHandle(windowHandle);
         
         var screenBounds = screen.Bounds;
         var workingArea = screen.WorkingArea;
         bool isPrimary = screen.Primary; 
 
-        var allScreens = System.Windows.Forms.Screen.AllScreens;
+        var allScreens = Screen.AllScreens;
         int screenIndex = Array.IndexOf(allScreens, screen); 
         
         return screenIndex;
     }
+
+    #endregion
 }
