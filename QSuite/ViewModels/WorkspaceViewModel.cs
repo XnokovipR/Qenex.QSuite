@@ -51,7 +51,7 @@ public class WorkspaceViewModel : ViewModelBase
 
     public override DockSide DockingPosition
     {
-        get => DockSide.Top;
+        get => DockSide.Tabbed;
         set { }
     }
 
