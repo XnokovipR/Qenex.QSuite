@@ -3,6 +3,7 @@ using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.SyncfusionDocking;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Models.AppSettings;
+using Qenex.QSuite.Models.Project;
 using Syncfusion.UI.Xaml.Diagram;
 using WindowStyle = System.Windows.WindowStyle;
 
@@ -13,8 +14,10 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     #region Private
 
     private readonly EventAggregator eventAggregator;
-    private Logger loggger;
+    private readonly Logger logger;
     private AppSettings appSettings;
+    
+    private ProjectData? projectData;
 
     private SfDiagram diagram;
     
@@ -34,13 +37,10 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
         ProcessAppSettings("QSuiteAppSettings.xml");
         
         eventAggregator = new EventAggregator();
-        loggger = new Logger(LogLevel.Trace);
+        logger = new Logger(LogLevel.Trace);
 
         CreateViewModels();
         CreateCommands();
-        
-        loggger.Log(LogLevel.Error, "Testing error message");
-        eventAggregator.Publish(new LogMessage(LogLevel.Debug, "Testing debug message"));
     }
 
     #endregion
@@ -68,7 +68,7 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
         DockingManager.Add(controlsViewModel);
 
         logViewModel = new LogViewModel(eventAggregator);
-        loggger.RegisterSubscriber(logViewModel);
+        logger.RegisterSubscriber(logViewModel);
         DockingManager.Add(logViewModel);
         
         propertiesViewModel = new PropertiesViewModel(eventAggregator);
