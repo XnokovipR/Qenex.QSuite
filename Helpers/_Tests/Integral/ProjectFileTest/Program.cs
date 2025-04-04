@@ -14,18 +14,18 @@ class Program
     }
 
 
-    private static async Task<XmlModule> UnzipTestAsync()
+    private static async Task<XmlModule?> UnzipTestAsync()
     {
         var prjZip = new ProjectZip();
-        var streams = prjZip.Unzip("__aa.zip");
+        var streams = prjZip.Unzip("ModuleTestProject.zip");
 
         foreach (var stream in streams)
         {       
             if (stream.Key == "XmlModule.xml")
             {
                 using var memoryStream = new MemoryStream();
-				stream.Value.CopyTo(memoryStream);
-				memoryStream.Position = 0;
+                await stream.Value.CopyToAsync(memoryStream);
+                memoryStream.Position = 0;
 
 				var xmlModule = XmlInOut<XmlModule>.LoadFromStream(memoryStream);
                 return xmlModule;
@@ -50,6 +50,6 @@ class Program
         };
         
         var prjZip = new ProjectZip();
-        await prjZip.ZipAsync("__aa.zip", fileDict);
+        await prjZip.ZipAsync("ModuleTestProject.zip", fileDict);
     }
 }
