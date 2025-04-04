@@ -12,17 +12,19 @@
 		<ResourceDictionary>
 			<local:LogLevelStyleSelector x:Key="LogLevelStyleSelector">
 
-				<local:LogLevelStyleSelector.DefaultLogBackgroundStyle>
-					<Style TargetType="syncfusion:VirtualizingCellsControl">
-						<Setter Property="Foreground" Value="SlateGray"/>
-					</Style>
-				</local:LogLevelStyleSelector.DefaultLogBackgroundStyle>
+				<!-- Uuse syncfusion default color -->
+				<!-- <local:LogLevelStyleSelector.DefaultLogBackgroundStyle> -->
+				<!-- 	<Style TargetType="syncfusion:VirtualizingCellsControl"> -->
+				<!-- 		<Setter Property="Foreground" Value="SlateGray"/> -->
+				<!-- 	</Style> -->
+				<!-- </local:LogLevelStyleSelector.DefaultLogBackgroundStyle> -->
 
-				<local:LogLevelStyleSelector.InfoLogBackgroundStyle>
-					<Style TargetType="syncfusion:VirtualizingCellsControl">
-						<Setter Property="Foreground" Value="Black"/>
-					</Style>
-				</local:LogLevelStyleSelector.InfoLogBackgroundStyle>
+				<!-- Uuse syncfusion default color -->
+				<!-- <local:LogLevelStyleSelector.InfoLogBackgroundStyle> -->
+				<!-- 	<Style TargetType="syncfusion:VirtualizingCellsControl"> -->
+				<!-- 		<Setter Property="Foreground" Value="DimGray"/> -->
+				<!-- 	</Style> -->
+				<!-- </local:LogLevelStyleSelector.InfoLogBackgroundStyle> -->
 
 				<local:LogLevelStyleSelector.WarningLogBackgroundStyle>
 					<Style TargetType="syncfusion:VirtualizingCellsControl">
