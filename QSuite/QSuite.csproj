@@ -29,18 +29,32 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="ViewModels\SolutionExplorerWrappers\" />
+      <Folder Include="Icons\" />
       <Folder Include="Views\Converters\" />
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Drivers\Driver\Driver.csproj" />
+      <ProjectReference Include="..\Helpers\ProjectFile\ProjectFile.csproj" />
       <ProjectReference Include="..\LogSystems\LogSystem\LogSystem.csproj" />
+      <ProjectReference Include="..\Modules\ModuleXmlHandler\ModuleXmlHandler.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <None Update="Models\AppSettings\QSuiteAppSettings.xml">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Icons\cancel.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Icons\Menu\OpenFIle.png" />
+      <Resource Include="Icons\Menu\OpenFIle.png" />
+      <None Remove="Icons\SolutionExplorer\Driver.png" />
+      <Resource Include="Icons\SolutionExplorer\Driver.png" />
     </ItemGroup>
 
 </Project>
