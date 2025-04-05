@@ -1,11 +1,18 @@
 ﻿using Qenex.QLibs.QUI;
 using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Models.Project;
 using Syncfusion.Windows.Tools.Controls;
 
 namespace Qenex.QSuite.ViewModels;
 
 public class SolutionExplorerViewModel : ViewModelBase
 {
+    #region Private fileds
+
+    private ProjectData projectData;
+
+    #endregion
+    
     #region Constructors
     
     public SolutionExplorerViewModel(EventAggregator ea) : base(ea)
@@ -41,5 +48,24 @@ public class SolutionExplorerViewModel : ViewModelBase
 
     #endregion
 
-    #endregion    
+    #endregion
+
+    #region Actualize Solution treeview
+
+    public void ReloadProjectData(ProjectData prjData)
+    {
+        projectData = prjData;
+        
+        // Actualize whole treeview
+        
+    }
+
+    public void DisposeAll()
+    {
+        projectData = null;
+        
+        // Dispose all treeview
+    }
+
+    #endregion
 }
