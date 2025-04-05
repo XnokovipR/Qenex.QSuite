@@ -8,6 +8,7 @@
     xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
     xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
     xmlns:viewModels="clr-namespace:Qenex.QSuite.ViewModels"
+    Icon="../../Icons/QSuite48.png"
     mc:Ignorable="d"
     Title="QSuite" 
     d:DataContext="{d:DesignInstance viewModels:ShellViewModel, IsDesignTimeCreatable=False}"
@@ -51,8 +52,14 @@
                     <syncfusion:RibbonButton 
                         SizeForm="Large" 
                         Label="Open" 
-                        LargeIcon="../Icons/Menu/OpenFIle.png"
+                        LargeIcon="../Icons/Menu/OpenProject.png"
                         Command="{Binding OnOpenProjectCommand}" CommandParameter="{Binding ElementName=DockingManager}"
+                    />
+                    <syncfusion:RibbonButton 
+                        SizeForm="Large" 
+                        Label="Close" 
+                        LargeIcon="../Icons/Menu/CloseProject.png"
+                        Command="{Binding OnCloseProjectCommand}" CommandParameter="{Binding ElementName=DockingManager}"
                     />
                 </syncfusion:RibbonBar>
             </syncfusion:RibbonTab>
