@@ -9,7 +9,7 @@ public class ProjectZip
 {
     #region Zip / unzip project file
 
-    public static async Task<ProjectData?> UnzipProjectFileAsync(string zipFilePath, ILogger? logger = null)
+    public static async Task<ProjectData> UnzipProjectFileAsync(string zipFilePath, ILogger? logger = null)
     {
         var projectData = new ProjectData(logger);
 
@@ -35,14 +35,14 @@ public class ProjectZip
         if (isAllPropertiesLoaded) 
         {
             logger?.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(zipFilePath)}\" loaded successfully.");
-            return projectData;
+            
         }
         else
         {
             logger?.Log(LogLevel.Warn, $"Failed to load project file \"{Path.GetFileName(zipFilePath)}\".");
         }
 
-        return null;
+        return projectData;
 
     }
 
