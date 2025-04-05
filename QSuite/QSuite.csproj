@@ -9,6 +9,7 @@
         <UseWPF>true</UseWPF>
         <AssemblyName>Qenex.QSuite</AssemblyName>
         <RootNamespace>Qenex.QSuite</RootNamespace>
+        <ApplicationIcon>QSuite48.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -29,7 +30,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Icons\" />
+      <Folder Include="Icons\SolutionExplorer\" />
       <Folder Include="Views\Converters\" />
     </ItemGroup>
 
@@ -52,9 +53,17 @@
 
     <ItemGroup>
       <None Remove="Icons\Menu\OpenFIle.png" />
-      <Resource Include="Icons\Menu\OpenFIle.png" />
       <None Remove="Icons\SolutionExplorer\Driver.png" />
-      <Resource Include="Icons\SolutionExplorer\Driver.png" />
+      <None Remove="Icons\Menu\CloseAll.png" />
+      <None Remove="Icons\QSuite48.png" />
+      <None Remove="Icons\Menu\OpenProject.png" />
+      <Resource Include="Icons\Menu\OpenProject.png" />
+      <None Remove="Icons\Menu\CloseProject.png" />
+      <Resource Include="Icons\Menu\CloseProject.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Resource Include="Icons\QSuite48.png" />
     </ItemGroup>
 
 </Project>
