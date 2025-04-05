@@ -10,6 +10,8 @@ using System.Windows.Forms;
 using System.Windows.Interop;
 using Qenex.QSuite.Models.Project;
 using Syncfusion.UI.Xaml.Diagram;
+using MessageBox = System.Windows.MessageBox;
+using ProjectData = Microsoft.VisualBasic.CompilerServices.ProjectData;
 using WinApp = System.Windows.Application;
 
 namespace Qenex.QSuite.ViewModels;
@@ -29,9 +31,9 @@ public partial class ShellViewModel
     #region Ribbon Commands
 
     public RelayCommandAsync<DockingManager> OnOpenProjectCommand { get; set; }
+    public RelayCommandAsync<DockingManager> OnCloseProjectCommand { get; set; }
     
     #endregion
-  
     
     private void CreateCommands()
     {
@@ -42,8 +44,11 @@ public partial class ShellViewModel
         OnClosingCommand = new RelayCommand<DockingManager>(OnClosing);
 
         OnOpenProjectCommand = new RelayCommandAsync<DockingManager>(OpenProjectAsync);
+        OnCloseProjectCommand = new RelayCommandAsync<DockingManager>(CloseProjectAsync, CanCloseProject);
         
     }
+
+    #region Menu command methods
 
     private async Task OpenProjectAsync(DockingManager dockingManager)
     {
@@ -60,7 +65,12 @@ public partial class ShellViewModel
 
             try
             {
-                projectData = await ProjectZip.UnzipProjectFileAsync(filePath, logger);
+                var projectData = await ProjectZip.UnzipProjectFileAsync(filePath, logger);
+                
+                solutionExplorerViewModel.ReloadProjectData(projectData);
+                
+                isProjectLoaded = true;
+                OnCloseProjectCommand.OnCanExecuteChanged();
             }
             catch (Exception e)
             {
@@ -70,8 +80,27 @@ public partial class ShellViewModel
             
         }
     }
+    
+    
+    private bool CanCloseProject(object parameter)
+    {
+        return isProjectLoaded;
+    }
+    private async Task CloseProjectAsync(DockingManager dockingManager)
+    {
+        var result = MessageBox.Show("Are you sure you want to close the current project?", "Close Project", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (result == MessageBoxResult.Yes)
+        {
+            solutionExplorerViewModel.DisposeAll();
 
+            isProjectLoaded = false;
+            OnCloseProjectCommand.OnCanExecuteChanged();
+            await Task.CompletedTask;
+        }
+    }
 
+    #endregion
+    
     #region Window command methods
 
     private void OnWindowLocationChanged(object obj)
@@ -120,6 +149,7 @@ public partial class ShellViewModel
     private int GetCurrentWindowScreen()
     {
         var window = WinApp.Current.MainWindow;
+        if (window == null) return -1;
         var windowHandle = new WindowInteropHelper(window).Handle;
         var screen = Screen.FromHandle(windowHandle);
         

@@ -17,7 +17,7 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     private readonly Logger logger;
     private AppSettings appSettings;
     
-    private ProjectData? projectData;
+    private bool isProjectLoaded = false;
 
     private SfDiagram diagram;
     
