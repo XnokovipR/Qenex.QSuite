@@ -73,12 +73,18 @@ public partial class ShellViewModel
             try
             {
                 var projectData = await ProjectZip.UnzipProjectFileAsync(filePath, logger);
+                if (projectData == null)
+                {
+                    logger?.Log(LogLevel.Warn, $"Failed to load project file \"{Path.GetFileName(filePath)}\".");
+                    return;
+                }
                 realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, logger);
                 
                 solutionExplorerViewModel.ReloadProjectData(realProjectData);
                 
                 isProjectLoaded = true;
                 OnCloseProjectCommand.OnCanExecuteChanged();
+                logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\"loaded.");
             }
             catch (Exception e)
             {
