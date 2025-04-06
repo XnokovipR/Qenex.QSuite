@@ -7,15 +7,15 @@
     xmlns:qenexSyncfusion="clr-namespace:Qenex.QSuite.SyncfusionOverridden"
     xmlns:syncfusion="http://schemas.syncfusion.com/wpf"
     xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
-    xmlns:viewModels="clr-namespace:Qenex.QSuite.ViewModels"
+    xmlns:vm="clr-namespace:Qenex.QSuite.ViewModels"
     Icon="../../Icons/QSuite48.png"
     mc:Ignorable="d"
     Title="QSuite" 
-    d:DataContext="{d:DesignInstance viewModels:ShellViewModel, IsDesignTimeCreatable=False}"
+    d:DataContext="{d:DesignInstance vm:ShellViewModel, IsDesignTimeCreatable=False}"
     UseNativeChrome="True">
     
     <syncfusion:ChromelessWindow.DataContext>
-        <viewModels:ShellViewModel/>
+        <vm:ShellViewModel/>
     </syncfusion:ChromelessWindow.DataContext>
 
     <i:Interaction.Triggers>
