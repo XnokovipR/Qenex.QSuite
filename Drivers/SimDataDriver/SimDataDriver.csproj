@@ -13,7 +13,7 @@
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\Modules\_Tests\Integral\CreateRealModuleTest\bin\$(Configuration)\net8.0\Drivers\&quot;&#xA;" />
+      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QSuite\bin\$(Configuration)\net8.0-windows\Drivers\&quot;&#xA;" />
     </Target>
 
 </Project>
