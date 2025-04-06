@@ -30,7 +30,7 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     private bool isProjectLoaded;
     
 
-    private SfDiagram diagram;
+    //private SfDiagram diagram;
     
     // ViewModels
     private SolutionExplorerViewModel solutionExplorerViewModel;
