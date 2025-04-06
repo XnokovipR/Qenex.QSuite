@@ -9,9 +9,9 @@ public class ProjectZip
 {
     #region Zip / unzip project file
 
-    public static async Task<ProjectData> UnzipProjectFileAsync(string zipFilePath, ILogger? logger = null)
+    public static async Task<ProjectFilesData> UnzipProjectFileAsync(string zipFilePath, ILogger? logger = null)
     {
-        var projectData = new ProjectData(logger);
+        var projectData = new ProjectFilesData(logger);
 
         var prjZip = new Helpers.ProjectFile.ProjectZip();
         var streams = prjZip.Unzip(zipFilePath);
