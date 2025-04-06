@@ -3,16 +3,17 @@ using Qenex.QLibs.XmlInOut;
 using Qenex.QSuite.Helpers.ProjectFile;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
+using Qenex.QSuite.UnifModule;
 
 namespace Qenex.QSuite.Models.Project;
 
-public class ProjectData
+public class ProjectFilesData
 {
     private ILogger? logger { get; set; }
 
     #region Constructors
 
-    public ProjectData(ILogger? logger = null)
+    public ProjectFilesData(ILogger? logger = null)
     {
         this.logger = logger;
     }
