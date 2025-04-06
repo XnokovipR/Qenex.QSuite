@@ -11,6 +11,7 @@ namespace Qenex.QSuite.ViewModels.ViewableItem
 	public interface IViewableItem
 	{
 		string Label { get; set; }
+		string ToolTip { get; }
 		BitmapImage Icon { get; }
 		ObservableCollection<IViewableItem> Children { get; set; }
 	}
