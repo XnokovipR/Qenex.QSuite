@@ -15,31 +15,25 @@ public class LogViewModel : ViewModelBase, ILogSubscriber
  
     #region Properties
     public ObservableCollection<ILogMessage> LogMessages { get; set; }
+    public RelayCommand<object> ClearLogCommand => new RelayCommand<object>(o => LogMessages.Clear());
 
     #endregion
     
     #region BaseViewModel implementation
+    
+    public override string Identifier => $"LogViewModel:{Guid.NewGuid().ToString()}";
+    public override string Header { get => "Logs"; set { } }
 
-    public override string Header
-    {
-        get => "Logs";
-        set { }
-    }
+    public override string Name { get => "LogViewModel"; set { } }
 
-    public override string Name
-    {
-        get => "LogViewModel";
-        set { }
-    }
+    public override DockSide DockingPosition { get => DockSide.Bottom; set { } }
 
-    public override DockSide DockingPosition
-    {
-        get => DockSide.Bottom;
-        set { }
-    }
+    public override DockState DockState { get; set; }
+    public override bool CanMaximize => false;
 
     public override bool IsDocument => false;
     public override bool CanClose => false;
+    public override bool CanSerialize => true;
 
     #endregion
 

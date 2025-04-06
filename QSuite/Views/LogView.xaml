@@ -66,6 +66,12 @@
 			AutoGenerateColumns="False"
 			RowStyleSelector="{StaticResource LogLevelStyleSelector}"
 			ColumnSizer="AutoWithLastColumnFill">
+			
+			<syncfusion:SfDataGrid.ContextMenu>
+				<ContextMenu>
+					<MenuItem Header="Clear All" Command="{Binding ClearLogCommand}"/>
+				</ContextMenu>
+			</syncfusion:SfDataGrid.ContextMenu>
 
 			<syncfusion:SfDataGrid.Columns>
 				<syncfusion:GridTextColumn Width="160" HeaderText="Timestamp" MappingName="TimeStamp" DisplayBinding="{Binding Path=Timestamp, StringFormat=yyyy/MM/dd HH:mm:ss.fff}"/>
