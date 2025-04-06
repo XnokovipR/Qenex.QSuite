@@ -30,7 +30,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Icons\SolutionExplorer\" />
       <Folder Include="Views\Converters\" />
     </ItemGroup>
 
@@ -60,10 +59,16 @@
       <Resource Include="Icons\Menu\OpenProject.png" />
       <None Remove="Icons\Menu\CloseProject.png" />
       <Resource Include="Icons\Menu\CloseProject.png" />
+      <None Remove="Icons\SolutionExplorer\Project.png" />
+      <Resource Include="Icons\SolutionExplorer\Project.png" />
     </ItemGroup>
 
     <ItemGroup>
       <Resource Include="Icons\QSuite48.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Resource Include="Icons\SolutionExplorer\Driver.png" />
     </ItemGroup>
 
 </Project>
