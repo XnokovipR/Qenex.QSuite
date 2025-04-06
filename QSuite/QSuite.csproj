@@ -9,24 +9,25 @@
         <UseWPF>true</UseWPF>
         <AssemblyName>Qenex.QSuite</AssemblyName>
         <RootNamespace>Qenex.QSuite</RootNamespace>
-        <ApplicationIcon>QSuite48.ico</ApplicationIcon>
+        <ApplicationIcon>QSuite.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
         <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
       <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
-      <PackageReference Include="Qenex.QLibs.QUI.SyncfusionDocking" Version="1.0.0" />
+      <PackageReference Include="Qenex.QLibs.QUI.SyncfusionDocking" Version="1.4.6" />
       <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.0" />
       <PackageReference Include="Qenex.QLibs.XmlInOut" Version="1.0.0" />
-      <PackageReference Include="Syncfusion.Licensing" Version="28.2.5" />
-      <PackageReference Include="Syncfusion.SfDiagram.WPF" Version="28.2.5" />
-      <PackageReference Include="Syncfusion.SfDiagramRibbon.WPF" Version="28.2.5" />
-      <PackageReference Include="Syncfusion.SfGrid.WPF" Version="28.2.5" />
-      <PackageReference Include="Syncfusion.SfSkinManager.WPF" Version="28.2.5" />
-      <PackageReference Include="Syncfusion.Shared.WPF" Version="28.2.5" />
-      <PackageReference Include="Syncfusion.Themes.FluentDark.WPF" Version="28.2.5" />
-      <PackageReference Include="Syncfusion.Themes.FluentLight.WPF" Version="28.2.5" />
-      <PackageReference Include="Syncfusion.Tools.WPF" Version="28.2.5" />
+      <PackageReference Include="Syncfusion.Licensing" Version="29.1.35" />
+      <PackageReference Include="Syncfusion.SfDiagram.WPF" Version="29.1.35" />
+      <PackageReference Include="Syncfusion.SfDiagramRibbon.WPF" Version="29.1.35" />
+      <PackageReference Include="Syncfusion.SfGrid.WPF" Version="29.1.35" />
+      <PackageReference Include="Syncfusion.SfSkinManager.WPF" Version="29.1.35" />
+      <PackageReference Include="Syncfusion.SfTreeView.WPF" Version="29.1.35" />
+      <PackageReference Include="Syncfusion.Shared.WPF" Version="29.1.35" />
+      <PackageReference Include="Syncfusion.Themes.FluentDark.WPF" Version="29.1.35" />
+      <PackageReference Include="Syncfusion.Themes.FluentLight.WPF" Version="29.1.35" />
+      <PackageReference Include="Syncfusion.Tools.WPF" Version="29.1.35" />
     </ItemGroup>
 
     <ItemGroup>
@@ -61,6 +62,12 @@
       <Resource Include="Icons\Menu\CloseProject.png" />
       <None Remove="Icons\SolutionExplorer\Project.png" />
       <Resource Include="Icons\SolutionExplorer\Project.png" />
+      <None Remove="Icons\SolutionExplorer\Protocol.png" />
+      <Resource Include="Icons\SolutionExplorer\Protocol.png" />
+      <None Remove="Icons\SolutionExplorer\ProtocolVariable.png" />
+      <Resource Include="Icons\SolutionExplorer\ProtocolVariable.png" />
+      <None Remove="QSuite.ico" />
+      <Resource Include="QSuite.ico" />
     </ItemGroup>
 
     <ItemGroup>
