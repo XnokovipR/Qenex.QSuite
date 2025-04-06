@@ -1,9 +1,12 @@
 ﻿using System.Windows;
 using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.SyncfusionDocking;
+using Qenex.QSuite.Common.PluginManager;
+using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Models.AppSettings;
 using Qenex.QSuite.Models.Project;
+using Qenex.QSuite.Protocols.Protocol;
 using Syncfusion.UI.Xaml.Diagram;
 using WindowStyle = System.Windows.WindowStyle;
 
@@ -17,10 +20,19 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     private readonly Logger logger;
     private AppSettings appSettings;
     
-    private bool isProjectLoaded = false;
+    // Plugins
+    private PluginLoader pluginLoader;
+    private List<PluginDetails> driverPlugins = null!;
+    private List<PluginDetails> protocolPlugins = null!;
+    
+    // Project
+    private RealProjectData realProjectData;
+    private bool isProjectLoaded;
+    
 
     private SfDiagram diagram;
     
+    // ViewModels
     private SolutionExplorerViewModel solutionExplorerViewModel;
     private LogViewModel logViewModel;
     private PropertiesViewModel propertiesViewModel;
@@ -34,10 +46,13 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
 
     public ShellViewModel()
     {
+        isProjectLoaded = false;
         ProcessAppSettings("QSuiteAppSettings.xml");
         
         eventAggregator = new EventAggregator();
         logger = new Logger(LogLevel.Trace);
+        
+        pluginLoader = new PluginLoader();
 
         CreateViewModels();
         CreateCommands();

@@ -8,7 +8,10 @@ using Syncfusion.Windows.Shared;
 using Syncfusion.Windows.Tools.Controls;
 using System.Windows.Forms;
 using System.Windows.Interop;
+using Qenex.QSuite.Common.PluginManager;
+using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Models.Project;
+using Qenex.QSuite.Protocols.Protocol;
 using Syncfusion.UI.Xaml.Diagram;
 using MessageBox = System.Windows.MessageBox;
 using ProjectData = Microsoft.VisualBasic.CompilerServices.ProjectData;
@@ -34,6 +37,8 @@ public partial class ShellViewModel
     public RelayCommandAsync<DockingManager> OnCloseProjectCommand { get; set; }
     
     #endregion
+
+    #region Create all ShellCiewModel commands
     
     private void CreateCommands()
     {
@@ -48,6 +53,8 @@ public partial class ShellViewModel
         
     }
 
+    #endregion
+    
     #region Menu command methods
 
     private async Task OpenProjectAsync(DockingManager dockingManager)
@@ -66,8 +73,9 @@ public partial class ShellViewModel
             try
             {
                 var projectData = await ProjectZip.UnzipProjectFileAsync(filePath, logger);
+                realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, logger);
                 
-                solutionExplorerViewModel.ReloadProjectData(projectData);
+                solutionExplorerViewModel.ReloadProjectData(realProjectData);
                 
                 isProjectLoaded = true;
                 OnCloseProjectCommand.OnCanExecuteChanged();
@@ -117,6 +125,7 @@ public partial class ShellViewModel
         appSettings.WinStyle.WinState = WinApp.Current.MainWindow.WindowState;
     }
 
+    // This method is called when the docking manager is loaded
     private void OnLoaded(DockingManager docking)
     {
         if (!File.Exists("QenexEditLayout.xml")) return;
@@ -124,6 +133,11 @@ public partial class ShellViewModel
         try
         {
             docking.LoadDockState("QenexEditLayout.xml");
+            
+            // Load drivers, protocols and controls
+            pluginLoader = new PluginLoader(logger);
+            driverPlugins = pluginLoader.GetPluginDetails<IDriverBase>("./Drivers");
+            protocolPlugins = pluginLoader.GetPluginDetails<IProtocolBase>("./Protocols");
         }
         catch (Exception e)
         {
@@ -131,6 +145,7 @@ public partial class ShellViewModel
         }
     }
 
+    // This method is called when the docking manager is closing
     private void OnClosing(DockingManager docking)
     {
         try

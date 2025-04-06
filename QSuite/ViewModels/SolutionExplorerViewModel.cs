@@ -9,7 +9,7 @@ public class SolutionExplorerViewModel : ViewModelBase
 {
     #region Private fileds
 
-    private ProjectData projectData;
+    private RealProjectData realProjectData;
 
     #endregion
     
@@ -52,9 +52,9 @@ public class SolutionExplorerViewModel : ViewModelBase
 
     #region Actualize Solution treeview
 
-    public void ReloadProjectData(ProjectData prjData)
+    public void ReloadProjectData(RealProjectData realPrjData)
     {
-        projectData = prjData;
+        realProjectData = realPrjData;
         
         // Actualize whole treeview
         
@@ -62,8 +62,8 @@ public class SolutionExplorerViewModel : ViewModelBase
 
     public void DisposeAll()
     {
-        projectData = null;
-        
+        realProjectData = null!;
+
         // Dispose all treeview
     }
 
