@@ -27,7 +27,7 @@ public class WorkspaceViewModel : ViewModelBase
     
     #region Properties
 
-    public string Identifier => GenerateWorkspaceIdentifier();
+    
     public RelayCommand<SfDiagram> DiagramLoadedCommand { get; set; }
     public SfDiagram Diagram { get => diagram; set  { diagram = value; OnPropertyChanged(); }
 }
@@ -37,6 +37,7 @@ public class WorkspaceViewModel : ViewModelBase
     
     #region BaseViewModel implementation
 
+    public override string Identifier => GenerateWorkspaceIdentifier();
     public override string Header
     {
         get => "Workspace";
@@ -55,8 +56,12 @@ public class WorkspaceViewModel : ViewModelBase
         set { }
     }
 
+    public override DockState DockState { get; set; }
+
+    public override bool CanMaximize => true;
     public override bool IsDocument => true;
     public override bool CanClose => true;
+    public override bool CanSerialize => true;
 
     #endregion
 

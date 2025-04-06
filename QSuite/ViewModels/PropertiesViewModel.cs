@@ -18,6 +18,8 @@ public class PropertiesViewModel : ViewModelBase
 
     #region BaseViewModel implementation
 
+    public override string Identifier => $"PropertiesViewModel:{Guid.NewGuid()}";
+
     public override string Header
     {
         get => "Properties";
@@ -36,8 +38,12 @@ public class PropertiesViewModel : ViewModelBase
         set { }
     }
 
+    public override DockState DockState { get; set; }
+
+    public override bool CanMaximize => false;
     public override bool IsDocument => false;
     public override bool CanClose => false;
+    public override bool CanSerialize => true;
 
     #endregion
 

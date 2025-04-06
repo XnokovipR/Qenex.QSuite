@@ -17,26 +17,17 @@ public class ControlsViewModel : ViewModelBase
 
     #region BaseViewModel implementation
 
-    public override string Header
-    {
-        get => "Controls";
-        set { }
-    }
+    public override string Identifier => $"ControlsViewModel:{Guid.NewGuid().ToString()}";
+    public override string Header { get => "Controls"; set { } }
+    public override string Name { get => "ControlssViewModel"; set { } }
 
-    public override string Name
-    {
-        get => "ControlssViewModel";
-        set { }
-    }
+    public override DockSide DockingPosition { get => DockSide.Left; set { } }
+    public override DockState DockState { get; set; }
 
-    public override DockSide DockingPosition
-    {
-        get => DockSide.Left;
-        set { }
-    }
-
+    public override bool CanMaximize => false;
     public override bool IsDocument => false;
     public override bool CanClose => false;
+    public override bool CanSerialize => true;
 
     #endregion
 
