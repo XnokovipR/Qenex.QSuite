@@ -63,11 +63,30 @@
       <None Remove="Icons\SolutionExplorer\Project.png" />
       <Resource Include="Icons\SolutionExplorer\Project.png" />
       <None Remove="Icons\SolutionExplorer\Protocol.png" />
-      <Resource Include="Icons\SolutionExplorer\Protocol.png" />
       <None Remove="Icons\SolutionExplorer\ProtocolVariable.png" />
-      <Resource Include="Icons\SolutionExplorer\ProtocolVariable.png" />
       <None Remove="QSuite.ico" />
       <Resource Include="QSuite.ico" />
+      <None Remove="Icons\SolutionExplorer\PeriodicEvent.png" />
+      <Resource Include="Icons\SolutionExplorer\PeriodicEvent.png" />
+      <None Remove="Icons\SolutionExplorer\RequestEvent.png" />
+      <Resource Include="Icons\SolutionExplorer\RequestEvent.png" />
+      <None Remove="Icons\SolutionExplorer\ValueChangedEvent.png" />
+      <Resource Include="Icons\SolutionExplorer\ValueChangedEvent.png" />
+      <None Remove="Icons\SolutionExplorer\Drivers.png" />
+      <Resource Include="Icons\SolutionExplorer\Drivers.png" />
+      <None Remove="Icons\SolutionExplorer\ProtocolVariables.png" />
+      <None Remove="Icons\SolutionExplorer\Protocols.png" />
+      <Resource Include="Icons\SolutionExplorer\Protocols.png" />
+      <None Remove="Icons\SolutionExplorer\Variable.png" />
+      <Resource Include="Icons\SolutionExplorer\Variable.png" />
+      <None Remove="Icons\SolutionExplorer\Variables.png" />
+      <Resource Include="Icons\SolutionExplorer\Variables.png" />
+      <None Remove="Icons\SolutionExplorer\Events.png" />
+      <Resource Include="Icons\SolutionExplorer\Events.png" />
+      <None Remove="Icons\SolutionExplorer\Presentations.png" />
+      <Resource Include="Icons\SolutionExplorer\Presentations.png" />
+      <None Remove="Icons\SolutionExplorer\Presentation.png" />
+      <Resource Include="Icons\SolutionExplorer\Presentation.png" />
     </ItemGroup>
 
     <ItemGroup>
@@ -76,6 +95,7 @@
 
     <ItemGroup>
       <Resource Include="Icons\SolutionExplorer\Driver.png" />
+      <Resource Include="Icons\SolutionExplorer\Protocol.png" />
     </ItemGroup>
 
 </Project>
