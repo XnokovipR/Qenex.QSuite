@@ -1,4 +1,6 @@
-﻿namespace Qenex.QSuite.Variables.ValuePresentation;
+﻿using Qenex.QSuite.Variables.ValueConversion;
+
+namespace Qenex.QSuite.Variables.ValuePresentation;
 
 public interface IPresentation
 {
@@ -8,4 +10,5 @@ public interface IPresentation
     double Max { get; set; }
     string PrintFormat { get; set; }
     string Unit { get; set; }
+    IValConversion Conversion { get; set; }
 }
