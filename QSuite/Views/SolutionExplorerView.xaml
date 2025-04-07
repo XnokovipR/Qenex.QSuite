@@ -24,15 +24,14 @@
                         <Image Source="{Binding Icon}"
                                RenderOptions.BitmapScalingMode="Fant" 
                                Stretch="Fill" Width="24" Height="24"/>
-                        <TextBlock VerticalAlignment="Center" Text="{Binding Label}">
-                            <TextBlock.ToolTip>
-                                <ToolTip>
-                                    <StackPanel Orientation="Vertical">
-                                        <TextBlock Text="{Binding ToolTip}"/>
-                                    </StackPanel>
-                                </ToolTip>
-                            </TextBlock.ToolTip>
-                        </TextBlock>
+                        <TextBlock VerticalAlignment="Center" Text="{Binding Label}"/>
+                        <StackPanel.ToolTip>
+                            <ToolTip Visibility="{Binding ToolTipVisibility}">
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock Text="{Binding ToolTip}"/>
+                                </StackPanel>
+                            </ToolTip>
+                        </StackPanel.ToolTip>
                     </StackPanel>
                 </DataTemplate>
             </syncfusion:SfTreeView.ItemTemplate>
