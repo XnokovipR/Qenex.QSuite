@@ -1,0 +1,62 @@
+﻿using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Media.Imaging;
+using Qenex.QSuite.ViewModels.ViewableItem;
+
+namespace Qenex.QSuite.ViewModels.SolutionExplorerWrappers;
+
+public class NodeWrapper : IViewableItem
+{
+    private readonly NodeType nodeType;
+    private readonly string prefix;
+    private readonly string suffix;
+    
+
+    public NodeWrapper(NodeType nType, string labelPrefix = "", string labelSuffix = "")
+    {
+        prefix = labelPrefix;
+        suffix = labelSuffix;
+        nodeType = nType;
+        Children = [];
+    }
+
+    #region UI Properties
+    
+    public string Label
+    {
+        get => $"{prefix} {nodeType.ToString()} {suffix}";
+        set { }
+    }
+
+    public Visibility ToolTipVisibility => Visibility.Hidden;
+    public string ToolTip => string.Empty;
+    
+    public BitmapImage Icon => ImageGetter.GetBitmapImage($"Icons/SolutionExplorer/{GetBitmapImageName(nodeType)}");
+    public ObservableCollection<IViewableItem> Children { get; set; }
+
+    #endregion
+    
+    private string GetBitmapImageName(NodeType typeOfNode)
+    {
+        return typeOfNode switch
+        {
+            NodeType.Drivers => "Drivers.png",
+            NodeType.Protocols => "Protocols.png",
+            NodeType.Variables => "Variables.png",
+            NodeType.Events => "Events.png",
+            NodeType.Presentations => "Presentations.png",
+            _ => "Drivers.png"
+        };
+    }
+    
+    public enum NodeType
+    {
+        Drivers,
+        Protocols,
+        Variables,
+        Events,
+        Presentations
+    }
+
+    
+}

@@ -5,6 +5,8 @@ using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Models.Project;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.ValuePresentation;
+using Qenex.QSuite.Variables.VariableEvents;
 using Qenex.QSuite.ViewModels.SolutionExplorerWrappers;
 using Qenex.QSuite.ViewModels.ViewableItem;
 using Syncfusion.Windows.Tools.Controls;
@@ -69,39 +71,115 @@ public class SolutionExplorerViewModel(EventAggregator ea) : ViewModelBase(ea)
     private IViewableItem CreateProjectWrapper(RealProjectData realPrjData)
     {
         var projectWrapper = new ProjectWrapper(realPrjData.Module);
-        // Add drivers
+        
         CreateDriverWrappers(projectWrapper.Children, realPrjData.Module.Drivers);
+        
+        CreateVariableWrapper(projectWrapper.Children, realPrjData.Module.Variables);
+        
+        CreatePresentationWrapper(projectWrapper.Children, realPrjData.Module.Presentations);
+        
+        CreateVariableEventWrapper(projectWrapper.Children, realPrjData.Module.VarEvents);
         return projectWrapper;
     }
     
     private void CreateDriverWrappers(ObservableCollection<IViewableItem> children, IList<IDriverBase> drivers)
     {
+        // Add drivers node
+        var driversNode = new NodeWrapper(NodeWrapper.NodeType.Drivers, "Communicated");
+        children.Add(driversNode);
+        
+        // Add drivers
         foreach (var driver in drivers)
         {
             var driverWrapper = new DriverWrapper(driver);
             // Add protocols
             CreateProtocolWrappers(driverWrapper.Children, driver.Protocols);
-            children.Add(driverWrapper);
+            driversNode.Children.Add(driverWrapper);
+        }
+    }
+    
+    private void CreateVariableWrapper(ObservableCollection<IViewableItem> children, IList<IVariableBase> variables)
+    {
+        // Add variables node
+        var variablesNode = new NodeWrapper(NodeWrapper.NodeType.Variables);
+        children.Add(variablesNode);
+        
+        // Add variables
+        foreach (var variable in variables)
+        {
+            var variableWrapper = new VariableWrapper(variable);
+            variablesNode.Children.Add(variableWrapper);
+        }
+    }
+    
+    private void CreatePresentationWrapper(ObservableCollection<IViewableItem> children, IList<IPresentation> presentations)
+    {
+        // Add presentations node
+        var presentationsNode = new NodeWrapper(NodeWrapper.NodeType.Presentations);
+        children.Add(presentationsNode);
+        
+        // Add presentations
+        foreach (var presentation in presentations)
+        {
+            var presentationWrapper = new PresentationWrapper(presentation);
+            presentationsNode.Children.Add(presentationWrapper);
+        }
+    }
+    
+    private void CreateVariableEventWrapper(ObservableCollection<IViewableItem> children, IList<IVarEvent> events)
+    {
+        // Add events node
+        var eventsNode = new NodeWrapper(NodeWrapper.NodeType.Events);
+        children.Add(eventsNode);
+        
+        // Add events
+        foreach (var variableEvent in events)
+        {
+            if (variableEvent is PeriodicVarEvent periodicVarEvent)
+            {
+                var periodicEventWrapper = new PeriodicVariableEventWrapper(periodicVarEvent);
+                eventsNode.Children.Add(periodicEventWrapper);
+            }
+            else if (variableEvent is OnValueChangedVarEvent onChangeVarEvent)
+            {
+                var onChangeEventWrapper = new OnValueChangedVariableEventWrapper(onChangeVarEvent);
+                eventsNode.Children.Add(onChangeEventWrapper);
+            }
+            else if (variableEvent is OnRequestVarEvent onRequestVarEvent)
+            {
+                var onTimeEventWrapper = new OnRequestVariableEventWrapper(onRequestVarEvent);
+                eventsNode.Children.Add(onTimeEventWrapper);
+            }
         }
     }
     
     private void CreateProtocolWrappers(ObservableCollection<IViewableItem> children, IList<IProtocolBase> protocols)
     {
+        // Add protocols node
+        var protocolsNode = new NodeWrapper(NodeWrapper.NodeType.Protocols, "Communicated");
+        children.Add(protocolsNode);
+        
+        // Add protocols
         foreach (var protocol in protocols)
         {
             var protocolWrapper = new ProtocolWrapper(protocol);
             // Add variables
-            CreateVariableWrappers(protocolWrapper.Children, protocol.Variables);
-            children.Add(protocolWrapper);
+            CreateProtocolVariableWrappers(protocolWrapper.Children, protocol.Variables);
+            protocolsNode.Children.Add(protocolWrapper);
         }
     }
     
-    private void CreateVariableWrappers(ObservableCollection<IViewableItem> children, IList<IProtocolVariable> variables)
+    private void CreateProtocolVariableWrappers(ObservableCollection<IViewableItem> children, IList<IProtocolVariable> variables)
     {
+        // Add variables node
+        var variablesNode = new NodeWrapper(NodeWrapper.NodeType.Variables, "Communicated");
+        children.Add(variablesNode);
+        
+        // Add variables
         foreach (var variable in variables)
         {
             var variableWrapper = new ProtocolVariableWrapper(variable);
-            children.Add(variableWrapper);
+            variablesNode.Children.Add(variableWrapper);
         }
     }
 

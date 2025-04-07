@@ -10,23 +10,22 @@ using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QSuite.ViewModels.SolutionExplorerWrappers;
 
-public class ProtocolVariableWrapper : PropertyChangedBase, IViewableItem
+public class VariableWrapper : PropertyChangedBase, IViewableItem
 {
-    private readonly IProtocolVariable protocolVariable;
+    private readonly IVariableBase variable;
 
-    public ProtocolVariableWrapper(IProtocolVariable protVariable)
+    public VariableWrapper(IVariableBase variableToAdd)
     {
-        protocolVariable = protVariable;
+        variable = variableToAdd;
         Children = [];
         
     }
     #region UI Properties
     
-
     public string Label
     {
-        get => $"{protocolVariable.Variable.Label} ({protocolVariable.Variable.Id})";
-        set { protocolVariable.Variable.Label = $"{value} ({protocolVariable.Variable.Id})"; OnPropertyChanged(); }
+        get => $"{variable.Label} ({variable.Id})";
+        set { variable.Label = $"{value} ({variable.Id})"; OnPropertyChanged(); }
     }
 
     public Visibility ToolTipVisibility => Visibility.Visible;
@@ -42,14 +41,14 @@ public class ProtocolVariableWrapper : PropertyChangedBase, IViewableItem
         var sb = new StringBuilder();
         sb.Append("Variable:");
         sb.Append(Environment.NewLine);
-        sb.Append($"Label\t{protocolVariable.Variable.Label}");
+        sb.Append($"Label\t{variable.Label}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Name\t{protocolVariable.Variable.Name}");
+        sb.Append($"Name\t{variable.Name}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Descr.\t{protocolVariable.Variable.Description}");
+        sb.Append($"Descr.\t{variable.Description}");
         sb.Append(Environment.NewLine);
 
-        if (protocolVariable.Variable is ScalarVariable scalarVariable)
+        if (variable is ScalarVariable scalarVariable)
         {
             sb.Append($"Size\t{scalarVariable.Size}");
             sb.Append(Environment.NewLine);

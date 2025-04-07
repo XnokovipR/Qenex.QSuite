@@ -1,4 +1,6 @@
 ﻿using System.Collections.ObjectModel;
+using System.Text;
+using System.Windows;
 using System.Windows.Media.Imaging;
 using Qenex.QSuite.ViewModels.ViewableItem;
 using Qenex.QLibs.QUI;
@@ -26,7 +28,27 @@ public class ProtocolWrapper : PropertyChangedBase, IViewableItem
         set { protocol.Specification.Label = value; OnPropertyChanged(); }
     }
     
-    public string ToolTip => protocol.Specification.Description;
+    public Visibility ToolTipVisibility => Visibility.Visible;
+    public string ToolTip
+    {
+        get
+        {
+            var sb = new StringBuilder();
+            sb.Append("Protocol:");
+            sb.Append(Environment.NewLine);
+            sb.Append($"Label\t{protocol.Specification.Label}");
+            sb.Append(Environment.NewLine);
+            sb.Append($"Desc.\t{protocol.Specification.Description}");
+            sb.Append(Environment.NewLine);
+            sb.Append($"Version\t{protocol.Specification.Version}");
+            sb.Append(Environment.NewLine);
+            sb.Append($"Author\t{protocol.Specification.Author}");
+            sb.Append(Environment.NewLine);
+            sb.Append($"Co.\t{protocol.Specification.Company}");
+            
+            return sb.ToString();
+        }
+    }
     
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Protocol.png");
     public ObservableCollection<IViewableItem> Children { get; set; }
