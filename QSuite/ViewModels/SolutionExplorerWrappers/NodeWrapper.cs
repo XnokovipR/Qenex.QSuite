@@ -24,7 +24,7 @@ public class NodeWrapper : IViewableItem
     
     public string Label
     {
-        get => $"{prefix} {nodeType.ToString()} {suffix}";
+        get => nodeType == NodeType.OnlyPrefixFolder ? prefix : $"{prefix} {nodeType.ToString()} {suffix}"; 
         set { }
     }
 
@@ -45,17 +45,20 @@ public class NodeWrapper : IViewableItem
             NodeType.Variables => "Variables.png",
             NodeType.Events => "Events.png",
             NodeType.Presentations => "Presentations.png",
+            NodeType.OnlyPrefixFolder => "VariableFolder.png",
+            
             _ => "Drivers.png"
         };
     }
     
     public enum NodeType
     {
+        OnlyPrefixFolder,
         Drivers,
         Protocols,
         Variables,
         Events,
-        Presentations
+        Presentations,
     }
 
     
