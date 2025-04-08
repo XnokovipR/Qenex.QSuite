@@ -47,7 +47,9 @@
             <syncfusion:Ribbon.BackStageButton>
                 <syncfusion:BackStageButton Visibility="Collapsed"/>
             </syncfusion:Ribbon.BackStageButton>
-            <syncfusion:RibbonTab Caption="File">
+            
+            <!-- Ribbon Menu - Home -->
+            <syncfusion:RibbonTab Caption="Home">
                 <syncfusion:RibbonBar Header="Project">
                     <syncfusion:RibbonButton 
                         SizeForm="Large" 
@@ -61,6 +63,38 @@
                         LargeIcon="../Icons/Menu/CloseProject.png"
                         Command="{Binding OnCloseProjectCommand}" CommandParameter="{Binding ElementName=DockingManager}"
                     />
+                </syncfusion:RibbonBar>
+                <syncfusion:RibbonBar Header="Wotrkspace">
+                    <syncfusion:RibbonButton 
+                        SizeForm="Large" 
+                        Label="Add" 
+                        LargeIcon="../Icons/Menu/AddWorkspace.png"
+                    />
+                    <!-- Command="{Binding OnAddWorkspaceCommand}" CommandParameter="{Binding ElementName=DockingManager}" -->
+                    <syncfusion:RibbonButton 
+                        SizeForm="Large" 
+                        Label="Remove" 
+                        LargeIcon="../Icons/Menu/RemoveWorkspace.png"
+                    />
+                    <!-- Command="{Binding OnRemoveWorkspaceCommand}" CommandParameter="{Binding ElementName=DockingManager}" -->
+                </syncfusion:RibbonBar>
+            </syncfusion:RibbonTab>
+            
+            <!-- Ribbon Menu - Runtime -->
+            <syncfusion:RibbonTab Caption="Runtime">
+                <syncfusion:RibbonBar Header="Run">
+                    <syncfusion:RibbonButton 
+                        SizeForm="Large" 
+                        Label="Connect" 
+                        LargeIcon="../Icons/Menu/Connect.png"
+                    />
+                    <!-- Command="{Binding OnConnectCommad}" CommandParameter="{Binding ElementName=DockingManager}" -->
+                    <syncfusion:RibbonButton 
+                        SizeForm="Large" 
+                        Label="Disconnect" 
+                        LargeIcon="../Icons/Menu/Disconnect.png"
+                    />
+                    <!-- Command="{Binding OnDisconnectCommand}" CommandParameter="{Binding ElementName=DockingManager}" -->
                 </syncfusion:RibbonBar>
             </syncfusion:RibbonTab>
         </syncfusion:Ribbon>
