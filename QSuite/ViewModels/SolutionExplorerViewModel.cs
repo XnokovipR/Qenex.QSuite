@@ -107,11 +107,43 @@ public class SolutionExplorerViewModel(EventAggregator ea) : ViewModelBase(ea)
         // Add variables
         foreach (var variable in variables)
         {
-            var variableWrapper = new VariableWrapper(variable);
-            variablesNode.Children.Add(variableWrapper);
+            CreateVariableInNamespace(variablesNode.Children, variable);
         }
     }
-    
+
+    private void CreateVariableInNamespace(ObservableCollection<IViewableItem> variablesNode, IVariableBase variable)
+    {
+        var tempVariablesNode = variablesNode;
+        var namespaces = variable.Namespace.Split('/').Skip(1).ToArray();
+        
+        if (namespaces.Length == 1 && namespaces[0] == "")
+        {
+            // Remove the first  empty namespace (variable is in root)
+            namespaces = namespaces.Skip(1).ToArray();
+        }
+
+        foreach (var ns in namespaces)
+        {
+            // Check if the namespace already exists
+            var existingNamespace = tempVariablesNode.FirstOrDefault(x => x.Label == ns);
+            if (existingNamespace == null)
+            {
+                // Create a new namespace node
+                var namespaceNode = new NodeWrapper(NodeWrapper.NodeType.OnlyPrefixFolder, ns);
+                tempVariablesNode.Add(namespaceNode);
+                tempVariablesNode = namespaceNode.Children;
+            }
+            else
+            {
+                // Use the existing namespace node
+                tempVariablesNode = existingNamespace.Children;
+            }
+        }
+        var variableWrapper = new VariableWrapper(variable);
+        tempVariablesNode.Add(variableWrapper);
+        
+    }
+
     private void CreatePresentationWrapper(ObservableCollection<IViewableItem> children, IList<IPresentation> presentations)
     {
         // Add presentations node
