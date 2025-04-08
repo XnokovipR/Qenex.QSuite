@@ -87,6 +87,18 @@
       <Resource Include="Icons\SolutionExplorer\Presentations.png" />
       <None Remove="Icons\SolutionExplorer\Presentation.png" />
       <Resource Include="Icons\SolutionExplorer\Presentation.png" />
+      <None Remove="Icons\Menu\AddWorkspace.png" />
+      <Resource Include="Icons\Menu\AddWorkspace.png" />
+      <None Remove="Icons\Menu\Connect.png" />
+      <Resource Include="Icons\Menu\Connect.png" />
+      <None Remove="Icons\Menu\Disconnect.png" />
+      <Resource Include="Icons\Menu\Disconnect.png" />
+      <None Remove="Icons\Menu\Pause.png" />
+      <Resource Include="Icons\Menu\Pause.png" />
+      <None Remove="Icons\Menu\RemoveWorkspace.png" />
+      <Resource Include="Icons\Menu\RemoveWorkspace.png" />
+      <None Remove="Icons\SolutionExplorer\VariableFolder.png" />
+      <Resource Include="Icons\SolutionExplorer\VariableFolder.png" />
     </ItemGroup>
 
     <ItemGroup>
