@@ -69,14 +69,14 @@
                         SizeForm="Large" 
                         Label="Add" 
                         LargeIcon="../Icons/Menu/AddWorkspace.png"
+                        Command="{Binding OnAddWorkspaceCommand}" CommandParameter="{Binding ElementName=DockingManager}"
                     />
-                    <!-- Command="{Binding OnAddWorkspaceCommand}" CommandParameter="{Binding ElementName=DockingManager}" -->
                     <syncfusion:RibbonButton 
                         SizeForm="Large" 
                         Label="Remove" 
                         LargeIcon="../Icons/Menu/RemoveWorkspace.png"
+                        Command="{Binding OnRemoveWorkspaceCommand}" CommandParameter="{Binding ElementName=DockingManager}"
                     />
-                    <!-- Command="{Binding OnRemoveWorkspaceCommand}" CommandParameter="{Binding ElementName=DockingManager}" -->
                 </syncfusion:RibbonBar>
             </syncfusion:RibbonTab>
             
