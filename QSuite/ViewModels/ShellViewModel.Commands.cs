@@ -115,6 +115,26 @@ public partial class ShellViewModel
             await Task.CompletedTask;
         }
     }
+    
+    private bool CanAddWorkspace(object parameter)
+    {
+        return isProjectMade;
+    }
+    private void AddWorkspace(DockingManager dockingManager)
+    {
+        // var newWorkspace = new WorkspaceViewModel();
+        // solutionExplorerViewModel.AddWorkspace(newWorkspace);
+    }
+    
+    
+    private void RemoveWorkspace(DockingManager dockingManager)
+    {
+        // var workspace = solutionExplorerViewModel.GetSelectedWorkspace();
+        // if (workspace != null)
+        // {
+        //     solutionExplorerViewModel.RemoveWorkspace(workspace);
+        // }
+    }
 
     #endregion
     
