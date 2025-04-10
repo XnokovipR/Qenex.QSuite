@@ -35,10 +35,13 @@ public partial class ShellViewModel
 
     public RelayCommandAsync<DockingManager> OnOpenProjectCommand { get; set; }
     public RelayCommandAsync<DockingManager> OnCloseProjectCommand { get; set; }
+
+    public RelayCommand<DockingManager> OnAddWorkspaceCommand { get; set; }
+    public RelayCommand<DockingManager> OnRemoveWorkspaceCommand { get; set; }
     
     #endregion
 
-    #region Create all ShellCiewModel commands
+    #region Create all ShellViewModel commands
     
     private void CreateCommands()
     {
@@ -50,6 +53,8 @@ public partial class ShellViewModel
 
         OnOpenProjectCommand = new RelayCommandAsync<DockingManager>(OpenProjectAsync);
         OnCloseProjectCommand = new RelayCommandAsync<DockingManager>(CloseProjectAsync, CanCloseProject);
+        OnAddWorkspaceCommand = new RelayCommand<DockingManager>(AddWorkspace, CanAddWorkspace);
+        OnRemoveWorkspaceCommand = new RelayCommand<DockingManager>(RemoveWorkspace);
         
     }
 
@@ -82,8 +87,7 @@ public partial class ShellViewModel
                 
                 solutionExplorerViewModel.ReloadProjectData(realProjectData);
                 
-                isProjectLoaded = true;
-                OnCloseProjectCommand.OnCanExecuteChanged();
+                ChangeIsProjectMade(true);
                 logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\"loaded.");
             }
             catch (Exception e)
@@ -98,7 +102,7 @@ public partial class ShellViewModel
     
     private bool CanCloseProject(object parameter)
     {
-        return isProjectLoaded;
+        return isProjectMade;
     }
     private async Task CloseProjectAsync(DockingManager dockingManager)
     {
@@ -107,8 +111,7 @@ public partial class ShellViewModel
         {
             solutionExplorerViewModel.DisposeAll();
 
-            isProjectLoaded = false;
-            OnCloseProjectCommand.OnCanExecuteChanged();
+            ChangeIsProjectMade(false);
             await Task.CompletedTask;
         }
     }
@@ -182,6 +185,17 @@ public partial class ShellViewModel
         int screenIndex = Array.IndexOf(allScreens, screen); 
         
         return screenIndex;
+    }
+
+    #endregion
+
+    #region Can-methods process
+
+    private void ChangeIsProjectMade(bool isMade)
+    {
+        isProjectMade = isMade;
+        OnCloseProjectCommand?.OnCanExecuteChanged();
+        OnAddWorkspaceCommand?.OnCanExecuteChanged();
     }
 
     #endregion

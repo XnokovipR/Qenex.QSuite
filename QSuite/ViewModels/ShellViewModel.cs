@@ -27,7 +27,7 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     
     // Project
     private RealProjectData realProjectData;
-    private bool isProjectLoaded;
+    private bool isProjectMade;
     
 
     //private SfDiagram diagram;
@@ -46,7 +46,7 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
 
     public ShellViewModel()
     {
-        isProjectLoaded = false;
+        ChangeIsProjectMade(false);
         ProcessAppSettings("QSuiteAppSettings.xml");
         
         eventAggregator = new EventAggregator();
