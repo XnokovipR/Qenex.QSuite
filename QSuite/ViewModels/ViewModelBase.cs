@@ -1,4 +1,5 @@
-﻿using Qenex.QLibs.QUI;
+﻿using System.Windows.Media;
+using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.SyncfusionDocking;
 using Syncfusion.Windows.Tools.Controls;
 
@@ -21,6 +22,10 @@ public abstract class ViewModelBase(EventAggregator ea) : PropertyChangedBaseWit
     public abstract bool IsDocument { get; }
     public abstract bool CanClose { get; }
     public abstract bool CanSerialize { get; }
+    public bool DockFill { get; set; }
+    public Brush Icon { get; set; }
+    
+    public QDockItem QdItem { get; set; }
 
 
     public virtual void Exit() { }
