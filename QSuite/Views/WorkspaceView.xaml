@@ -11,7 +11,18 @@
              d:DesignHeight="300" d:DesignWidth="300"
              d:DataContext="{d:DesignInstance viewModels:WorkspaceViewModel, IsDesignTimeCreatable=False}">
     
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Loaded">
+            <i:InvokeCommandAction Command="{Binding OnWindowLoadedCommand}" PassEventArgsToCommand="True"/>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+    
     <Grid>
+        <TextBlock
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Text="{Binding Header}"/>
+        
         <!--<syncfusion:SfDiagram x:Name="DiagramControl"
                               DefaultConnectorType="Line"
                               Constraints="Default,Undoable"
