@@ -8,6 +8,7 @@ using Syncfusion.Windows.Shared;
 using Syncfusion.Windows.Tools.Controls;
 using System.Windows.Forms;
 using System.Windows.Interop;
+using Qenex.QLibs.QUI.SyncfusionDocking;
 using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Models.Project;
@@ -40,6 +41,13 @@ public partial class ShellViewModel
     public RelayCommand<DockingManager> OnRemoveWorkspaceCommand { get; set; }
     
     #endregion
+    
+    #region ViewModel  Commands
+    
+    public RelayCommand<DockingManager> OnWindowClosingCommand { get; set; }
+    public RelayCommand<CloseButtonEventArgs> OnCloseButtonClickCommand { get; set; }
+    
+    #endregion
 
     #region Create all ShellViewModel commands
     
@@ -55,6 +63,9 @@ public partial class ShellViewModel
         OnCloseProjectCommand = new RelayCommandAsync<DockingManager>(CloseProjectAsync, CanCloseProject);
         OnAddWorkspaceCommand = new RelayCommand<DockingManager>(AddWorkspace, CanAddWorkspace);
         OnRemoveWorkspaceCommand = new RelayCommand<DockingManager>(RemoveWorkspace);
+        
+        OnWindowClosingCommand = new RelayCommand<DockingManager>(RemoveWindowOnClosingEvent);
+        OnCloseButtonClickCommand = new RelayCommand<CloseButtonEventArgs>(RemoveWindowOnCloseButtonClick);
         
     }
 
@@ -122,8 +133,9 @@ public partial class ShellViewModel
     }
     private void AddWorkspace(DockingManager dockingManager)
     {
-        // var newWorkspace = new WorkspaceViewModel();
-        // solutionExplorerViewModel.AddWorkspace(newWorkspace);
+        var rndNum = new Random().Next(1, 1000_000);
+        var newWorkspace = new WorkspaceViewModel(eventAggregator, dockingManager, $"{rndNum}");
+        DockManager.Add(newWorkspace);
     }
     
     
@@ -134,6 +146,27 @@ public partial class ShellViewModel
         // {
         //     solutionExplorerViewModel.RemoveWorkspace(workspace);
         // }
+    }
+
+    #endregion
+
+    #region ViewModel command methods
+
+    private void RemoveWindowOnClosingEvent(DockingManager dockingManager)
+    {
+
+    }
+    
+    private void RemoveWindowOnCloseButtonClick(CloseButtonEventArgs eventArgs)
+    {
+        var name = ((System.Windows.Controls.ContentControl)(eventArgs).TargetItem).Name;
+        var dockToRemove = DockManager.DockableViewModels.FirstOrDefault(i => i.Name == name);
+
+        if (dockToRemove == null) return;
+        
+        DockManager.DockableViewModels.Remove(dockToRemove);
+        eventArgs.Cancel = true;
+
     }
 
     #endregion
@@ -161,6 +194,11 @@ public partial class ShellViewModel
         
         try
         {
+            if (docking.DocContainer is DocumentContainer docContainer)
+            {
+                docContainer.AddTabDocumentAtLast = true;
+            }
+            
             docking.LoadDockState("QenexEditLayout.xml");
             
             // Load drivers, protocols and controls
