@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using Qenex.QLibs.QUI;
+using Qenex.QLibs.QUI.SyncfusionDocking;
 using Qenex.QLibs.QUI.Wpf;
 using Syncfusion.UI.Xaml.Diagram;
 using Syncfusion.UI.Xaml.Diagram.Controls;
@@ -13,35 +14,38 @@ public class WorkspaceViewModel : ViewModelBase
     
     private bool diagramLoaded = false;
     SfDiagram diagram;
+    private DockingManager dockingManager;
 
     #endregion
 
     #region Constructors
 
-    public WorkspaceViewModel(EventAggregator ea) : base(ea)
+    public WorkspaceViewModel(EventAggregator ea, DockingManager dm,  string id = "") : base(ea)
     {
-        DiagramLoadedCommand = new RelayCommand<SfDiagram>(OnDiagramLoaded);
+        dockingManager = dm;
+        Header = $"Workspace {id}";
+        OnWindowLoadedCommand = new RelayCommand<object>(OnWindowLoaded);
     }
 
     #endregion
     
     #region Properties
-
     
-    public RelayCommand<SfDiagram> DiagramLoadedCommand { get; set; }
-    public SfDiagram Diagram { get => diagram; set  { diagram = value; OnPropertyChanged(); }
-}
-
-
+    public RelayCommand<object> OnWindowLoadedCommand { get; set; }
+    public SfDiagram Diagram { get => diagram; set  { diagram = value; OnPropertyChanged(); } }
+    
+    
     #endregion
     
     #region BaseViewModel implementation
 
     public override string Identifier => GenerateWorkspaceIdentifier();
+
+    private string header;
     public override string Header
     {
-        get => "Workspace";
-        set { }
+        get => header;
+        set { header = value; OnPropertyChanged(); }
     }
 
     public override string Name
@@ -50,36 +54,33 @@ public class WorkspaceViewModel : ViewModelBase
         set { }
     }
 
-    public override DockSide DockingPosition
-    {
-        get => DockSide.Tabbed;
-        set { }
-    }
-
-    public override DockState DockState { get; set; }
+    public override DockSide DockingPosition { get; set; } 
+    
+    public override DockState DockState { get; set; } = DockState.Document;
 
     public override bool CanMaximize => true;
     public override bool IsDocument => true;
     public override bool CanClose => true;
-    public override bool CanSerialize => true;
+    public override bool CanSerialize => false;
+    
 
     #endregion
+    
 
-    #region Public methods
+    #region Private methods
 
-    private void OnDiagramLoaded(SfDiagram sfDiagram)
+    private void OnWindowLoaded(object sfDiagram)
     {
-        diagram = sfDiagram;
+        //diagram = sfDiagram;
 
         if (diagramLoaded) return;
         diagramLoaded = true;
         
+        // Set logic for diagram loaded
+        var aa = dockingManager.Children.Count;
+        
     }
-
-    #endregion
-
-    #region Private methods
-
+    
     private static string GenerateWorkspaceIdentifier()
     {
         var workspaceName = $"WorkspaceViewModel_{Guid.NewGuid():N}";
