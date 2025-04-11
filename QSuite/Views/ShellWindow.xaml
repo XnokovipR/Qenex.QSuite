@@ -103,7 +103,19 @@
             <syncfusion:DockingManager
                 x:Name="DockingManager" 
                 PersistState="False"
-                ItemsSource="{Binding DockingManager.DockableViewModels}"/>
+                UseDocumentContainer="True"
+                ContainerMode="TDI"
+                IsVS2010DraggingEnabled="False"
+                ItemsSource="{Binding DockManager.DockableViewModels}">
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="WindowClosing">
+                        <i:InvokeCommandAction Command="{Binding OnWindowClosingCommand}" CommandParameter="{Binding ElementName=DockingManager}"/>
+                    </i:EventTrigger>
+                    <i:EventTrigger EventName="CloseButtonClick">
+                        <i:InvokeCommandAction Command="{Binding OnCloseButtonClickCommand}" PassEventArgsToCommand="True"/>
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+            </syncfusion:DockingManager>
         </Grid>
         <StatusBar Grid.Row="2"></StatusBar>
 
