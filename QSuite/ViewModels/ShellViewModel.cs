@@ -37,7 +37,7 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     private LogViewModel logViewModel;
     private PropertiesViewModel propertiesViewModel;
     private ControlsViewModel controlsViewModel;
-    private WorkspaceViewModel workspaceViewModel;
+
     
 
     #endregion
@@ -61,7 +61,7 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     #endregion
 
     #region Properties
-    public SyncfusionDockingManager DockingManager { get; set; }
+    public SyncfusionDockingManager DockManager { get; set; }
     
     public int WindowHeight { get; set; } = 900;
     public int WindowWidth { get; set; } = 1600;
@@ -74,23 +74,20 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     
     private void CreateViewModels()
     {
-        DockingManager = new SyncfusionDockingManager();
+        DockManager = new SyncfusionDockingManager();
 
         solutionExplorerViewModel = new SolutionExplorerViewModel(eventAggregator);
-        DockingManager.Add(solutionExplorerViewModel);
+        DockManager.Add(solutionExplorerViewModel);
         
         controlsViewModel = new ControlsViewModel(eventAggregator);
-        DockingManager.Add(controlsViewModel);
+        DockManager.Add(controlsViewModel);
 
         logViewModel = new LogViewModel(eventAggregator);
         logger.RegisterSubscriber(logViewModel);
-        DockingManager.Add(logViewModel);
+        DockManager.Add(logViewModel);
         
         propertiesViewModel = new PropertiesViewModel(eventAggregator);
-        DockingManager.Add(propertiesViewModel);
-        
-        workspaceViewModel = new WorkspaceViewModel(eventAggregator);
-        DockingManager.Add(workspaceViewModel);
+        DockManager.Add(propertiesViewModel);
     }
     private void ProcessAppSettings(string filename)
     {
