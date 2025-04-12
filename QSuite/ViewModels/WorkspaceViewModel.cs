@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.ObjectModel;
+using System.Windows;
 using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.SyncfusionDocking;
 using Qenex.QLibs.QUI.Wpf;
@@ -33,7 +34,8 @@ public class WorkspaceViewModel : ViewModelBase
     
     public RelayCommand<object> OnWindowLoadedCommand { get; set; }
     public SfDiagram Diagram { get => diagram; set  { diagram = value; OnPropertyChanged(); } }
-    
+
+    public ObservableCollection<Node> Controls { get; set; } = [];
     
     #endregion
     
