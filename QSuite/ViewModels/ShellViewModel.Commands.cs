@@ -134,6 +134,7 @@ public partial class ShellViewModel
     
     private bool CanAddWorkspace(object parameter)
     {
+        return true;
         return isProjectMade;
     }
     private void AddWorkspace(DockingManager dockingManager)

@@ -11,6 +11,15 @@
              d:DesignHeight="300" d:DesignWidth="300"
              d:DataContext="{d:DesignInstance viewModels:WorkspaceViewModel, IsDesignTimeCreatable=False}">
     
+    <!-- <UserControl.Resources> -->
+    <!--     <ResourceDictionary> -->
+    <!--         <ResourceDictionary.MergedDictionaries> -->
+    <!--             <ResourceDictionary Source="/Syncfusion.SfDiagram.Wpf;component/Resources/BasicShapes.xaml"/> -->
+    <!--         </ResourceDictionary.MergedDictionaries> -->
+    <!--     </ResourceDictionary>         -->
+    <!-- </UserControl.Resources> -->
+
+    
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Loaded">
             <i:InvokeCommandAction Command="{Binding OnWindowLoadedCommand}" PassEventArgsToCommand="True"/>
@@ -18,61 +27,57 @@
     </i:Interaction.Triggers>
     
     <Grid>
-        <TextBlock
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            Text="{Binding Header}"/>
-        
-        <!--<syncfusion:SfDiagram x:Name="DiagramControl"
-                              DefaultConnectorType="Line"
+        <syncfusion:SfDiagram x:Name="DiagramControl"
+                              DefaultConnectorType="Line" 
                               Constraints="Default,Undoable"
-                              Tool="MultipleSelect">-->
+                              Tool="MultipleSelect">
             
-            <!--<i:Interaction.Triggers>
+            <i:Interaction.Triggers>
                 <i:EventTrigger EventName="Loaded">
                     <i:InvokeCommandAction Command="{Binding DiagramLoadedCommand }"
                                            CommandParameter="{Binding ElementName=DiagramControl}"/>
                 </i:EventTrigger>
             </i:Interaction.Triggers>
             
-            <syncfusion:SfDiagram.Theme>
-                <syncfusion:OfficeTheme></syncfusion:OfficeTheme>
-            </syncfusion:SfDiagram.Theme>
+             <syncfusion:SfDiagram.Theme>
+                 <syncfusion:SmokeTheme/>
+                 <!-- <syncfusion:OfficeTheme></syncfusion:OfficeTheme> -->
+             </syncfusion:SfDiagram.Theme>
             
-            --><!--To change the scroll settings of diagram page --><!--
+            <!-- To change the scroll settings of diagram page -->
             <syncfusion:SfDiagram.ScrollSettings>
                 <syncfusion:ScrollSettings ScrollLimit="Diagram"/>
             </syncfusion:SfDiagram.ScrollSettings>
-
-            --><!--To change the page settings values of diagram --><!--
+            
+            <!--To change the page settings values of diagram -->
             <syncfusion:SfDiagram.PageSettings>
                 <syncfusion:PageSettings PageBorderBrush="White" PageBackground="White"/>
             </syncfusion:SfDiagram.PageSettings>
-
-            --><!--To change the snap settings values of diagram --><!--
+            
+            <!--To change the snap settings values of diagram -->
             <syncfusion:SfDiagram.SnapSettings>
                 <syncfusion:SnapSettings SnapConstraints="All" SnapToObject="All"/>
             </syncfusion:SfDiagram.SnapSettings>
-
+            
             <syncfusion:SfDiagram.HorizontalRuler>
                 <syncfusion:Ruler Orientation="Horizontal"/>
             </syncfusion:SfDiagram.HorizontalRuler>
-
+            
             <syncfusion:SfDiagram.VerticalRuler>
                 <syncfusion:Ruler Orientation="Vertical"/>
             </syncfusion:SfDiagram.VerticalRuler>
-
-            <syncfusion:SfDiagram.Nodes>
-                <syncfusion:NodeCollection/>
-            </syncfusion:SfDiagram.Nodes>
-
-            <syncfusion:SfDiagram.Connectors>
-                <syncfusion:ConnectorCollection/>
-            </syncfusion:SfDiagram.Connectors>
-
+            
+            <!-- <syncfusion:SfDiagram.Nodes> -->
+            <!--     <syncfusion:NodeCollection/> -->
+            <!-- </syncfusion:SfDiagram.Nodes> -->
+            <!-- -->
+            <!-- <syncfusion:SfDiagram.Connectors> -->
+            <!--     <syncfusion:ConnectorCollection/> -->
+            <!-- </syncfusion:SfDiagram.Connectors> -->
+            
             <syncfusion:SfDiagram.Groups>
                 <syncfusion:GroupCollection/>
             </syncfusion:SfDiagram.Groups>
-        </syncfusion:SfDiagram>-->        
+        </syncfusion:SfDiagram>
     </Grid>
 </UserControl>
