@@ -11,13 +11,17 @@
              d:DesignHeight="300" d:DesignWidth="300"
              d:DataContext="{d:DesignInstance viewModels:WorkspaceViewModel, IsDesignTimeCreatable=False}">
     
-    <!-- <UserControl.Resources> -->
-    <!--     <ResourceDictionary> -->
-    <!--         <ResourceDictionary.MergedDictionaries> -->
-    <!--             <ResourceDictionary Source="/Syncfusion.SfDiagram.Wpf;component/Resources/BasicShapes.xaml"/> -->
-    <!--         </ResourceDictionary.MergedDictionaries> -->
-    <!--     </ResourceDictionary>         -->
-    <!-- </UserControl.Resources> -->
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <Style x:Key="GridLineStyle" TargetType="Path">
+                <Setter Property="Stroke" Value="#ff101010"/>
+                <Setter Property="StrokeDashArray" Value="3"/>
+            </Style>
+            <x:Array x:Key="GridLineStyles" Type="Style">
+                <StaticResource ResourceKey="GridLineStyle"/>
+            </x:Array>
+        </ResourceDictionary>
+    </UserControl.Resources>
 
     
     <i:Interaction.Triggers>
@@ -30,7 +34,9 @@
         <syncfusion:SfDiagram x:Name="DiagramControl"
                               DefaultConnectorType="Line" 
                               Constraints="Default,Undoable"
-                              Tool="MultipleSelect">
+                              Background="#FF202020"
+                              Tool="MultipleSelect"
+                              Nodes="{Binding Controls}">
             
             <i:Interaction.Triggers>
                 <i:EventTrigger EventName="Loaded">
@@ -39,32 +45,42 @@
                 </i:EventTrigger>
             </i:Interaction.Triggers>
             
+            
              <syncfusion:SfDiagram.Theme>
                  <syncfusion:SmokeTheme/>
                  <!-- <syncfusion:OfficeTheme></syncfusion:OfficeTheme> -->
              </syncfusion:SfDiagram.Theme>
+            
+            <!--To change the page settings values of diagram -->
+            <syncfusion:SfDiagram.PageSettings>
+                <syncfusion:PageSettings PageBorderBrush="#FF202020" PageBackground="#FF303030"/>
+            </syncfusion:SfDiagram.PageSettings>
+
             
             <!-- To change the scroll settings of diagram page -->
             <syncfusion:SfDiagram.ScrollSettings>
                 <syncfusion:ScrollSettings ScrollLimit="Diagram"/>
             </syncfusion:SfDiagram.ScrollSettings>
             
-            <!--To change the page settings values of diagram -->
-            <syncfusion:SfDiagram.PageSettings>
-                <syncfusion:PageSettings PageBorderBrush="White" PageBackground="White"/>
-            </syncfusion:SfDiagram.PageSettings>
-            
+
             <!--To change the snap settings values of diagram -->
             <syncfusion:SfDiagram.SnapSettings>
-                <syncfusion:SnapSettings SnapConstraints="All" SnapToObject="All"/>
+                <syncfusion:SnapSettings SnapConstraints="All" SnapToObject="All">
+                    <syncfusion:SnapSettings.HorizontalGridlines>
+                        <syncfusion:Gridlines Strokes="{StaticResource GridLineStyles}"/>
+                    </syncfusion:SnapSettings.HorizontalGridlines>
+                    <syncfusion:SnapSettings.VerticalGridlines>
+                        <syncfusion:Gridlines Strokes="{StaticResource GridLineStyles}"/>
+                    </syncfusion:SnapSettings.VerticalGridlines>
+                </syncfusion:SnapSettings>
             </syncfusion:SfDiagram.SnapSettings>
             
             <syncfusion:SfDiagram.HorizontalRuler>
-                <syncfusion:Ruler Orientation="Horizontal"/>
+                <syncfusion:Ruler Orientation="Horizontal" Background="#FF202020" />
             </syncfusion:SfDiagram.HorizontalRuler>
             
             <syncfusion:SfDiagram.VerticalRuler>
-                <syncfusion:Ruler Orientation="Vertical"/>
+                <syncfusion:Ruler Orientation="Vertical" Background="#FF202020"/>
             </syncfusion:SfDiagram.VerticalRuler>
             
             <!-- <syncfusion:SfDiagram.Nodes> -->
