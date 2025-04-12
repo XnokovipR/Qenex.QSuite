@@ -8,6 +8,7 @@ using Qenex.QSuite.Models.AppSettings;
 using Qenex.QSuite.Models.Project;
 using Qenex.QSuite.Protocols.Protocol;
 using Syncfusion.UI.Xaml.Diagram;
+using Syncfusion.Windows.Tools.Controls;
 using WindowStyle = System.Windows.WindowStyle;
 
 namespace Qenex.QSuite.ViewModels;
@@ -33,6 +34,7 @@ public partial class ShellViewModel : PropertyChangedBaseWithValidation
     //private SfDiagram diagram;
     
     // ViewModels
+    private DockingManager dockingManager;
     private SolutionExplorerViewModel solutionExplorerViewModel;
     private LogViewModel logViewModel;
     private PropertiesViewModel propertiesViewModel;

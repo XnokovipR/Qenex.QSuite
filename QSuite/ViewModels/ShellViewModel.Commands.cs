@@ -1,12 +1,14 @@
 ﻿using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows;
+using System.Windows.Controls;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Models.AppSettings;
 using Syncfusion.Windows.Shared;
 using Syncfusion.Windows.Tools.Controls;
 using System.Windows.Forms;
+using System.Windows.Input;
 using System.Windows.Interop;
 using Qenex.QLibs.QUI.SyncfusionDocking;
 using Qenex.QSuite.Common.PluginManager;
@@ -47,6 +49,8 @@ public partial class ShellViewModel
     public RelayCommand<DockingManager> OnWindowClosingCommand { get; set; }
     public RelayCommand<CloseButtonEventArgs> OnCloseButtonClickCommand { get; set; }
     
+    public RelayCommand<MouseButtonEventArgs> OnMouseLeftButtonDownCommand { get; set; }
+    
     #endregion
 
     #region Create all ShellViewModel commands
@@ -62,10 +66,11 @@ public partial class ShellViewModel
         OnOpenProjectCommand = new RelayCommandAsync<DockingManager>(OpenProjectAsync);
         OnCloseProjectCommand = new RelayCommandAsync<DockingManager>(CloseProjectAsync, CanCloseProject);
         OnAddWorkspaceCommand = new RelayCommand<DockingManager>(AddWorkspace, CanAddWorkspace);
-        OnRemoveWorkspaceCommand = new RelayCommand<DockingManager>(RemoveWorkspace);
+        OnRemoveWorkspaceCommand = new RelayCommand<DockingManager>(RemoveWorkspace, CanRemoveWorkspace);
         
         OnWindowClosingCommand = new RelayCommand<DockingManager>(RemoveWindowOnClosingEvent);
         OnCloseButtonClickCommand = new RelayCommand<CloseButtonEventArgs>(RemoveWindowOnCloseButtonClick);
+        OnMouseLeftButtonDownCommand = new RelayCommand<MouseButtonEventArgs>(OnMouseLeftButtonDown);
         
     }
 
@@ -138,7 +143,11 @@ public partial class ShellViewModel
         DockManager.Add(newWorkspace);
     }
     
-    
+    private bool CanRemoveWorkspace(object parameter)
+    {
+        
+        return isProjectMade;
+    }
     private void RemoveWorkspace(DockingManager dockingManager)
     {
         // var workspace = solutionExplorerViewModel.GetSelectedWorkspace();
@@ -169,6 +178,19 @@ public partial class ShellViewModel
 
     }
 
+    private void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+    {
+        if (!(e.Source is DocumentContainer documentContainer)) return;
+        if (!(documentContainer.ActiveDocument is ContentControl contentControl)) return;
+        if (!contentControl.Name.Contains("Workspace")) return;
+        
+        var name = contentControl.Name;
+        var workspace = DockManager.DockableViewModels.FirstOrDefault(i => i.Name == name);
+        if (workspace == null) return;
+        
+        logger.Log(LogLevel.Debug, $"You've clicked on Workspace: {workspace.Header} / {name}");
+    }
+
     #endregion
     
     #region Window command methods
@@ -190,6 +212,9 @@ public partial class ShellViewModel
     // This method is called when the docking manager is loaded
     private void OnLoaded(DockingManager docking)
     {
+        dockingManager = docking;
+        
+        
         if (!File.Exists("QenexEditLayout.xml")) return;
         
         try

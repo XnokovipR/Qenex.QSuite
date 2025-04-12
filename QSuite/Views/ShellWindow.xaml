@@ -114,6 +114,9 @@
                     <i:EventTrigger EventName="CloseButtonClick">
                         <i:InvokeCommandAction Command="{Binding OnCloseButtonClickCommand}" PassEventArgsToCommand="True"/>
                     </i:EventTrigger>
+                    <i:EventTrigger EventName="MouseLeftButtonDown">
+                        <i:InvokeCommandAction Command="{Binding OnMouseLeftButtonDownCommand}" PassEventArgsToCommand="True"/>
+                    </i:EventTrigger>
                 </i:Interaction.Triggers>
             </syncfusion:DockingManager>
         </Grid>
