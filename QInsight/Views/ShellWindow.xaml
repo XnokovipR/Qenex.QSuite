@@ -13,14 +13,6 @@
         Background="{DynamicResource AppBorderBrush}"
         Title="QInsight" Height="450" Width="800">
 	
-	<!-- <WindowChrome.WindowChrome> -->
-	<!-- 	<WindowChrome -->
-	<!-- 		CaptionHeight="32" -->
-	<!-- 		CornerRadius="0" -->
-	<!-- 		GlassFrameThickness="0" -->
-	<!-- 		UseAeroCaptionButtons="True"/> -->
-	<!-- </WindowChrome.WindowChrome> -->
-	
 	<Window.DataContext>
 		<vm:ShellWindowModel/>
 	</Window.DataContext>
@@ -36,6 +28,54 @@
 				<RowDefinition Height="Auto"/>
 				<RowDefinition Height="*"/>
 			</Grid.RowDefinitions>
+			
+			<telerik:RadRibbonView x:Name="RibbonMenu" Grid.Row="0"  TitleBarVisibility="Collapsed" ContentHeight="NaN" ApplicationButtonVisibility="Collapsed">
+				<telerik:RadRibbonView.Items>
+
+					<!-- Ribbon Menu - Home -->
+					<telerik:RadRibbonTab Header="Home" x:Name="HomeTab">
+						<telerik:RadRibbonGroup Header="Project">
+							<telerik:RadRibbonButton
+	                            Text="Open" 
+	                            Size="Large"
+	                            SmallImage="../Icons/Menu/OpenProject.png"
+	                            Command="{Binding OnOpenProjectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+							<telerik:RadRibbonButton
+	                            Text="Close" 
+	                            Size="Large"
+	                            SmallImage="../Icons/Menu/CloseProject.png"
+	                            Command="{Binding OnCloseProjectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+						</telerik:RadRibbonGroup>
+
+						<telerik:RadRibbonGroup Header="Workspace">
+							<telerik:RadRibbonButton
+	                            Text="Add" 
+	                            Size="Large"
+	                            SmallImage="../Icons/Menu/AddWorkspace.png"
+	                            Command="{Binding OnAddWorkspaceCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+							<telerik:RadRibbonButton
+	                            Text="Remove"
+	                            Size="Large" 
+	                            SmallImage="../Icons/Menu/RemoveWorkspace.png"
+	                            Command="{Binding OnRemoveWorkspaceCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+						</telerik:RadRibbonGroup>
+					</telerik:RadRibbonTab>
+
+					<!-- Ribbon Menu - Runtime -->
+					<telerik:RadRibbonTab Header="Runtime" x:Name="RuntimeTab">
+						<telerik:RadRibbonGroup Header="Run">
+							<telerik:RadRibbonButton
+								Text="Connect"
+								Size="Large" 
+	                            SmallImage="../Icons/Menu/Connect.png"/>
+							<telerik:RadRibbonButton
+	                            Text="Close" 
+	                            Size="Large"
+	                            SmallImage="../Icons/Menu/CloseProject.png"/>
+						</telerik:RadRibbonGroup>
+					</telerik:RadRibbonTab>
+				</telerik:RadRibbonView.Items>
+			</telerik:RadRibbonView>
 
 			<telerik:RadDocking 
 				x:Name="RadDocking"
