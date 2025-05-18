@@ -29,4 +29,51 @@
     <PackageReference Include="Telerik.Windows.Themes.Windows11.for.Wpf.Trial" Version="2025.1.211" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="Icons\Menu\AddWorkspace.png" />
+    <Resource Include="Icons\Menu\AddWorkspace.png" />
+    <None Remove="Icons\Menu\CloseProject.png" />
+    <Resource Include="Icons\Menu\CloseProject.png" />
+    <None Remove="Icons\Menu\Connect.png" />
+    <Resource Include="Icons\Menu\Connect.png" />
+    <None Remove="Icons\Menu\Disconnect.png" />
+    <Resource Include="Icons\Menu\Disconnect.png" />
+    <None Remove="Icons\Menu\OpenProject.png" />
+    <Resource Include="Icons\Menu\OpenProject.png" />
+    <None Remove="Icons\Menu\Pause.png" />
+    <Resource Include="Icons\Menu\Pause.png" />
+    <None Remove="Icons\Menu\RemoveWorkspace.png" />
+    <Resource Include="Icons\Menu\RemoveWorkspace.png" />
+    <None Remove="Icons\SolutionExplorer\Driver.png" />
+    <Resource Include="Icons\SolutionExplorer\Driver.png" />
+    <None Remove="Icons\SolutionExplorer\Drivers.png" />
+    <Resource Include="Icons\SolutionExplorer\Drivers.png" />
+    <None Remove="Icons\SolutionExplorer\Events.png" />
+    <Resource Include="Icons\SolutionExplorer\Events.png" />
+    <None Remove="Icons\SolutionExplorer\PeriodicEvent.png" />
+    <Resource Include="Icons\SolutionExplorer\PeriodicEvent.png" />
+    <None Remove="Icons\SolutionExplorer\Presentation.png" />
+    <Resource Include="Icons\SolutionExplorer\Presentation.png" />
+    <None Remove="Icons\SolutionExplorer\Presentations.png" />
+    <Resource Include="Icons\SolutionExplorer\Presentations.png" />
+    <None Remove="Icons\SolutionExplorer\Project.png" />
+    <Resource Include="Icons\SolutionExplorer\Project.png" />
+    <None Remove="Icons\SolutionExplorer\Protocol.png" />
+    <Resource Include="Icons\SolutionExplorer\Protocol.png" />
+    <None Remove="Icons\SolutionExplorer\Protocols.png" />
+    <Resource Include="Icons\SolutionExplorer\Protocols.png" />
+    <None Remove="Icons\SolutionExplorer\RequestEvent.png" />
+    <Resource Include="Icons\SolutionExplorer\RequestEvent.png" />
+    <None Remove="Icons\SolutionExplorer\ValueChangedEvent.png" />
+    <Resource Include="Icons\SolutionExplorer\ValueChangedEvent.png" />
+    <None Remove="Icons\SolutionExplorer\Variable.png" />
+    <Resource Include="Icons\SolutionExplorer\Variable.png" />
+    <None Remove="Icons\SolutionExplorer\VariableFolder.png" />
+    <Resource Include="Icons\SolutionExplorer\VariableFolder.png" />
+    <None Remove="Icons\SolutionExplorer\Variables.png" />
+    <Resource Include="Icons\SolutionExplorer\Variables.png" />
+    <None Remove="Icons\QSuite48.png" />
+    <Resource Include="Icons\QSuite48.png" />
+  </ItemGroup>
+
 </Project>
