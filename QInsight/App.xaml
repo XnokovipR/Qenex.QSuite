@@ -1,0 +1,22 @@
+﻿<Application x:Class="Qenex.QInsight.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:qui="clr-namespace:Qenex.QLibs.QUI.TelerikDocking;assembly=Qenex.QLibs.QUI.TelerikDocking"
+             StartupUri="Views/ShellWindow.xaml">
+    <Application.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<telerik:Windows11ResourceDictionary/>
+				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/System.Windows.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.Navigation.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.RibbonView.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.Docking.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.GridView.xaml" />
+			</ResourceDictionary.MergedDictionaries>
+			<Style TargetType="qui:QRadPane" BasedOn="{StaticResource RadPaneStyle}" />
+			<Style TargetType="qui:QRadDocumentPane" BasedOn="{StaticResource RadPaneStyle}" />
+		</ResourceDictionary>
+	</Application.Resources>
+</Application>

@@ -1,0 +1,74 @@
+﻿<Window x:Class="Qenex.QInsight.Views.ShellWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Qenex.QInsight.Views"
+		xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
+		xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+        xmlns:qui="clr-namespace:Qenex.QLibs.QUI.TelerikDocking;assembly=Qenex.QLibs.QUI.TelerikDocking"
+		xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        mc:Ignorable="d"
+
+        Background="{DynamicResource AppBorderBrush}"
+        Title="QInsight" Height="450" Width="800">
+	
+	<!-- <WindowChrome.WindowChrome> -->
+	<!-- 	<WindowChrome -->
+	<!-- 		CaptionHeight="32" -->
+	<!-- 		CornerRadius="0" -->
+	<!-- 		GlassFrameThickness="0" -->
+	<!-- 		UseAeroCaptionButtons="True"/> -->
+	<!-- </WindowChrome.WindowChrome> -->
+	
+	<Window.DataContext>
+		<vm:ShellWindowModel/>
+	</Window.DataContext>
+	
+	<Border x:Name="CustomBorder"
+	        BorderThickness="2"
+	        CornerRadius="8"
+	        Background="Transparent"
+	        BorderBrush="{DynamicResource AppBorderBrush}">
+		
+		<Grid>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="*"/>
+			</Grid.RowDefinitions>
+
+			<telerik:RadDocking 
+				x:Name="RadDocking"
+				Grid.Row="1"
+				CloseButtonPosition="InPaneAndGroup"
+				AllowDragReorder="True" 
+				PanesSource="{Binding ViewModels}">
+
+				<telerik:RadDocking.DocumentHost>
+					<telerik:RadSplitContainer>
+						<telerik:RadPaneGroup x:Name="WorkspacePaneGroup" telerik:RadDocking.SerializationTag="WorkspacePaneGroup"/>
+					</telerik:RadSplitContainer>
+				</telerik:RadDocking.DocumentHost>
+
+				<telerik:RadSplitContainer InitialPosition="DockedLeft">
+					<telerik:RadPaneGroup x:Name="LeftPaneGroup" telerik:RadDocking.SerializationTag="LeftPaneGroup"/>
+				</telerik:RadSplitContainer>
+
+				<telerik:RadSplitContainer InitialPosition="DockedRight">
+					<telerik:RadPaneGroup x:Name="RightPaneGroup" telerik:RadDocking.SerializationTag="RightPaneGroup"/>
+				</telerik:RadSplitContainer>
+
+				<telerik:RadSplitContainer InitialPosition="DockedBottom">
+					<telerik:RadPaneGroup x:Name="BottomPaneGroup" telerik:RadDocking.SerializationTag="BottomPaneGroup"/>
+				</telerik:RadSplitContainer>
+
+				<telerik:RadDocking.DockingPanesFactory>
+					<qui:TelerikDockingPanesFactory/>
+				</telerik:RadDocking.DockingPanesFactory>
+
+			</telerik:RadDocking>
+
+		</Grid>
+	</Border>
+
+</Window>
