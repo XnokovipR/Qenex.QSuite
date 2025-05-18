@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.Controls.Control</AssemblyName>
-        <RootNamespace>Qenex.QSuite.Controls.Control</RootNamespace>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+	<UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Qenex.QSuite.Controls.$(MSBuildProjectName)</AssemblyName>
+    <RootNamespace>Qenex.QSuite.Controls.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+  </PropertyGroup>
 
 </Project>
