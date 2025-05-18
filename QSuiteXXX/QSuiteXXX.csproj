@@ -1,0 +1,122 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UseWPF>true</UseWPF>
+        <AssemblyName>Qenex.QSuiteXXX</AssemblyName>
+        <RootNamespace>Qenex.QSuiteXXX</RootNamespace>
+        <ApplicationIcon>QSuite.ico</ApplicationIcon>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+      <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+      <PackageReference Include="Qenex.QLibs.QUI.TelerikDocking" Version="1.1.2" />
+      <PackageReference Include="Qenex.QLibs.XmlInOut" Version="1.0.0" />
+      <PackageReference Include="Telerik.Licensing" Version="1.4.16" />
+      <PackageReference Include="Telerik.Windows.Controls.Docking.for.Wpf.Trial" Version="2025.1.211" />
+      <PackageReference Include="Telerik.Windows.Controls.for.Wpf.Trial" Version="2025.1.211" />
+      <PackageReference Include="Telerik.Windows.Controls.GridView.for.Wpf.Trial" Version="2025.1.211" />
+      <PackageReference Include="Telerik.Windows.Controls.Navigation.for.Wpf.Trial" Version="2025.1.211" />
+      <PackageReference Include="Telerik.Windows.Controls.RibbonView.for.Wpf.Trial" Version="2025.1.211" />
+      <PackageReference Include="Telerik.Windows.Data.for.Wpf.Trial" Version="2025.1.211" />
+      <PackageReference Include="Telerik.Windows.Themes.Green.for.Wpf.Trial" Version="2025.1.211" />
+      <PackageReference Include="Telerik.Windows.Themes.Windows11.for.Wpf.Trial" Version="2025.1.211" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Views\Converters\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Common\WpfComm\WpfComm.csproj" />
+      <ProjectReference Include="..\Controls\Control\Control.csproj" />
+      <ProjectReference Include="..\Drivers\Driver\Driver.csproj" />
+      <ProjectReference Include="..\Helpers\ProjectFile\ProjectFile.csproj" />
+      <ProjectReference Include="..\LogSystems\LogSystem\LogSystem.csproj" />
+      <ProjectReference Include="..\Modules\ModuleXmlHandler\ModuleXmlHandler.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Models\AppSettings\QSuiteAppSettings.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Icons\cancel.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Icons\Menu\OpenFIle.png" />
+      <None Remove="Icons\SolutionExplorer\Driver.png" />
+      <None Remove="Icons\Menu\CloseAll.png" />
+      <None Remove="Icons\QSuite48.png" />
+      <None Remove="Icons\Menu\OpenProject.png" />
+      <Resource Include="Icons\Menu\OpenProject.png" />
+      <None Remove="Icons\Menu\CloseProject.png" />
+      <Resource Include="Icons\Menu\CloseProject.png" />
+      <None Remove="Icons\SolutionExplorer\Project.png" />
+      <Resource Include="Icons\SolutionExplorer\Project.png" />
+      <None Remove="Icons\SolutionExplorer\Protocol.png" />
+      <None Remove="Icons\SolutionExplorer\ProtocolVariable.png" />
+      <None Remove="QSuite.ico" />
+      <Resource Include="QSuite.ico" />
+      <None Remove="Icons\SolutionExplorer\PeriodicEvent.png" />
+      <Resource Include="Icons\SolutionExplorer\PeriodicEvent.png" />
+      <None Remove="Icons\SolutionExplorer\RequestEvent.png" />
+      <Resource Include="Icons\SolutionExplorer\RequestEvent.png" />
+      <None Remove="Icons\SolutionExplorer\ValueChangedEvent.png" />
+      <Resource Include="Icons\SolutionExplorer\ValueChangedEvent.png" />
+      <None Remove="Icons\SolutionExplorer\Drivers.png" />
+      <Resource Include="Icons\SolutionExplorer\Drivers.png" />
+      <None Remove="Icons\SolutionExplorer\ProtocolVariables.png" />
+      <None Remove="Icons\SolutionExplorer\Protocols.png" />
+      <Resource Include="Icons\SolutionExplorer\Protocols.png" />
+      <None Remove="Icons\SolutionExplorer\Variable.png" />
+      <Resource Include="Icons\SolutionExplorer\Variable.png" />
+      <None Remove="Icons\SolutionExplorer\Variables.png" />
+      <Resource Include="Icons\SolutionExplorer\Variables.png" />
+      <None Remove="Icons\SolutionExplorer\Events.png" />
+      <Resource Include="Icons\SolutionExplorer\Events.png" />
+      <None Remove="Icons\SolutionExplorer\Presentations.png" />
+      <Resource Include="Icons\SolutionExplorer\Presentations.png" />
+      <None Remove="Icons\SolutionExplorer\Presentation.png" />
+      <Resource Include="Icons\SolutionExplorer\Presentation.png" />
+      <None Remove="Icons\Menu\AddWorkspace.png" />
+      <Resource Include="Icons\Menu\AddWorkspace.png" />
+      <None Remove="Icons\Menu\Connect.png" />
+      <Resource Include="Icons\Menu\Connect.png" />
+      <None Remove="Icons\Menu\Disconnect.png" />
+      <Resource Include="Icons\Menu\Disconnect.png" />
+      <None Remove="Icons\Menu\Pause.png" />
+      <Resource Include="Icons\Menu\Pause.png" />
+      <None Remove="Icons\Menu\RemoveWorkspace.png" />
+      <Resource Include="Icons\Menu\RemoveWorkspace.png" />
+      <None Remove="Icons\SolutionExplorer\VariableFolder.png" />
+      <Reference Include="Qenex.QLibs.QUI">
+        <HintPath>..\..\Qenex.QLibs\QUI\QUI.WPF\bin\Debug\net8.0-windows\Qenex.QLibs.QUI.dll</HintPath>
+      </Reference>
+      <Reference Include="Qenex.QLibs.QUI.TelerikDocking">
+        <HintPath>..\..\Qenex.QLibs\QUI\QUI.TelerikDocking\bin\Debug\net8.0-windows\Qenex.QLibs.QUI.TelerikDocking.dll</HintPath>
+      </Reference>
+      <Reference Include="Qenex.QLibs.QUI.WPF">
+        <HintPath>..\..\Qenex.QLibs\QUI\QUI.WPF\bin\Debug\net8.0-windows\Qenex.QLibs.QUI.WPF.dll</HintPath>
+      </Reference>
+      <Resource Include="Icons\SolutionExplorer\VariableFolder.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Resource Include="Icons\QSuite48.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Resource Include="Icons\SolutionExplorer\Driver.png" />
+      <Resource Include="Icons\SolutionExplorer\Protocol.png" />
+    </ItemGroup>
+
+</Project>

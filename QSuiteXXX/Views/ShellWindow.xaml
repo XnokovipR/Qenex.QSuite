@@ -1,0 +1,137 @@
+﻿<Window x:Class="Qenex.QSuite.Views.ShellWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Qenex.QSuite.Views"
+    xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+    xmlns:qlibsTelerik="clr-namespace:Qenex.QLibs.QUI.TelerikDocking;assembly=Qenex.QLibs.QUI.TelerikDocking"
+    xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+    xmlns:vm="clr-namespace:Qenex.QSuite.ViewModels"
+    Icon="../Icons/QSuite48.png"
+    mc:Ignorable="d"
+    Title="QSuite" 
+    d:DataContext="{d:DesignInstance vm:ShellViewModel, IsDesignTimeCreatable=False}">
+
+
+
+	<Window.DataContext>
+		<vm:ShellViewModel/>
+	</Window.DataContext>
+
+	<i:Interaction.Triggers>
+		<i:EventTrigger EventName="Loaded">
+			<i:InvokeCommandAction Command="{Binding OnLoadedCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+		</i:EventTrigger>
+
+		<i:EventTrigger EventName="Closing">
+			<i:InvokeCommandAction Command="{Binding OnClosingCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+		</i:EventTrigger>
+
+		<i:EventTrigger EventName="SizeChanged">
+			<i:InvokeCommandAction Command="{Binding OnWinSizeChangedCommand}"/>
+		</i:EventTrigger>
+
+		<i:EventTrigger EventName="LocationChanged">
+			<i:InvokeCommandAction Command="{Binding OnWinLocationChangedCommand}"/>
+		</i:EventTrigger>
+	</i:Interaction.Triggers>
+
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<telerik:RadRibbonView x:Name="RibbonMenu" Grid.Row="0"  TitleBarVisibility="Collapsed" ContentHeight="NaN" ApplicationButtonVisibility="Collapsed">
+			<telerik:RadRibbonView.Items>
+
+				<!-- Ribbon Menu - Home -->
+				<telerik:RadRibbonTab Header="Home" x:Name="HomeTab">
+					<telerik:RadRibbonGroup Header="Project">
+						<telerik:RadRibbonButton
+                            Text="Open" 
+                            LargeImage="../Icons/Menu/OpenProject.png"
+                            Command="{Binding OnOpenProjectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+						<telerik:RadRibbonButton
+                            Text="Close" 
+                            LargeImage="../Icons/Menu/CloseProject.png"
+                            Command="{Binding OnCloseProjectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+					</telerik:RadRibbonGroup>
+
+					<telerik:RadRibbonGroup Header="Workspace">
+						<telerik:RadRibbonButton
+                            Text="Add" 
+                            LargeImage="../Icons/Menu/AddWorkspace.png"
+                            Command="{Binding OnAddWorkspaceCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+						<telerik:RadRibbonButton
+                            Text="Remove" 
+                            LargeImage="../Icons/Menu/RemoveWorkspace.png"
+                            Command="{Binding OnRemoveWorkspaceCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+					</telerik:RadRibbonGroup>
+				</telerik:RadRibbonTab>
+
+				<!-- Ribbon Menu - Runtime -->
+				<telerik:RadRibbonTab Header="Runtime" x:Name="RuntimeTab">
+					<telerik:RadRibbonGroup Header="Run">
+						<telerik:RadRibbonButton
+							Text="Connect" 
+                            LargeImage="../Icons/Menu/Connect.png"/>
+
+						<telerik:RadRibbonButton
+                            Text="Close" 
+                            LargeImage="../Icons/Menu/CloseProject.png"/>
+					</telerik:RadRibbonGroup>
+				</telerik:RadRibbonTab>
+			</telerik:RadRibbonView.Items>
+		</telerik:RadRibbonView>
+
+		<!-- #region RadDocking -->
+		<telerik:RadDocking 
+			x:Name="RadDocking"  
+			CloseButtonPosition="InPaneAndGroup"
+			AllowDragReorder="True" 
+			PanesSource="{Binding ViewModels}"
+			Grid.Row="1">
+
+			<i:Interaction.Triggers>
+				<i:EventTrigger EventName="Loaded">
+					<i:InvokeCommandAction Command="{Binding OnRadDockingLoadedCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+				</i:EventTrigger>
+				<i:EventTrigger EventName="WindowClosing">
+					<i:InvokeCommandAction Command="{Binding OnWindowClosingCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+				</i:EventTrigger>
+				<i:EventTrigger EventName="CloseButtonClick">
+					<i:InvokeCommandAction Command="{Binding OnCloseButtonClickCommand}" PassEventArgsToCommand="True"/>
+				</i:EventTrigger>
+				<i:EventTrigger EventName="MouseLeftButtonDown">
+					<i:InvokeCommandAction Command="{Binding OnMouseLeftButtonDownCommand}" PassEventArgsToCommand="True"/>
+				</i:EventTrigger>
+			</i:Interaction.Triggers>
+
+
+			<telerik:RadDocking.DocumentHost>
+				<telerik:RadSplitContainer>
+					<telerik:RadPaneGroup x:Name="WorkspacePaneGroup" telerik:RadDocking.SerializationTag="WorkspacePaneGroup"/>
+				</telerik:RadSplitContainer>
+			</telerik:RadDocking.DocumentHost>
+
+			<telerik:RadSplitContainer InitialPosition="DockedLeft">
+				<telerik:RadPaneGroup x:Name="LeftPaneGroup" telerik:RadDocking.SerializationTag="LeftPaneGroup"/>
+			</telerik:RadSplitContainer>
+
+			<telerik:RadSplitContainer InitialPosition="DockedRight">
+				<telerik:RadPaneGroup x:Name="RightPaneGroup" telerik:RadDocking.SerializationTag="RightPaneGroup"/>
+			</telerik:RadSplitContainer>
+
+			<telerik:RadSplitContainer InitialPosition="DockedBottom">
+				<telerik:RadPaneGroup x:Name="BottomPaneGroup" telerik:RadDocking.SerializationTag="BottomPaneGroup"/>
+			</telerik:RadSplitContainer>
+
+			<telerik:RadDocking.DockingPanesFactory>
+				<qlibsTelerik:TelerikDockingPanesFactory/>
+			</telerik:RadDocking.DockingPanesFactory>
+
+		</telerik:RadDocking>
+	</Grid>
+</Window>

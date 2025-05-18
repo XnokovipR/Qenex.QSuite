@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "QSuite": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
