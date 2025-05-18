@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AssemblyName>Qenex.QSuite.Controls.GraphControl</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Controls.GraphControl</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="Icons\" />
+      <Folder Include="Models\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Page Update="Views\GraphControlView.xaml">
+        <Generator>MSBuild:Compile</Generator>
+        <XamlRuntime>Wpf</XamlRuntime>
+        <SubType>Designer</SubType>
+      </Page>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Icons\GraphControl.png" />
+      <ProjectReference Include="..\..\Common\WpfComm\WpfComm.csproj" />
+      <ProjectReference Include="..\Control\Control.csproj" />
+      <Resource Include="Icons\GraphControl.png" />
+    </ItemGroup>
+
+</Project>
