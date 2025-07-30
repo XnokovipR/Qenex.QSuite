@@ -11,6 +11,5 @@ public class Presentation : IPresentation
     public string PrintFormat { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
 
-    public IValConversion Conversion { get; set; }
-    
+    public IValConversion Conversion { get; set; } = null!;
 }
