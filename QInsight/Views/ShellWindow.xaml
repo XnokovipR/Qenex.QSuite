@@ -17,21 +17,40 @@
 		<vm:ShellWindowModel/>
 	</Window.DataContext>
 	
+	<i:Interaction.Triggers>
+		<i:EventTrigger EventName="Loaded">
+			<i:InvokeCommandAction Command="{Binding ShellWindowLoadedCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+		</i:EventTrigger>
+
+		<i:EventTrigger EventName="Closing">
+			<i:InvokeCommandAction Command="{Binding ShellWindowClosingCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+		</i:EventTrigger>
+
+		<i:EventTrigger EventName="SizeChanged">
+			<i:InvokeCommandAction Command="{Binding ShellWindowSizeChangedCommand}"/>
+		</i:EventTrigger>
+
+		<i:EventTrigger EventName="LocationChanged">
+			<i:InvokeCommandAction Command="{Binding ShellWindowLocationChangedCommand}"/>
+		</i:EventTrigger>
+	</i:Interaction.Triggers>
+	
 	<Border x:Name="CustomBorder"
-	        BorderThickness="2"
-	        CornerRadius="8"
+	        BorderThickness="1"
+	        CornerRadius="0"
 	        Background="Transparent"
 	        BorderBrush="{DynamicResource AppBorderBrush}">
 		
 		<Grid>
 			<Grid.RowDefinitions>
-				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>	
 				<RowDefinition Height="*"/>
 			</Grid.RowDefinitions>
 			
-			<telerik:RadRibbonView x:Name="RibbonMenu" Grid.Row="0"  TitleBarVisibility="Collapsed" ContentHeight="NaN" ApplicationButtonVisibility="Collapsed">
-				<telerik:RadRibbonView.Items>
+			<telerik:RadRibbonView x:Name="RibbonMenu" Grid.Row="0"
+			                       TitleBarVisibility="Collapsed" ContentHeight="NaN" ApplicationButtonVisibility="Collapsed">
 
+				<telerik:RadRibbonView.Items>
 					<!-- Ribbon Menu - Home -->
 					<telerik:RadRibbonTab Header="Home" x:Name="HomeTab">
 						<telerik:RadRibbonGroup Header="Project">
@@ -39,12 +58,12 @@
 	                            Text="Open" 
 	                            Size="Large"
 	                            SmallImage="../Icons/Menu/OpenProject.png"
-	                            Command="{Binding OnOpenProjectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+	                            Command="{Binding RibbonOpenProjectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 							<telerik:RadRibbonButton
 	                            Text="Close" 
 	                            Size="Large"
 	                            SmallImage="../Icons/Menu/CloseProject.png"
-	                            Command="{Binding OnCloseProjectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+	                            Command="{Binding RibbonCloseProjectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
 
 						<telerik:RadRibbonGroup Header="Workspace">
@@ -52,12 +71,12 @@
 	                            Text="Add" 
 	                            Size="Large"
 	                            SmallImage="../Icons/Menu/AddWorkspace.png"
-	                            Command="{Binding OnAddWorkspaceCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+	                            Command="{Binding RibbonAddWorkspaceCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 							<telerik:RadRibbonButton
 	                            Text="Remove"
 	                            Size="Large" 
 	                            SmallImage="../Icons/Menu/RemoveWorkspace.png"
-	                            Command="{Binding OnRemoveWorkspaceCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+	                            Command="{Binding RibbonRemoveWorkspaceCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
 

@@ -1,9 +1,23 @@
-﻿using Qenex.QLibs.QUI;
+﻿using System.Collections.ObjectModel;
+using Qenex.QLibs.QUI;
+using Qenex.QLibs.QUI.Wpf;
+using Qenex.QSuite.LogSystems.LogSystem;
 
 namespace Qenex.QInsight.ViewModels;
 
-public class LogsViewModel(EventAggregator ea) : ViewModelBase(ea)
+public class LogsViewModel : ViewModelBase, ILogSubscriber
 {
+    public LogsViewModel(EventAggregator ea) : base(ea)
+    {
+        EventAggregator.SubscribeAction<LogMessage>(Log);
+        LogMessages = [];
+	}
+
+    #region Properties
+
+    public ObservableCollection<ILogMessage> LogMessages { get; set; }
+    
+    #endregion
     
     #region ViewModelBase implementation
 
@@ -14,6 +28,20 @@ public class LogsViewModel(EventAggregator ea) : ViewModelBase(ea)
     
     public override void Exit()
     {
+    }
+
+    #endregion
+    
+    #region ILogger implementation
+
+    public void Log(ILogMessage message)
+    {
+        LogMessages.Add(message);
+    }
+
+    public Task LogAsync(ILogMessage message, CancellationToken ct)
+    {
+        throw new NotImplementedException();
     }
 
     #endregion

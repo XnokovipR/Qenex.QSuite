@@ -12,21 +12,26 @@
 
   <ItemGroup>
     <Folder Include="Helpers\" />
-    <Folder Include="Models\" />
     <Folder Include="Icons\" />
+    <Folder Include="ViewModels\SolutionExplorerWrappers\" />
   </ItemGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
-    <PackageReference Include="Qenex.QLibs.QUI.TelerikDocking" Version="1.1.9" />
+    <PackageReference Include="Qenex.QLibs.QUI" Version="1.1.3" />
+    <PackageReference Include="Qenex.QLibs.QUI.TelerikDocking" Version="1.1.11" />
     <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.1.3" />
-    <PackageReference Include="Telerik.Licensing" Version="1.6.5" />
-    <PackageReference Include="Telerik.Windows.Controls.Docking.for.Wpf.Trial" Version="2025.1.211" />
-    <PackageReference Include="Telerik.Windows.Controls.GridView.for.Wpf.Trial" Version="2025.1.211" />
-    <PackageReference Include="Telerik.Windows.Controls.Navigation.for.Wpf.Trial" Version="2025.1.211" />
-    <PackageReference Include="Telerik.Windows.Controls.RibbonView.for.Wpf.Trial" Version="2025.1.211" />
-    <PackageReference Include="Telerik.Windows.Data.for.Wpf.Trial" Version="2025.1.211" />
-    <PackageReference Include="Telerik.Windows.Themes.Windows11.for.Wpf.Trial" Version="2025.1.211" />
+    <PackageReference Include="Telerik.Licensing" Version="1.6.8" />
+    <PackageReference Include="Telerik.Windows.Controls.Docking.for.Wpf" Version="2025.2.707" />
+    <PackageReference Include="Telerik.Windows.Controls.FileDialogs.for.Wpf" Version="2025.2.707" />
+    <PackageReference Include="Telerik.Windows.Controls.for.Wpf" Version="2025.2.707" />
+    <PackageReference Include="Telerik.Windows.Controls.GridView.for.Wpf" Version="2025.2.707" />
+    <PackageReference Include="Telerik.Windows.Controls.Input.for.Wpf" Version="2025.2.707" />
+    <PackageReference Include="Telerik.Windows.Controls.Navigation.for.Wpf" Version="2025.2.707" />
+    <PackageReference Include="Telerik.Windows.Controls.RibbonView.for.Wpf" Version="2025.2.707" />
+    <PackageReference Include="Telerik.Windows.Data.for.Wpf" Version="2025.2.707" />
+    <PackageReference Include="Telerik.Windows.Themes.Windows11.for.Wpf" Version="2025.2.707" />
   </ItemGroup>
 
   <ItemGroup>
@@ -74,6 +79,13 @@
     <Resource Include="Icons\SolutionExplorer\Variables.png" />
     <None Remove="Icons\QSuite48.png" />
     <Resource Include="Icons\QSuite48.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common\WpfComm\WpfComm.csproj" />
+    <ProjectReference Include="..\Helpers\ProjectFile\ProjectFile.csproj" />
+    <ProjectReference Include="..\LogSystems\LogSystem\LogSystem.csproj" />
+    <ProjectReference Include="..\Modules\ModuleXmlHandler\ModuleXmlHandler.csproj" />
   </ItemGroup>
 
 </Project>

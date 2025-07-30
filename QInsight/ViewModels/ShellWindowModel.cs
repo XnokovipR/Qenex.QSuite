@@ -5,15 +5,19 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using Qenex.QInsight.AppConfig;
+using Qenex.QSuite.LogSystems.LogSystem;
 
 namespace Qenex.QInsight.ViewModels;
 
-public class ShellWindowModel : PropertyChangedBaseWithValidation
+public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 {
 	#region Private
 
 	private readonly EventAggregator eventAggregator;
-	
+	private readonly Logger logger;
+
 	// ViewModels
 	private SolutionExplorerViewModel solutionExplorerViewModel;
 	private LogsViewModel logsViewModel;
@@ -22,15 +26,17 @@ public class ShellWindowModel : PropertyChangedBaseWithValidation
 	private ObservableCollection<ViewModelBase> viewModels;
 
 	#endregion
-	
+
 	#region Ctors
 
 	public ShellWindowModel()
 	{
 		eventAggregator = new EventAggregator();
-		ViewModels = new ObservableCollection<ViewModelBase>();
-		
+		logger = new Logger(LogLevel.Trace);
+		ViewModels = [];
+
 		CreateViewModels();
+		CreateCommands();
 	}
 
 	#endregion
@@ -51,7 +57,7 @@ public class ShellWindowModel : PropertyChangedBaseWithValidation
 
 	#endregion
 
-	#region Privates
+	#region Private methods
 
 	private void CreateViewModels()
 	{
@@ -62,7 +68,7 @@ public class ShellWindowModel : PropertyChangedBaseWithValidation
 		ViewModels.Add(controlsViewModel);
 
 		LogsViewModel = new LogsViewModel(eventAggregator);
-		//logger.RegisterSubscriber(logViewModel);
+		logger.RegisterSubscriber(LogsViewModel);
 		ViewModels.Add(LogsViewModel);
 
 		propertiesViewModel = new PropertiesViewModel(eventAggregator);

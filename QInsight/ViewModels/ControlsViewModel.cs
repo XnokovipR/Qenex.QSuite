@@ -2,8 +2,19 @@
 
 namespace Qenex.QInsight.ViewModels;
 
-public class ControlsViewModel(EventAggregator ea) : ViewModelBase(ea)
+public class ControlsViewModel : ViewModelBase
 {
+    public ControlsViewModel(EventAggregator ea) : base(ea)
+    {
+        OnWindowLoadedCommand = new RelayCommand<object>(OnWindowLoaded);
+    }
+    
+    #region Properties
+
+    public RelayCommand<object> OnWindowLoadedCommand { get; set; }
+    
+    #endregion
+
     #region ViewModelBase implementation
 
     public override string Header { get; set; } = "Controls";
@@ -15,5 +26,13 @@ public class ControlsViewModel(EventAggregator ea) : ViewModelBase(ea)
     {
     }
 
+    #endregion
+    
+    #region Commands methods
+
+    private void OnWindowLoaded(object sfDiagram)
+    {
+        
+    }
     #endregion
 }

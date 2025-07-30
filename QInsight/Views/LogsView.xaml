@@ -4,9 +4,79 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
+			 xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300">
-    <Grid>
-        <TextBlock Text="Logs" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-    </Grid>
+
+	<UserControl.Resources>
+		<ResourceDictionary>
+			<local:LogLevelStyleSelector x:Key="LogLevelStyleSelector">
+				<local:LogLevelStyleSelector.DefaultLogBackgroundStyle>
+					<Style TargetType="telerik:GridViewRow" BasedOn="{StaticResource GridViewRowStyle}">
+						<Setter Property="Foreground" Value="LightSkyBlue"/>
+					</Style>
+				</local:LogLevelStyleSelector.DefaultLogBackgroundStyle>
+				
+				<local:LogLevelStyleSelector.WarningLogBackgroundStyle>
+					<Style TargetType="telerik:GridViewRow" BasedOn="{StaticResource GridViewRowStyle}">
+						<Setter Property="Foreground" Value="Orange"/>
+					</Style>
+				</local:LogLevelStyleSelector.WarningLogBackgroundStyle>
+
+				<local:LogLevelStyleSelector.ErrorLogBackgroundStyle>
+					<Style TargetType="telerik:GridViewRow" BasedOn="{StaticResource GridViewRowStyle}">
+						<Setter Property="Foreground" Value="Red"/>
+					</Style>
+				</local:LogLevelStyleSelector.ErrorLogBackgroundStyle>
+
+				<local:LogLevelStyleSelector.FatalLogBackgroundStyle>
+					<Style TargetType="telerik:GridViewRow" BasedOn="{StaticResource GridViewRowStyle}">
+						<Setter Property="Foreground" Value="DarkRed"/>
+					</Style>
+				</local:LogLevelStyleSelector.FatalLogBackgroundStyle>
+
+				<local:LogLevelStyleSelector.TraceLogBackgroundStyle>
+					<Style TargetType="telerik:GridViewRow" BasedOn="{StaticResource GridViewRowStyle}">
+						<Setter Property="Foreground" Value="DeepSkyBlue"/>
+					</Style>
+				</local:LogLevelStyleSelector.TraceLogBackgroundStyle>
+
+				<local:LogLevelStyleSelector.DebugLogBackgroundStyle>
+					<Style TargetType="telerik:GridViewRow" BasedOn="{StaticResource GridViewRowStyle}">
+						<Setter Property="Foreground" Value="Blue"/>
+					</Style>
+				</local:LogLevelStyleSelector.DebugLogBackgroundStyle>
+
+			</local:LogLevelStyleSelector>
+		</ResourceDictionary>
+	</UserControl.Resources>
+	
+	
+	<Grid AllowDrop="False">
+		<telerik:RadGridView
+			AllowDrop="False"
+			ItemsSource="{Binding LogMessages}"
+			ShowGroupPanel="False" 
+			AutoGenerateColumns="False"
+			RowStyleSelector="{StaticResource LogLevelStyleSelector}"
+			RowIndicatorVisibility="Collapsed">
+
+			<telerik:RadGridView.SortDescriptors>
+				<telerik:SortDescriptor Member="Timestamp" SortDirection="Descending"/>
+			</telerik:RadGridView.SortDescriptors>
+
+			<telerik:RadGridView.ContextMenu>
+				<ContextMenu>
+					<MenuItem Header="Clear All" Command="{Binding ClearLogCommand}"/>
+				</ContextMenu>
+			</telerik:RadGridView.ContextMenu>
+
+			<telerik:RadGridView.Columns>
+				<telerik:GridViewDataColumn Width="160" Header="Timestamp" DataMemberBinding="{Binding Path=Timestamp, StringFormat=yyyy/MM/dd HH:mm:ss.fff}" IsReadOnly="True"/>
+				<telerik:GridViewDataColumn Width="100" Header="Level" DataMemberBinding="{Binding Level}" IsReadOnly="True"/>
+				<telerik:GridViewDataColumn Header="Message" DataMemberBinding="{Binding Message}" IsReadOnly="True" Width="*"/>
+			</telerik:RadGridView.Columns>
+
+		</telerik:RadGridView>
+	</Grid>
 </UserControl>
