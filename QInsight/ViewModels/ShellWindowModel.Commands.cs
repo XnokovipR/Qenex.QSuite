@@ -97,6 +97,7 @@ public partial class ShellWindowModel
         var lastProjectPath = /*ShellWindow.MainAppSettings.LastProjectPath ??*/ Environment.CurrentDirectory;
         var dlg = new RadOpenFileDialog()
         {
+            Owner = App.Current.MainWindow,
             Multiselect = false,
             Filter = "QInsight project files (*.qip)|*.qip",
             InitialDirectory = lastProjectPath
