@@ -3,10 +3,35 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300">
     <Grid>
-        <TextBlock Text="Solution Explorer" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+        <!--<telerik:RadTreeView
+            ItemsSource="{Binding ProjectModules}"
+            IsVirtualizing="True"
+            PathSeparator="/"
+            IsLineEnabled="True" 
+            HorizontalAlignment="Left"
+            IsDragDropEnabled="False"
+            ScrollViewer.HorizontalScrollBarVisibility="Auto"
+            ScrollViewer.VerticalScrollBarVisibility="Auto">
+            <DataTemplate>
+                <StackPanel Orientation="Horizontal" Margin="-8,0,0,0">
+                    <Image Source="{Binding Icon}"
+                           RenderOptions.BitmapScalingMode="Fant" 
+                           Stretch="Fill" Width="24" Height="24"/>
+                    <TextBlock VerticalAlignment="Center" Text="{Binding Label}"/>
+                    <StackPanel.ToolTip>
+                        <ToolTip Visibility="{Binding ToolTipVisibility}">
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="{Binding ToolTip}"/>
+                            </StackPanel>
+                        </ToolTip>
+                    </StackPanel.ToolTip>
+                </StackPanel>
+            </DataTemplate>
+        </telerik:RadTreeView>-->
     </Grid>
 </UserControl>

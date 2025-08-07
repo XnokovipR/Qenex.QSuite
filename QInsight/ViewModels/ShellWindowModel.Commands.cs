@@ -1,10 +1,14 @@
 ﻿using System.IO;
 using System.Windows;
 using Qenex.QInsight.AppConfig;
+using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.Views;
 using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.Wpf;
+using Qenex.QSuite.Common.PluginManager;
+using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Protocols.Protocol;
 using Telerik.Windows.Controls;
 
 namespace Qenex.QInsight.ViewModels;
@@ -70,9 +74,14 @@ public partial class ShellWindowModel
     {
         try
         {
+            // Load drivers, protocols and controls
+            pluginLoader = new PluginLoader(logger);
+            driverPlugins = pluginLoader.GetPluginDetails<IDriverBase>("./Drivers");
+            protocolPlugins = pluginLoader.GetPluginDetails<IProtocolBase>("./Protocols");
         }
         catch (Exception e)
         {
+            eventAggregator.Publish(new LogMessage(LogLevel.Error, e.Message));
         }
     }
 
@@ -85,6 +94,7 @@ public partial class ShellWindowModel
         }
         catch (Exception e)
         {
+            eventAggregator.Publish(new LogMessage(LogLevel.Error, e.Message));
         }
     }
 
@@ -99,7 +109,7 @@ public partial class ShellWindowModel
         {
             Owner = App.Current.MainWindow,
             Multiselect = false,
-            Filter = "QInsight project files (*.qip)|*.qip",
+            Filter = "QInsight project files (*.zip)|*.zip",
             InitialDirectory = lastProjectPath
         };
 		
@@ -110,10 +120,22 @@ public partial class ShellWindowModel
         
         if (dlg.DialogResult == true)
         {
+            var filePath = dlg.FileName;
             //ShellWindow.MainAppSettings.LastProjectPath = Path.GetDirectoryName(dlg.FileName);
             try
             {
-                string jsonString = await File.ReadAllTextAsync(dlg.FileName);
+                var projectData = await ProjectZip.UnzipProjectFileAsync(filePath, logger);
+                if (projectData == null)
+                {
+                    logger?.Log(LogLevel.Warn, $"Failed to load project file \"{Path.GetFileName(filePath)}\".");
+                    return;
+                }
+                realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, logger);
+
+                solutionExplorerViewModel.ReloadProjectData(realProjectData);
+
+                ChangeIsProjectMade(true);
+                logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\"loaded.");
                 
             }
             catch (Exception e)
@@ -124,5 +146,16 @@ public partial class ShellWindowModel
     }
 
 	#endregion
+    
+    #region Can-methods process
+
+    private void ChangeIsProjectMade(bool isMade)
+    {
+        isProjectMade = isMade;
+        //OnCloseProjectCommand?.OnCanExecuteChanged();
+        //OnAddWorkspaceCommand?.OnCanExecuteChanged();
+    }
+
+    #endregion
 
 }

@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using Qenex.QInsight.AppConfig;
+using Qenex.QInsight.Models.Project;
+using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.LogSystems.LogSystem;
 
 namespace Qenex.QInsight.ViewModels;
@@ -17,6 +19,15 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 
 	private readonly EventAggregator eventAggregator;
 	private readonly Logger logger;
+	
+	// Plugins
+	private PluginLoader pluginLoader;
+	private List<PluginDetails> driverPlugins = null!;
+	private List<PluginDetails> protocolPlugins = null!;
+	
+	// Project
+	private RealProjectData realProjectData;
+	private bool isProjectMade;
 
 	// ViewModels
 	private SolutionExplorerViewModel solutionExplorerViewModel;
@@ -27,7 +38,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 
 	#endregion
 
-	#region Ctors
+	#region Constructors
 
 	public ShellWindowModel()
 	{

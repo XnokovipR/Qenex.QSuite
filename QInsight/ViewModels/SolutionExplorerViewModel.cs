@@ -22,7 +22,7 @@ public class SolutionExplorerViewModel(EventAggregator ea) : ViewModelBase(ea)
     
     #region Treeview properties
 
-    public ObservableCollection<IViewableItem> ProjectModules { get; set; } = [];  
+    public ObservableCollection<IViewableItem> ProjectModules { get; set; } = [];
     
     #endregion
     
@@ -46,7 +46,7 @@ public class SolutionExplorerViewModel(EventAggregator ea) : ViewModelBase(ea)
 
     #endregion
     
-        #region Create All Project Wrappers
+    #region Create All Project Wrappers
 
     private IViewableItem CreateProjectWrapper(RealProjectData realPrjData)
     {
