@@ -11,18 +11,23 @@ using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QInsight.ViewModels;
 
-public class SolutionExplorerViewModel(EventAggregator ea) : ViewModelBase(ea)
+public class SolutionExplorerViewModel : ViewModelBase
 {
     
     #region Private fields
 
     private RealProjectData realProjectData = null!;
 
+    public SolutionExplorerViewModel(EventAggregator ea) : base(ea)
+    {
+        ProjectModules = [];
+    }
+
     #endregion
     
     #region Treeview properties
 
-    public ObservableCollection<IViewableItem> ProjectModules { get; set; } = [];
+    public ObservableCollection<IViewableItem> ProjectModules { get; set; }
     
     #endregion
     

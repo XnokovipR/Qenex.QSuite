@@ -29,6 +29,8 @@ public class ProtocolVariableWrapper : PropertyChangedBase, IViewableItem
         get => $"{protocolVariable.Variable.Label} ({protocolVariable.Variable.Id})";
         set { protocolVariable.Variable.Label = $"{value} ({protocolVariable.Variable.Id})"; OnPropertyChanged(); }
     }
+    
+    public FontWeight LabelWeight => FontWeights.Normal;
 
     public Visibility ToolTipVisibility => Visibility.Visible;
     public string ToolTip => GetToolTip();

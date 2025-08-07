@@ -28,6 +28,8 @@ public class DriverWrapper : PropertyChangedBase, IViewableItem
         set { driver.Specification.Label = value; OnPropertyChanged(); }
     }
 
+    public FontWeight LabelWeight => FontWeights.SemiBold;
+
     public Visibility ToolTipVisibility => Visibility.Visible;
     public string ToolTip
     {

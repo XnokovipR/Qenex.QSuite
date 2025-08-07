@@ -28,6 +28,8 @@ public class NodeWrapper : IViewableItem
         get => nodeType == NodeType.OnlyPrefixFolder ? prefix : $"{prefix} {nodeType.ToString()} {suffix}"; 
         set { }
     }
+    
+    public FontWeight LabelWeight => FontWeights.SemiBold;
 
     public Visibility ToolTipVisibility => Visibility.Hidden;
     public string ToolTip => string.Empty;

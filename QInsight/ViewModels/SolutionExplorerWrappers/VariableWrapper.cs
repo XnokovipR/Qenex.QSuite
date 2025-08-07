@@ -28,6 +28,8 @@ public class VariableWrapper : PropertyChangedBase, IViewableItem
         get => $"{variable.Label} ({variable.Id})";
         set { variable.Label = $"{value} ({variable.Id})"; OnPropertyChanged(); }
     }
+    
+    public FontWeight LabelWeight => FontWeights.Normal;
 
     public Visibility ToolTipVisibility => Visibility.Visible;
     public string ToolTip => GetToolTip();

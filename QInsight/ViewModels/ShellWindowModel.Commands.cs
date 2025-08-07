@@ -112,8 +112,6 @@ public partial class ShellWindowModel
             Filter = "QInsight project files (*.zip)|*.zip",
             InitialDirectory = lastProjectPath
         };
-		
-        logger.Log(LogLevel.Error, "Openning project");
 
         dlg.ShowDialog();
 
@@ -131,9 +129,9 @@ public partial class ShellWindowModel
                     return;
                 }
                 realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, logger);
-
+                
                 solutionExplorerViewModel.ReloadProjectData(realProjectData);
-
+                
                 ChangeIsProjectMade(true);
                 logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\"loaded.");
                 

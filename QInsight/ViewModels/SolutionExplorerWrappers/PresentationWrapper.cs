@@ -27,6 +27,8 @@ public class PresentationWrapper: PropertyChangedBase, IViewableItem
         get => presentation.Label;
         set { presentation.Label = value; OnPropertyChanged(); }
     }
+    
+    public FontWeight LabelWeight => FontWeights.Normal;
 
     public Visibility ToolTipVisibility => Visibility.Visible;
     public string ToolTip => GetToolTip();

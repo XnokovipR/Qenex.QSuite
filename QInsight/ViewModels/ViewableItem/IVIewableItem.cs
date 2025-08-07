@@ -8,6 +8,7 @@ namespace Qenex.QInsight.ViewModels.ViewableItem;
 public interface IViewableItem
 {
     string Label { get; set; }
+    FontWeight LabelWeight { get; }
     string ToolTip { get; }
     Visibility ToolTipVisibility { get; }
     BitmapImage Icon { get; }

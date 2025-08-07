@@ -19,6 +19,8 @@ public class ProjectWrapper(IModuleBase prjModule) : PropertyChangedBase, IViewa
         set { prjModule.Specification.Label = value; OnPropertyChanged(); }
     }
     
+    public FontWeight LabelWeight => FontWeights.Bold;
+    
     public Visibility ToolTipVisibility => Visibility.Visible;
  
     public string ToolTip

@@ -5,33 +5,46 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
+             xmlns:viewableItem="clr-namespace:Qenex.QInsight.ViewModels.ViewableItem"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300">
+    
+    <UserControl.Resources> 
+        <Style TargetType="telerik:RadTreeViewItem" BasedOn="{StaticResource RadTreeViewItemStyle}">
+            <Setter Property="ExpanderButtonMinWidth" Value="18"/> 
+        </Style>         
+    </UserControl.Resources> 
+    
     <Grid>
-        <!--<telerik:RadTreeView
+        <telerik:RadTreeView
             ItemsSource="{Binding ProjectModules}"
             IsVirtualizing="True"
             PathSeparator="/"
-            IsLineEnabled="True" 
+            IsLineEnabled="True"
+            ItemsIndent="20"
+            IsRootLinesEnabled="False" 
             HorizontalAlignment="Left"
             IsDragDropEnabled="False"
             ScrollViewer.HorizontalScrollBarVisibility="Auto"
             ScrollViewer.VerticalScrollBarVisibility="Auto">
-            <DataTemplate>
-                <StackPanel Orientation="Horizontal" Margin="-8,0,0,0">
-                    <Image Source="{Binding Icon}"
-                           RenderOptions.BitmapScalingMode="Fant" 
-                           Stretch="Fill" Width="24" Height="24"/>
-                    <TextBlock VerticalAlignment="Center" Text="{Binding Label}"/>
-                    <StackPanel.ToolTip>
-                        <ToolTip Visibility="{Binding ToolTipVisibility}">
-                            <StackPanel Orientation="Vertical">
-                                <TextBlock Text="{Binding ToolTip}"/>
-                            </StackPanel>
-                        </ToolTip>
-                    </StackPanel.ToolTip>
-                </StackPanel>
-            </DataTemplate>
-        </telerik:RadTreeView>-->
+            
+            <telerik:RadTreeView.ItemTemplate> 
+                <HierarchicalDataTemplate DataType="{x:Type viewableItem:IViewableItem}" ItemsSource="{Binding Children}">
+                    <StackPanel Orientation="Horizontal" Margin="-10,-4,0,-4">
+                        <Image Source="{Binding Icon}"
+                               RenderOptions.BitmapScalingMode="Fant"
+                               Stretch="Fill" Width="24" Height="24"/>
+                        <TextBlock VerticalAlignment="Center" Text="{Binding Label}" FontWeight="{Binding LabelWeight}"/>
+                        <StackPanel.ToolTip>
+                            <ToolTip Visibility="{Binding ToolTipVisibility}">
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock Text="{Binding ToolTip}"/>
+                                </StackPanel>
+                            </ToolTip>
+                        </StackPanel.ToolTip>
+                    </StackPanel>
+                </HierarchicalDataTemplate>
+            </telerik:RadTreeView.ItemTemplate>
+        </telerik:RadTreeView>
     </Grid>
 </UserControl>

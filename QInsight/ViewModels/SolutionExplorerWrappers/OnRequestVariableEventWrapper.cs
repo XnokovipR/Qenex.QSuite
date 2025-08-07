@@ -27,6 +27,8 @@ public class OnRequestVariableEventWrapper : PropertyChangedBase, IViewableItem
         get => variableEvent.Name;
         set { variableEvent.Name = value; OnPropertyChanged(); }
     }
+    
+    public FontWeight LabelWeight => FontWeights.Normal;
 
     public Visibility ToolTipVisibility => Visibility.Visible;
     public string ToolTip
