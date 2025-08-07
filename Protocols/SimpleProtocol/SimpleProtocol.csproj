@@ -17,7 +17,7 @@
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QSuite\bin\$(Configuration)\net8.0-windows\Protocols\&quot;&#xA;" />
+      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QInsight\bin\$(Configuration)\net8.0-windows\Protocols\&quot;&#xA;" />
     </Target>
 
 </Project>
