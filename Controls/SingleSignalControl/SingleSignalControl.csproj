@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AssemblyName>Qenex.QSuite.Controls.SingleSignalControl</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Controls.SingleSignalControl</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="Icons\" />
+      <Folder Include="Models\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Common\WpfComm\WpfComm.csproj" />
+      <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
+      <ProjectReference Include="..\Control\Control.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.0" />
+      <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.0" />
+    </ItemGroup>
+
+</Project>
