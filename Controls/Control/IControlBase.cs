@@ -1,4 +1,6 @@
-﻿using System.Windows.Media.Imaging;
+﻿using System.Collections.ObjectModel;
+using System.Windows.Media.Imaging;
+using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QSuite.Controls.Control;
 
@@ -17,6 +19,10 @@ public interface IControlBase
 	int MinHeight { get; }
 	int MinWidth { get; }
 
+	/// <summary>
+	/// Variables shown in the control.
+	/// </summary>
+	ObservableCollection<IControlVariable> Variables { get; set; }
 
 	/// <summary>
 	/// Custom user control properties.
@@ -42,4 +48,10 @@ public interface IControlBase
 	/// Control height.
 	/// </summary>
 	int Height { get; set; }
+	
+	
+	/// <summary>
+	/// Enable or disable connectors.
+	/// </summary>
+	bool AreConnectorsEnabled { get; set; }
 }

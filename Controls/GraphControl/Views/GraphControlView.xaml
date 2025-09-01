@@ -7,20 +7,20 @@
              xmlns:vm="clr-namespace:Qenex.QSuite.Controls.GraphControl.ViewModels"
              d:DataContext="{d:DesignInstance vm:GraphControlViewModel, IsDesignTimeCreatable=False}"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <TextBlock Text="Ahoj" >
+             d:DesignHeight="450" d:DesignWidth="800"
+             Background="GreenYellow">
+  
+    <UserControl.DataContext>
+        <vm:GraphControlViewModel/>
+    </UserControl.DataContext>
+  
+    <TextBlock Text="{Binding Text}"
                FontSize="24" 
                HorizontalAlignment="Center" 
                VerticalAlignment="Center" 
-               Foreground="Black">
-        <TextBlock.Style>
-            <Style TargetType="TextBlock">
-                <Setter Property="FontSize" Value="24"/>
-                <Setter Property="Foreground" Value="Black"/>
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-            </Style>
-        </TextBlock.Style>
-            
+               Foreground="Black"
+               >
+        
     </TextBlock>
+
 </UserControl>

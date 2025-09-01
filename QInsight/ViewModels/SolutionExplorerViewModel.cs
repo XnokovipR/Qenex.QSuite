@@ -208,10 +208,6 @@ public class SolutionExplorerViewModel : ViewModelBase
     public override string Name { get; set; } = "SolutionExplorerViewModel";
     public override DockingPosition DockPosition { get; set; } = DockingPosition.Left;
     public override bool IsDocument => false;
-    
-    public override void Exit()
-    {
-    }
 
     #endregion
 

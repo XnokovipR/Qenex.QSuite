@@ -45,7 +45,7 @@ public partial class ShellWindowModel
         
         RibbonOpenProjectCommand = new RelayCommandAsync<RadDocking>(OpenProjectAsync);
         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(async (d) => await Task.CompletedTask);
-        RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(async (d) => await Task.CompletedTask);
+        RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync);
         RibbonRemoveWorkspaceCommand = new RelayCommandAsync<RadDocking>(async (d) => await Task.CompletedTask);
     }
 
@@ -141,6 +141,14 @@ public partial class ShellWindowModel
                 logger.Log(LogLevel.Error, e.Message);
             }
         }
+    }
+
+    private async Task AddWorkspaceAsync(RadDocking docking)
+    {
+        var workspaceViewModel = new WorkspaceViewModel(eventAggregator);
+        ViewModels.Add(workspaceViewModel);
+
+        await Task.CompletedTask;
     }
 
 	#endregion

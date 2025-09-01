@@ -1,9 +1,4 @@
 ﻿using Qenex.QLibs.QUI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Qenex.QInsight.ViewModels;
 
@@ -19,7 +14,9 @@ public abstract class ViewModelBase(EventAggregator ea) : PropertyChangedBaseWit
 	public abstract bool IsDocument { get; }
 	public Dictionary<string, object> CustomTags { get; set; } = new();
 
-	public abstract void Exit();
+	public virtual void Clean()
+	{
+	}
 
 	#endregion
 }

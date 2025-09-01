@@ -9,4 +9,12 @@
     <RootNamespace>Qenex.QSuite.Controls.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.0" />
+  </ItemGroup>
+
 </Project>

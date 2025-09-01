@@ -13,6 +13,8 @@
 				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.Docking.xaml" />
 				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.xaml" />
 				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.GridView.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.Diagrams.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.Diagrams.Extensions.xaml" />
 				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.Navigation.xaml" />
 				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.RibbonView.xaml" />
 				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.FileDialogs.xaml" />

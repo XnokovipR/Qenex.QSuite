@@ -1,17 +1,35 @@
-﻿using Qenex.QLibs.QUI;
+﻿using System.Collections.ObjectModel;
+using Qenex.QLibs.QUI;
+using Qenex.QSuite.Controls.Control;
+using Telerik.Windows.Controls;
+using Qenex.QSuite.Controls.GraphControl;
+using Qenex.QSuite.Controls.GraphControl.ViewModels;
 
 namespace Qenex.QInsight.ViewModels;
 
 public class ControlsViewModel : ViewModelBase
 {
+    #region  Fields
+
+    private bool isUserControlLoaded;
+
+    #endregion
+    
+    #region Constructors
+
     public ControlsViewModel(EventAggregator ea) : base(ea)
     {
-        OnWindowLoadedCommand = new RelayCommand<object>(OnWindowLoaded);
+        isUserControlLoaded = false;
+        Controls = new ObservableCollection<IControlBase>();
+        UserControlLoadedCommand = new RelayCommand<RadDocking>(OnUserControlLoaded);
     }
+
+    #endregion
     
     #region Properties
 
-    public RelayCommand<object> OnWindowLoadedCommand { get; set; }
+    public ObservableCollection<IControlBase> Controls { get; set; }
+    public RelayCommand<RadDocking> UserControlLoadedCommand { get; set; }
     
     #endregion
 
@@ -22,17 +40,19 @@ public class ControlsViewModel : ViewModelBase
     public override DockingPosition DockPosition { get; set; } = DockingPosition.Left;
     public override bool IsDocument => false;
     
-    public override void Exit()
-    {
-    }
-
     #endregion
     
     #region Commands methods
 
-    private void OnWindowLoaded(object sfDiagram)
+    private void OnUserControlLoaded(RadDocking radDocking)
     {
+        if (isUserControlLoaded) return;
         
+        var gc = new GraphControlViewModel();
+        Controls.Add(gc);
+        
+        isUserControlLoaded = true;
     }
+    
     #endregion
 }

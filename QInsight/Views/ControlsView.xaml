@@ -3,10 +3,28 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
+             xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
              mc:Ignorable="d"
-             d:DesignHeight="300" d:DesignWidth="300">
-    <Grid>
-        <TextBlock Text="Controls" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-    </Grid>
+             d:DesignHeight="300" d:DesignWidth="300"
+             d:DataContext="{d:DesignInstance vm:ControlsViewModel, IsDesignTimeCreatable=False}">
+    
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Loaded">
+            <i:InvokeCommandAction Command="{Binding UserControlLoadedCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+    
+    <telerik:RadListBox x:Name="Controls" AllowDrop="False" ItemsSource="{Binding Controls}">
+        <telerik:RadListBox.ItemTemplate>
+            <DataTemplate>
+                <StackPanel Orientation="Horizontal" Height="20" ToolTip="{Binding Description}">
+                    <Image Source="{Binding Icon}" Margin="5,0,10,0"/>
+                    <TextBlock Text="{Binding Label}" />
+                </StackPanel>
+            </DataTemplate>
+        </telerik:RadListBox.ItemTemplate>
+    </telerik:RadListBox>
 </UserControl>

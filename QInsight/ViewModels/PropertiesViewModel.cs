@@ -11,10 +11,6 @@ public class PropertiesViewModel(EventAggregator ea) : ViewModelBase(ea)
     public override string Name { get; set; } = "PropertiesViewModel";
     public override DockingPosition DockPosition { get; set; } = DockingPosition.Right;
     public override bool IsDocument => false;
-    
-    public override void Exit()
-    {
-    }
 
     #endregion
     

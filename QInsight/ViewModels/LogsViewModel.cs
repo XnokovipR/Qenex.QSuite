@@ -26,9 +26,6 @@ public class LogsViewModel : ViewModelBase, ILogSubscriber
     public override DockingPosition DockPosition { get; set; } = DockingPosition.Bottom;
     public override bool IsDocument => false;
     
-    public override void Exit()
-    {
-    }
 
     #endregion
     

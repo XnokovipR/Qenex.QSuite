@@ -12,7 +12,7 @@
     <driverReferences>
         <driverReference ref="SimulDataDriver" label="Simulation driver">
             <isEnabled>true</isEnabled>
-            <settings>periodes=3</settings>
+            <settings>periodes=1</settings>
             <encryptedSettings/>
             <protocolReferences>
                 <protocolReference ref="SimpleO2OProtocol">

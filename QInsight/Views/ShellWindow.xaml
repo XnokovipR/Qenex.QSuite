@@ -9,7 +9,7 @@
         xmlns:qui="clr-namespace:Qenex.QLibs.QUI.TelerikDocking;assembly=Qenex.QLibs.QUI.TelerikDocking"
 		xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
-
+        d:DataContext="{d:DesignInstance vm:ShellWindowModel, IsDesignTimeCreatable=False}"
         Background="{DynamicResource AppBorderBrush}"
         Title="QInsight" Height="450" Width="800">
 	

@@ -48,13 +48,13 @@ public class SimDriver : DriverBase
         var rnd = new Random();
         var rawData = rawSettings.Split(";");
         var numbers = rawData.FirstOrDefault(r => r.Contains("periodes="))?.Split('=')[1].Split(',');
-        if (numbers != null && numbers.Length == 1)
+        if (numbers is not { Length: 1 }) throw new Exception("Invalid number of driver periods.");
+        
+        if (int.TryParse(numbers[0], out var period))
         {
-            if (int.TryParse(numbers[0], out var period))
-            {
-                sleepPeriod = 1000 * period;
-            }
+            sleepPeriod = 1000 * period;
         }
+        
     }
 
     #endregion

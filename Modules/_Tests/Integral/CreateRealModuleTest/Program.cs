@@ -29,7 +29,7 @@ class Program
         var driversDetails = pluginManager.GetPluginDetails<IDriverBase>("./Drivers");
         var protocolsDetails = pluginManager.GetPluginDetails<IProtocolBase>("./Protocols");
         
-        var xmlModule = XmlInOut<XmlModule>.LoadFromFile(@"..\..\..\..\..\..\ModuleXmlHandler\Docs\ModuleTest.xml");
+        var xmlModule = XmlInOut<XmlModule>.LoadFromFile(@"..\..\..\..\..\..\ModuleXmlHandler\Docs\XmlModule.xml");
         
         var xmlModuleHandler = new XmlModuleHandler(driversDetails, protocolsDetails, logger);
         var realModule = xmlModuleHandler.CreateModule<UnifiedModule>(xmlModule);
