@@ -81,6 +81,9 @@
     <Resource Include="Icons\SolutionExplorer\Variables.png" />
     <None Remove="Icons\QSuite48.png" />
     <Resource Include="Icons\QSuite48.png" />
+    <None Remove="Icons\SolutionExplorer\Workspace.png" />
+    <None Remove="Icons\SolutionExplorer\Workspaces.png" />
+    <Resource Include="Icons\SolutionExplorer\Workspaces.png" />
   </ItemGroup>
 
   <ItemGroup>

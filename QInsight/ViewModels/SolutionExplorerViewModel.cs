@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QLibs.QUI;
@@ -18,9 +19,21 @@ public class SolutionExplorerViewModel : ViewModelBase
 
     private RealProjectData realProjectData = null!;
 
+    #endregion
+
+    #region Constructor
+
     public SolutionExplorerViewModel(EventAggregator ea) : base(ea)
     {
         ProjectModules = [];
+        EventAggregator.SubscribeAction<AddWorkspaceEaMsg>(msg =>
+        {
+            var childrens = ProjectModules.FirstOrDefault(p => p is ProjectWrapper)?.Children;
+            if (childrens != null)
+            {
+                AddWorkspaceWrapper(childrens, msg.WorkspaceName);
+            }
+        });
     }
 
     #endregion
@@ -198,6 +211,20 @@ public class SolutionExplorerViewModel : ViewModelBase
             var variableWrapper = new ProtocolVariableWrapper(variable);
             variablesNode.Children.Add(variableWrapper);
         }
+    }
+    
+    // Add workspace node
+    private void AddWorkspaceWrapper(ObservableCollection<IViewableItem> children, string workspaceName)
+    {
+        // Add worspaces node if not exists
+        if (!children.Any(ch => ch is NodeWrapper { TypeOfNode: NodeWrapper.NodeType.Workspaces }))
+        {
+            var workspacesNode = new NodeWrapper(NodeWrapper.NodeType.Workspaces);
+            children.Add(workspacesNode);    
+        }
+        
+        // Add workspace
+        var aa = 0;
     }
 
     #endregion

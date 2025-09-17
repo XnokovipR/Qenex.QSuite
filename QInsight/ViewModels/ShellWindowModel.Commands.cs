@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using Qenex.QInsight.AppConfig;
+using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.Views;
 using Qenex.QLibs.QUI;
@@ -147,6 +148,8 @@ public partial class ShellWindowModel
     {
         var workspaceViewModel = new WorkspaceViewModel(eventAggregator);
         ViewModels.Add(workspaceViewModel);
+        
+        eventAggregator.Publish(new AddWorkspaceEaMsg() {WorkspaceName = "New workspace"});
 
         await Task.CompletedTask;
     }

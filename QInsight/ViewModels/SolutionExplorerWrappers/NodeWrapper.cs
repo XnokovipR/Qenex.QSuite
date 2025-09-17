@@ -8,7 +8,7 @@ namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
 public class NodeWrapper : IViewableItem
 {
-    private readonly NodeType nodeType;
+    //private readonly NodeType nodeType;
     private readonly string prefix;
     private readonly string suffix;
     
@@ -17,7 +17,7 @@ public class NodeWrapper : IViewableItem
     {
         prefix = labelPrefix;
         suffix = labelSuffix;
-        nodeType = nType;
+        TypeOfNode = nType;
         Children = [];
     }
 
@@ -25,7 +25,7 @@ public class NodeWrapper : IViewableItem
     
     public string Label
     {
-        get => nodeType == NodeType.OnlyPrefixFolder ? prefix : $"{prefix} {nodeType.ToString()} {suffix}"; 
+        get => TypeOfNode == NodeType.OnlyPrefixFolder ? prefix : $"{prefix} {TypeOfNode.ToString()} {suffix}"; 
         set { }
     }
     
@@ -34,7 +34,9 @@ public class NodeWrapper : IViewableItem
     public Visibility ToolTipVisibility => Visibility.Hidden;
     public string ToolTip => string.Empty;
     
-    public BitmapImage Icon => ImageGetter.GetBitmapImage($"Icons/SolutionExplorer/{GetBitmapImageName(nodeType)}");
+    public NodeType TypeOfNode { get; }
+    
+    public BitmapImage Icon => ImageGetter.GetBitmapImage($"Icons/SolutionExplorer/{GetBitmapImageName(TypeOfNode)}");
     public ObservableCollection<IViewableItem> Children { get; set; }
 
     #endregion
@@ -49,7 +51,7 @@ public class NodeWrapper : IViewableItem
             NodeType.Events => "Events.png",
             NodeType.Presentations => "Presentations.png",
             NodeType.OnlyPrefixFolder => "VariableFolder.png",
-            
+            NodeType.Workspaces => "Workspaces.png",
             _ => "Drivers.png"
         };
     }
@@ -62,6 +64,7 @@ public class NodeWrapper : IViewableItem
         Variables,
         Events,
         Presentations,
+        Workspaces
     }
 
     
