@@ -13,4 +13,6 @@ public interface IViewableItem
     Visibility ToolTipVisibility { get; }
     BitmapImage Icon { get; }
     ObservableCollection<IViewableItem> Children { get; set; }
+    
+    Dictionary<string, object>? CustomTags { get; set; }
 }

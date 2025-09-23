@@ -11,16 +11,8 @@ using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class ProtocolVariableWrapper : PropertyChangedBase, IViewableItem
+public class ProtocolVariableWrapper(IProtocolVariable protocolVariable) : PropertyChangedBase, IViewableItem
 {
-    private readonly IProtocolVariable protocolVariable;
-
-    public ProtocolVariableWrapper(IProtocolVariable protVariable)
-    {
-        protocolVariable = protVariable;
-        Children = [];
-        
-    }
     #region UI Properties
     
 
@@ -36,7 +28,8 @@ public class ProtocolVariableWrapper : PropertyChangedBase, IViewableItem
     public string ToolTip => GetToolTip();
     
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Variable.png");
-    public ObservableCollection<IViewableItem> Children { get; set; }
+    public ObservableCollection<IViewableItem> Children { get; set; } = [];
+    public Dictionary<string, object>? CustomTags { get; set; } = [];
 
     #endregion
     

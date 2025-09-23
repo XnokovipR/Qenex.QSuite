@@ -9,18 +9,9 @@ using Qenex.QSuite.Drivers.Driver;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class DriverWrapper : PropertyChangedBase, IViewableItem
+public class DriverWrapper(IDriverBase driver) : PropertyChangedBase, IViewableItem
 {
-    private readonly IDriverBase driver;
-
-    public DriverWrapper(IDriverBase drv)
-    {
-        driver = drv;
-        Children = [];
-        
-    }
     #region UI Properties
-    
 
     public string Label
     {
@@ -53,7 +44,9 @@ public class DriverWrapper : PropertyChangedBase, IViewableItem
     }
 
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Driver.png");
-    public ObservableCollection<IViewableItem> Children { get; set; }
+    public ObservableCollection<IViewableItem> Children { get; set; } = [];
+
+    public Dictionary<string, object>? CustomTags { get; set; } = [];
 
     #endregion
     

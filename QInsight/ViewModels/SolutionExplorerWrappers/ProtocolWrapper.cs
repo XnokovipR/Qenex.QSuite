@@ -9,20 +9,10 @@ using Qenex.QSuite.Protocols.Protocol;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class ProtocolWrapper : PropertyChangedBase, IViewableItem
+public class ProtocolWrapper(IProtocolBase protocol) : PropertyChangedBase, IViewableItem
 {
-    private readonly IProtocolBase protocol;
-
-    public ProtocolWrapper(IProtocolBase prot)
-    {
-        protocol = prot;
-        Children = [];
-        
-    }
     #region UI Properties
-
-
-
+    
     public string Label
     {
         get => protocol.Specification.Label;
@@ -54,7 +44,9 @@ public class ProtocolWrapper : PropertyChangedBase, IViewableItem
     }
     
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Protocol.png");
-    public ObservableCollection<IViewableItem> Children { get; set; }
+    public ObservableCollection<IViewableItem> Children { get; set; } = [];
+
+    public Dictionary<string, object>? CustomTags { get; set; } = [];
 
     #endregion
     

@@ -9,16 +9,8 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class PresentationWrapper: PropertyChangedBase, IViewableItem
+public class PresentationWrapper(IPresentation presentation) : PropertyChangedBase, IViewableItem
 {
-    private readonly IPresentation presentation;
-
-    public PresentationWrapper(IPresentation presentationToAdd)
-    {
-        presentation = presentationToAdd;
-        Children = [];
-        
-    }
     #region UI Properties
     
 
@@ -34,7 +26,9 @@ public class PresentationWrapper: PropertyChangedBase, IViewableItem
     public string ToolTip => GetToolTip();
     
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Presentation.png");
-    public ObservableCollection<IViewableItem> Children { get; set; }
+    public ObservableCollection<IViewableItem> Children { get; set; } = [];
+
+    public Dictionary<string, object>? CustomTags { get; set; } = new();
 
     #endregion
     

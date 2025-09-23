@@ -48,5 +48,7 @@ public class ProjectWrapper(IModuleBase prjModule) : PropertyChangedBase, IViewa
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Project.png");
     public ObservableCollection<IViewableItem> Children { get; set; } = [];
 
+    public Dictionary<string, object>? CustomTags { get; set; } = [];
+
     #endregion
 }

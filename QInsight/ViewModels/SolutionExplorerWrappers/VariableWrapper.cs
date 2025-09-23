@@ -11,16 +11,8 @@ using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class VariableWrapper : PropertyChangedBase, IViewableItem
+public class VariableWrapper(IVariableBase variable) : PropertyChangedBase, IViewableItem
 {
-    private readonly IVariableBase variable;
-
-    public VariableWrapper(IVariableBase variableToAdd)
-    {
-        variable = variableToAdd;
-        Children = [];
-        
-    }
     #region UI Properties
     
     public string Label
@@ -35,7 +27,9 @@ public class VariableWrapper : PropertyChangedBase, IViewableItem
     public string ToolTip => GetToolTip();
     
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Variable.png");
-    public ObservableCollection<IViewableItem> Children { get; set; }
+    public ObservableCollection<IViewableItem> Children { get; set; } = [];
+
+    public Dictionary<string, object>? CustomTags { get; set; } = [];
 
     #endregion
     

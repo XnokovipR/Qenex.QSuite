@@ -9,16 +9,8 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class PeriodicVariableEventWrapper : PropertyChangedBase, IViewableItem
+public class PeriodicVariableEventWrapper(PeriodicVarEvent variableEvent) : PropertyChangedBase, IViewableItem
 {
-    private readonly PeriodicVarEvent variableEvent;
-    
-    public PeriodicVariableEventWrapper(PeriodicVarEvent varEvent)
-    {
-        variableEvent = varEvent;
-        Children = new ObservableCollection<IViewableItem>();
-    }
-    
     #region UI Properties
     
 
@@ -47,7 +39,9 @@ public class PeriodicVariableEventWrapper : PropertyChangedBase, IViewableItem
     }
 
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/PeriodicEvent.png");
-    public ObservableCollection<IViewableItem> Children { get; set; }
+    public ObservableCollection<IViewableItem> Children { get; set; } = new();
+
+    public Dictionary<string, object>? CustomTags { get; set; } = new();
 
     #endregion
 }

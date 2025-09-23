@@ -9,16 +9,8 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class OnRequestVariableEventWrapper : PropertyChangedBase, IViewableItem
+public class OnRequestVariableEventWrapper(OnRequestVarEvent variableEvent) : PropertyChangedBase, IViewableItem
 {
-    private readonly OnRequestVarEvent variableEvent;
-    
-    public OnRequestVariableEventWrapper(OnRequestVarEvent varEvent)
-    {
-        variableEvent = varEvent;
-        Children = new ObservableCollection<IViewableItem>();
-    }
-    
     #region UI Properties
     
 
@@ -45,7 +37,9 @@ public class OnRequestVariableEventWrapper : PropertyChangedBase, IViewableItem
     }
 
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/RequestEvent.png");
-    public ObservableCollection<IViewableItem> Children { get; set; }
+    public ObservableCollection<IViewableItem> Children { get; set; } = new();
+
+    public Dictionary<string, object>? CustomTags { get; set; } = new();
 
     #endregion
 }

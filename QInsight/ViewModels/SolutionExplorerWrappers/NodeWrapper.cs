@@ -19,6 +19,7 @@ public class NodeWrapper : IViewableItem
         suffix = labelSuffix;
         TypeOfNode = nType;
         Children = [];
+        CustomTags = [];
     }
 
     #region UI Properties
@@ -38,6 +39,8 @@ public class NodeWrapper : IViewableItem
     
     public BitmapImage Icon => ImageGetter.GetBitmapImage($"Icons/SolutionExplorer/{GetBitmapImageName(TypeOfNode)}");
     public ObservableCollection<IViewableItem> Children { get; set; }
+    
+    public Dictionary<string, object>? CustomTags { get; set; }
 
     #endregion
     
