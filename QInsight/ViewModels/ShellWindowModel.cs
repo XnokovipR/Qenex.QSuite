@@ -34,7 +34,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	private LogsViewModel logsViewModel;
 	private PropertiesViewModel propertiesViewModel;
 	private ControlsViewModel controlsViewModel;
-	private ObservableCollection<ViewModelBase> viewModels;
+	private ObservableCollection<IViewModelBase> viewModels;
 
 	#endregion
 
@@ -48,6 +48,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 
 		CreateViewModels();
 		CreateCommands();
+		SubscribeEventAggregatorMessages();
 	}
 
 	#endregion
@@ -60,7 +61,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		set { logsViewModel = value; OnPropertyChanged(); }
 	}
 
-	public ObservableCollection<ViewModelBase> ViewModels
+	public ObservableCollection<IViewModelBase> ViewModels
 	{
 		get => viewModels;
 		set { viewModels = value; OnPropertyChanged(); }

@@ -4,7 +4,9 @@ using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QLibs.QUI;
 using Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
+using Qenex.QLibs.QUI.TelerikDocking;
 using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
@@ -25,13 +27,18 @@ public class SolutionExplorerViewModel : ViewModelBase
 
     public SolutionExplorerViewModel(EventAggregator ea) : base(ea)
     {
+        TreeViewDoubleCLickCommand = new RelayCommand<IViewableItem>(treeViewItem =>
+        {
+            EventAggregator.Publish(new SolutionTreeViewWorkspaceMsg() { Label = treeViewItem.Label });
+        });
+        
         ProjectModules = [];
         EventAggregator.SubscribeAction<AddWorkspaceEaMsg>(msg =>
         {
             var childrens = ProjectModules.FirstOrDefault(p => p is ProjectWrapper)?.Children;
             if (childrens != null)
             {
-                AddWorkspaceWrapper(childrens, msg.WorkspaceName);
+                AddWorkspaceWrapper(childrens, msg.WorkspaceViewModel);
             }
         });
     }
@@ -41,6 +48,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     #region Treeview properties
 
     public ObservableCollection<IViewableItem> ProjectModules { get; set; }
+    public RelayCommand<IViewableItem> TreeViewDoubleCLickCommand { get; set; }
     
     #endregion
     
@@ -214,7 +222,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     }
     
     // Add workspace node
-    private void AddWorkspaceWrapper(ObservableCollection<IViewableItem> children, string workspaceName)
+    private void AddWorkspaceWrapper(ObservableCollection<IViewableItem> children, IWorkspaceViewModel workspaceViewModel)
     {
         // Add worspaces node if not exists
         if (!children.Any(ch => ch is NodeWrapper { TypeOfNode: NodeWrapper.NodeType.Workspaces }))
@@ -224,7 +232,9 @@ public class SolutionExplorerViewModel : ViewModelBase
         }
         
         // Add workspace
-        var aa = 0;
+        var workspaces = children.First(ch => ch is NodeWrapper { TypeOfNode: NodeWrapper.NodeType.Workspaces });
+        var workspaceWrapper = new WorkspaceWrapper(workspaceViewModel);
+        workspaces.Children.Add(workspaceWrapper);
     }
 
     #endregion

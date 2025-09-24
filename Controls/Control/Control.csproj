@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.0" />
+    <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.3" />
   </ItemGroup>
 
 </Project>

@@ -10,24 +10,19 @@
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
              d:DataContext="{d:DesignInstance vm:WorkspaceViewModel, IsDesignTimeCreatable=False}"
              mc:Ignorable="d"
-             d:DesignHeight="300" d:DesignWidth="300">
+             d:DesignHeight="300" d:DesignWidth="300"
+             x:Name="WorkspaceUserControl">
 
-    <!-- <i:Interaction.Triggers> -->
-    <!--     <i:EventTrigger EventName="Loaded"> -->
-    <!--         <i:InvokeCommandAction Command="{Binding UserControlLoadedCommand}" CommandParameter="{Binding ElementName=RadDiagram}"/> -->
-    <!--     </i:EventTrigger> -->
-    <!-- </i:Interaction.Triggers> -->
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Loaded">
+            <i:InvokeCommandAction Command="{Binding WorkspaceViewLoadedCommand}" CommandParameter="{Binding ElementName=WorkspaceUserControl}"/>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
     
     <telerik:RadDiagram
         Name="RadDiagram"
         primitives:BackgroundGrid.IsDynamic="True"
         primitives:BackgroundGrid.LineStroke="WhiteSmoke">
-        <i:Interaction.Triggers>
-            <i:EventTrigger EventName="Loaded">
-                <i:InvokeCommandAction Command="{Binding UserControlLoadedCommand}"
-                                       CommandParameter="{Binding ElementName=RadDiagram}"/>
-            </i:EventTrigger>
-        </i:Interaction.Triggers>
     </telerik:RadDiagram>
 </UserControl>
  

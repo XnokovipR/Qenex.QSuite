@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
              xmlns:viewableItem="clr-namespace:Qenex.QInsight.ViewModels.ViewableItem"
              mc:Ignorable="d"
@@ -17,6 +18,7 @@
     
     <Grid>
         <telerik:RadTreeView
+            x:Name="SolutionTreeView"
             ItemsSource="{Binding ProjectModules}"
             IsVirtualizing="True"
             PathSeparator="/"
@@ -27,6 +29,13 @@
             IsDragDropEnabled="False"
             ScrollViewer.HorizontalScrollBarVisibility="Auto"
             ScrollViewer.VerticalScrollBarVisibility="Auto">
+            
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="ItemDoubleClick">
+                    <i:InvokeCommandAction Command="{Binding TreeViewDoubleCLickCommand}" PassEventArgsToCommand="True"
+                                           CommandParameter="{Binding ElementName=SolutionTreeView, Path=SelectedItem}"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
             
             <telerik:RadTreeView.ItemTemplate> 
                 <HierarchicalDataTemplate DataType="{x:Type viewableItem:IViewableItem}" ItemsSource="{Binding Children}">

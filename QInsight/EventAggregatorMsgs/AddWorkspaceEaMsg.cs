@@ -1,6 +1,8 @@
-﻿namespace Qenex.QInsight.EventAggregatorMsgs;
+﻿using Qenex.QLibs.QUI.TelerikDocking;
+
+namespace Qenex.QInsight.EventAggregatorMsgs;
 
 public class AddWorkspaceEaMsg
 {
-    public string WorkspaceName { get; set; } = String.Empty;
+    public IWorkspaceViewModel WorkspaceViewModel { get; set; } = null!;
 }

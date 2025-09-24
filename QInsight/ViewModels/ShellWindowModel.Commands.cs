@@ -165,7 +165,7 @@ public partial class ShellWindowModel
         
         
         // Add new workspace to Solution Explorer
-        eventAggregator.Publish(new AddWorkspaceEaMsg() { WorkspaceName = "New workspace" });
+        eventAggregator.Publish(new AddWorkspaceEaMsg() { WorkspaceViewModel =  workspaceViewModel});
 
         await Task.CompletedTask;
     }

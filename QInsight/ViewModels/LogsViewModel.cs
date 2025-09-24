@@ -11,11 +11,15 @@ public class LogsViewModel : ViewModelBase, ILogSubscriber
     {
         EventAggregator.SubscribeAction<LogMessage>(Log);
         LogMessages = [];
+        
+        ClearLogCommand = new RelayCommand<object>(_ => LogMessages.Clear());
 	}
 
     #region Properties
 
     public ObservableCollection<ILogMessage> LogMessages { get; set; }
+    public RelayCommand<object> ClearLogCommand { get; set; }
+    
     
     #endregion
     
