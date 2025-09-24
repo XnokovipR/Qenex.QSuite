@@ -20,7 +20,7 @@ public partial class ShellWindowModel
    
     public RelayCommand<object> ShellWindowLocationChangedCommand { get; set; }
     public RelayCommand<object> ShellWindowSizeChangedCommand { get; set; }
-    public RelayCommand<RadDocking> ShellWindowLoadedCommand { get; set; }
+    public RelayCommandAsync<RadDocking> ShellWindowLoadedCommandAsync { get; set; }
     public RelayCommand<RadDocking> ShellWindowClosingCommand { get; set; }
 
     #endregion
@@ -38,7 +38,7 @@ public partial class ShellWindowModel
     
     private void CreateCommands()
     {
-        ShellWindowLoadedCommand = new RelayCommand<RadDocking>(OnShellWindowLoaded);
+        ShellWindowLoadedCommandAsync = new RelayCommandAsync<RadDocking>(OnShellWindowLoadedAsync);
         ShellWindowClosingCommand = new RelayCommand<RadDocking>(OnShellWindowClosing);
 
         ShellWindowLocationChangedCommand = new RelayCommand<object>(OnShellWindowLocationChanged);
@@ -71,7 +71,7 @@ public partial class ShellWindowModel
     }
 
     // This method is called when the docking manager is loaded
-    private void OnShellWindowLoaded(RadDocking docking)
+    private async Task OnShellWindowLoadedAsync(RadDocking docking)
     {
         try
         {
@@ -79,6 +79,17 @@ public partial class ShellWindowModel
             pluginLoader = new PluginLoader(logger);
             driverPlugins = pluginLoader.GetPluginDetails<IDriverBase>("./Drivers");
             protocolPlugins = pluginLoader.GetPluginDetails<IProtocolBase>("./Protocols");
+            
+            // process app arguments
+            var cmdArgs = Environment.GetCommandLineArgs();
+            if (cmdArgs.Length == 2)
+            {
+                var projectFilePath = cmdArgs[1];
+                if (File.Exists(projectFilePath) && Path.GetExtension(projectFilePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    await OpenProjectFileAsync(projectFilePath);
+                }
+            }
         }
         catch (Exception e)
         {
@@ -119,29 +130,32 @@ public partial class ShellWindowModel
         
         if (dlg.DialogResult == true)
         {
-            var filePath = dlg.FileName;
-            //ShellWindow.MainAppSettings.LastProjectPath = Path.GetDirectoryName(dlg.FileName);
-            try
-            {
-                var projectData = await ProjectZip.UnzipProjectFileAsync(filePath, logger);
-                if (projectData == null)
-                {
-                    logger?.Log(LogLevel.Warn, $"Failed to load project file \"{Path.GetFileName(filePath)}\".");
-                    return;
-                }
-                realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, logger);
-                
-                solutionExplorerViewModel.ReloadProjectData(realProjectData);
-                
-                ChangeIsProjectMade(true);
-                logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\"loaded.");
-                
-            }
-            catch (Exception e)
-            {
-                logger.Log(LogLevel.Error, e.Message);
-            }
+            await OpenProjectFileAsync(dlg.FileName);
         }
+    }
+
+    private async Task OpenProjectFileAsync(string filePath)
+    {
+        try
+        {
+            var projectData = await ProjectZip.UnzipProjectFileAsync(filePath, logger);
+            if (projectData == null)
+            {
+                logger?.Log(LogLevel.Warn, $"Failed to load project file \"{Path.GetFileName(filePath)}\".");
+                return;
+            }
+            realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, logger);
+                
+            solutionExplorerViewModel.ReloadProjectData(realProjectData);
+                
+            ChangeIsProjectMade(true);
+            logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\"loaded.");
+                
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, e.Message);
+        }        
     }
 
     private async Task AddWorkspaceAsync(RadDocking docking)
@@ -149,7 +163,9 @@ public partial class ShellWindowModel
         var workspaceViewModel = new WorkspaceViewModel(eventAggregator);
         ViewModels.Add(workspaceViewModel);
         
-        eventAggregator.Publish(new AddWorkspaceEaMsg() {WorkspaceName = "New workspace"});
+        
+        // Add new workspace to Solution Explorer
+        eventAggregator.Publish(new AddWorkspaceEaMsg() { WorkspaceName = "New workspace" });
 
         await Task.CompletedTask;
     }

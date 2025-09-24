@@ -19,7 +19,7 @@
 	
 	<i:Interaction.Triggers>
 		<i:EventTrigger EventName="Loaded">
-			<i:InvokeCommandAction Command="{Binding ShellWindowLoadedCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+			<i:InvokeCommandAction Command="{Binding ShellWindowLoadedCommandAsync}" CommandParameter="{Binding ElementName=RadDocking}"/>
 		</i:EventTrigger>
 
 		<i:EventTrigger EventName="Closing">

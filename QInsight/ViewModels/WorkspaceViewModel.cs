@@ -38,7 +38,7 @@ public class WorkspaceViewModel : ViewModelBase
     #region ViewModelBase implementation
 
     public override string Header { get; set; } = "Workspace";
-    public override string Name { get; set; } = "WorkspaceViewModel";
+    public override string Name { get; set; } = $"WorkspaceViewModel__{Guid.NewGuid().ToString().Replace("-", "_")}";
     public override DockingPosition DockPosition { get; set; } = DockingPosition.Workspace;
     public override bool IsDocument => true;
 
