@@ -75,6 +75,8 @@ public partial class ShellWindowModel
     {
         try
         {
+            Application.Current.MainWindow.WindowState = ShellWindow.MainAppSettings.WinStyle.WinState;
+            
             // Load drivers, protocols and controls
             pluginLoader = new PluginLoader(logger);
             driverPlugins = pluginLoader.GetPluginDetails<IDriverBase>("./Drivers");

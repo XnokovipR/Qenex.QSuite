@@ -26,7 +26,7 @@ public abstract class WorkspaceViewModelBase(EventAggregator ea) : PropertyChang
 			}; 
 		}
 	}
-	public EventHandler<bool> ChangedIsHidden { get; set; }
+	public EventHandler<bool>? ChangedIsHidden { get; set; }
 	public abstract DockingPosition DockPosition { get; set; }
 	public abstract bool IsDocument { get; }
 	public Dictionary<string, object> CustomTags { get; set; } = new();

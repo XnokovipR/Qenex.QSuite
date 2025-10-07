@@ -27,7 +27,7 @@ public partial class ShellWindowModel
         var workspaceVm = ViewModels.FirstOrDefault(vm => vm is IWorkspaceViewModel ws && ws.WinTitle.Equals(msg.Label));
         if (workspaceVm != null)
         {
-            workspaceVm.IsHidden = true;
+            workspaceVm.IsHidden = !workspaceVm.IsHidden;
         }
     }
 }

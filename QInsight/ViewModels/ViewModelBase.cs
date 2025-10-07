@@ -14,7 +14,7 @@ public abstract class ViewModelBase : PropertyChangedBaseWithValidation, IViewMo
 
 	#region Inherited from IToolViewModel (derived from IViewModelBase, IViewModelExtData)
 	
-	public EventHandler<bool> ChangedIsHidden { get; set; }
+	public EventHandler<bool>? ChangedIsHidden { get; set; }
 
 	public abstract string Header { get; set; }
 	public abstract string Name { get; set; }
@@ -23,7 +23,7 @@ public abstract class ViewModelBase : PropertyChangedBaseWithValidation, IViewMo
 		get => isHidden;
 		set 
 		{
-			if (isHidden != value)
+			//if (isHidden != value)
 			{
 				isHidden = value;
 				ChangedIsHidden?.Invoke(this, isHidden);

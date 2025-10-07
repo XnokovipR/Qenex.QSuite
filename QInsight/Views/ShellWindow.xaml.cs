@@ -24,11 +24,11 @@ public partial class ShellWindow : Window
 	public ShellWindow()
 	{
 		InitializeComponent();
-
+		
 		try
 		{
 			ProcessAppSettings("QInsightAppSettings.xml");
-
+			
 			SourceInitialized += WindowSourceInitialized;
 
 			Windows11ThemeSizeHelper.Helper.IsInCompactMode = true;
@@ -77,7 +77,7 @@ public partial class ShellWindow : Window
 			var win = Application.Current.MainWindow;
 			win.Height = MainAppSettings.WinStyle.Height;
 			win.Width = MainAppSettings.WinStyle.Width;
-			win.WindowState = MainAppSettings.WinStyle.WinState;
+			win.WindowState = WindowState.Minimized;
 			win.Top = MainAppSettings.WinStyle.Top;
 			win.Left = MainAppSettings.WinStyle.Left;
 
@@ -87,7 +87,7 @@ public partial class ShellWindow : Window
 				MainAppSettings.WinStyle.ScreenId = 0;
 				MainAppSettings.WinStyle.Height = win.Height;
 				MainAppSettings.WinStyle.Width = win.Width;
-				MainAppSettings.WinStyle.WinState = win.WindowState;
+				//MainAppSettings.WinStyle.WinState;
 				MainAppSettings.WinStyle.Top = win.Top;
 				MainAppSettings.WinStyle.Left = win.Left;
 				MainAppSettings.IsAppSettingRead = true;
