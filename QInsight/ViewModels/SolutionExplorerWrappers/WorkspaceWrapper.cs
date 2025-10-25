@@ -14,6 +14,7 @@ public class WorkspaceWrapper(IWorkspaceViewModel workspaceViewModel) : Property
 {
     #region UI Properties
     
+    public string Name => workspaceViewModel.Name;
 
     public string Label
     {

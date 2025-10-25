@@ -6,6 +6,8 @@
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
+             xmlns:conv="clr-namespace:Qenex.QInsight.Converters"
+             xmlns:wrappers="clr-namespace:Qenex.QInsight.ViewModels.SolutionExplorerWrappers"
              xmlns:viewableItem="clr-namespace:Qenex.QInsight.ViewModels.ViewableItem"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300">
@@ -14,6 +16,8 @@
         <Style TargetType="telerik:RadTreeViewItem" BasedOn="{StaticResource RadTreeViewItemStyle}">
             <Setter Property="ExpanderButtonMinWidth" Value="18"/> 
         </Style>         
+        
+        <conv:TypeNameToVisibilityConverter x:Key="ContextMenuVisibilityConverter"/>
     </UserControl.Resources> 
     
     <Grid>
@@ -39,7 +43,8 @@
             
             <telerik:RadTreeView.ItemTemplate> 
                 <HierarchicalDataTemplate DataType="{x:Type viewableItem:IViewableItem}" ItemsSource="{Binding Children}">
-                    <StackPanel Orientation="Horizontal" Margin="-10,-4,0,-4">
+                    <StackPanel Orientation="Horizontal" Margin="-10,-4,0,-4"
+                                Tag="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=telerik:RadTreeView}, Path=DataContext}">
                         <Image Source="{Binding Icon}"
                                RenderOptions.BitmapScalingMode="Fant"
                                Stretch="Fill" Width="24" Height="24"/>
@@ -51,6 +56,16 @@
                                 </StackPanel>
                             </ToolTip>
                         </StackPanel.ToolTip>
+                        <telerik:RadContextMenu.ContextMenu>
+                            <telerik:RadContextMenu InheritDataContext="False"
+                                                    Visibility="{Binding Converter={StaticResource ContextMenuVisibilityConverter},
+                                                   ConverterParameter='WorkspaceWrapper'}">
+                                <telerik:RadMenuItem
+                                    Header="Remove"
+                                    Command="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=telerik:RadContextMenu}, Path=UIElement.Tag.RemoveViewableItemCommand}"
+                                    CommandParameter="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=telerik:RadContextMenu}, Path=UIElement.DataContext}" />                             
+                            </telerik:RadContextMenu>
+                        </telerik:RadContextMenu.ContextMenu>
                     </StackPanel>
                 </HierarchicalDataTemplate>
             </telerik:RadTreeView.ItemTemplate>

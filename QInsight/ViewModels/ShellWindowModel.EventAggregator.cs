@@ -20,6 +20,22 @@ public partial class ShellWindowModel
     private void SubscribeEventAggregatorMessages()
     {
         eventAggregator.SubscribeAction<SolutionTreeViewWorkspaceMsg>(OnSolutionTreeViewWorkspaceMsg);
+        eventAggregator.SubscribeAction<RemoveWorkspaceFromSolutionExplorerMsg>(RemoveWorkspace);
+    }
+
+    private void RemoveWorkspace(RemoveWorkspaceFromSolutionExplorerMsg msg)
+    {
+        var radGroup = shellRadDocking.SplitItems.OfType<RadPaneGroup>().FirstOrDefault(i => i.Name.Contains("WorkspacePaneGroup"));
+        
+        if (radGroup != null)
+        {
+            var panetoRemove = radGroup.Items.OfType<QRadDocumentPane>().FirstOrDefault(p => p.Name == msg.Name);
+            if (panetoRemove != null)
+            {
+                panetoRemove.RemoveFromParent();
+            }
+        }
+
     }
 
     private void OnSolutionTreeViewWorkspaceMsg(SolutionTreeViewWorkspaceMsg msg)

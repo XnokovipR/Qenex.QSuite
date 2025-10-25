@@ -5,12 +5,14 @@ using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.Views;
 using Qenex.QLibs.QUI;
+using Qenex.QLibs.QUI.TelerikDocking;
 using Qenex.QLibs.QUI.Wpf;
 using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Telerik.Windows.Controls;
+using Telerik.Windows.Controls.Docking;
 
 namespace Qenex.QInsight.ViewModels;
 
@@ -22,6 +24,9 @@ public partial class ShellWindowModel
     public RelayCommand<object> ShellWindowSizeChangedCommand { get; set; }
     public RelayCommandAsync<RadDocking> ShellWindowLoadedCommandAsync { get; set; }
     public RelayCommand<RadDocking> ShellWindowClosingCommand { get; set; }
+    
+    public RelayCommandAsync<StateChangeEventArgs> PanelCloseCommandAsync { get; set; }
+
 
     #endregion
 
@@ -30,7 +35,7 @@ public partial class ShellWindowModel
     public RelayCommandAsync<RadDocking> RibbonOpenProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonCloseProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonAddWorkspaceCommand { get; set; }
-    public RelayCommandAsync<RadDocking> RibbonRemoveWorkspaceCommand { get; set; }
+    public RelayCommand<RadDocking> RibbonRemoveWorkspaceCommand { get; set; }
 
     #endregion
     
@@ -47,7 +52,9 @@ public partial class ShellWindowModel
         RibbonOpenProjectCommand = new RelayCommandAsync<RadDocking>(OpenProjectAsync);
         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(async (d) => await Task.CompletedTask);
         RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync);
-        RibbonRemoveWorkspaceCommand = new RelayCommandAsync<RadDocking>(async (d) => await Task.CompletedTask);
+        RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace);
+        
+        PanelCloseCommandAsync = new RelayCommandAsync<StateChangeEventArgs>(ClosePanelAsync);
     }
 
     #endregion
@@ -75,6 +82,8 @@ public partial class ShellWindowModel
     {
         try
         {
+            shellRadDocking = docking;
+            
             Application.Current.MainWindow.WindowState = ShellWindow.MainAppSettings.WinStyle.WinState;
             
             // Load drivers, protocols and controls
@@ -110,6 +119,27 @@ public partial class ShellWindowModel
         {
             eventAggregator.Publish(new LogMessage(LogLevel.Error, e.Message));
         }
+    }
+    
+    private async Task ClosePanelAsync(StateChangeEventArgs arg)
+    {
+        // if you want to remove workspace view models when closing panes
+        
+        // var rd = arg.OriginalSource as RadDocking;
+        // foreach (var pane in arg.Panes)
+        // {
+        //     if (rd?.DataContext is ShellWindowModel dataContext)
+        //     {
+        //         if (pane.DataContext is WorkspaceViewModel vm)
+        //         {
+        //             pane.RemoveFromParent();
+        //             //await vm.CleanAsync();
+        //             //ViewModels.Remove(vm);
+        //         }
+        //     }
+        // }
+        
+        await Task.CompletedTask;
     }
 
 	#endregion
@@ -170,6 +200,31 @@ public partial class ShellWindowModel
         eventAggregator.Publish(new AddWorkspaceEaMsg() { WorkspaceViewModel =  workspaceViewModel});
 
         await Task.CompletedTask;
+    }
+    
+    private void RemoveWorkspace(RadDocking docking)
+    {
+        if (docking.ActivePane is not QRadDocumentPane pane)
+        {
+            eventAggregator.Publish(new LogMessage(LogLevel.Warn, "No active workspace to remove."));
+            return;
+        }
+        
+        RadWindow.Confirm(new DialogParameters()
+        {
+            Content = $"Do you want to remove workspace \"{pane.Header}\"?",
+            Header = "Remove Workspace",
+            Owner = Application.Current.MainWindow,
+            DialogStartupLocation = WindowStartupLocation.CenterOwner,
+            Closed = (_, arg) =>
+            {
+                if (arg.DialogResult != true) return;
+                
+                eventAggregator.Publish<RemoveWorkspaceFromMainMenuMsg>(new RemoveWorkspaceFromMainMenuMsg() { Name = pane.Name, Label = pane.Header.ToString()! });
+                pane.RemoveFromParent();
+            }
+        });
+
     }
 
 	#endregion

@@ -102,6 +102,12 @@
 				CloseButtonPosition="InPaneAndGroup"
 				AllowDragReorder="True" 
 				PanesSource="{Binding ViewModels}">
+				
+				<telerik:EventToCommandBehavior.EventBindings>
+					<telerik:EventBinding Command="{Binding PanelCloseCommandAsync}"
+					                      EventName="Close"
+					                      PassEventArgsToCommand="True"/>
+				</telerik:EventToCommandBehavior.EventBindings>
 
 				<telerik:RadDocking.DocumentHost>
 					<telerik:RadSplitContainer>

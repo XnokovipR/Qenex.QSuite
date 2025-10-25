@@ -12,7 +12,7 @@ namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 public class DriverWrapper(IDriverBase driver) : PropertyChangedBase, IViewableItem
 {
     #region UI Properties
-
+    
     public string Label
     {
         get => driver.Specification.Label;

@@ -8,8 +8,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.Models.Project;
+using Qenex.QInsight.Views;
 using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.LogSystems.LogSystem;
+using Telerik.Windows.Controls;
 
 namespace Qenex.QInsight.ViewModels;
 
@@ -30,6 +32,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	private bool isProjectMade;
 
 	// ViewModels
+	private RadDocking shellRadDocking;
 	private SolutionExplorerViewModel solutionExplorerViewModel;
 	private LogsViewModel logsViewModel;
 	private PropertiesViewModel propertiesViewModel;

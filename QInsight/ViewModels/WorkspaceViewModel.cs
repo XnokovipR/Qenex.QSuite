@@ -48,7 +48,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     public override void OnIsVisibleChanged(bool isVisible)
     {
-        EventAggregator.Publish(new LogMessage(LogLevel.Info, $"{Name} visibility changed to {isVisible}"));
+        //EventAggregator.Publish(new LogMessage(LogLevel.Info, $"{Name} visibility changed to {isVisible}"));
     }
 
     #region Commands methods

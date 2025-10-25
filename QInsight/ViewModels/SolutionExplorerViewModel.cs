@@ -1,4 +1,6 @@
 ﻿using System.Collections.ObjectModel;
+using System.Net.Mime;
+using System.Windows;
 using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.ViewModels.ViewableItem;
@@ -11,6 +13,7 @@ using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.VariableEvents;
+using Telerik.Windows.Controls;
 
 namespace Qenex.QInsight.ViewModels;
 
@@ -27,9 +30,39 @@ public class SolutionExplorerViewModel : ViewModelBase
 
     public SolutionExplorerViewModel(EventAggregator ea) : base(ea)
     {
+        EventAggregator.SubscribeAction<RemoveWorkspaceFromMainMenuMsg>(msg =>
+        {
+            var ws = Workspaces?.OfType<WorkspaceWrapper>().FirstOrDefault(ws => ws.Name == msg.Name);
+            if (ws != null)
+            {
+                RemoveWorkspaceWrapper(ws);
+            }
+        });
+        
         TreeViewDoubleCLickCommand = new RelayCommand<IViewableItem>(treeViewItem =>
         {
             EventAggregator.Publish(new SolutionTreeViewWorkspaceMsg() { Label = treeViewItem.Label });
+        });
+
+        RemoveViewableItemCommand = new RelayCommand<IViewableItem>(item =>
+        {
+            RadWindow.Confirm(new DialogParameters()
+            {
+                Content = $"Do you want to remove workspace \"{item.Label}\"?",
+                Header = "Remove Workspace",
+                Owner = Application.Current.MainWindow,
+                DialogStartupLocation = WindowStartupLocation.CenterOwner,
+                Closed = (_, arg) =>
+                {
+                    if (arg.DialogResult != true) return;
+
+                    if (item is WorkspaceWrapper wsw)
+                    {
+                        RemoveWorkspaceWrapper(item);
+                        EventAggregator.Publish(new RemoveWorkspaceFromSolutionExplorerMsg() { Name = wsw.Name });
+                    }
+                }
+            });
         });
         
         ProjectModules = [];
@@ -48,7 +81,13 @@ public class SolutionExplorerViewModel : ViewModelBase
     #region Treeview properties
 
     public ObservableCollection<IViewableItem> ProjectModules { get; set; }
+    
+    // Displayed workspaces in treeview
+    public ObservableCollection<IViewableItem> Workspaces { get; set; }
+    
     public RelayCommand<IViewableItem> TreeViewDoubleCLickCommand { get; set; }
+    public RelayCommand<IViewableItem> RemoveViewableItemCommand { get; set; }
+    
     
     #endregion
     
@@ -224,17 +263,29 @@ public class SolutionExplorerViewModel : ViewModelBase
     // Add workspace node
     private void AddWorkspaceWrapper(ObservableCollection<IViewableItem> children, IWorkspaceViewModel workspaceViewModel)
     {
-        // Add worspaces node if not exists
+        // Add workspaces node if not exists
         if (!children.Any(ch => ch is NodeWrapper { TypeOfNode: NodeWrapper.NodeType.Workspaces }))
         {
             var workspacesNode = new NodeWrapper(NodeWrapper.NodeType.Workspaces);
-            children.Add(workspacesNode);    
+            Workspaces = workspacesNode.Children;
+            children.Add(workspacesNode);   
+            
         }
         
         // Add workspace
         var workspaces = children.First(ch => ch is NodeWrapper { TypeOfNode: NodeWrapper.NodeType.Workspaces });
         var workspaceWrapper = new WorkspaceWrapper(workspaceViewModel);
         workspaces.Children.Add(workspaceWrapper);
+    }
+    
+    // Remove workspace node
+    public void RemoveWorkspaceWrapper(IViewableItem workspaceItem)
+    {
+        var item = Workspaces.FirstOrDefault(i => i.Label == workspaceItem.Label);
+        if (item != null)
+        {
+            Workspaces.Remove(item);
+        }
     }
 
     #endregion
