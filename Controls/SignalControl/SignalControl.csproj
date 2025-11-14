@@ -17,12 +17,12 @@
     <ItemGroup>
       <ProjectReference Include="..\..\Common\WpfComm\WpfComm.csproj" />
       <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
-      <ProjectReference Include="..\Control\Control.csproj" />
+      <ProjectReference Include="..\ControlOld\ControlOld.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.7" />
-      <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.4" />
+      <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.8" />
+      <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.5" />
     </ItemGroup>
 
 </Project>

@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+	<UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Qenex.QSuite.Controls.$(MSBuildProjectName)</AssemblyName>
+    <RootNamespace>Qenex.QSuite.Controls.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -16,7 +16,7 @@ public class SingleSignalControlViewModel : ControlBase
 
     public string Text { get; set; }
 
-    public override string ControlName => "SingleSignalControl";
+    public override string ControlName => "SignalControl";
     public override string Label => "Single-Signal";
     public override BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/GraphControl.png");
     public override string Description => "Graph Control for displaying data in a graphical format.";

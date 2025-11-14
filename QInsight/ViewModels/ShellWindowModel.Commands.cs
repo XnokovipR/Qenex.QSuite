@@ -189,6 +189,7 @@ public partial class ShellWindowModel
             logger.Log(LogLevel.Error, e.Message);
         }        
     }
+   
 
     private async Task AddWorkspaceAsync(RadDocking docking)
     {
