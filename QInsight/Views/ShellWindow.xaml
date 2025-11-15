@@ -93,7 +93,18 @@
 	                            SmallImage="../Icons/Menu/CloseProject.png"/>
 						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
-				</telerik:RadRibbonView.Items>
+
+                    <!-- Ribbon Menu - Help -->
+                    <telerik:RadRibbonTab Header="Help" x:Name="HelpTab">
+                        <telerik:RadRibbonGroup Header="Documentation">
+                            <telerik:RadRibbonButton
+	                            Text="About" 
+	                            Size="Large"
+	                            SmallImage="../Icons/Menu/AboutApp.png"
+	                            Command="{Binding RibbonAboutAppCommand}"/>
+                        </telerik:RadRibbonGroup>
+                    </telerik:RadRibbonTab>
+                </telerik:RadRibbonView.Items>
 			</telerik:RadRibbonView>
 
 			<telerik:RadDocking 

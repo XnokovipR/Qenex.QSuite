@@ -36,6 +36,8 @@ public partial class ShellWindowModel
     public RelayCommandAsync<RadDocking> RibbonCloseProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonAddWorkspaceCommand { get; set; }
     public RelayCommand<RadDocking> RibbonRemoveWorkspaceCommand { get; set; }
+    
+    public RelayCommand<object> RibbonAboutAppCommand { get; set; }
 
     #endregion
     
@@ -53,6 +55,26 @@ public partial class ShellWindowModel
         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(async (d) => await Task.CompletedTask);
         RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync);
         RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace);
+        
+        RibbonAboutAppCommand = new RelayCommand<object>((o) =>
+        {
+            var aboutViewModel = new AboutAppViewModel();
+            var aboutWin = new AboutAppWindow()
+            {
+                DataContext = aboutViewModel
+            };
+            var aboutDlg = new RadWindow()
+            {
+                Owner = Application.Current.MainWindow,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Header = "About QInsight",
+                ResizeMode = ResizeMode.NoResize,
+                Content = aboutWin,
+                CanClose = false
+            };
+            aboutViewModel.SetParentWindow(aboutDlg);
+            aboutDlg.ShowDialog();
+        });
         
         PanelCloseCommandAsync = new RelayCommandAsync<StateChangeEventArgs>(ClosePanelAsync);
     }
@@ -227,6 +249,8 @@ public partial class ShellWindowModel
         });
 
     }
+    
+    
 
 	#endregion
     

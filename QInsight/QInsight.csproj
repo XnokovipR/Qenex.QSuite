@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <Folder Include="Helpers\" />
-    <Folder Include="Icons\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,7 +35,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Icons\About.png" />
+    <None Remove="Icons\Menu\AboutApp.png" />
     <None Remove="Icons\Menu\AddWorkspace.png" />
+    <Resource Include="Icons\About.png" />
+    <Resource Include="Icons\Menu\AboutApp.png" />
     <Resource Include="Icons\Menu\AddWorkspace.png" />
     <None Remove="Icons\Menu\CloseProject.png" />
     <Resource Include="Icons\Menu\CloseProject.png" />
