@@ -100,7 +100,7 @@
                             <telerik:RadRibbonButton
 	                            Text="About" 
 	                            Size="Large"
-	                            SmallImage="../Icons/Menu/AboutApp.png"
+	                            SmallImage="../Icons/QInsight.png"
 	                            Command="{Binding RibbonAboutAppCommand}"/>
                         </telerik:RadRibbonGroup>
                     </telerik:RadRibbonTab>

@@ -31,21 +31,27 @@
         <StackPanel Grid.Column="1" Grid.Row="0"  DockPanel.Dock="Top" Orientation="Vertical">
             <TextBlock  Text="QInsight" FontSize="52" FontFamily="Segoe UI Light" FontWeight="Bold" FontStyle="Normal" Foreground="DodgerBlue"
                         HorizontalAlignment="Center"/>
-            <TextBlock  Margin="0,20,0,0" Text="...tune / debug / log and process data" 
+            <TextBlock  Margin="0,20,0,0" Text="...tune, debug, log and process data" 
                         FontSize="15" FontWeight="Bold" FontStyle="Italic" HorizontalAlignment="Center"/>
             <TextBlock  Margin="0,5,0,0" Text="of your electronic devices" 
                         HorizontalAlignment="Center" FontSize="15" FontWeight="Bold" FontStyle="Italic"/>
             <TextBlock  Margin="0,5,0,0" Text="in real-time!" 
                         HorizontalAlignment="Center" FontSize="15" FontWeight="Bold" FontStyle="Italic"/>
 
-            <StackPanel Orientation="Horizontal" Margin="00,35,0,0" HorizontalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Margin="0,25,0,0" HorizontalAlignment="Center">
                 <TextBlock  Text="Version:" FontSize="14" FontWeight="Normal" FontStyle="Normal"/>
-                <TextBlock  Margin="10,0,0,0" Text="{Binding Version}" FontSize="14" FontWeight="Bold" FontStyle="Normal"/>
+                <TextBlock  Margin="10,0,0,0" Text="{Binding Version}" FontSize="14" FontStyle="Normal"/>
             </StackPanel>
             <TextBlock  Margin="0,5,0,0" Text="QENEX s.r.o." FontSize="14" 
                         HorizontalAlignment="Center" FontWeight="Normal" FontStyle="Normal"/>
             <TextBlock  Margin="0,5,0,0" Text="{Binding Copyright}" 
                         HorizontalAlignment="Center" FontSize="14" FontWeight="Normal" FontStyle="Normal"/>
+            <TextBlock  Margin="0,10,0,0"
+                        HorizontalAlignment="Center" FontWeight="Normal" FontStyle="Normal">
+                 <Hyperlink FontSize="14" NavigateUri="https://www.qenex.net" RequestNavigate="Hyperlink_RequestNavigate">
+                     https:/www.qenex.net
+                 </Hyperlink>
+            </TextBlock>
         </StackPanel>
 
         <Button Grid.Column="1" Grid.Row="1" Margin="10,10,10,10" Content="Close" DockPanel.Dock="Bottom" Width="70">
