@@ -37,7 +37,8 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     {
         GridLineColor = ShellWindow.IsDarkTheme ? DarkGridLineColor : LightGridLineColor;
         BackgroundColor = ShellWindow.IsDarkTheme ? DarkBackgroundColor : LightBackgroundColor;
-        WorkspaceViewLoadedCommand = new RelayCommand<UserControl>(OnWorkspaceViewLoaded);
+        //WorkspaceViewLoadedCommand = new RelayCommand<UserControl>(OnWorkspaceViewLoaded);
+        WorkspaceViewLoadedCommand = new RelayCommand<RadDiagram>(OnWorkspaceViewLoaded);
     }
 
     #endregion
@@ -49,7 +50,8 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     public bool IsGridVisible { get => isGridVisible; set { isGridVisible = value; OnPropertyChanged();} }
     public bool IsPageGridVisible { get => isPageGridVisible; set { isPageGridVisible = value; OnPropertyChanged(); } }
 
-    public RelayCommand<UserControl> WorkspaceViewLoadedCommand { get; set; }
+    //public RelayCommand<UserControl> WorkspaceViewLoadedCommand { get; set; }
+    public RelayCommand<RadDiagram> WorkspaceViewLoadedCommand { get; set; }
 
     #endregion
     
@@ -71,14 +73,75 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     #region Commands methods
 
-    private void OnWorkspaceViewLoaded(UserControl userControl)
-    {
+    // private void OnWorkspaceViewLoaded(UserControl userControl)
+    // {
+    //     if (isViewLoaded) return;
+    //     isViewLoaded = true;
+    //
+    //     // code here:
+    //
+    //
+    // }
+    
+    
+     private RadDiagram diagram;
+     private void OnWorkspaceViewLoaded(RadDiagram radDiagram)
+     {
         if (isViewLoaded) return;
-        isViewLoaded = true;
-        
-        // code here:
-        
-    }
+         isViewLoaded = true;
+         diagram = radDiagram;
+         var userControl = new RadDiagramShape();
+         
+         var graphVm = new GraphControlViewModel();
+         var graphControl = new GraphControlView()
+         {
+             DataContext = graphVm,
+         };
+    
+         userControl.Position = new Point(20, 150);
+         userControl.Width = graphVm.Width;
+         userControl.Height = graphVm.Height;
+         userControl.Content = graphControl;
+         userControl.Background = new SolidColorBrush(Colors.Blue);
+         userControl.BorderBrush = new SolidColorBrush(Colors.DarkGray);
+         userControl.BorderThickness = new Thickness(1);
+         userControl.UseGlidingConnector = true;
+         userControl.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+         userControl.VerticalContentAlignment = VerticalAlignment.Stretch;
+         
+         userControl.Connectors.Clear();
+         var leftCon = new RadDiagramConnector()
+         {
+             Offset = new Point(0, 0.5),
+             Name = "LeftConnector"
+         };
+         var rightCon = new RadDiagramConnector()
+         {
+             Offset = new Point(1, 0.5),
+             Name = "RightConnector"
+         };
+         var topCon = new RadDiagramConnector()
+         {
+             Offset = new Point(0.5, 0),
+             Name = "TopConnector"
+         };
+         var bottomCon = new RadDiagramConnector()
+         {
+             Offset = new Point(0.5, 1),
+             Name = "BottomConnector"
+         };
+         
+         
+         userControl.Connectors.Add(leftCon);
+         userControl.Connectors.Add(rightCon);
+         userControl.Connectors.Add(topCon);
+         userControl.Connectors.Add(bottomCon);
+         // code here:
+         
+         
+         diagram.AddShape(userControl);
+         
+     }
     
     #endregion
 }
