@@ -122,6 +122,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ComponentSpecification", "Specifications\ComponentSpecification\ComponentSpecification.csproj", "{DE2837C1-C2C0-4D78-9CC0-FC8AB28F0AAC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Controls", "Controls", "{BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}"
+	ProjectSection(SolutionItems) = preProject
+		Controls\SignalControl\SignalControl.csproj = Controls\SignalControl\SignalControl.csproj
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphControl", "Controls\GraphControl\GraphControl.csproj", "{437BFDD4-63CF-4F2E-AA57-0DAFE09B99A5}"
 EndProject
@@ -130,8 +133,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControlOld", "Controls\ControlOld\ControlOld.csproj", "{AF6088AD-020A-411D-A613-5E252D168CC0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QInsight", "QInsight\QInsight.csproj", "{596F6503-DF18-41D3-B27F-BB71DCC51151}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalControl", "Controls\SignalControl\SignalControl.csproj", "{F21AE1BC-0034-462E-AD56-740EC8D0AFB6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Control", "Controls\Control\Control.csproj", "{302CD463-6258-49A8-848C-C04B91D80439}"
 EndProject
@@ -297,10 +298,6 @@ Global
 		{596F6503-DF18-41D3-B27F-BB71DCC51151}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{596F6503-DF18-41D3-B27F-BB71DCC51151}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{596F6503-DF18-41D3-B27F-BB71DCC51151}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F21AE1BC-0034-462E-AD56-740EC8D0AFB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F21AE1BC-0034-462E-AD56-740EC8D0AFB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F21AE1BC-0034-462E-AD56-740EC8D0AFB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F21AE1BC-0034-462E-AD56-740EC8D0AFB6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{302CD463-6258-49A8-848C-C04B91D80439}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{302CD463-6258-49A8-848C-C04B91D80439}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{302CD463-6258-49A8-848C-C04B91D80439}.Release|Any CPU.ActiveCfg = Release|Any CPU
