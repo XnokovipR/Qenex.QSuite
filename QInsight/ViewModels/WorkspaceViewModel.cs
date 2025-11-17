@@ -1,12 +1,14 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Qenex.QInsight.Views;
 using Telerik.Windows.Diagrams.Core;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Controls.GraphControl.ViewModels;
 using Qenex.QSuite.Controls.GraphControl.Views;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Telerik.Windows.Controls;
+using Telerik.Windows.Controls.ColorEditor.ColorSchemas;
 using Telerik.Windows.Controls.Diagrams;
 
 
@@ -16,7 +18,16 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 {
     #region  Fields
     
+    private static readonly Brush DarkGridLineColor = new SolidColorBrush(Color.FromRgb(47,47,47));
+    private static readonly Brush LightGridLineColor = new SolidColorBrush(Colors.WhiteSmoke);
+    private static readonly Brush DarkBackgroundColor = new SolidColorBrush(Color.FromRgb(40, 40, 40));
+    private static readonly Brush LightBackgroundColor = new SolidColorBrush(Colors.White);
+    
     private bool isViewLoaded;
+    private Brush gridLineColor = new SolidColorBrush(Colors.WhiteSmoke);
+    private bool isGridVisible = true;
+    private Brush backgroundColor = new SolidColorBrush(Colors.DimGray);
+    private bool isPageGridVisible = false;
 
     #endregion
     
@@ -24,12 +35,19 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     public WorkspaceViewModel(EventAggregator ea) : base(ea)
     {
+        GridLineColor = ShellWindow.IsDarkTheme ? DarkGridLineColor : LightGridLineColor;
+        BackgroundColor = ShellWindow.IsDarkTheme ? DarkBackgroundColor : LightBackgroundColor;
         WorkspaceViewLoadedCommand = new RelayCommand<UserControl>(OnWorkspaceViewLoaded);
     }
 
     #endregion
 
     #region Properties
+
+    public Brush BackgroundColor { get => backgroundColor; set { backgroundColor = value; OnPropertyChanged(); }}
+    public Brush GridLineColor { get => gridLineColor; set { gridLineColor = value; OnPropertyChanged(); } }
+    public bool IsGridVisible { get => isGridVisible; set { isGridVisible = value; OnPropertyChanged();} }
+    public bool IsPageGridVisible { get => isPageGridVisible; set { isPageGridVisible = value; OnPropertyChanged(); } }
 
     public RelayCommand<UserControl> WorkspaceViewLoadedCommand { get; set; }
 

@@ -15,14 +15,18 @@
 
     <i:Interaction.Triggers>
         <i:EventTrigger EventName="Loaded">
-            <i:InvokeCommandAction Command="{Binding WorkspaceViewLoadedCommand}" CommandParameter="{Binding ElementName=WorkspaceUserControl}"/>
+            <i:InvokeCommandAction Command="{Binding WorkspaceViewLoadedCommand}" 
+                                   CommandParameter="{Binding ElementName=WorkspaceUserControl}"/>
         </i:EventTrigger>
     </i:Interaction.Triggers>
     
     <telerik:RadDiagram
         Name="RadDiagram"
         primitives:BackgroundGrid.IsDynamic="True"
-        primitives:BackgroundGrid.LineStroke="WhiteSmoke">
+        Background="{Binding BackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+        primitives:BackgroundGrid.IsGridVisible="{Binding IsGridVisible, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+        primitives:BackgroundGrid.LineStroke="{Binding GridLineColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+        primitives:BackgroundPageGrid.IsGridVisible="{Binding IsPageGridVisible, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
     </telerik:RadDiagram>
 </UserControl>
  

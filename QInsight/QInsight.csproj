@@ -8,6 +8,7 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>Qenex.$(MSBuildProjectName)</AssemblyName>
     <RootNamespace>Qenex.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+    <ApplicationIcon>Icons\QInsight.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,6 +39,7 @@
     <None Remove="Icons\About.png" />
     <None Remove="Icons\Menu\AboutApp.png" />
     <None Remove="Icons\Menu\AddWorkspace.png" />
+    <None Remove="Icons\QInsight.png" />
     <Resource Include="Icons\About.png" />
     <Resource Include="Icons\Menu\AboutApp.png" />
     <Resource Include="Icons\Menu\AddWorkspace.png" />
@@ -54,6 +56,7 @@
     <None Remove="Icons\Menu\RemoveWorkspace.png" />
     <Resource Include="Icons\Menu\RemoveWorkspace.png" />
     <None Remove="Icons\SolutionExplorer\Driver.png" />
+    <Resource Include="Icons\QInsight.png" />
     <Resource Include="Icons\SolutionExplorer\Driver.png" />
     <None Remove="Icons\SolutionExplorer\Drivers.png" />
     <Resource Include="Icons\SolutionExplorer\Drivers.png" />
@@ -82,9 +85,9 @@
     <None Remove="Icons\SolutionExplorer\Variables.png" />
     <Resource Include="Icons\SolutionExplorer\Variables.png" />
     <None Remove="Icons\QSuite48.png" />
-    <Resource Include="Icons\QSuite48.png" />
     <None Remove="Icons\SolutionExplorer\Workspace.png" />
     <None Remove="Icons\SolutionExplorer\Workspaces.png" />
+    <Content Include="Icons\QInsight.ico" />
     <Resource Include="Icons\SolutionExplorer\Workspaces.png" />
   </ItemGroup>
 

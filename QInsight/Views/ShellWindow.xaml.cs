@@ -20,6 +20,7 @@ public partial class ShellWindow : Window
 	private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
 	internal static AppSettings MainAppSettings = null!;
+	public static bool IsDarkTheme = false;
 
 	public ShellWindow()
 	{
@@ -45,9 +46,9 @@ public partial class ShellWindow : Window
 	private void WindowSourceInitialized(object sender, EventArgs e)
 	{
 		var hwnd = new WindowInteropHelper(Application.Current.MainWindow).Handle;
-		bool isDark = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark;//IsDarkThemeEnabled();
-		SetImmersiveDarkMode(hwnd, isDark);
-		Resources["AppBorderBrush"] = isDark
+		IsDarkTheme = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark;//IsDarkThemeEnabled();
+		SetImmersiveDarkMode(hwnd, IsDarkTheme);
+		Resources["AppBorderBrush"] = IsDarkTheme
 			? new SolidColorBrush(Color.FromRgb(50, 50, 50)) // Dark border color
 			: new SolidColorBrush(Color.FromRgb(200, 200, 200)); // Light border color
 	}
