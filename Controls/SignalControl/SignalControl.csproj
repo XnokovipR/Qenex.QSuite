@@ -10,19 +10,25 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Icons\" />
+      <None Remove="Icons\SIngleSignalControl.png" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Folder Include="Models\" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\..\Common\WpfComm\WpfComm.csproj" />
       <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
-      <ProjectReference Include="..\ControlOld\ControlOld.csproj" />
+      <ProjectReference Include="..\Control\Control.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.8" />
-      <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.5" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Resource Include="Icons\SIngleSignalControl.png" />
     </ItemGroup>
 
 </Project>

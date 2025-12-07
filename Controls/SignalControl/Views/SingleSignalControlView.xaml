@@ -13,13 +13,7 @@
         VerticalAlignment="Center" 
         HorizontalAlignment="Center" 
         Margin="5">
-        
-        <TextBlock Text="{Binding Variables[0].Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-        <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left">
-            <TextBox Text="{Binding Variables[0]}"></TextBox>
-            <TextBlock Text="[" Margin="5,0,0,0"/>
-            <TextBlock Text="{Binding Variables[0].Unit, Mode=TwoWay, UpdateSourceTrigger=Default}"/>
-            <TextBlock Text="]"/>
-        </StackPanel>
-    </StackPanel>
+
+		<TextBlock Text="Signal Control" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+	</StackPanel>
 </UserControl>
