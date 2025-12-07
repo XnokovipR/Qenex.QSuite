@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.0.11205.157 d18.0
+VisualStudioVersion = 18.0.11205.157
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Variables", "Variables", "{8E1871C8-3703-4F96-942B-4195A9FF9FEA}"
 EndProject
@@ -105,8 +105,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimDataDriver", "Drivers\Si
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Docs", "_Docs", "{13E43C71-CABE-41C2-AAFF-D1187A145C10}"
 	ProjectSection(SolutionItems) = preProject
-		_Docs\QSuite_Todo.md = _Docs\QSuite_Todo.md
 		_Docs\QSuite_Controls.md = _Docs\QSuite_Controls.md
+		_Docs\QSuite_Todo.md = _Docs\QSuite_Todo.md
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Helpers", "Helpers", "{B7F7DBA0-5B21-4833-9ADC-C0158CBC6268}"
@@ -122,19 +122,16 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ComponentSpecification", "Specifications\ComponentSpecification\ComponentSpecification.csproj", "{DE2837C1-C2C0-4D78-9CC0-FC8AB28F0AAC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Controls", "Controls", "{BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}"
-	ProjectSection(SolutionItems) = preProject
-		Controls\SignalControl\SignalControl.csproj = Controls\SignalControl\SignalControl.csproj
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphControl", "Controls\GraphControl\GraphControl.csproj", "{437BFDD4-63CF-4F2E-AA57-0DAFE09B99A5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfComm", "Common\WpfComm\WpfComm.csproj", "{FDA9B35F-4CEA-4E3B-926A-1AE27A04E7BE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ControlOld", "Controls\ControlOld\ControlOld.csproj", "{AF6088AD-020A-411D-A613-5E252D168CC0}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QInsight", "QInsight\QInsight.csproj", "{596F6503-DF18-41D3-B27F-BB71DCC51151}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Control", "Controls\Control\Control.csproj", "{302CD463-6258-49A8-848C-C04B91D80439}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalControl", "Controls\SignalControl\SignalControl.csproj", "{8E2473DD-F5D1-4A7D-9D78-470C7020AA01}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Control", "Controls\Control\Control.csproj", "{AC786CC9-B0C3-4FE0-BE81-DD7688165754}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -290,18 +287,18 @@ Global
 		{FDA9B35F-4CEA-4E3B-926A-1AE27A04E7BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FDA9B35F-4CEA-4E3B-926A-1AE27A04E7BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FDA9B35F-4CEA-4E3B-926A-1AE27A04E7BE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AF6088AD-020A-411D-A613-5E252D168CC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AF6088AD-020A-411D-A613-5E252D168CC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AF6088AD-020A-411D-A613-5E252D168CC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AF6088AD-020A-411D-A613-5E252D168CC0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{596F6503-DF18-41D3-B27F-BB71DCC51151}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{596F6503-DF18-41D3-B27F-BB71DCC51151}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{596F6503-DF18-41D3-B27F-BB71DCC51151}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{596F6503-DF18-41D3-B27F-BB71DCC51151}.Release|Any CPU.Build.0 = Release|Any CPU
-		{302CD463-6258-49A8-848C-C04B91D80439}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{302CD463-6258-49A8-848C-C04B91D80439}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{302CD463-6258-49A8-848C-C04B91D80439}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{302CD463-6258-49A8-848C-C04B91D80439}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E2473DD-F5D1-4A7D-9D78-470C7020AA01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E2473DD-F5D1-4A7D-9D78-470C7020AA01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E2473DD-F5D1-4A7D-9D78-470C7020AA01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E2473DD-F5D1-4A7D-9D78-470C7020AA01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC786CC9-B0C3-4FE0-BE81-DD7688165754}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC786CC9-B0C3-4FE0-BE81-DD7688165754}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC786CC9-B0C3-4FE0-BE81-DD7688165754}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC786CC9-B0C3-4FE0-BE81-DD7688165754}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -357,7 +354,10 @@ Global
 		{DE2837C1-C2C0-4D78-9CC0-FC8AB28F0AAC} = {3AE6C5F0-420F-42AA-B120-BABCD6A6E1F2}
 		{437BFDD4-63CF-4F2E-AA57-0DAFE09B99A5} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
 		{FDA9B35F-4CEA-4E3B-926A-1AE27A04E7BE} = {FA456E72-5D93-4641-9B58-DB7F4F1855F2}
-		{AF6088AD-020A-411D-A613-5E252D168CC0} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
-		{302CD463-6258-49A8-848C-C04B91D80439} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
+		{8E2473DD-F5D1-4A7D-9D78-470C7020AA01} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
+		{AC786CC9-B0C3-4FE0-BE81-DD7688165754} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {30000164-E084-4EF1-818A-1B98829BA5EA}
 	EndGlobalSection
 EndGlobal

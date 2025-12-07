@@ -93,8 +93,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\WpfComm\WpfComm.csproj" />
-    <ProjectReference Include="..\Controls\ControlOld\ControlOld.csproj" />
     <ProjectReference Include="..\Controls\GraphControl\GraphControl.csproj" />
+    <ProjectReference Include="..\Controls\SignalControl\SignalControl.csproj" />
     <ProjectReference Include="..\Helpers\ProjectFile\ProjectFile.csproj" />
     <ProjectReference Include="..\LogSystems\LogSystem\LogSystem.csproj" />
     <ProjectReference Include="..\Modules\ModuleXmlHandler\ModuleXmlHandler.csproj" />

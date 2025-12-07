@@ -10,6 +10,9 @@ using Qenex.QSuite.LogSystems.LogSystem;
 using Telerik.Windows.Controls;
 using Telerik.Windows.Controls.ColorEditor.ColorSchemas;
 using Telerik.Windows.Controls.Diagrams;
+using Qenex.QSuite.Controls.SingleSignalControl.ViewModels;
+using Qenex.QSuite.Controls.SingleSignalControl.Views;
+using Qenex.QSuite.Controls.Control;
 
 
 namespace Qenex.QInsight.ViewModels;
@@ -90,58 +93,73 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
         if (isViewLoaded) return;
          isViewLoaded = true;
          diagram = radDiagram;
-         var userControl = new RadDiagramShape();
-         
-         var graphVm = new GraphControlViewModel();
-         var graphControl = new GraphControlView()
-         {
-             DataContext = graphVm,
-         };
-    
-         userControl.Position = new Point(20, 150);
-         userControl.Width = graphVm.Width;
-         userControl.Height = graphVm.Height;
-         userControl.Content = graphControl;
-         userControl.Background = new SolidColorBrush(Colors.Blue);
-         userControl.BorderBrush = new SolidColorBrush(Colors.DarkGray);
-         userControl.BorderThickness = new Thickness(1);
-         userControl.UseGlidingConnector = true;
-         userControl.HorizontalContentAlignment = HorizontalAlignment.Stretch;
-         userControl.VerticalContentAlignment = VerticalAlignment.Stretch;
-         
-         userControl.Connectors.Clear();
-         var leftCon = new RadDiagramConnector()
-         {
-             Offset = new Point(0, 0.5),
-             Name = "LeftConnector"
-         };
-         var rightCon = new RadDiagramConnector()
-         {
-             Offset = new Point(1, 0.5),
-             Name = "RightConnector"
-         };
-         var topCon = new RadDiagramConnector()
-         {
-             Offset = new Point(0.5, 0),
-             Name = "TopConnector"
-         };
-         var bottomCon = new RadDiagramConnector()
-         {
-             Offset = new Point(0.5, 1),
-             Name = "BottomConnector"
-         };
-         
-         
-         userControl.Connectors.Add(leftCon);
-         userControl.Connectors.Add(rightCon);
-         userControl.Connectors.Add(topCon);
-         userControl.Connectors.Add(bottomCon);
-         // code here:
-         
-         
-         diagram.AddShape(userControl);
-         
-     }
-    
-    #endregion
+
+		var graphVm = new GraphControlViewModel();
+		var graphControl = new GraphControlView()
+		{
+			DataContext = graphVm,
+		};
+        AddControlToDiagram(graphVm, graphControl, 20, 100);
+
+		var ssVm = new SingleSignalControlViewModel();
+		var ssControl = new SingleSignalControlView()
+		{
+			DataContext = ssVm,
+		};
+		AddControlToDiagram(ssVm, ssControl, 200, 100);
+
+
+
+
+	}
+
+    private void AddControlToDiagram(IControlBase controlVm, UserControl control, double x, double y)
+    {
+		var userControl = new RadDiagramShape();
+
+		userControl.Position = new Point(x, y);
+		userControl.Width = controlVm.Width;
+		userControl.Height = controlVm.Height;
+		userControl.Content = control;
+		userControl.Background = new SolidColorBrush(controlVm.BackgroundColor);
+		userControl.BorderBrush = new SolidColorBrush(controlVm.BackgroundColor);
+		userControl.BorderThickness = new Thickness(1);
+		userControl.UseGlidingConnector = true;
+		userControl.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+		userControl.VerticalContentAlignment = VerticalAlignment.Stretch;
+
+		userControl.Connectors.Clear();
+		var leftCon = new RadDiagramConnector()
+		{
+			Offset = new Point(0, 0.5),
+			Name = "LeftConnector"
+		};
+		var rightCon = new RadDiagramConnector()
+		{
+			Offset = new Point(1, 0.5),
+			Name = "RightConnector"
+		};
+		var topCon = new RadDiagramConnector()
+		{
+			Offset = new Point(0.5, 0),
+			Name = "TopConnector"
+		};
+		var bottomCon = new RadDiagramConnector()
+		{
+			Offset = new Point(0.5, 1),
+			Name = "BottomConnector"
+		};
+
+		if (controlVm.AreConnectorsEnabled)
+		{
+			userControl.Connectors.Add(leftCon);
+			userControl.Connectors.Add(rightCon);
+			userControl.Connectors.Add(topCon);
+			userControl.Connectors.Add(bottomCon);
+		}
+
+		diagram.AddShape(userControl);
+	}
+
+	#endregion
 }
