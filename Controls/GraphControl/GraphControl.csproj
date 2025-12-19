@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0-windows</TargetFramework>
+        <TargetFramework>net10.0-windows7.0</TargetFramework>
         <LangVersion>latestmajor</LangVersion>
         <Nullable>enable</Nullable>
         <UseWPF>true</UseWPF>
@@ -25,7 +25,7 @@
 
     <ItemGroup>
       <None Remove="Icons\GraphControl.png" />
-      <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.8" />
+      <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.9" />
       <ProjectReference Include="..\..\Common\WpfComm\WpfComm.csproj" />
       <ProjectReference Include="..\Control\Control.csproj" />
       <Resource Include="Icons\GraphControl.png" />
