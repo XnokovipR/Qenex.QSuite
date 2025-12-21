@@ -7,11 +7,25 @@ namespace Qenex.QSuite.Controls.SingleSignalControl.ViewModels;
 
 public class SingleSignalControlViewModel : ControlBase
 {
+	private Dictionary<int, Color> colors = new Dictionary<int, Color>()
+	{
+		[0] = Colors.Red,
+		[1] = Colors.Blue,
+		[2] = Colors.Yellow,
+		[3] = Colors.Orange,
+		[4] = Colors.Green,
+		[5] = Colors.Purple,
+		[6] = Colors.Brown,
+		[7] = Colors.Cyan,
+		[8] = Colors.Magenta,
+		[9] = Colors.Lime
+	};
+	
     public SingleSignalControlViewModel()
     {
 		Width = 300;
 		Height = 200;
-		BackgroundColor = Colors.LightGray;
+		BackgroundColor = colors[new Random().Next(colors.Count)];
 	}
 
     public string Text { get; set; }

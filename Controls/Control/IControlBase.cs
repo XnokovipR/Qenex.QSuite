@@ -11,23 +11,36 @@ public interface IControlBase
 	//todo: IControl - add acceptable variable types
 	//todo: IControl - add Variables (protocol or classical)
 
+	/// <summary>
+	/// Full name of the control.
+	/// </summary>
 	string ControlName { get; }
+	
+	/// <summary>
+	/// Simplified label of the control showed in Controls Toolbox.
+	/// </summary>
 	string Label { get; }
+	
+	/// <summary>
+	/// Icon of the control showed in Controls Toolbox.
+	/// </summary>
 	BitmapImage Icon { get; }
+	
+	/// <summary>
+	/// Description of the control showed in Controls Toolbox.
+	/// </summary>
 	string Description { get; }
+	
+	/// <summary>
+	/// Minimum height of the control.
+	/// </summary>
 	int MinHeight { get; }
+	
+	/// <summary>
+	/// Minimum width of the control.
+	/// </summary>
 	int MinWidth { get; }
-
-
-	/// <summary>
-	/// Variables shown in the control.
-	/// </summary>
-	//ObservableCollection<IControlVariable> Variables { get; set; }
-
-	/// <summary>
-	/// Custom user control properties.
-	/// </summary>
-	//Dictionary<string, object> Tags { get; set; }
+	
 
 	/// <summary>
 	/// Control horizontal position of the left upper corner.
@@ -55,5 +68,23 @@ public interface IControlBase
 	/// </summary>
 	bool AreConnectorsEnabled { get; set; }
 
+	/// <summary>
+	/// Background color of the control.
+	/// </summary>
 	Color BackgroundColor { get; set; }
+	
+	/// <summary>
+	/// Color of the label text background.
+	/// </summary>
+	Color LabelBackgroundColor { get; set; }
+	
+	/// <summary>
+	/// Color of the label text.
+	/// </summary>
+	Color LabelColor { get; set; }
+	
+	/// <summary>
+	/// Indicates whether the control is locked for editing (moving, resizing, etc.).
+	/// </summary>
+	bool IsLocked { get; set; }
 }

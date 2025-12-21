@@ -7,13 +7,6 @@ namespace Qenex.QSuite.Controls.Control;
 
 public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlBase
 {
-	private int x;
-	private int y;
-	private int width;
-	private int height;
-	private bool areConnectorsEnabled;
-	private Color backgroundColor;
-
 	protected ControlBase()
 	{
 		Width = MinWidth;
@@ -29,14 +22,17 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 
 	public abstract string Description { get; }
 
-	public virtual int MinHeight => 50;
+	public int MinHeight => 50;
 
-	public virtual int MinWidth => 100;
+	public int MinWidth => 100;
 
-	public int X { get => x; set { x = value; OnPropertyChanged(); } }
-	public int Y { get => y; set { y = value; OnPropertyChanged(); } }
-	public int Width { get => width; set { width = value; OnPropertyChanged(); } }
-	public int Height { get => height; set { height = value; OnPropertyChanged(); } }
-	public bool AreConnectorsEnabled { get => areConnectorsEnabled; set { areConnectorsEnabled = value; OnPropertyChanged(); } }
-	public Color BackgroundColor { get => backgroundColor; set { backgroundColor = value; OnPropertyChanged(); } }
+	public int X { get; set { field = value; OnPropertyChanged(); } }
+	public int Y { get; set { field = value; OnPropertyChanged(); } }
+	public int Width { get; set { field = value; OnPropertyChanged(); } }
+	public int Height { get; set { field = value; OnPropertyChanged(); } }
+	public bool AreConnectorsEnabled { get; set { field = value; OnPropertyChanged(); } }
+	public Color BackgroundColor { get; set { field = value; OnPropertyChanged(); } }
+	public Color LabelBackgroundColor { get; set { field = value; OnPropertyChanged(); } }
+	public Color LabelColor { get; set { field = value; OnPropertyChanged(); } }
+	public bool IsLocked { get; set { field = value; OnPropertyChanged(); } }
 }

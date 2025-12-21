@@ -7,10 +7,8 @@ using System.Windows.Media;
 
 namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
-public class GraphControlViewModel : ControlBase
+public sealed class GraphControlViewModel : ControlBase
 {
-	private string text;
-
 	public GraphControlViewModel()
     {
         var rnd = new Random();
@@ -20,7 +18,7 @@ public class GraphControlViewModel : ControlBase
         BackgroundColor = Colors.Aqua;
 	}
 
-	public string Text { get => text; set { text = value; OnPropertyChanged(); } }
+	public string Text { get; set { field = value; OnPropertyChanged(); } }
 
 	public override string ControlName => "GraphControl";
     public override string Label => "Graph";

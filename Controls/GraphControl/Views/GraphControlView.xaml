@@ -7,7 +7,7 @@
              xmlns:vm="clr-namespace:Qenex.QSuite.Controls.GraphControl.ViewModels"
              d:DataContext="{d:DesignInstance vm:GraphControlViewModel, IsDesignTimeCreatable=False}"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="80">
+             d:DesignHeight="80" d:DesignWidth="250">
 
 	<TextBlock Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                FontSize="24" 
