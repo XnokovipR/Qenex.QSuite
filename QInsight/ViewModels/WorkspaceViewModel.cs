@@ -27,10 +27,6 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     private static readonly Brush LightBackgroundColor = new SolidColorBrush(Colors.White);
     
     private bool isViewLoaded;
-    private Brush gridLineColor = new SolidColorBrush(Colors.WhiteSmoke);
-    private bool isGridVisible = true;
-    private Brush backgroundColor = new SolidColorBrush(Colors.DimGray);
-    private bool isPageGridVisible = false;
 
     #endregion
     
@@ -48,10 +44,13 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     #region Properties
 
-    public Brush BackgroundColor { get => backgroundColor; set { backgroundColor = value; OnPropertyChanged(); }}
-    public Brush GridLineColor { get => gridLineColor; set { gridLineColor = value; OnPropertyChanged(); } }
-    public bool IsGridVisible { get => isGridVisible; set { isGridVisible = value; OnPropertyChanged();} }
-    public bool IsPageGridVisible { get => isPageGridVisible; set { isPageGridVisible = value; OnPropertyChanged(); } }
+    public Brush BackgroundColor { get; set { field = value; OnPropertyChanged(); }}
+    public Brush GridLineColor { get; set { field = value; OnPropertyChanged(); } }
+
+    public bool IsGridVisible { get; set { field = value; OnPropertyChanged(); } } = true;
+    public bool IsPageGridVisible { get; set { field = value; OnPropertyChanged(); } } = false;
+    public double GridCellSize { get; set { field = value; OnPropertyChanged(); } } = 20;
+    public bool IsSnapToGridEnabled { get; set { field = value; OnPropertyChanged(); } } = true;
 
     //public RelayCommand<UserControl> WorkspaceViewLoadedCommand { get; set; }
     public RelayCommand<RadDiagram> WorkspaceViewLoadedCommand { get; set; }
@@ -93,25 +92,28 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
         if (isViewLoaded) return;
          isViewLoaded = true;
          diagram = radDiagram;
-
-		var graphVm = new GraphControlViewModel();
-		var graphControl = new GraphControlView()
-		{
-			DataContext = graphVm,
-		};
-        AddControlToDiagram(graphVm, graphControl, 20, 100);
-
-		var ssVm = new SingleSignalControlViewModel();
-		var ssControl = new SingleSignalControlView()
-		{
-			DataContext = ssVm,
-		};
-		AddControlToDiagram(ssVm, ssControl, 200, 100);
-
-
-
-
+         GridCellSize = Telerik.Windows.Controls.Diagrams.Primitives.BackgroundGrid.GetCellSize(diagram).Height;
 	}
+
+     public void AddControlToDiagram(IControlBase iControl, double x, double y)
+     {
+	     var viewTypeName = iControl.GetType().AssemblyQualifiedName?.Replace("Model", string.Empty);
+	     if (viewTypeName == null)
+	     {
+		     return;
+	     }
+	     var viewType = Type.GetType(viewTypeName);
+
+	     if (viewType == null)
+	     {
+		     return;
+	     }
+	     
+	     var iControlView = (UserControl) Activator.CreateInstance(viewType)!;
+	     iControlView.DataContext = iControl;
+	     
+	     AddControlToDiagram(iControl, iControlView, x, y);
+     }
 
     private void AddControlToDiagram(IControlBase controlVm, UserControl control, double x, double y)
     {

@@ -8,18 +8,25 @@
              xmlns:primitives="clr-namespace:Telerik.Windows.Controls.Diagrams.Primitives;assembly=Telerik.Windows.Controls.Diagrams"
              xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
+             xmlns:dragdrop="clr-namespace:Qenex.QInsight.DragDrop"
              d:DataContext="{d:DesignInstance vm:WorkspaceViewModel, IsDesignTimeCreatable=False}"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300"
              x:Name="WorkspaceUserControl">
     
+    <!-- primitives:BackgroundGrid.CellSize="{Binding GridCellSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" -->
     <telerik:RadDiagram
         Name="RadDiagram"
         primitives:BackgroundGrid.IsDynamic="True"
+        IsSnapToGridEnabled="{Binding IsSnapToGridEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
         Background="{Binding BackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
         primitives:BackgroundGrid.IsGridVisible="{Binding IsGridVisible, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
         primitives:BackgroundGrid.LineStroke="{Binding GridLineColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
         primitives:BackgroundPageGrid.IsGridVisible="{Binding IsPageGridVisible, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+        
+        <i:Interaction.Behaviors>
+            <dragdrop:WorkspaceDragAndDropBehavior />
+        </i:Interaction.Behaviors>
     </telerik:RadDiagram>
     
     <i:Interaction.Triggers>
