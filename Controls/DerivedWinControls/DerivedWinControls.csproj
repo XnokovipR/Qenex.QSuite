@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AssemblyName>Qenex.QSuite.Controls.OverridenWinControls</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Controls.OverridenWinControls</RootNamespace>
+    </PropertyGroup>
+
+</Project>
