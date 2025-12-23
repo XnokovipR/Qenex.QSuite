@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:Qenex.QSuite.Controls.SignalControl.Views"
              xmlns:vm="clr-namespace:Qenex.QSuite.Controls.SignalControl.ViewModels"
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
              mc:Ignorable="d"
              d:DesignHeight="60" d:DesignWidth="100"
              d:DataContext="{d:DesignInstance vm:SignalControlViewModel, IsDesignTimeCreatable=False}">
@@ -25,17 +26,17 @@
 		</StackPanel>
 		
 		<StackPanel Grid.Row="1" Orientation="Vertical" Margin="3">
-			<TextBlock Text="{Binding VariableLabel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+			<q:QTextBlock Text="{Binding VariableLabel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
 			           Margin="0,0,0,3" TextWrapping="NoWrap"/>
 			
 			<StackPanel Orientation="Horizontal" HorizontalAlignment="Left">	
-				<TextBox Text="{Binding VariableValue, Mode=TwoWay, UpdateSourceTrigger=Default}"
+				<q:QTextBox Text="{Binding VariableValue, Mode=TwoWay, UpdateSourceTrigger=Default}"
 				         MinWidth="40" IsReadOnly="True"/>
 				
 				<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5,0,0,0">
-					<TextBlock Text="[" Margin="0,0,3,0"/>
-					<TextBlock Text="{Binding VariableUnit, Mode=TwoWay, UpdateSourceTrigger=Default}"/>
-					<TextBlock Text="]" Margin="3,0,0,0"/>
+					<q:QTextBlock Text="[" Margin="0,0,3,0"/>
+					<q:QTextBlock Text="{Binding VariableUnit, Mode=TwoWay, UpdateSourceTrigger=Default}"/>
+					<q:QTextBlock Text="]" Margin="3,0,0,0"/>
 				</StackPanel>
 			</StackPanel>
 		</StackPanel>

@@ -133,6 +133,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalControl", "Controls\S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Control", "Controls\Control\Control.csproj", "{AC786CC9-B0C3-4FE0-BE81-DD7688165754}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DerivedWinControls", "Controls\DerivedWinControls\DerivedWinControls.csproj", "{ACAC97CF-3310-4FC4-9F56-7C868F40A175}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -299,6 +301,10 @@ Global
 		{AC786CC9-B0C3-4FE0-BE81-DD7688165754}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AC786CC9-B0C3-4FE0-BE81-DD7688165754}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AC786CC9-B0C3-4FE0-BE81-DD7688165754}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACAC97CF-3310-4FC4-9F56-7C868F40A175}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACAC97CF-3310-4FC4-9F56-7C868F40A175}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACAC97CF-3310-4FC4-9F56-7C868F40A175}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACAC97CF-3310-4FC4-9F56-7C868F40A175}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -356,6 +362,7 @@ Global
 		{FDA9B35F-4CEA-4E3B-926A-1AE27A04E7BE} = {FA456E72-5D93-4641-9B58-DB7F4F1855F2}
 		{8E2473DD-F5D1-4A7D-9D78-470C7020AA01} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
 		{AC786CC9-B0C3-4FE0-BE81-DD7688165754} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
+		{ACAC97CF-3310-4FC4-9F56-7C868F40A175} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {30000164-E084-4EF1-818A-1B98829BA5EA}

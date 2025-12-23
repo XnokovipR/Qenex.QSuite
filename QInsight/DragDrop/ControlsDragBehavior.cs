@@ -1,6 +1,9 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using Microsoft.Xaml.Behaviors;
+using Qenex.QInsight.AppConfig;
+using Qenex.QInsight.Views;
 using Qenex.QSuite.Controls.Control;
 using Telerik.Windows.DragDrop;
 using Brushes = System.Windows.Media.Brushes;
@@ -26,17 +29,25 @@ public class ControlsDragBehavior : Behavior<ItemsControl>
         payload.SetData("NewDraggedControlDragVisual", dragVisualControl);
         e.Data = payload;
 
+        var bgColor = ShellWindow.MainAppSettings.Design.AppTheme == ApplicationTheme.Dark
+            ? ShellWindow.MainAppSettings.Design.DarkThemeControlBackgroundColor
+            : ShellWindow.MainAppSettings.Design.LightThemeControlBackgroundColor;
+        
+        var fgColor = ShellWindow.MainAppSettings.Design.AppTheme == ApplicationTheme.Dark
+            ? ShellWindow.MainAppSettings.Design.DarkThemeTextColor
+            : ShellWindow.MainAppSettings.Design.LightThemeTextColor;
         var border = new Border
         {
             Height = control.Height,
             Width = control.Width,
-            Background = Brushes.Gray,
+            Background = new SolidColorBrush(bgColor),
             BorderBrush = Brushes.Black,
             BorderThickness = new Thickness(1),
             Child = new TextBlock
             {
                 FontSize = 14,
                 Text = control.Label,
+                Foreground = new SolidColorBrush(fgColor),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             }

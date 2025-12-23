@@ -23,6 +23,7 @@
       <ProjectReference Include="..\..\Common\WpfComm\WpfComm.csproj" />
       <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
       <ProjectReference Include="..\Control\Control.csproj" />
+      <ProjectReference Include="..\DerivedWinControls\DerivedWinControls.csproj" />
     </ItemGroup>
 
     <ItemGroup>

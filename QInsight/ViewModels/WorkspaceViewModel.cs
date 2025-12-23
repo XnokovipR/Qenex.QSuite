@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.Views;
 using Telerik.Windows.Diagrams.Core;
 using Qenex.QLibs.QUI;
@@ -118,7 +119,9 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     private void AddControlToDiagram(IControlBase controlVm, UserControl control, double x, double y)
     {
 		var userControl = new RadDiagramShape();
-		controlVm.DiagramShape = userControl; 
+		controlVm.DiagramShape = userControl;
+		controlVm.BackgroundColor = ShellWindow.MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? 
+			ShellWindow.MainAppSettings.Design.DarkThemeControlBackgroundColor : ShellWindow.MainAppSettings.Design.LightThemeControlBackgroundColor;
 		userControl.Position = new Point(x, y);
 		userControl.Width = controlVm.Width;
 		userControl.Height = controlVm.Height;
