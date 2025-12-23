@@ -4,8 +4,8 @@ using Qenex.QSuite.Controls.Control;
 using Telerik.Windows.Controls;
 using Qenex.QSuite.Controls.GraphControl;
 using Qenex.QSuite.Controls.GraphControl.ViewModels;
-using Qenex.QSuite.Controls.SingleSignalControl.Views;
-using Qenex.QSuite.Controls.SingleSignalControl.ViewModels;
+using Qenex.QSuite.Controls.SignalControl.Views;
+using Qenex.QSuite.Controls.SignalControl.ViewModels;
 
 namespace Qenex.QInsight.ViewModels;
 
@@ -53,7 +53,7 @@ public class ControlsViewModel : ViewModelBase
         var gc = new GraphControlViewModel();
         Controls.Add(gc);
 
-        var sc = new SingleSignalControlViewModel();
+        var sc = new SignalControlViewModel();
         Controls.Add(sc);
         
         isUserControlLoaded = true;

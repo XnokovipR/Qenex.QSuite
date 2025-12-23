@@ -7,6 +7,7 @@ using Qenex.QInsight.Views;
 using Telerik.Windows.Controls;
 using Telerik.Windows.Controls.External;
 using System.Runtime.InteropServices;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Navigation;

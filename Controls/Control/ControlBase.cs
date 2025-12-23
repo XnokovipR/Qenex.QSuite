@@ -2,6 +2,8 @@
 using Qenex.QLibs.QUI;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Qenex.QSuite.Protocols.Protocol;
+using Telerik.Windows.Controls;
 
 namespace Qenex.QSuite.Controls.Control;
 
@@ -12,8 +14,13 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 		Width = MinWidth;
 		Height = MinHeight;
 		AreConnectorsEnabled = false;
+		Variables = [];
 	}
 
+	#region Properties
+	
+	public RadDiagramShape? DiagramShape { get; set; }
+	
 	public abstract string ControlName { get; }
 
 	public abstract string Label { get; }
@@ -31,8 +38,28 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 	public int Width { get; set { field = value; OnPropertyChanged(); } }
 	public int Height { get; set { field = value; OnPropertyChanged(); } }
 	public bool AreConnectorsEnabled { get; set { field = value; OnPropertyChanged(); } }
-	public Color BackgroundColor { get; set { field = value; OnPropertyChanged(); } }
-	public Color LabelBackgroundColor { get; set { field = value; OnPropertyChanged(); } }
-	public Color LabelColor { get; set { field = value; OnPropertyChanged(); } }
+
+	public Color BackgroundColor
+	{
+		get;
+		set
+		{
+			field = value;
+			OnPropertyChanged();
+			DiagramShape?.Background = new SolidColorBrush(value);
+		}
+	} = Colors.White;//Color.FromRgb(90, 90, 90);
+	
 	public bool IsLocked { get; set { field = value; OnPropertyChanged(); } }
+	public bool IsRun { get; set { field = value; OnPropertyChanged(); } }
+	public List<IProtocolVariable> Variables { get; set { field = value; OnPropertyChanged(); } }
+
+	#endregion
+
+	#region Public methods
+
+	public abstract Task UpdateVariableValueAsync(IProtocolVariable variable);
+	public abstract void BindVariable(IProtocolVariable protVariable);
+
+	#endregion
 }

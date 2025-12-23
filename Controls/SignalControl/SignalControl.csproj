@@ -5,8 +5,10 @@
         <Nullable>enable</Nullable>
         <UseWPF>true</UseWPF>
         <ImplicitUsings>enable</ImplicitUsings>
-        <AssemblyName>Qenex.QSuite.Controls.SingleSignalControl</AssemblyName>
-        <RootNamespace>Qenex.QSuite.Controls.SingleSignalControl</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Controls.SignalControl</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Controls.SignalControl</RootNamespace>
+        <Company>Qenex.QSuite.Controls.SignalControl</Company>
+        <Product>Qenex.QSuite.Controls.SignalControl</Product>
     </PropertyGroup>
 
     <ItemGroup>

@@ -1,5 +1,7 @@
 ﻿using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Qenex.QSuite.Protocols.Protocol;
+using Telerik.Windows.Controls;
 
 namespace Qenex.QSuite.Controls.Control;
 
@@ -8,9 +10,14 @@ namespace Qenex.QSuite.Controls.Control;
 /// </summary>
 public interface IControlBase
 {
-	//todo: IControl - add acceptable variable types
-	//todo: IControl - add Variables (protocol or classical)
 
+	#region Properties
+	
+	/// <summary>
+	/// Diagram shape associated with the control.
+	/// </summary>
+	RadDiagramShape? DiagramShape { get; set; }
+	
 	/// <summary>
 	/// Full name of the control.
 	/// </summary>
@@ -74,17 +81,23 @@ public interface IControlBase
 	Color BackgroundColor { get; set; }
 	
 	/// <summary>
-	/// Color of the label text background.
-	/// </summary>
-	Color LabelBackgroundColor { get; set; }
-	
-	/// <summary>
-	/// Color of the label text.
-	/// </summary>
-	Color LabelColor { get; set; }
-	
-	/// <summary>
 	/// Indicates whether the control is locked for editing (moving, resizing, etc.).
 	/// </summary>
 	bool IsLocked { get; set; }
+	bool IsRun { get; set; }
+	
+	/// <summary>
+	/// Variables binded to the control.
+	/// </summary>
+	List<IProtocolVariable> Variables { get; set; }
+	
+	#endregion
+
+	#region Public methods
+
+	Task UpdateVariableValueAsync(IProtocolVariable variable);
+	
+	void BindVariable(IProtocolVariable protVariable);
+
+	#endregion
 }

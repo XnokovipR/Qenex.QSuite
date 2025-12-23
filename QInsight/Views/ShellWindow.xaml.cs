@@ -5,6 +5,7 @@ using System.Windows.Interop;
 using Microsoft.Win32;
 using Qenex.QInsight.AppConfig;
 using System.Runtime.InteropServices;
+using System.Windows.Controls;
 
 namespace Qenex.QInsight.Views;
 
@@ -35,6 +36,26 @@ public partial class ShellWindow : Window
 			Windows11ThemeSizeHelper.Helper.IsInCompactMode = true;
 			Windows11Palette.Palette.FontSize = MainAppSettings.Design.FontSize;
 			Windows11Palette.LoadPreset(MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? Windows11Palette.ColorVariation.Dark : Windows11Palette.ColorVariation.Light);
+			
+			var textboxStyle = new Style(typeof(TextBox));
+			var textblockStyle = new Style(typeof(TextBlock));
+			if (MainAppSettings.Design.AppTheme == ApplicationTheme.Dark)
+			{
+				textblockStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(Colors.White)));
+				
+				textboxStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(Colors.White)));
+				textboxStyle.Setters.Add(new Setter(BackgroundProperty, new SolidColorBrush(Color.FromRgb(80, 80, 80))));	
+			}
+			else
+			{
+				textblockStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(Colors.Black)));
+				
+				textboxStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(Colors.Black)));
+				textboxStyle.Setters.Add(new Setter(BackgroundProperty, new SolidColorBrush(Colors.White)));				
+			}
+			
+			Resources.Add(typeof(TextBox), textboxStyle);
+			Resources.Add(typeof(TextBlock), textblockStyle);
 		}
 		catch (Exception exception)
 		{

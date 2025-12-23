@@ -4,6 +4,7 @@ using Qenex.QLibs.QUI;
 using Qenex.QSuite.Controls.Control;
 using System.Drawing;
 using System.Windows.Media;
+using Qenex.QSuite.Protocols.Protocol;
 
 namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
@@ -24,4 +25,13 @@ public sealed class GraphControlViewModel : ControlBase
     public override string Label => "Graph";
     public override BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/GraphControl.png");
     public override string Description => "Graph Control for displaying data in a graphical format.";
+    public override Task UpdateVariableValueAsync(IProtocolVariable variable)
+    {
+	    return Task.CompletedTask;
+    }
+
+    public override void BindVariable(IProtocolVariable protVariable)
+    {
+	    
+    }
 }

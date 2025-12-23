@@ -10,8 +10,8 @@ using Qenex.QSuite.LogSystems.LogSystem;
 using Telerik.Windows.Controls;
 using Telerik.Windows.Controls.ColorEditor.ColorSchemas;
 using Telerik.Windows.Controls.Diagrams;
-using Qenex.QSuite.Controls.SingleSignalControl.ViewModels;
-using Qenex.QSuite.Controls.SingleSignalControl.Views;
+using Qenex.QSuite.Controls.SignalControl.ViewModels;
+using Qenex.QSuite.Controls.SignalControl.Views;
 using Qenex.QSuite.Controls.Control;
 
 
@@ -118,13 +118,13 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     private void AddControlToDiagram(IControlBase controlVm, UserControl control, double x, double y)
     {
 		var userControl = new RadDiagramShape();
-
+		controlVm.DiagramShape = userControl; 
 		userControl.Position = new Point(x, y);
 		userControl.Width = controlVm.Width;
 		userControl.Height = controlVm.Height;
 		userControl.Content = control;
 		userControl.Background = new SolidColorBrush(controlVm.BackgroundColor);
-		userControl.BorderBrush = new SolidColorBrush(controlVm.BackgroundColor);
+		userControl.BorderBrush = new SolidColorBrush(Colors.Black);
 		userControl.BorderThickness = new Thickness(1);
 		userControl.UseGlidingConnector = true;
 		userControl.HorizontalContentAlignment = HorizontalAlignment.Stretch;
