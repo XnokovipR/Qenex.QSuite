@@ -8,13 +8,16 @@
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
              xmlns:conv="clr-namespace:Qenex.QInsight.Converters"
              xmlns:wrappers="clr-namespace:Qenex.QInsight.ViewModels.SolutionExplorerWrappers"
+             xmlns:dragdrop="clr-namespace:Qenex.QInsight.DragDrop"
              xmlns:viewableItem="clr-namespace:Qenex.QInsight.ViewModels.ViewableItem"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300">
     
     <UserControl.Resources> 
-        <Style TargetType="telerik:RadTreeViewItem" BasedOn="{StaticResource RadTreeViewItemStyle}">
+        <Style x:Key="RadTreeViewItemStyle" TargetType="telerik:RadTreeViewItem" BasedOn="{StaticResource RadTreeViewItemStyle}">
             <Setter Property="ExpanderButtonMinWidth" Value="18"/> 
+            <Setter Property="telerik:DragDropManager.AllowDrag" Value="True"></Setter>
+            <Setter Property="telerik:DragDropManager.AllowCapturedDrag" Value="True"></Setter>
         </Style>         
         
         <conv:TypeNameToVisibilityConverter x:Key="ContextMenuVisibilityConverter"/>
@@ -30,7 +33,7 @@
             ItemsIndent="20"
             IsRootLinesEnabled="False" 
             HorizontalAlignment="Left"
-            IsDragDropEnabled="False"
+            ItemContainerStyle="{StaticResource RadTreeViewItemStyle}"
             ScrollViewer.HorizontalScrollBarVisibility="Auto"
             ScrollViewer.VerticalScrollBarVisibility="Auto">
             
@@ -69,6 +72,11 @@
                     </StackPanel>
                 </HierarchicalDataTemplate>
             </telerik:RadTreeView.ItemTemplate>
+            
+            <i:Interaction.Behaviors>
+                <dragdrop:VariableDragAndDropBehavior/>
+            </i:Interaction.Behaviors>
+            
         </telerik:RadTreeView>
     </Grid>
 </UserControl>

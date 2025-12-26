@@ -11,15 +11,21 @@ using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class VariableWrapper(IVariableBase variable) : PropertyChangedBase, IViewableItem
+public class VariableWrapper : PropertyChangedBase, IViewableItem
 {
+    public VariableWrapper(IVariableBase variable)
+    {
+        Variable = variable;
+    }
     #region UI Properties
     
     public string Label
     {
-        get => $"{variable.Label} ({variable.Id})";
-        set { variable.Label = $"{value} ({variable.Id})"; OnPropertyChanged(); }
+        get => $"{Variable.Label} ({Variable.Id})";
+        set { Variable.Label = $"{value} ({Variable.Id})"; OnPropertyChanged(); }
     }
+
+    public IVariableBase Variable { get; set; }
     
     public FontWeight LabelWeight => FontWeights.Normal;
 
@@ -38,14 +44,14 @@ public class VariableWrapper(IVariableBase variable) : PropertyChangedBase, IVie
         var sb = new StringBuilder();
         sb.Append("Variable:");
         sb.Append(Environment.NewLine);
-        sb.Append($"Label\t{variable.Label}");
+        sb.Append($"Label\t{Variable.Label}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Name\t{variable.Name}");
+        sb.Append($"Name\t{Variable.Name}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Descr.\t{variable.Description}");
+        sb.Append($"Descr.\t{Variable.Description}");
         sb.Append(Environment.NewLine);
 
-        if (variable is ScalarVariable scalarVariable)
+        if (Variable is ScalarVariable scalarVariable)
         {
             sb.Append($"Size\t{scalarVariable.Size}");
             sb.Append(Environment.NewLine);
