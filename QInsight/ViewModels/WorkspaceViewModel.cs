@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Media;
 using Qenex.QInsight.AppConfig;
+using Qenex.QInsight.DragDrop;
 using Qenex.QInsight.Views;
 using Telerik.Windows.Diagrams.Core;
 using Qenex.QLibs.QUI;
@@ -14,6 +15,8 @@ using Telerik.Windows.Controls.Diagrams;
 using Qenex.QSuite.Controls.SignalControl.ViewModels;
 using Qenex.QSuite.Controls.SignalControl.Views;
 using Qenex.QSuite.Controls.Control;
+using Qenex.QSuite.Variables.QVariables;
+using Telerik.Windows.DragDrop;
 
 
 namespace Qenex.QInsight.ViewModels;
@@ -132,6 +135,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 		userControl.UseGlidingConnector = true;
 		userControl.HorizontalContentAlignment = HorizontalAlignment.Stretch;
 		userControl.VerticalContentAlignment = VerticalAlignment.Stretch;
+		userControl.AllowDrop = true;
 
 		userControl.Connectors.Clear();
 		var leftCon = new RadDiagramConnector()
@@ -162,9 +166,43 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 			userControl.Connectors.Add(topCon);
 			userControl.Connectors.Add(bottomCon);
 		}
+		
+		DragDropManager.AddPreviewDragOverHandler(userControl, OnVariableDragOver);
+		DragDropManager.AddDragLeaveHandler(userControl, OnVariableDragLeave);
+		DragDropManager.AddDropHandler(userControl, OnVariableDrop);
 
 		diagram.AddShape(userControl);
 	}
+    
+    private void OnVariableDragOver(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
+    {
+	    var variable = DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
+	    if (variable is IVariableBase)
+	    {
+		    VariableDragAndDropBehavior.IsOverValidTarget = true;
+		    e.Effects = DragDropEffects.All;
+		    e.Handled = true;
+	    }
+    }
+    
+    private void OnVariableDragLeave(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
+    {
+	    VariableDragAndDropBehavior.IsOverValidTarget = false;
+    }
+    
+    private void OnVariableDrop(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
+    {
+	    var variable = DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
+	    if (variable is not IVariableBase varBase) return;
+    
+	    if (sender is not RadDiagramShape shape) return;
+	    if (shape.Content is not UserControl uc) return;
+	    if (uc.DataContext is not IControlBase control) return;
+	    
+	    control.BindVariable(varBase);
+	    VariableDragAndDropBehavior.IsOverValidTarget = false;
+	    e.Handled = true;
+    }
 
 	#endregion
 }

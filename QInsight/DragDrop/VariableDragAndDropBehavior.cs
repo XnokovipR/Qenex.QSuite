@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Xaml.Behaviors;
 using Qenex.QInsight.AppConfig;
@@ -13,10 +14,13 @@ namespace Qenex.QInsight.DragDrop;
 
 public class VariableDragAndDropBehavior : Behavior<ItemsControl>
 {
+    public static bool IsOverValidTarget { get; set; }
+    
     protected override void OnAttached()
     {
         base.OnAttached();
         DragDropManager.AddDragInitializeHandler(AssociatedObject, OnDragInitialized);
+        DragDropManager.AddGiveFeedbackHandler(AssociatedObject, OnGiveFeedback);
     }
     
     private void OnDragInitialized(object sender, DragInitializeEventArgs e)
@@ -53,9 +57,14 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         dragVisualControl.Content = content;
         
         e.DragVisual = dragVisualControl;
-        e.DragVisualOffset = new Point(e.RelativeStartPoint.X-10, e.RelativeStartPoint.Y-10);
+        e.DragVisualOffset = new Point(e.RelativeStartPoint.X, e.RelativeStartPoint.Y);
         e.Handled = true;
     }
     
+    private void OnGiveFeedback(object sender, Telerik.Windows.DragDrop.GiveFeedbackEventArgs e)
+    {
+        e.SetCursor(IsOverValidTarget ? Cursors.Hand : Cursors.No);
+        e.Handled = true;
+    }
     
 }

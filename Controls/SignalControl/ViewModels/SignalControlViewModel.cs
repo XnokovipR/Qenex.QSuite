@@ -14,9 +14,9 @@ public class SignalControlViewModel : ControlBase
 		Width = 100;
 		Height = 60;
 		
-		VariableLabel = "Oil Temperature";
-		VariableValue = "85.3";
-		VariableUnit = "°C";
+		VariableLabel = "----------";
+		VariableValue = "";
+		VariableUnit = "";
     }
 
     #region Properties
@@ -40,9 +40,9 @@ public class SignalControlViewModel : ControlBase
 
     #region Public methods
 
-    public override Task UpdateVariableValueAsync(IProtocolVariable protVariable)
+    public override Task UpdateVariableValueAsync(IVariableBase protVariable)
     {
-	    VariableValue = protVariable.Variable switch
+	    VariableValue = protVariable switch
 	    {
 		    ScalarVariable scVar => scVar.Values.ToString(),
 		    StringVariable stVar => stVar.Values
@@ -51,11 +51,11 @@ public class SignalControlViewModel : ControlBase
 	    return Task.CompletedTask;
     }
 
-    public override void BindVariable(IProtocolVariable protVariable)
+    public override void BindVariable(IVariableBase protVariable)
     {
 	    Variables.Add(protVariable);
-	    VariableLabel = protVariable.Variable.Label;
-	    VariableUnit = protVariable.Variable is ScalarVariable variable ? variable.Values.ValPresentation.Unit : string.Empty;
+	    VariableLabel = protVariable.Label;
+	    VariableUnit = protVariable is ScalarVariable variable ? variable.Values.ValPresentation.Unit : string.Empty;
 	    VariableValue = string.Empty;
     }
 

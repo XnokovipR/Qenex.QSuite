@@ -60,5 +60,4 @@ public class ControlsDragBehavior : Behavior<ItemsControl>
         e.DragVisualOffset = new Point(e.RelativeStartPoint.X, e.RelativeStartPoint.Y);
         e.Handled = true;
     }
-    
 }

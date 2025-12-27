@@ -3,6 +3,7 @@ using Qenex.QLibs.QUI;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
 
 namespace Qenex.QSuite.Controls.Control;
@@ -52,14 +53,14 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 	
 	public bool IsLocked { get; set { field = value; OnPropertyChanged(); } }
 	public bool IsRun { get; set { field = value; OnPropertyChanged(); } }
-	public List<IProtocolVariable> Variables { get; set { field = value; OnPropertyChanged(); } }
+	public List<IVariableBase> Variables { get; set { field = value; OnPropertyChanged(); } }
 
 	#endregion
 
 	#region Public methods
 
-	public abstract Task UpdateVariableValueAsync(IProtocolVariable variable);
-	public abstract void BindVariable(IProtocolVariable protVariable);
+	public abstract Task UpdateVariableValueAsync(IVariableBase variable);
+	public abstract void BindVariable(IVariableBase protVariable);
 
 	#endregion
 }

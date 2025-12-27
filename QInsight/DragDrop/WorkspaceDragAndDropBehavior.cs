@@ -7,6 +7,7 @@ using Telerik.Windows.Controls;
 using Telerik.Windows.DragDrop;
 using System.Windows.Shapes;
 using System.Windows.Media;
+using Qenex.QSuite.Variables.QVariables;
 using DragEventArgs = Telerik.Windows.DragDrop.DragEventArgs;
 
 namespace Qenex.QInsight.DragDrop;
@@ -16,40 +17,20 @@ public class WorkspaceDragAndDropBehavior : Behavior<RadDiagram>
     protected override void OnAttached()
     {
         base.OnAttached();
-        //DragDropManager.AddDragEnterHandler(this.AssociatedObject, OnDragEnter);
+        
         DragDropManager.AddDropHandler(this.AssociatedObject, OnDrop);
     }
     
-    // private void OnDragEnter(object sender, DragEventArgs e)
-    // {
-    //     var draggedControl = DragDropPayloadManager.GetDataFromObject(e.Data, "NewDraggedControl");
-    //     if (draggedControl is not IControlBase control) return;
-    //     
-    //     var dragVisual = DragDropPayloadManager.GetDataFromObject(e.Data, "NewDraggedControlDragVisual");
-    //     if (dragVisual is not ContentControl dragVisualContentControl) return;
-    //     
-    //     if (sender is not RadDiagram radDiagram) return;
-    //     if (radDiagram.DataContext is not WorkspaceViewModel vm) return;
-    //     
-    //     var position = e.GetPosition(radDiagram);
-    //     
-    //     var dragVisualControl = new ContentControl
-    //     {
-    //         Content = new TextBlock() 
-    //         {
-    //             Width = control.Width,
-    //             Height =  control.Height,
-    //             Background = Brushes.Green,
-    //             Text = control.Label,
-    //         }
-    //     };
-    //     e.DragVisual = dragVisualControl;
-    //     e.Effects = DragDropEffects.All;
-    //     e.Handled = true;
-    // }
+    
 
     private void OnDrop(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
     {
+        var variable = DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
+        if (variable is IVariableBase)
+        {
+            return; // Nezpracovávej, nenastavuj e.Handled
+        }
+        
         var control = DragDropPayloadManager.GetDataFromObject(e.Data, "NewDraggedControl");
         if (control is not IControlBase) return;
         

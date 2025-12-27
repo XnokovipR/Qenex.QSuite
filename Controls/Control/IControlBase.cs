@@ -1,6 +1,7 @@
 ﻿using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
 
 namespace Qenex.QSuite.Controls.Control;
@@ -89,15 +90,15 @@ public interface IControlBase
 	/// <summary>
 	/// Variables binded to the control.
 	/// </summary>
-	List<IProtocolVariable> Variables { get; set; }
+	List<IVariableBase> Variables { get; set; }
 	
 	#endregion
 
 	#region Public methods
 
-	Task UpdateVariableValueAsync(IProtocolVariable variable);
+	Task UpdateVariableValueAsync(IVariableBase variable);
 	
-	void BindVariable(IProtocolVariable protVariable);
+	void BindVariable(IVariableBase protVariable);
 
 	#endregion
 }

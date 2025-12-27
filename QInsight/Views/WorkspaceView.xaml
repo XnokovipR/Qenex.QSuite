@@ -25,7 +25,7 @@
         primitives:BackgroundPageGrid.IsGridVisible="{Binding IsPageGridVisible, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
         
         <i:Interaction.Behaviors>
-            <dragdrop:WorkspaceDragAndDropBehavior />
+            <dragdrop:WorkspaceDragAndDropBehavior/>
         </i:Interaction.Behaviors>
     </telerik:RadDiagram>
     
