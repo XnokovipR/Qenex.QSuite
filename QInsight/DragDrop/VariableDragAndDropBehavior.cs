@@ -46,7 +46,7 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         var content = new TextBlock
         {
             FontSize = 14,
-            Text = variable.Label,
+            Text = $"{variable.Label} ({variable.Id})",
             Margin = new Thickness(10),
             Background = new SolidColorBrush(bgColor),
             Foreground = new SolidColorBrush(fgColor),
