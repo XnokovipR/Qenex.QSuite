@@ -31,10 +31,12 @@ public class WorkspaceDragAndDropBehavior : Behavior<RadDiagram>
             return; // Nezpracovávej, nenastavuj e.Handled
         }
         
+        var controlId = (int)DragDropPayloadManager.GetDataFromObject(e.Data, "ControlId"); 
         var control = DragDropPayloadManager.GetDataFromObject(e.Data, "NewDraggedControl");
         if (control is not IControlBase) return;
         
         var newControl = (IControlBase)Activator.CreateInstance(control.GetType())!;
+        newControl.Id = controlId;
         
         if (sender is not RadDiagram radDiagram) return;
         if (radDiagram.DataContext is not WorkspaceViewModel vm) return;
@@ -52,6 +54,9 @@ public class WorkspaceDragAndDropBehavior : Behavior<RadDiagram>
         }
         
         vm.AddControlToDiagram(newControl, snappedX, snappedY);
+        
+        DragDropPayloadManager.SetData(e.Data, "LastControlId", controlId);
+        e.Handled = true;
     }
 
 

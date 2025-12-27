@@ -29,6 +29,8 @@ public class ControlsViewModel : ViewModelBase
     #endregion
     
     #region Properties
+    
+    public int LastControlId { get; set; } = 0;
 
     public ObservableCollection<IControlBase> Controls { get; set; }
     public RelayCommand<RadDocking> UserControlLoadedCommand { get; set; }

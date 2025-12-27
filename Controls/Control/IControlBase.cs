@@ -20,6 +20,11 @@ public interface IControlBase
 	RadDiagramShape? DiagramShape { get; set; }
 	
 	/// <summary>
+	/// Identifier of the control.
+	///	 </summary>
+	int Id { get; set; }
+	
+	/// <summary>
 	/// Full name of the control.
 	/// </summary>
 	string ControlName { get; }

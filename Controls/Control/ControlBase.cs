@@ -20,6 +20,8 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 
 	#region Properties
 	
+	public int Id { get; set; }
+	
 	public RadDiagramShape? DiagramShape { get; set; }
 	
 	public abstract string ControlName { get; }
