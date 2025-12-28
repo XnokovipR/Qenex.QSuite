@@ -70,15 +70,4 @@ public class CanDriver : DriverBase
 
     #endregion
     
-    #region Process received data
-    protected override void ProcessReceivedData<T>(T data)
-    {
-        throw new NotImplementedException();
-    }
-
-    protected override Task ProcessReceivedDataAsync<T>(T data, CancellationToken ct = default)
-    {
-        throw new NotImplementedException();
-    }
-    #endregion
 }

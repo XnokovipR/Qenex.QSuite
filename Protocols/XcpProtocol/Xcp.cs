@@ -7,7 +7,7 @@ using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.Protocols.XcpProtocol;
 
-public class Xcp : ProtocolBase
+public class Xcp : ProtocolBase<int>
 {
     public Xcp()
     {
@@ -57,23 +57,63 @@ public class Xcp : ProtocolBase
         }
     }
 
-    public override IEnumerable<T> Encode<T>(IEnumerable<IProtocolVariable> protocolVariables)
+    public override Task StartAsync(CancellationToken ct = default)
     {
-        if (typeof(T) != typeof(byte))
-        {
-            throw new NotSupportedException();
-        }
-        
-        return (new byte[] { 1, 2, 3 } as IEnumerable<T>)!;
+        throw new NotImplementedException();
     }
 
-    public override IEnumerable<IProtocolVariable> Decode<T>(IEnumerable<T> data)
+    public override Task StopAsync(CancellationToken ct = default)
     {
-        if (typeof(T) != typeof(byte))
-        {
-            throw new NotSupportedException();
-        }
-        
-        return new List<IProtocolVariable>();
+        throw new NotImplementedException();
     }
+
+    public override void Dispose()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Task AddReceivedDataToQueueAsync(IEnumerable<int> data, CancellationToken ct = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override void ProcessReceivedData(IEnumerable<int> data)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override Task ProcessReceivedDataAsync(IEnumerable<int> data, CancellationToken ct = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override IEnumerable<int> Encode(IEnumerable<IProtocolVariable> protocolVariables)
+    {
+        throw new NotImplementedException();
+    }
+
+    protected override IEnumerable<IProtocolVariable> Decode(IEnumerable<int> data)
+    {
+        throw new NotImplementedException();
+    }
+
+    // protected override IEnumerable<T> Encode<T>(IEnumerable<IProtocolVariable> protocolVariables)
+    // {
+    //     if (typeof(T) != typeof(byte))
+    //     {
+    //         throw new NotSupportedException();
+    //     }
+    //     
+    //     return (new byte[] { 1, 2, 3 } as IEnumerable<T>)!;
+    // }
+    //
+    // public override IEnumerable<IProtocolVariable> Decode<T>(IEnumerable<T> data)
+    // {
+    //     if (typeof(T) != typeof(byte))
+    //     {
+    //         throw new NotSupportedException();
+    //     }
+    //     
+    //     return new List<IProtocolVariable>();
+    // }
 }

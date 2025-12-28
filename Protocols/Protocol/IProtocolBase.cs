@@ -9,7 +9,7 @@ namespace Qenex.QSuite.Protocols.Protocol;
 /// <summary>
 /// Common interface for all protocols.
 /// </summary>
-public interface IProtocolBase: IComponentSpecification
+public interface IProtocolBase: ICoreCommunication, IComponentSpecification
 {
     /// <summary>
     /// Id specifies the protocol instance.
@@ -28,8 +28,4 @@ public interface IProtocolBase: IComponentSpecification
     void AddVariable(IProtocolVariable protocolVariable);
     void RemoveProtocolVariable(IProtocolVariable variable);
     void RemoveProtocolVariable(string variableName);
-    
-    IEnumerable<T> Encode<T>(IEnumerable<IProtocolVariable> protocolVariables);
-    IEnumerable<IProtocolVariable> Decode<T>(IEnumerable<T> data);
-    
 }

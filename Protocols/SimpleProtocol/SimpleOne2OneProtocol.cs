@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Collections.Concurrent;
+using System.Reflection;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
@@ -8,9 +9,13 @@ using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.Protocols.SimpleProtocol;
 
-public class SimpleOne2OneProtocol : ProtocolBase
+public class SimpleOne2OneProtocol : ProtocolBase<int>
 {
     #region Fields
+    
+    private volatile bool exitRequested = false;
+    private readonly EventWaitHandle waitHandle;
+    private readonly ConcurrentQueue<int> receivedDataQueue;
     
     #endregion
     
@@ -18,6 +23,9 @@ public class SimpleOne2OneProtocol : ProtocolBase
 
     public SimpleOne2OneProtocol()
     {
+        waitHandle = new AutoResetEvent(false);
+        receivedDataQueue = new ConcurrentQueue<int>();
+        
         Specification = new SpecificationBase()
         {
             Name = "SimpleO2OProtocol",
@@ -75,52 +83,136 @@ public class SimpleOne2OneProtocol : ProtocolBase
     }
 
     #endregion
+    
+    #region Protocol control
+
+    public override Task StartAsync(CancellationToken ct = default)
+    {
+        if (!IsEnabled) return Task.CompletedTask;
+        exitRequested = false;
+        _ = RunLoopAsync(ct);
+
+        return Task.CompletedTask;
+    }
+
+    public override Task StopAsync(CancellationToken ct = default)
+    {
+        exitRequested = true;
+        return Task.CompletedTask;
+    }
+
+    public override void Dispose()
+    {
+        
+    }
+
+    #endregion
+
+    public override Task AddReceivedDataToQueueAsync(IEnumerable<int> data, CancellationToken ct = default)
+    {
+        foreach (var d in data)
+        {
+            receivedDataQueue.Enqueue(d);
+        }
+
+        waitHandle.Set();
+        return Task.CompletedTask;
+    }
+
+    protected override void ProcessReceivedData(IEnumerable<int> data)
+    {
+        var decodedVars = Decode(data);
+        foreach (var variable in decodedVars)
+        {
+            variable.NotifyValueChanged();
+        }
+    }
+
+    protected override async Task ProcessReceivedDataAsync(IEnumerable<int> data, CancellationToken ct = default)
+    {
+        var decodedVars = Decode(data);
+        var notifyTasks = new List<Task>();
+        
+        foreach (var variable in decodedVars)
+        {
+            notifyTasks.Add(variable.NotifyValueChangedAsync());
+        }
+        
+        await Task.WhenAll(notifyTasks);
+    }
 
     #region Encoding and decoding
 
-    public override IEnumerable<T> Encode<T>(IEnumerable<IProtocolVariable> protocolVariables)
+    protected override IEnumerable<int> Encode(IEnumerable<IProtocolVariable> protocolVariables)
     {
         throw new NotImplementedException();
     }
 
-    public override IEnumerable<IProtocolVariable> Decode<T>(IEnumerable<T> data)
+    protected override IEnumerable<IProtocolVariable> Decode(IEnumerable<int> data)
     {
         var protVars = new List<IProtocolVariable>();
-        if (data is IEnumerable<int>)
+
+        var periods = data.ToList();
+        if (periods.Count == 0) return protVars;
+        var period = periods[0] as int? ?? 0;
+        var rnd = new Random();
+        var vars = Variables
+            .Where(v => v.ProtocolVariableSpecification is SimpleProtVariableSpecification).Cast<SimpleOne2OneProtocolVariable>();
+                    
+        foreach (var simpleProtVariable in vars)
         {
-            var periods = data.ToList();
-            if (periods.Count == 0) return protVars;
-            var period = periods[0] as int? ?? 0;
-            var rnd = new Random();
-            var vars = Variables
-                .Where(v => v.ProtocolVariableSpecification is SimpleProtVariableSpecification).Cast<SimpleOne2OneProtocolVariable>();
+            if (simpleProtVariable.Variable is not ScalarVariable scalarVariable) continue;
+            if (simpleProtVariable.ProtocolVariableSpecification is not SimpleProtVariableSpecification spec) continue;
+            if (spec.VariableEvent is not PeriodicVarEvent periodicVarEvent) continue;
+            if (periodicVarEvent.Period != period) continue;
                         
-            foreach (var simpleProtVariable in vars)
+            if (scalarVariable.Values is Values<int> intValues)
             {
-                if (simpleProtVariable.Variable is not ScalarVariable scalarVariable) continue;
-                if (simpleProtVariable.ProtocolVariableSpecification is not SimpleProtVariableSpecification spec) continue;
-                if (spec.VariableEvent is not PeriodicVarEvent periodicVarEvent) continue;
-                if (periodicVarEvent.Period != period) continue;
-                            
-                if (scalarVariable.Values is Values<int> intValues)
-                {
-                    intValues.Value = rnd.Next(-20, 20);
-                }
-                else if (scalarVariable.Values is Values<float> floatValues)
-                {
-                    floatValues.Value = 10 * (float)rnd.NextDouble();
-                }
-                else if (scalarVariable.Values is Values<byte> byteValues)
-                {
-                    byteValues.Value = (byte)rnd.Next(0, 255);
-                }
-                
-                protVars.Add(simpleProtVariable);
-            }           
-        }
+                intValues.Value = rnd.Next(-20, 20);
+            }
+            else if (scalarVariable.Values is Values<float> floatValues)
+            {
+                floatValues.Value = 10 * (float)rnd.NextDouble();
+            }
+            else if (scalarVariable.Values is Values<byte> byteValues)
+            {
+                byteValues.Value = (byte)rnd.Next(0, 255);
+            }
+            
+            protVars.Add(simpleProtVariable);
+        }           
 
         return protVars;
     }
+
+    #endregion
+    
+    #region Private
+
+    private async Task RunLoopAsync(CancellationToken ct)
+    {
+        _ = Task.Run(async () =>
+        {
+            IsStarted = true;
+            while (!ct.IsCancellationRequested && !exitRequested)
+            {
+                if (receivedDataQueue.Count > 0)
+                {
+                    receivedDataQueue.TryDequeue(out int rcvData);
+                    await ProcessReceivedDataAsync(new List<int> { rcvData }, ct);
+                }
+                else
+                {
+                    waitHandle.WaitOne();
+                }               
+
+            }
+            
+            IsStarted = false;
+        }, ct);
+        exitRequested = false;
+
+    } 
 
     #endregion
 }

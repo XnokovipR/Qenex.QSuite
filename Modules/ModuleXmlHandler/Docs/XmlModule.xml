@@ -16,6 +16,7 @@
             <encryptedSettings/>
             <protocolReferences>
                 <protocolReference ref="SimpleO2OProtocol">
+					<isEnabled>true</isEnabled>
                     <settings/>
                     <encryptedSettings/>                   
                     <variableReferences>

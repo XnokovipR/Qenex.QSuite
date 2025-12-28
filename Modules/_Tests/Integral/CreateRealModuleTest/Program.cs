@@ -17,7 +17,7 @@ namespace Qenex.QSuite.Modules.Tests.CreateRealModuleTest;
 
 class Program
 {
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
         CancellationTokenSource cts = new CancellationTokenSource();
         
@@ -26,37 +26,36 @@ class Program
         
         //Load drivers and protocols
         var pluginManager = new PluginLoader(logger);
-        var driversDetails = pluginManager.GetPluginDetails<IDriverBase>("./Drivers");
-        var protocolsDetails = pluginManager.GetPluginDetails<IProtocolBase>("./Protocols");
+        var driversDetails = pluginManager.GetPluginDetails<IDriverBase>(@"..\..\..\..\..\..\..\Drivers\SimDataDriver\bin\Debug\net10.0");
+        var protocolsDetails = pluginManager.GetPluginDetails<IProtocolBase>(@"..\..\..\..\..\..\..\Protocols\SimpleProtocol\bin\Debug\net10.0");
         
         var xmlModule = XmlInOut<XmlModule>.LoadFromFile(@"..\..\..\..\..\..\ModuleXmlHandler\Docs\XmlModule.xml");
         
         var xmlModuleHandler = new XmlModuleHandler(driversDetails, protocolsDetails, logger);
         var realModule = xmlModuleHandler.CreateModule<UnifiedModule>(xmlModule);
 
-        foreach (var drv in realModule.Drivers)
+        foreach (var driver in realModule.Drivers)
         {
-            drv.OnDataReceived += (sender, data) =>
+            foreach (var protocol in driver.Protocols)
             {
-                if (data is not DataReceivedEventArgs<IEnumerable<IProtocolVariable>> pVars) return;
-                foreach (var v in pVars.Data)
+                foreach (var protocolVariable in protocol.Variables)
                 {
-                    if (v.Variable is ScalarVariable sv)
+                    protocolVariable.SubscribeAsyncValueChanged(async protVar =>
                     {
-                        Console.WriteLine($"{pVars.Timestamp:HH:mm:ss.fff}\t{sv.Label}\t\t{sv.Values.ToString()}");
-                    }
+                        if (protocolVariable.Variable is ScalarVariable sv)
+                        {
+                            Console.WriteLine($"Variable {sv.Label} changed to {sv.Values}");
+                        }
+                    });
                 }
-
-                Console.WriteLine("-------------------------------------------------");
-                
-            };
+            }
         }
-
+        
 
         var simDataDriver = realModule?.Drivers.First(d => d.Specification.Name == "SimulDataDriver");
         if (simDataDriver == null) return;
         
-        simDataDriver.StartAsync(cts.Token);
+        _ = simDataDriver.StartAsync(cts.Token);
 
         Console.WriteLine("Press ESC to exit");
         while (Console.ReadKey().Key != ConsoleKey.Q) { };
@@ -65,6 +64,6 @@ class Program
         //cts.Cancel();
         
         // Correct way to stop the driver
-        simDataDriver.StopAsync(cts.Token);
+        await simDataDriver.StopAsync(cts.Token);
     }
 }

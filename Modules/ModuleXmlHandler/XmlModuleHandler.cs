@@ -328,6 +328,7 @@ public class XmlModuleHandler
                 protocol.AddVariable(protocolVariable);
             }
             
+            protocol.IsEnabled = protocolRef.IsEnabled;
             protocol.SetConfiguration(protocolRef.Settings, protocolRef.EncryptedSettings);
             tempProtocols.Add(protocol);
         }

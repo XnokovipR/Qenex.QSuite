@@ -29,7 +29,7 @@ public interface IDriverBase : ICoreCommunication, IComponentSpecification
     #region Send / Receive data
     void Send<T>(T data);
     Task SendAsync<T>(T data, CancellationToken ct = default);
-    event EventHandler? OnDataReceived; 
+    //event EventHandler? OnDriverDataReceived;
 
     #endregion
     

@@ -121,20 +121,13 @@ public abstract class DriverBase : IDriverBase
 
     public abstract Task SendAsync<T>(T data, CancellationToken ct = default);
 
-    public event EventHandler? OnDataReceived;
+    //public event EventHandler? OnDriverDataReceived;
     
-    protected void RaiseOnDataReceive<T>(T data)
-    {
-        var args = new DataReceivedEventArgs<T>(data);
-        OnDataReceived?.Invoke(this, args);
-    }
-
-    #endregion
-
-    #region Process received data
-
-    protected abstract void ProcessReceivedData<T>(T data);
-    protected abstract Task ProcessReceivedDataAsync<T>(T data, CancellationToken ct = default);
+    // protected void RaiseOnDataReceive<T>(T data)
+    // {
+    //     var args = new DataReceivedEventArgs<T>(data);
+    //     OnDriverDataReceived?.Invoke(this, args);
+    // }
 
     #endregion
 }

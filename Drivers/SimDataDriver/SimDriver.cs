@@ -65,7 +65,7 @@ public class SimDriver : DriverBase
     {
         if (!IsEnabled) return;
         exitRequested = false;
-        await RunLoopAsync(ct);
+        _ = RunLoopAsync(ct);
     }
 
     public override Task StopAsync(CancellationToken ct = default)
@@ -96,19 +96,19 @@ public class SimDriver : DriverBase
     #endregion    
     
     #region Process received data
-    protected override void ProcessReceivedData<T>(T data)
-    {
-        throw new NotImplementedException();
-    }
 
-    protected override Task ProcessReceivedDataAsync<T>(T data, CancellationToken ct = default)
+    private async Task ProcessReceivedDataAsync<T>(T data, CancellationToken ct = default)
     {
         if (data is IEnumerable<IProtocolVariable> variables)
         {
-            this.RaiseOnDataReceive(data);
+            foreach (var protocol in Protocols)
+            {
+                if (protocol is not ProtocolBase<int> prot) continue;
+                await prot.AddReceivedDataToQueueAsync([sleepPeriod / 1000], ct);
+            }
         }
 
-        return Task.CompletedTask;
+        //return Task.CompletedTask;
     }
     
     #endregion
@@ -117,20 +117,28 @@ public class SimDriver : DriverBase
 
     private async Task RunLoopAsync(CancellationToken ct)
     {
-        await Task.Run(async () =>
+        _ = Task.Run(async () =>
         {
+            foreach (var protocol in Protocols)
+            {
+                _ = protocol.StartAsync(ct);
+            }
+            
             IsStarted = true;
             while (!ct.IsCancellationRequested && !exitRequested)
             {
-                receivedVariables = Protocols[0].Decode([sleepPeriod / 1000]);
                 await ProcessReceivedDataAsync(receivedVariables, ct);
                 await Task.Delay(sleepPeriod, ct);
+            }
+            
+            foreach (var protocol in Protocols)
+            {
+                _ = protocol.StopAsync(ct);
             }
             
             IsStarted = false;
         }, ct);
         exitRequested = false;
-
     } 
 
     #endregion

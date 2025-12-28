@@ -8,6 +8,7 @@ public class XmlProtocolReference
 {
     [XmlAttribute("ref")] public string Ref { get; set; } = string.Empty;
     
+    [XmlElement("isEnabled")] public bool IsEnabled { get; set; }
     [XmlElement("settings")] public string Settings { get; set; } = string.Empty;
     [XmlElement("encryptedSettings")] public string EncryptedSettings { get; set; } = string.Empty;
     
