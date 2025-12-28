@@ -76,9 +76,16 @@ public class ControlsDragBehavior : Behavior<ItemsControl>
         if (sender is not RadListBox radListBox) return;
         if (radListBox.DataContext is not ControlsViewModel vm) return;
         
-        var controlId = (int)DragDropPayloadManager.GetDataFromObject(e.Data, "LastControlId");
-        vm.LastControlId = controlId;
-        
-        e.Handled = true;
+        try
+        {
+            var controlId = (int)DragDropPayloadManager.GetDataFromObject(e.Data, "LastControlId");
+            vm.LastControlId = controlId;
+
+            e.Handled = true;
+        }
+        catch (NullReferenceException)
+        {
+            // ignore
+        }
     }
 }

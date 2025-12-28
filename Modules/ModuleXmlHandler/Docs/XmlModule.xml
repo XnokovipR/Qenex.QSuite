@@ -29,9 +29,9 @@
                          <variableReference ref="3" isCommunicated="true"> 
                              <commParam>direction="read";eventRef="Event1s";multiplier="1";id="MachineState"</commParam> 
                          </variableReference> 
-                        <variableReference ref="5" isCommunicated="true">
-                            <commParam>direction="read";eventRef="Event3s";multiplier="1";id="AirPressure"</commParam>
-                        </variableReference>
+                        <!-- <variableReference ref="5" isCommunicated="true"> -->
+                            <!-- <commParam>direction="read";eventRef="Event3s";multiplier="1";id="AirPressure"</commParam> -->
+                        <!-- </variableReference> -->
                     </variableReferences>
                 </protocolReference>
             </protocolReferences>

@@ -25,11 +25,15 @@ public class WorkspaceDragAndDropBehavior : Behavior<RadDiagram>
 
     private void OnDrop(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
     {
+        e.Handled = false;
         var variable = DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
         if (variable is IVariableBase)
         {
-            return; // Nezpracovávej, nenastavuj e.Handled
+            return; 
         }
+        
+        if (sender is not RadDiagram radDiagram) return;
+        if (radDiagram.DataContext is not WorkspaceViewModel vm) return;
         
         var controlId = (int)DragDropPayloadManager.GetDataFromObject(e.Data, "ControlId"); 
         var control = DragDropPayloadManager.GetDataFromObject(e.Data, "NewDraggedControl");
@@ -37,9 +41,6 @@ public class WorkspaceDragAndDropBehavior : Behavior<RadDiagram>
         
         var newControl = (IControlBase)Activator.CreateInstance(control.GetType())!;
         newControl.Id = controlId;
-        
-        if (sender is not RadDiagram radDiagram) return;
-        if (radDiagram.DataContext is not WorkspaceViewModel vm) return;
         
         var position = e.GetPosition(radDiagram);
 

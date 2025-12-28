@@ -9,15 +9,20 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class OnRequestVariableEventWrapper(OnRequestVarEvent variableEvent) : PropertyChangedBase, IViewableItem
+public class OnRequestVariableEventWrapper : PropertyChangedBase, IViewableItem
 {
+    public OnRequestVariableEventWrapper(OnRequestVarEvent variableEvent)
+    {
+        VariableEvent = variableEvent;
+    }
     #region UI Properties
-    
+
+    public OnRequestVarEvent VariableEvent { get => field; init { field = value; OnPropertyChanged(); } }
 
     public string Label
     {
-        get => variableEvent.Name;
-        set { variableEvent.Name = value; OnPropertyChanged(); }
+        get => VariableEvent.Name;
+        set { VariableEvent.Name = value; OnPropertyChanged(); }
     }
     
     public FontWeight LabelWeight => FontWeights.Normal;
@@ -30,7 +35,7 @@ public class OnRequestVariableEventWrapper(OnRequestVarEvent variableEvent) : Pr
             var sb = new StringBuilder();
             sb.Append("On-Request-Variable Event:");
             sb.Append(Environment.NewLine);
-            sb.Append($"Label\t{variableEvent.Name}");
+            sb.Append($"Label\t{VariableEvent.Name}");
             
             return sb.ToString();
         }

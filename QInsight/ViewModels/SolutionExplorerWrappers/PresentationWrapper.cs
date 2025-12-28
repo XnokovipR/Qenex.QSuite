@@ -9,15 +9,21 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class PresentationWrapper(IPresentation presentation) : PropertyChangedBase, IViewableItem
+public class PresentationWrapper : PropertyChangedBase, IViewableItem
 {
+    public PresentationWrapper(IPresentation presentation)
+    {
+        Presentation = presentation;
+    }
+    
     #region UI Properties
     
+    public IPresentation Presentation { get => field; init { field = value; OnPropertyChanged(); } }
 
     public string Label
     {
-        get => presentation.Label;
-        set { presentation.Label = value; OnPropertyChanged(); }
+        get => Presentation.Label;
+        set { Presentation.Label = value; OnPropertyChanged(); }
     }
     
     public FontWeight LabelWeight => FontWeights.Normal;
@@ -37,17 +43,17 @@ public class PresentationWrapper(IPresentation presentation) : PropertyChangedBa
         var sb = new StringBuilder();
         sb.Append("Presentation:");
         sb.Append(Environment.NewLine);
-        sb.Append($"Label\t{presentation.Label}");
+        sb.Append($"Label\t{Presentation.Label}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Conv.\t{presentation.Conversion.ToString()}");
+        sb.Append($"Conv.\t{Presentation.Conversion.ToString()}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Min.\t{presentation.Min}");
+        sb.Append($"Min.\t{Presentation.Min}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Max.\t{presentation.Max}");
+        sb.Append($"Max.\t{Presentation.Max}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Format\t{presentation.PrintFormat}");
+        sb.Append($"Format\t{Presentation.PrintFormat}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Unit\t{presentation.Unit}");
+        sb.Append($"Unit\t{Presentation.Unit}");
         
         return sb.ToString();
     }

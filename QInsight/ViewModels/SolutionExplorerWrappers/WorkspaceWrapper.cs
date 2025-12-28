@@ -10,16 +10,24 @@ using Qenex.QLibs.QUI.TelerikDocking;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class WorkspaceWrapper(IWorkspaceViewModel workspaceViewModel) : PropertyChangedBase, IViewableItem
+public class WorkspaceWrapper : PropertyChangedBase, IViewableItem
 {
+
+    public WorkspaceWrapper(IWorkspaceViewModel workspaceViewModel)
+    {
+        WorkspaceViewModel = workspaceViewModel;
+    }
+    
     #region UI Properties
     
-    public string Name => workspaceViewModel.Name;
+    public IWorkspaceViewModel WorkspaceViewModel { get => field; init { field = value; OnPropertyChanged(); } }
+    
+    public string Name => WorkspaceViewModel.Name;
 
     public string Label
     {
-        get => workspaceViewModel.WinTitle;
-        set { workspaceViewModel.WinTitle = value; OnPropertyChanged(); }
+        get => WorkspaceViewModel.WinTitle;
+        set { WorkspaceViewModel.WinTitle = value; OnPropertyChanged(); }
     }
     
     public FontWeight LabelWeight => FontWeights.Normal;
@@ -39,9 +47,9 @@ public class WorkspaceWrapper(IWorkspaceViewModel workspaceViewModel) : Property
         var sb = new StringBuilder();
         sb.Append("Workspace:");
         sb.Append(Environment.NewLine);
-        sb.Append($"Header\t{workspaceViewModel.WinTitle}");
+        sb.Append($"Header\t{WorkspaceViewModel.WinTitle}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Name\t{workspaceViewModel.Name}");
+        sb.Append($"Name\t{WorkspaceViewModel.Name}");
 
         return sb.ToString();
     }

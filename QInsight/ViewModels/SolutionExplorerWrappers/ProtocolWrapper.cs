@@ -9,14 +9,21 @@ using Qenex.QSuite.Protocols.Protocol;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class ProtocolWrapper(IProtocolBase protocol) : PropertyChangedBase, IViewableItem
+public class ProtocolWrapper : PropertyChangedBase, IViewableItem
 {
+    public ProtocolWrapper(IProtocolBase protocol)
+    {
+        Protocol = protocol;
+    }
+    
     #region UI Properties
+    
+    public IProtocolBase Protocol { get => field; init {field = value; OnPropertyChanged(); }}
     
     public string Label
     {
-        get => protocol.Specification.Label;
-        set { protocol.Specification.Label = value; OnPropertyChanged(); }
+        get => Protocol.Specification.Label;
+        set { Protocol.Specification.Label = value; OnPropertyChanged(); }
     }
     
     public FontWeight LabelWeight => FontWeights.SemiBold;
@@ -29,15 +36,15 @@ public class ProtocolWrapper(IProtocolBase protocol) : PropertyChangedBase, IVie
             var sb = new StringBuilder();
             sb.Append("Protocol:");
             sb.Append(Environment.NewLine);
-            sb.Append($"Label\t{protocol.Specification.Label}");
+            sb.Append($"Label\t{Protocol.Specification.Label}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Desc.\t{protocol.Specification.Description}");
+            sb.Append($"Desc.\t{Protocol.Specification.Description}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Version\t{protocol.Specification.Version}");
+            sb.Append($"Version\t{Protocol.Specification.Version}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Author\t{protocol.Specification.Author}");
+            sb.Append($"Author\t{Protocol.Specification.Author}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Co.\t{protocol.Specification.Company}");
+            sb.Append($"Co.\t{Protocol.Specification.Company}");
             
             return sb.ToString();
         }

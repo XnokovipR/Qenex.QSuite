@@ -55,7 +55,7 @@ class Program
         var simDataDriver = realModule?.Drivers.First(d => d.Specification.Name == "SimulDataDriver");
         if (simDataDriver == null) return;
         
-        _ = simDataDriver.StartAsync(cts.Token);
+        await simDataDriver.StartAsync(cts.Token);
 
         Console.WriteLine("Press ESC to exit");
         while (Console.ReadKey().Key != ConsoleKey.Q) { };

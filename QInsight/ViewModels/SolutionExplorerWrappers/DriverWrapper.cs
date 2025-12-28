@@ -9,14 +9,20 @@ using Qenex.QSuite.Drivers.Driver;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class DriverWrapper(IDriverBase driver) : PropertyChangedBase, IViewableItem
+public class DriverWrapper : PropertyChangedBase, IViewableItem
 {
+    public DriverWrapper(IDriverBase driver)
+    {
+        Driver = driver;
+    }
     #region UI Properties
+
+    public IDriverBase Driver { get => field; init {field = value; OnPropertyChanged(); }}
     
     public string Label
     {
-        get => driver.Specification.Label;
-        set { driver.Specification.Label = value; OnPropertyChanged(); }
+        get => Driver.Specification.Label;
+        set { Driver.Specification.Label = value; OnPropertyChanged(); }
     }
 
     public FontWeight LabelWeight => FontWeights.SemiBold;
@@ -29,15 +35,15 @@ public class DriverWrapper(IDriverBase driver) : PropertyChangedBase, IViewableI
             var sb = new StringBuilder();
             sb.Append("Driver:");
             sb.Append(Environment.NewLine);
-            sb.Append($"Label\t{driver.Specification.Label}");
+            sb.Append($"Label\t{Driver.Specification.Label}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Desc.\t{driver.Specification.Description}");
+            sb.Append($"Desc.\t{Driver.Specification.Description}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Version\t{driver.Specification.Version}");
+            sb.Append($"Version\t{Driver.Specification.Version}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Author\t{driver.Specification.Author}");
+            sb.Append($"Author\t{Driver.Specification.Author}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Co.\t{driver.Specification.Company}");
+            sb.Append($"Co.\t{Driver.Specification.Company}");
             
             return sb.ToString();
         }

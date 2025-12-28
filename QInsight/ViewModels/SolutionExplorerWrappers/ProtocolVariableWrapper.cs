@@ -11,15 +11,19 @@ using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class ProtocolVariableWrapper(IProtocolVariable protocolVariable) : PropertyChangedBase, IViewableItem
+public class ProtocolVariableWrapper : PropertyChangedBase, IViewableItem
 {
+    public ProtocolVariableWrapper(IProtocolVariable protocolVariable)
+    {
+        ProtocolVariable = protocolVariable;
+    }
     #region UI Properties
-    
+    public IProtocolVariable ProtocolVariable { get => field; init { field = value; OnPropertyChanged(); } }
 
     public string Label
     {
-        get => $"{protocolVariable.Variable.Label} ({protocolVariable.Variable.Id})";
-        set { protocolVariable.Variable.Label = $"{value} ({protocolVariable.Variable.Id})"; OnPropertyChanged(); }
+        get => $"{ProtocolVariable.Variable.Label} ({ProtocolVariable.Variable.Id})";
+        set { ProtocolVariable.Variable.Label = $"{value} ({ProtocolVariable.Variable.Id})"; OnPropertyChanged(); }
     }
     
     public FontWeight LabelWeight => FontWeights.Normal;
@@ -38,14 +42,14 @@ public class ProtocolVariableWrapper(IProtocolVariable protocolVariable) : Prope
         var sb = new StringBuilder();
         sb.Append("Variable:");
         sb.Append(Environment.NewLine);
-        sb.Append($"Label\t{protocolVariable.Variable.Label}");
+        sb.Append($"Label\t{ProtocolVariable.Variable.Label}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Name\t{protocolVariable.Variable.Name}");
+        sb.Append($"Name\t{ProtocolVariable.Variable.Name}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Descr.\t{protocolVariable.Variable.Description}");
+        sb.Append($"Descr.\t{ProtocolVariable.Variable.Description}");
         sb.Append(Environment.NewLine);
 
-        if (protocolVariable.Variable is ScalarVariable scalarVariable)
+        if (ProtocolVariable.Variable is ScalarVariable scalarVariable)
         {
             sb.Append($"Size\t{scalarVariable.Size}");
             sb.Append(Environment.NewLine);

@@ -4,10 +4,12 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.Xaml.Behaviors;
 using Qenex.QInsight.AppConfig;
+using Qenex.QInsight.ViewModels;
 using Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 using Qenex.QInsight.Views;
 using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.Variables.QVariables;
+using Telerik.Windows.Controls;
 using Telerik.Windows.DragDrop;
 
 namespace Qenex.QInsight.DragDrop;
@@ -21,6 +23,7 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         base.OnAttached();
         DragDropManager.AddDragInitializeHandler(AssociatedObject, OnDragInitialized);
         DragDropManager.AddGiveFeedbackHandler(AssociatedObject, OnGiveFeedback);
+        DragDropManager.AddDragDropCompletedHandler(this.AssociatedObject, OnDropComleted);
     }
     
     private void OnDragInitialized(object sender, DragInitializeEventArgs e)
@@ -28,11 +31,26 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         if (((FrameworkElement)e.OriginalSource).DataContext is not VariableWrapper varWrapper) return;
         if (varWrapper.Variable is not IVariableBase variable) return;
         
+        if (sender is not RadTreeView treeView) return;
+        if (treeView.DataContext is not SolutionExplorerViewModel vm) return;
+
+        var defaultEvent = vm.ProjectModules.First().Children.First(i => i.Label.Contains("Events")).Children.First();
+        var defaultDriverProtocolVariables = vm.ProjectModules
+            .First().Children
+            .First(i => i.Label.Contains("Communicated Drivers")).Children
+            .First(i => i.Label.Contains("Simulation Data Driver")).Children
+            .First(i => i.Label.Contains("Communicated Protocols")).Children
+            .First().Children
+            .First(i => i.Label.Contains("Communicated Variables")).Children;
+        
         var dragVisualControl = new ContentControl();
         var payload = DragDropPayloadManager.GeneratePayload(null);
 
         payload.SetData("DraggedVariable", variable);
         payload.SetData("DraggedVariableDragVisual", dragVisualControl);
+        payload.SetData("DefaultEvent", defaultEvent);
+        payload.SetData("DefaultDriverProtocolVariables", defaultDriverProtocolVariables);
+        
         e.Data = payload;
 
         var bgColor = ShellWindow.MainAppSettings.Design.AppTheme == ApplicationTheme.Dark
@@ -65,6 +83,25 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
     {
         e.SetCursor(IsOverValidTarget ? Cursors.Hand : Cursors.No);
         e.Handled = true;
+    }
+    
+    private void OnDropComleted(object sender, DragDropCompletedEventArgs e)
+    {
+        try
+        {
+            var draggedVariable = DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
+            var defaultEvent = DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultEvent");
+            var defaultDriverProtocolVariables = DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultDriverProtocolVariables"); 
+            
+            // Add variable to Communicated Drivers + Data notification
+            
+            e.Handled = true;
+        }
+        catch (NullReferenceException exception)
+        {
+            // ignore
+        }
+        
     }
     
 }

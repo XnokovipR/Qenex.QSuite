@@ -9,14 +9,21 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class ProjectWrapper(IModuleBase prjModule) : PropertyChangedBase, IViewableItem
+public class ProjectWrapper : PropertyChangedBase, IViewableItem
 {
+    public ProjectWrapper(IModuleBase prjModule)
+    {
+        PrjModule = prjModule;
+    }
+    
     #region UI Properties
+    
+    public IModuleBase PrjModule { get => field; init { field = value; OnPropertyChanged(); } }
 
     public string Label
     {
-        get => prjModule.Specification.Label;
-        set { prjModule.Specification.Label = value; OnPropertyChanged(); }
+        get => PrjModule.Specification.Label;
+        set { PrjModule.Specification.Label = value; OnPropertyChanged(); }
     }
     
     public FontWeight LabelWeight => FontWeights.Bold;
@@ -30,15 +37,15 @@ public class ProjectWrapper(IModuleBase prjModule) : PropertyChangedBase, IViewa
             var sb = new StringBuilder();
             sb.Append("Project details:");
             sb.Append(Environment.NewLine);
-            sb.Append($"Label\t{prjModule.Specification.Label}");
+            sb.Append($"Label\t{PrjModule.Specification.Label}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Descr.\t{prjModule.Specification.Description}");
+            sb.Append($"Descr.\t{PrjModule.Specification.Description}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Ver.\t{prjModule.Specification.Version}");
+            sb.Append($"Ver.\t{PrjModule.Specification.Version}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Author\t{prjModule.Specification.Author}");
+            sb.Append($"Author\t{PrjModule.Specification.Author}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Co.\t{prjModule.Specification.Company}");
+            sb.Append($"Co.\t{PrjModule.Specification.Company}");
             
             
             return sb.ToString();

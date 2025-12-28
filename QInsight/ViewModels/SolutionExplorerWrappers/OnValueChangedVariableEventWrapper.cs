@@ -9,15 +9,21 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class OnValueChangedVariableEventWrapper(OnValueChangedVarEvent variableEvent) : PropertyChangedBase, IViewableItem
+public class OnValueChangedVariableEventWrapper : PropertyChangedBase, IViewableItem
 {
+    public OnValueChangedVariableEventWrapper(OnValueChangedVarEvent variableEvent)
+    {
+        VariableEvent = variableEvent;
+    }
+    
     #region UI Properties
     
+    public OnValueChangedVarEvent VariableEvent {get => field; init { field = value; OnPropertyChanged(); } }
 
     public string Label
     {
-        get => variableEvent.Name;
-        set { variableEvent.Name = value; OnPropertyChanged(); }
+        get => VariableEvent.Name;
+        set { VariableEvent.Name = value; OnPropertyChanged(); }
     }
     
     public FontWeight LabelWeight => FontWeights.Normal;
@@ -30,9 +36,9 @@ public class OnValueChangedVariableEventWrapper(OnValueChangedVarEvent variableE
             var sb = new StringBuilder();
             sb.Append("Threshold-Variable Event:");
             sb.Append(Environment.NewLine);
-            sb.Append($"Label\t{variableEvent.Name}");
+            sb.Append($"Label\t{VariableEvent.Name}");
             sb.Append(Environment.NewLine);
-            sb.Append($"TH\t{variableEvent.Threshold}");
+            sb.Append($"TH\t{VariableEvent.Threshold}");
             
             return sb.ToString();
         }

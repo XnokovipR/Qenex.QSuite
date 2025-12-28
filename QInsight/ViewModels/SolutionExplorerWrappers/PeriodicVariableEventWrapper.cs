@@ -9,15 +9,20 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class PeriodicVariableEventWrapper(PeriodicVarEvent variableEvent) : PropertyChangedBase, IViewableItem
+public class PeriodicVariableEventWrapper : PropertyChangedBase, IViewableItem
 {
+    public PeriodicVariableEventWrapper(PeriodicVarEvent variableEvent)
+    {
+        VariableEvent = variableEvent;
+    }
     #region UI Properties
     
+    public PeriodicVarEvent VariableEvent { get => field; init { field = value; OnPropertyChanged(); } }
 
     public string Label
     {
-        get => variableEvent.Name;
-        set { variableEvent.Name = value; OnPropertyChanged(); }
+        get => VariableEvent.Name;
+        set { VariableEvent.Name = value; OnPropertyChanged(); }
     }
     
     public FontWeight LabelWeight => FontWeights.Normal;
@@ -30,9 +35,9 @@ public class PeriodicVariableEventWrapper(PeriodicVarEvent variableEvent) : Prop
             var sb = new StringBuilder();
             sb.Append("Periodic-Variable Event:");
             sb.Append(Environment.NewLine);
-            sb.Append($"Label\t{variableEvent.Name}");
+            sb.Append($"Label\t{VariableEvent.Name}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Period\t{variableEvent.Period} {variableEvent.Unit}");
+            sb.Append($"Period\t{VariableEvent.Period} {VariableEvent.Unit}");
             
             return sb.ToString();
         }

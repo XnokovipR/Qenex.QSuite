@@ -117,7 +117,7 @@ public class SimDriver : DriverBase
 
     private async Task RunLoopAsync(CancellationToken ct)
     {
-        _ = Task.Run(async () =>
+        await Task.Run(async () =>
         {
             foreach (var protocol in Protocols)
             {
