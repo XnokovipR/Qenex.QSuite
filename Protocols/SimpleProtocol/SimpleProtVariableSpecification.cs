@@ -9,6 +9,18 @@ public class SimpleProtVariableSpecification : ProtVariableSpecification
     {
         Name = "SimpleProtVariableSpecification";
     }
+
+    public static SimpleProtVariableSpecification CreateDefault(IVarEvent variableEvent, string id)
+    {
+        var spec = new SimpleProtVariableSpecification() 
+        {
+            VariableEvent = variableEvent,
+            Multiplier = 1,
+            Direction = CommDirection.Read,
+            Id = id
+        };
+        return spec;
+    }
     
     public static SimpleProtVariableSpecification Create(IVarEvent variableEvent, string commParams)
     {
@@ -36,6 +48,7 @@ public class SimpleProtVariableSpecification : ProtVariableSpecification
 
         return spec;
     }
+    
     
     public IVarEvent VariableEvent { get; set; }
     public string Id { get; set; }

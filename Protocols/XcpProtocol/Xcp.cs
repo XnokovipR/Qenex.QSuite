@@ -30,7 +30,12 @@ public class Xcp : ProtocolBase<int>
     {
         throw new NotSupportedException();
     }
-    
+
+    public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent variableEvent, string id)
+    {
+        throw new NotImplementedException();
+    }
+
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents,
         string commParams, bool isCommunicated)
     {

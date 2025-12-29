@@ -9,7 +9,7 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class PeriodicVariableEventWrapper : PropertyChangedBase, IViewableItem
+public class PeriodicVariableEventWrapper : PropertyChangedBase, IVariableEventWrapper
 {
     public PeriodicVariableEventWrapper(PeriodicVarEvent variableEvent)
     {
@@ -17,7 +17,7 @@ public class PeriodicVariableEventWrapper : PropertyChangedBase, IViewableItem
     }
     #region UI Properties
     
-    public PeriodicVarEvent VariableEvent { get => field; init { field = value; OnPropertyChanged(); } }
+    public IVarEvent VariableEvent { get => field; init { field = value; OnPropertyChanged(); } }
 
     public string Label
     {
@@ -37,7 +37,7 @@ public class PeriodicVariableEventWrapper : PropertyChangedBase, IViewableItem
             sb.Append(Environment.NewLine);
             sb.Append($"Label\t{VariableEvent.Name}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Period\t{VariableEvent.Period} {VariableEvent.Unit}");
+            sb.Append($"Period\t{((PeriodicVarEvent)VariableEvent).Period} {((PeriodicVarEvent)VariableEvent).Unit}");
             
             return sb.ToString();
         }

@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -6,9 +7,11 @@ using Microsoft.Xaml.Behaviors;
 using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.ViewModels;
 using Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
+using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QInsight.Views;
 using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.VariableEvents;
 using Telerik.Windows.Controls;
 using Telerik.Windows.DragDrop;
 
@@ -34,14 +37,15 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         if (sender is not RadTreeView treeView) return;
         if (treeView.DataContext is not SolutionExplorerViewModel vm) return;
 
-        var defaultEvent = vm.ProjectModules.First().Children.First(i => i.Label.Contains("Events")).Children.First();
-        var defaultDriverProtocolVariables = vm.ProjectModules
+        var defaultEvent = ((IVariableEventWrapper)vm.ProjectModules.First().Children.First(i => i.Label.Contains("Events")).Children.First()).VariableEvent;
+        var defaultProtocol = vm.ProjectModules
             .First().Children
             .First(i => i.Label.Contains("Communicated Drivers")).Children
             .First(i => i.Label.Contains("Simulation Data Driver")).Children
             .First(i => i.Label.Contains("Communicated Protocols")).Children
-            .First().Children
-            .First(i => i.Label.Contains("Communicated Variables")).Children;
+            .First();
+        var defaultDriverProtocolVariables = defaultProtocol.Children
+            .First(i => i.Label.Contains("Communicated Variables")).Children; 
         
         var dragVisualControl = new ContentControl();
         var payload = DragDropPayloadManager.GeneratePayload(null);
@@ -49,6 +53,7 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         payload.SetData("DraggedVariable", variable);
         payload.SetData("DraggedVariableDragVisual", dragVisualControl);
         payload.SetData("DefaultEvent", defaultEvent);
+        payload.SetData("DefaultProtocol", defaultProtocol);
         payload.SetData("DefaultDriverProtocolVariables", defaultDriverProtocolVariables);
         
         e.Data = payload;
@@ -89,12 +94,24 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
     {
         try
         {
-            var draggedVariable = DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
-            var defaultEvent = DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultEvent");
-            var defaultDriverProtocolVariables = DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultDriverProtocolVariables"); 
+            var draggedVariable = (IVariableBase)DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
+            var defaultEvent = (IVarEvent)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultEvent");
+            var defaultProtocol = (ProtocolWrapper)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultProtocol");
+            var defaultDriverProtocolVariables = (ObservableCollection<IViewableItem>)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultDriverProtocolVariables"); 
             
-            // Add variable to Communicated Drivers + Data notification
-            
+            // Add variable to Communicated Drivers
+            var alreadyAdded = defaultProtocol.Protocol.Variables.Any(v => v.Variable.Name == draggedVariable.Name);
+            if (!alreadyAdded)
+            {
+                var protVariable = defaultProtocol.Protocol.CreateProtocolVariable(draggedVariable, defaultEvent, draggedVariable.Name);
+                defaultProtocol.Protocol.AddVariable(protVariable);
+                var protVarWrapper = new ProtocolVariableWrapper(protVariable);
+                defaultDriverProtocolVariables.Add(protVarWrapper);
+            }
+
+            // Data notification
+            #error  ZDE jsem skoncil. Je potreba pridat notifikaci do protVariable
+            #error tzn. ze kdy prijde hodnota, tak musi notfikavoat zaregistrovany posluchace (Controls, SQL, ...) 
             e.Handled = true;
         }
         catch (NullReferenceException exception)

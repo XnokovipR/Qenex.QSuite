@@ -9,7 +9,7 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class OnValueChangedVariableEventWrapper : PropertyChangedBase, IViewableItem
+public class OnValueChangedVariableEventWrapper : PropertyChangedBase, IVariableEventWrapper
 {
     public OnValueChangedVariableEventWrapper(OnValueChangedVarEvent variableEvent)
     {
@@ -18,7 +18,7 @@ public class OnValueChangedVariableEventWrapper : PropertyChangedBase, IViewable
     
     #region UI Properties
     
-    public OnValueChangedVarEvent VariableEvent {get => field; init { field = value; OnPropertyChanged(); } }
+    public IVarEvent VariableEvent {get => field; init { field = value; OnPropertyChanged(); } }
 
     public string Label
     {
@@ -38,7 +38,7 @@ public class OnValueChangedVariableEventWrapper : PropertyChangedBase, IViewable
             sb.Append(Environment.NewLine);
             sb.Append($"Label\t{VariableEvent.Name}");
             sb.Append(Environment.NewLine);
-            sb.Append($"TH\t{VariableEvent.Threshold}");
+            sb.Append($"TH\t{((OnValueChangedVarEvent)VariableEvent).Threshold}");
             
             return sb.ToString();
         }

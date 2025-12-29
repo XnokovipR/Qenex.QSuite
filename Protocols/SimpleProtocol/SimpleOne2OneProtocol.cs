@@ -55,6 +55,28 @@ public class SimpleOne2OneProtocol : ProtocolBase<int>
         throw new NotSupportedException();
     }
     
+    public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent varEvent, string id)
+    {
+        try
+        {
+            var protocolVariable = new SimpleOne2OneProtocolVariable
+            {
+                Variable = variable,
+                IsCommunicated = true,
+                ProtocolVariableSpecification = SimpleProtVariableSpecification.CreateDefault(varEvent!, id)
+            };
+    
+            return protocolVariable; 
+        }
+        catch (Exception e)
+        {
+            Logger?.Log(LogLevel.Warn, $"Protocol variable specification for variable {variable.Name} could not be created (${e.Message}).");
+            return null;
+        }
+       
+    }
+    
+    
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents,
         string commParams, bool isCommunicated )
     {

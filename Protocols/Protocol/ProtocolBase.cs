@@ -47,6 +47,7 @@ public abstract class ProtocolBase<T> : IProtocolBase
     #region Variables
 
     public abstract IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated);
+    public abstract IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent variableEvent, string id);
     public abstract IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents, string commParams, bool isCommunicated);
     
     public virtual void AddVariable(IProtocolVariable protocolVariable)

@@ -24,6 +24,7 @@ public interface IProtocolBase: ICoreCommunication, IComponentSpecification
     void SetConfiguration(string rawSettings, string rawEncryptedSettings);
 
     IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated);
+    IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent variableEvent, string id);
     IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents, string commParams, bool isCommunicated);
     void AddVariable(IProtocolVariable protocolVariable);
     void RemoveProtocolVariable(IProtocolVariable variable);
