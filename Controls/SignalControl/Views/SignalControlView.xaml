@@ -29,14 +29,14 @@
 			<q:QTextBlock Text="{Binding VariableLabel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
 			           Margin="0,0,0,3" TextWrapping="NoWrap"/>
 			
-			<Grid HorizontalAlignment="Left">
+			<Grid HorizontalAlignment="Stretch">
 				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="*"/>	
-					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="0.65*"/>	
+					<ColumnDefinition Width="0.35*"/>
 				</Grid.ColumnDefinitions>	
 				
 				<q:QTextBox Grid.Column="0" Text="{Binding VariableValue, Mode=TwoWay, UpdateSourceTrigger=Default}"
-				            MinWidth="50" IsReadOnly="True"/>
+				            MinWidth="50" IsReadOnly="True" TextAlignment="Right"/>
 				
 				<StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5,0,0,0">
 					<q:QTextBlock Text="[" Margin="0,0,3,0"/>
