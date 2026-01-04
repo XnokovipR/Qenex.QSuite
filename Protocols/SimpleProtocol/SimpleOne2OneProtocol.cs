@@ -153,13 +153,8 @@ public class SimpleOne2OneProtocol : ProtocolBase<int>
     protected override async Task ProcessReceivedDataAsync(IEnumerable<int> data, CancellationToken ct = default)
     {
         var decodedVars = Decode(data);
-        var notifyTasks = new List<Task>();
-        
-        foreach (var variable in decodedVars)
-        {
-            notifyTasks.Add(variable.NotifyValueChangedAsync());
-        }
-        
+        var notifyTasks = decodedVars.Select(variable => variable.NotifyValueChangedAsync()).ToList();
+
         await Task.WhenAll(notifyTasks);
     }
 

@@ -10,6 +10,7 @@ using Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QInsight.Views;
 using Qenex.QSuite.Controls.Control;
+using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.VariableEvents;
 using Telerik.Windows.Controls;
@@ -98,20 +99,39 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
             var defaultEvent = (IVarEvent)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultEvent");
             var defaultProtocol = (ProtocolWrapper)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultProtocol");
             var defaultDriverProtocolVariables = (ObservableCollection<IViewableItem>)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultDriverProtocolVariables"); 
+            var chosenControl = (IControlBase)DragDropPayloadManager.GetDataFromObject(e.Data, "ChosenControl");
             
             // Add variable to Communicated Drivers
+            IProtocolVariable? protVariable = null;
             var alreadyAdded = defaultProtocol.Protocol.Variables.Any(v => v.Variable.Name == draggedVariable.Name);
             if (!alreadyAdded)
             {
-                var protVariable = defaultProtocol.Protocol.CreateProtocolVariable(draggedVariable, defaultEvent, draggedVariable.Name);
+                protVariable = defaultProtocol.Protocol.CreateProtocolVariable(draggedVariable, defaultEvent, draggedVariable.Name);
                 defaultProtocol.Protocol.AddVariable(protVariable);
                 var protVarWrapper = new ProtocolVariableWrapper(protVariable);
                 defaultDriverProtocolVariables.Add(protVarWrapper);
             }
-
+            else
+            {
+                var a = defaultDriverProtocolVariables.Cast<ProtocolVariableWrapper>().First(v => v.ProtocolVariable.Variable.Label.Equals(draggedVariable.Label));
+                if (a is ProtocolVariableWrapper existingProtVarWrapper)
+                {
+                    protVariable = existingProtVarWrapper.ProtocolVariable;
+                }
+            }
+            
             // Data notification
-            #error  ZDE jsem skoncil. Je potreba pridat notifikaci do protVariable
-            #error tzn. ze kdy prijde hodnota, tak musi notfikavoat zaregistrovany posluchace (Controls, SQL, ...) 
+            protVariable?.SubscribeAsyncValueChanged(async _ =>
+            {
+                if (protVariable.Variable is ScalarVariable sv)
+                {
+                    //Console.WriteLine($"x- Variable {sv.Label} changed to {sv.Values}");
+                    
+//#error chosenControl can be null here, need to investigate
+                    await chosenControl.UpdateVariableValueAsync(sv);
+                }
+            });
+
             e.Handled = true;
         }
         catch (NullReferenceException exception)

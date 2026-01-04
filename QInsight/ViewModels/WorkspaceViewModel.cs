@@ -201,6 +201,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 	    
 	    control.BindVariable(varBase);
 	    VariableDragAndDropBehavior.IsOverValidTarget = false;
+	    DragDropPayloadManager.SetData(e.Data, "ChosenControl", control);
 	    e.Handled = true;
     }
 

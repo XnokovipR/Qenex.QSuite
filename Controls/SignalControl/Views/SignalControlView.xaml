@@ -29,16 +29,21 @@
 			<q:QTextBlock Text="{Binding VariableLabel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
 			           Margin="0,0,0,3" TextWrapping="NoWrap"/>
 			
-			<StackPanel Orientation="Horizontal" HorizontalAlignment="Left">	
-				<q:QTextBox Text="{Binding VariableValue, Mode=TwoWay, UpdateSourceTrigger=Default}"
-				         MinWidth="40" IsReadOnly="True"/>
+			<Grid HorizontalAlignment="Left">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*"/>	
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>	
 				
-				<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5,0,0,0">
+				<q:QTextBox Grid.Column="0" Text="{Binding VariableValue, Mode=TwoWay, UpdateSourceTrigger=Default}"
+				            MinWidth="50" IsReadOnly="True"/>
+				
+				<StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5,0,0,0">
 					<q:QTextBlock Text="[" Margin="0,0,3,0"/>
 					<q:QTextBlock Text="{Binding VariableUnit, Mode=TwoWay, UpdateSourceTrigger=Default}"/>
 					<q:QTextBlock Text="]" Margin="3,0,0,0"/>
 				</StackPanel>
-			</StackPanel>
+			</Grid>
 		</StackPanel>
 		
 	</Grid>

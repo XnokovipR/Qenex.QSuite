@@ -11,6 +11,7 @@ using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
 using Telerik.Windows.Controls.Docking;
 
@@ -37,6 +38,10 @@ public partial class ShellWindowModel
     public RelayCommandAsync<RadDocking> RibbonAddWorkspaceCommand { get; set; }
     public RelayCommand<RadDocking> RibbonRemoveWorkspaceCommand { get; set; }
     
+    public RelayCommandAsync<RadDocking> RibbonConnectCommand { get; set; }
+    public RelayCommandAsync<RadDocking> RibbonDisconnectCommand { get; set; }
+    
+    
     public RelayCommand<object> RibbonAboutAppCommand { get; set; }
 
     #endregion
@@ -55,6 +60,9 @@ public partial class ShellWindowModel
         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(async (d) => await Task.CompletedTask);
         RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync);
         RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace);
+
+        RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync);
+        RibbonDisconnectCommand = new RelayCommandAsync<RadDocking>(DisconnectAsync);
         
         RibbonAboutAppCommand = new RelayCommand<object>((o) =>
         {
@@ -199,6 +207,16 @@ public partial class ShellWindowModel
                 return;
             }
             realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, logger);
+            // realProjectData.Module.Drivers[0].Protocols[0].Variables[0].SubscribeAsyncValueChanged(async protVar =>
+            // {
+            //     await Task.Run(() =>
+            //     {
+            //         if (protVar.Variable is ScalarVariable sv)
+            //         {
+            //             Console.WriteLine($"Variable {sv.Label} changed to {sv.Values}");
+            //         }
+            //     }, CancellationToken.None);
+            // });
                 
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
                 
@@ -248,6 +266,19 @@ public partial class ShellWindowModel
             }
         });
 
+    }
+    
+    // Run menu
+    private async Task ConnectAsync(object obj)
+    {
+        List<Task> startTasks = realProjectData.Module.Drivers.Select(driver => driver.StartAsync()).ToList();
+        await Task.WhenAll(startTasks);        
+    }
+    
+    private async Task DisconnectAsync(object obj)
+    {
+        List<Task> stopTasks = realProjectData.Module.Drivers.Select(driver => driver.StopAsync()).ToList();
+        await Task.WhenAll(stopTasks);
     }
     
     

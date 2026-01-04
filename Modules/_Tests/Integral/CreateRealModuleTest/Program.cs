@@ -42,10 +42,13 @@ class Program
                 {
                     protocolVariable.SubscribeAsyncValueChanged(async protVar =>
                     {
-                        if (protocolVariable.Variable is ScalarVariable sv)
+                        await Task.Run(() =>
                         {
-                            Console.WriteLine($"Variable {sv.Label} changed to {sv.Values}");
-                        }
+                            if (protocolVariable.Variable is ScalarVariable sv)
+                            {
+                                Console.WriteLine($"Variable {sv.Label} changed to {sv.Values}");
+                            }
+                        }, cts.Token);
                     });
                 }
             }

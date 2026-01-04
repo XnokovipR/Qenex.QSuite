@@ -1,4 +1,5 @@
-﻿using Qenex.QSuite.Common.WpfComm;
+﻿using System.Windows;
+using Qenex.QSuite.Common.WpfComm;
 using Qenex.QSuite.Controls.Control;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -40,15 +41,20 @@ public class SignalControlViewModel : ControlBase
 
     #region Public methods
 
-    public override Task UpdateVariableValueAsync(IVariableBase protVariable)
+    public override async Task UpdateVariableValueAsync(IVariableBase protVariable)
     {
-	    VariableValue = protVariable switch
+	    var dataValue = protVariable switch
 	    {
 		    ScalarVariable scVar => scVar.Values.ToString(),
 		    StringVariable stVar => stVar.Values
 	    };
-
-	    return Task.CompletedTask;
+	    if (dataValue != null )
+	    {
+		    _ = Application.Current.Dispatcher.BeginInvoke(() =>
+		    {
+			    VariableValue = dataValue;
+		    });
+	    }
     }
 
     public override void BindVariable(IVariableBase protVariable)
