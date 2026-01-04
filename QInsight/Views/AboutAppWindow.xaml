@@ -31,9 +31,9 @@
         <StackPanel Grid.Column="1" Grid.Row="0"  DockPanel.Dock="Top" Orientation="Vertical">
             <TextBlock  Text="QInsight" FontSize="52" FontFamily="Segoe UI Light" FontWeight="Bold" FontStyle="Normal" Foreground="DodgerBlue"
                         HorizontalAlignment="Center"/>
-            <TextBlock  Margin="0,20,0,0" Text="...tune, debug, log and process data" 
+            <TextBlock  Margin="0,0,0,0" Text="From raw data to real understanding." 
                         FontSize="15" FontWeight="Bold" FontStyle="Italic" HorizontalAlignment="Center"/>
-            <TextBlock  Margin="0,5,0,0" Text="of your electronic devices" 
+            <TextBlock  Margin="0,15,0,0" Text="Tune, debug, and analyze your devices" 
                         HorizontalAlignment="Center" FontSize="15" FontWeight="Bold" FontStyle="Italic"/>
             <TextBlock  Margin="0,5,0,0" Text="in real-time!" 
                         HorizontalAlignment="Center" FontSize="15" FontWeight="Bold" FontStyle="Italic"/>
@@ -54,7 +54,7 @@
             </TextBlock>
         </StackPanel>
 
-        <Button Grid.Column="1" Grid.Row="1" Margin="10,10,10,10" Content="Close" DockPanel.Dock="Bottom" Width="70">
+        <Button Grid.Column="1" Grid.Row="1" Margin="10,10,10,20" Content="Close" DockPanel.Dock="Bottom" Width="70">
             <i:Interaction.Triggers>
                 <i:EventTrigger EventName="Click">
                     <i:InvokeCommandAction Command="{Binding CloseCommand}" PassEventArgsToCommand="True"/>
