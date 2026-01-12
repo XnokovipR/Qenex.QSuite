@@ -17,6 +17,7 @@
     <!-- primitives:BackgroundGrid.CellSize="{Binding GridCellSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" -->
     <telerik:RadDiagram
         Name="RadDiagram"
+        IsZoomEnabled="False"
         primitives:BackgroundGrid.IsDynamic="True"
         IsSnapToGridEnabled="{Binding IsSnapToGridEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
         Background="{Binding BackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
