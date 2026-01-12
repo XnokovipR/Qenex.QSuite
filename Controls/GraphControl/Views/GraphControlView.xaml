@@ -3,18 +3,71 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              xmlns:local="clr-namespace:Qenex.QSuite.Controls.GraphControl.Views"
              xmlns:vm="clr-namespace:Qenex.QSuite.Controls.GraphControl.ViewModels"
+             xmlns:converters="clr-namespace:Qenex.QSuite.Controls.Control.Converters;assembly=Qenex.QSuite.Controls.Control"
              d:DataContext="{d:DesignInstance vm:GraphControlViewModel, IsDesignTimeCreatable=False}"
              mc:Ignorable="d" 
              d:DesignHeight="80" d:DesignWidth="250">
+	
+	<UserControl.Resources> 
+		<converters:ColorToBrushConverter x:Key="ColorToBrushConverter"/>
+	</UserControl.Resources> 
 
-	<TextBlock Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-               FontSize="24" 
-               HorizontalAlignment="Center" 
-               VerticalAlignment="Center" 
-               Foreground="Black">
-        
-    </TextBlock>
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>	
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+		
+		<!-- Converter={StaticResource BoolToColorConverter}, ConverterParameter=LawnGreen;DarkGray}" -->
+		<StackPanel Grid.Row="0" Orientation="Horizontal" Height="5">
+			<!-- 	<Border Background="{Binding IsRun, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" -->
+			<!-- 	        Width="15" Height="5" BorderThickness="0" BorderBrush="Black"/> -->
+			<!-- 	<Border Background="{Binding IsLocked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" -->
+			<!-- 	        Width="15" Height="5" BorderThickness="0" BorderBrush="Black"/> -->
+		</StackPanel>
+		
+		<telerik:RadCartesianChart Grid.Row="1" Margin="3">
+    
+			<telerik:RadCartesianChart.HorizontalAxis>
+				<telerik:DateTimeContinuousAxis 
+					         LabelFormat="dd MMM HH:mm"
+					         LabelFitMode="Rotate"
+					         LabelRotationAngle="-45"
+					         MajorStepUnit="Hour"
+					         MajorStep="6" />
+			</telerik:RadCartesianChart.HorizontalAxis>
+			<telerik:RadCartesianChart.VerticalAxis>
+				<telerik:LinearAxis />
+			</telerik:RadCartesianChart.VerticalAxis>
 
+			<telerik:RadCartesianChart.SeriesProvider>
+				<telerik:ChartSeriesProvider Source="{Binding PlottedDataSeries}">
+					<telerik:ChartSeriesProvider.SeriesDescriptors>
+						<telerik:CategoricalSeriesDescriptor CategoryPath="Timestamp"
+						                                     ValuePath="Value"
+						                                     ItemsSourcePath="DataPoints">
+							<telerik:CategoricalSeriesDescriptor.Style>
+								<Style TargetType="telerik:LineSeries" BasedOn="{StaticResource LineSeriesStyle}">
+									<Setter Property="StrokeThickness" Value="1"/>
+									<Setter Property="Stroke" Value="{Binding Color, Converter={StaticResource ColorToBrushConverter}}" />
+								</Style>
+							</telerik:CategoricalSeriesDescriptor.Style>
+						</telerik:CategoricalSeriesDescriptor>
+					</telerik:ChartSeriesProvider.SeriesDescriptors>
+				</telerik:ChartSeriesProvider>
+			</telerik:RadCartesianChart.SeriesProvider>
+			
+			<telerik:RadCartesianChart.Behaviors>
+				<telerik:ChartPanAndZoomBehavior ZoomMode="Both"/>
+				<telerik:ChartTrackBallBehavior ShowTrackInfo="True"/>
+				<!-- https://www.telerik.com/products/wpf/documentation/controls/radchartview/features/behaviors/trackball -->
+				
+			</telerik:RadCartesianChart.Behaviors>
+
+		</telerik:RadCartesianChart>
+		
+	</Grid>
 </UserControl>
