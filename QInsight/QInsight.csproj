@@ -23,6 +23,7 @@
     <PackageReference Include="Qenex.QLibs.QUI.TelerikDocking" Version="1.0.15" />
     <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.6" />
     <PackageReference Include="Telerik.Licensing" Version="1.6.35" />
+    <PackageReference Include="Telerik.Windows.Controls.Chart.Direct2D.for.Wpf" Version="2025.4.1111" />
     <PackageReference Include="Telerik.Windows.Controls.Diagrams.Extensions.for.Wpf" Version="2025.4.1111" />
     <PackageReference Include="Telerik.Windows.Controls.Diagrams.for.Wpf" Version="2025.4.1111" />
     <PackageReference Include="Telerik.Windows.Controls.Docking.for.Wpf" Version="2025.4.1111" />
