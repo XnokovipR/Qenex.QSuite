@@ -50,9 +50,9 @@ public class SimDriver : DriverBase
         var numbers = rawData.FirstOrDefault(r => r.Contains("periodes="))?.Split('=')[1].Split(',');
         if (numbers is not { Length: 1 }) throw new Exception("Invalid number of driver periods.");
         
-        if (int.TryParse(numbers[0], out var period))
+        if (double.TryParse(numbers[0], out var period))
         {
-            sleepPeriod = 1000 * period;
+            sleepPeriod = ((int)period);
         }
         
     }
@@ -104,7 +104,7 @@ public class SimDriver : DriverBase
             foreach (var protocol in Protocols)
             {
                 if (protocol is not ProtocolBase<int> prot) continue;
-                await prot.AddReceivedDataToQueueAsync([sleepPeriod / 1000], ct);
+                await prot.AddReceivedDataToQueueAsync([sleepPeriod], ct);
             }
         }
 

@@ -181,7 +181,8 @@ public class SimpleOne2OneProtocol : ProtocolBase<int>
             if (simpleProtVariable.Variable is not ScalarVariable scalarVariable) continue;
             if (simpleProtVariable.ProtocolVariableSpecification is not SimpleProtVariableSpecification spec) continue;
             if (spec.VariableEvent is not PeriodicVarEvent periodicVarEvent) continue;
-            if (periodicVarEvent.Period != period) continue;
+            var resultPeriod = (int)periodicVarEvent.Unit * periodicVarEvent.Period;
+            if (resultPeriod != period) continue;
                         
             if (scalarVariable.Values is Values<int> intValues)
             {
