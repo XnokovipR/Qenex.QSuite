@@ -8,10 +8,10 @@ namespace Qenex.QSuite.Variables.VariableEvents
 {
 	public enum TimeUnit
 	{
-		Day = 0,
-		Hour,
-		Min,
-		Sec,
-		Milisec
+		Day = 86400000,
+		Hour = 3600000,
+		Min = 60000,
+		Sec = 1000,
+		Milisec = 1
 	}
 }
