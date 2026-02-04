@@ -4,9 +4,11 @@ using Qenex.QSuite.Common.WpfComm;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Controls.Control;
 using System.Drawing;
+using System.Windows;
 using System.Windows.Media;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.QVariables.Values;
 using Telerik.Charting;
 using Telerik.Windows.Controls.ChartView;
 using Color = System.Windows.Media.Color;
@@ -15,6 +17,8 @@ namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
 public sealed class GraphControlViewModel : ControlBase
 {
+	
+	private DateTime baseTime;
 	
 	#region Constructor
 
@@ -31,8 +35,7 @@ public sealed class GraphControlViewModel : ControlBase
 		BackgroundColor = Colors.Aqua;
 		
 		PlottedDataSeries = [];
-		LoadSampleData();
-
+		//LoadSampleData();
 	}
 	
 	private void LoadSampleData()
@@ -41,24 +44,24 @@ public sealed class GraphControlViewModel : ControlBase
 		var series1 = new ChartDataSeries("Temperature", Colors.Red);
 		var series2 = new ChartDataSeries("Humidity", Colors.Blue);
 		var series3 = new ChartDataSeries("Pressure", Colors.Green);
-		BaseTime = DateTime.UtcNow;
+		baseTime = DateTime.UtcNow;
 
 		var f = 1;
 		for (int i = 0; i < 5000; i += 10)
 		{
 			series1.DataPoints.Add(new DataPoint(
-				BaseTime,
-				BaseTime.AddMilliseconds(i), 
+				baseTime,
+				baseTime.AddMilliseconds(i), 
 				20 + 5 * Math.Sin(2 * Math.PI * f * i / 1000.0)));
 			
 			series2.DataPoints.Add(new DataPoint(
-				BaseTime,
-				BaseTime.AddMilliseconds(i), 
+				baseTime,
+				baseTime.AddMilliseconds(i), 
 				60 + 15 * Math.Sin(2 * Math.PI * f * i / 1000.0)));
 
 			series3.DataPoints.Add(new DataPoint(
-				BaseTime,
-				BaseTime.AddMilliseconds(i), 
+				baseTime,
+				baseTime.AddMilliseconds(i), 
 				150 + 30 * Math.Sin(2 * Math.PI * f * i / 1000.0)));
 		}
 
@@ -73,8 +76,6 @@ public sealed class GraphControlViewModel : ControlBase
 	public ObservableCollection<ChartDataSeries> PlottedDataSeries { get; set; }
 	
 	public RelayCommand<object> ZoomPanCommand { get; set; }
-
-	public DateTime BaseTime { get => field; set { field  = value; OnPropertyChanged();}}
 	
 	#endregion
 
@@ -91,12 +92,29 @@ public sealed class GraphControlViewModel : ControlBase
 
 	public override Task UpdateVariableValueAsync(IVariableBase variable)
 	{
+		if (variable is ScalarVariable scalarVariable)
+		{
+			if (baseTime == DateTime.MinValue) baseTime = DateTime.UtcNow;
+			var series = PlottedDataSeries.FirstOrDefault(s => s.Name.Equals(scalarVariable.Name));
+			if (series == null) return Task.CompletedTask;
+			
+			var val = Convert.ToDouble(scalarVariable.Values is Values<int> vv ? vv.Value : 5);
+			var timestamp = DateTime.UtcNow;
+			
+			_ = Application.Current.Dispatcher.BeginInvoke(() =>
+			{
+				series.DataPoints.Add(new DataPoint(baseTime, timestamp, val));
+			});
+		}
 		return Task.CompletedTask;
 	}
 
-	public override void BindVariable(IVariableBase protVariable)
+	public override void BindVariable(IVariableBase variable)
 	{
+	    Variables.Add(variable);
 	    
+	    var series = new ChartDataSeries(variable.Name, Colors.Red);
+	    PlottedDataSeries.Add(series);
 	}
 
 	#endregion
