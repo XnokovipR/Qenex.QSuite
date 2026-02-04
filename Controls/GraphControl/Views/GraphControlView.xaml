@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:system="clr-namespace:System.Windows.Input;assembly=PresentationCore"
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              xmlns:local="clr-namespace:Qenex.QSuite.Controls.GraphControl.Views"
              xmlns:vm="clr-namespace:Qenex.QSuite.Controls.GraphControl.ViewModels"
@@ -32,37 +33,37 @@
 		<telerik:RadCartesianChart Grid.Row="1" Margin="3">
     
 			<telerik:RadCartesianChart.HorizontalAxis>
-				<telerik:DateTimeContinuousAxis 
-					         LabelFormat="dd MMM HH:mm"
-					         LabelFitMode="Rotate"
-					         LabelRotationAngle="-45"
-					         MajorStepUnit="Hour"
-					         MajorStep="6" />
+				<telerik:LinearAxis 
+				                    SmartLabelsMode="SmartStep"
+				                    IsStepRecalculationOnZoomEnabled="True" />
 			</telerik:RadCartesianChart.HorizontalAxis>
+			
 			<telerik:RadCartesianChart.VerticalAxis>
-				<telerik:LinearAxis />
+				<telerik:LinearAxis SmartLabelsMode="SmartStep" IsStepRecalculationOnZoomEnabled="True"/>
 			</telerik:RadCartesianChart.VerticalAxis>
 
 			<telerik:RadCartesianChart.SeriesProvider>
 				<telerik:ChartSeriesProvider Source="{Binding PlottedDataSeries}">
 					<telerik:ChartSeriesProvider.SeriesDescriptors>
-						<telerik:CategoricalSeriesDescriptor CategoryPath="Timestamp"
-						                                     ValuePath="Value"
-						                                     ItemsSourcePath="DataPoints">
-							<telerik:CategoricalSeriesDescriptor.Style>
-								<Style TargetType="telerik:LineSeries" BasedOn="{StaticResource LineSeriesStyle}">
+						<telerik:ScatterSeriesDescriptor XValuePath="RelativeTimeMs"
+						                                 YValuePath="Value"
+						                                 ItemsSourcePath="DataPoints">
+							<telerik:ScatterSeriesDescriptor.Style>
+								<Style TargetType="telerik:ScatterLineSeries" BasedOn="{StaticResource ScatterLineSeriesStyle}">
 									<Setter Property="StrokeThickness" Value="1"/>
 									<Setter Property="Stroke" Value="{Binding Color, Converter={StaticResource ColorToBrushConverter}}" />
 								</Style>
-							</telerik:CategoricalSeriesDescriptor.Style>
-						</telerik:CategoricalSeriesDescriptor>
+							</telerik:ScatterSeriesDescriptor.Style>
+						</telerik:ScatterSeriesDescriptor>
 					</telerik:ChartSeriesProvider.SeriesDescriptors>
 				</telerik:ChartSeriesProvider>
 			</telerik:RadCartesianChart.SeriesProvider>
 			
 			<telerik:RadCartesianChart.Behaviors>
-				<telerik:ChartPanAndZoomBehavior ZoomMode="Both"/>
-				<telerik:ChartTrackBallBehavior ShowTrackInfo="True"/>
+				<telerik:ChartPanAndZoomBehavior ZoomMode="Both" PanMode="None" DragMode="None"/>
+				<telerik:ChartCrosshairBehavior />
+				
+					
 				<!-- https://www.telerik.com/products/wpf/documentation/controls/radchartview/features/behaviors/trackball -->
 				
 			</telerik:RadCartesianChart.Behaviors>

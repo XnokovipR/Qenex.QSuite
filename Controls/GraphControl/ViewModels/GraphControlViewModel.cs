@@ -20,6 +20,11 @@ public sealed class GraphControlViewModel : ControlBase
 
 	public GraphControlViewModel()
 	{
+		ZoomPanCommand = new RelayCommand<object>(p =>
+		{
+			 /* Implement zoom and pan logic here */
+		});
+		
 		var rnd = new Random();
 		Width = 300;
 		Height = 200;
@@ -36,21 +41,25 @@ public sealed class GraphControlViewModel : ControlBase
 		var series1 = new ChartDataSeries("Temperature", Colors.Red);
 		var series2 = new ChartDataSeries("Humidity", Colors.Blue);
 		var series3 = new ChartDataSeries("Pressure", Colors.Green);
-		var baseTime = DateTime.Now.AddHours(-24);
-        
-		for (int i = 0; i < 1000; i++)
+		BaseTime = DateTime.UtcNow;
+
+		var f = 1;
+		for (int i = 0; i < 5000; i += 10)
 		{
 			series1.DataPoints.Add(new DataPoint(
-				baseTime.AddHours(0.1 * i), 
-				20 + 5*Math.Sin(0.1 * i)));
+				BaseTime,
+				BaseTime.AddMilliseconds(i), 
+				20 + 5 * Math.Sin(2 * Math.PI * f * i / 1000.0)));
 			
 			series2.DataPoints.Add(new DataPoint(
-				baseTime.AddHours(0.1 * i), 
-				60 + 15*Math.Cos(0.1 * i)));
+				BaseTime,
+				BaseTime.AddMilliseconds(i), 
+				60 + 15 * Math.Sin(2 * Math.PI * f * i / 1000.0)));
 
 			series3.DataPoints.Add(new DataPoint(
-				baseTime.AddHours(0.1 * i), 
-				150 + 30*Math.Sin(0.1 * i)));
+				BaseTime,
+				BaseTime.AddMilliseconds(i), 
+				150 + 30 * Math.Sin(2 * Math.PI * f * i / 1000.0)));
 		}
 
 		PlottedDataSeries.Add(series1);
@@ -62,6 +71,11 @@ public sealed class GraphControlViewModel : ControlBase
 	#region Properties
 
 	public ObservableCollection<ChartDataSeries> PlottedDataSeries { get; set; }
+	
+	public RelayCommand<object> ZoomPanCommand { get; set; }
+
+	public DateTime BaseTime { get => field; set { field  = value; OnPropertyChanged();}}
+	
 	#endregion
 
 	#region Derived properties
@@ -90,11 +104,13 @@ public sealed class GraphControlViewModel : ControlBase
 	public class DataPoint
 	{
 		public DateTime Timestamp { get; set; }
+		public double RelativeTimeMs { get; set; }
 		public double Value { get; set; }
 
-		public DataPoint(DateTime timestamp, double value)
+		public DataPoint(DateTime baseTime, DateTime timestamp, double value)
 		{
 			Timestamp = timestamp;
+			RelativeTimeMs = (timestamp - baseTime).TotalMilliseconds;
 			Value = value;
 		}
 	}
