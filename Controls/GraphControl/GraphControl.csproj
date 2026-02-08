@@ -1,36 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net10.0-windows7.0</TargetFramework>
-        <LangVersion>latestmajor</LangVersion>
+        <TargetFramework>net10.0-windows</TargetFramework>
         <Nullable>enable</Nullable>
         <UseWPF>true</UseWPF>
         <ImplicitUsings>enable</ImplicitUsings>
-        <AssemblyName>Qenex.QSuite.Controls.GraphControl</AssemblyName>
         <RootNamespace>Qenex.QSuite.Controls.GraphControl</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Controls.GraphControl</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Icons\" />
-      <Folder Include="Models\" />
+      <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.9" />
+      <PackageReference Include="ScottPlot.WPF" Version="5.1.57" />
     </ItemGroup>
 
     <ItemGroup>
-      <Page Update="Views\GraphControlView.xaml">
-        <Generator>MSBuild:Compile</Generator>
-        <XamlRuntime>Wpf</XamlRuntime>
-        <SubType>Designer</SubType>
-      </Page>
+      <ProjectReference Include="..\..\Common\WpfComm\WpfComm.csproj" />
+      <ProjectReference Include="..\Control\Control.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <None Remove="Icons\GraphControl.png" />
-      <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.9" />
-      <PackageReference Include="Telerik.Windows.Controls.Chart.Direct2D.for.Wpf" Version="2025.4.1111" />
-      <PackageReference Include="Telerik.Windows.Controls.for.Wpf" Version="2025.4.1111" />
-      <PackageReference Include="Telerik.Windows.Data.for.Wpf" Version="2025.4.1111" />
-      <ProjectReference Include="..\..\Common\WpfComm\WpfComm.csproj" />
-      <ProjectReference Include="..\Control\Control.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Icons\RtGraphControl.png" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Resource Include="Icons\GraphControl.png" />
     </ItemGroup>
 

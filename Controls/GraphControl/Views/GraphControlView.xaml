@@ -1,74 +1,12 @@
-<UserControl x:Class="Qenex.QSuite.Controls.GraphControl.Views.GraphControlView"
+﻿<UserControl x:Class="Qenex.QSuite.Controls.GraphControl.Views.GraphControlView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:system="clr-namespace:System.Windows.Input;assembly=PresentationCore"
-             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Qenex.QSuite.Controls.GraphControl.Views"
-             xmlns:vm="clr-namespace:Qenex.QSuite.Controls.GraphControl.ViewModels"
-             xmlns:converters="clr-namespace:Qenex.QSuite.Controls.Control.Converters;assembly=Qenex.QSuite.Controls.Control"
-             d:DataContext="{d:DesignInstance vm:GraphControlViewModel, IsDesignTimeCreatable=False}"
-             mc:Ignorable="d" 
-             d:DesignHeight="80" d:DesignWidth="250">
-	
-	<UserControl.Resources> 
-		<converters:ColorToBrushConverter x:Key="ColorToBrushConverter"/>
-	</UserControl.Resources> 
-
-	<Grid>
-		<Grid.RowDefinitions>
-			<RowDefinition Height="Auto"/>	
-			<RowDefinition Height="*"/>
-		</Grid.RowDefinitions>
-		
-		<!-- Converter={StaticResource BoolToColorConverter}, ConverterParameter=LawnGreen;DarkGray}" -->
-		<StackPanel Grid.Row="0" Orientation="Horizontal" Height="5">
-			<!-- 	<Border Background="{Binding IsRun, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" -->
-			<!-- 	        Width="15" Height="5" BorderThickness="0" BorderBrush="Black"/> -->
-			<!-- 	<Border Background="{Binding IsLocked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" -->
-			<!-- 	        Width="15" Height="5" BorderThickness="0" BorderBrush="Black"/> -->
-		</StackPanel>
-		
-		<telerik:RadCartesianChart Grid.Row="1" Margin="3">
-    
-			<telerik:RadCartesianChart.HorizontalAxis>
-				<telerik:LinearAxis 
-				                    SmartLabelsMode="SmartStep"
-				                    IsStepRecalculationOnZoomEnabled="True" />
-			</telerik:RadCartesianChart.HorizontalAxis>
-			
-			<telerik:RadCartesianChart.VerticalAxis>
-				<telerik:LinearAxis SmartLabelsMode="SmartStep" IsStepRecalculationOnZoomEnabled="True"/>
-			</telerik:RadCartesianChart.VerticalAxis>
-
-			<telerik:RadCartesianChart.SeriesProvider>
-				<telerik:ChartSeriesProvider Source="{Binding PlottedDataSeries}">
-					<telerik:ChartSeriesProvider.SeriesDescriptors>
-						<telerik:ScatterSeriesDescriptor XValuePath="RelativeTimeMs"
-						                                 YValuePath="Value"
-						                                 ItemsSourcePath="DataPoints">
-							<telerik:ScatterSeriesDescriptor.Style>
-								<Style TargetType="telerik:ScatterLineSeries" BasedOn="{StaticResource ScatterLineSeriesStyle}">
-									<Setter Property="StrokeThickness" Value="1"/>
-									<Setter Property="Stroke" Value="{Binding Color, Converter={StaticResource ColorToBrushConverter}}" />
-								</Style>
-							</telerik:ScatterSeriesDescriptor.Style>
-						</telerik:ScatterSeriesDescriptor>
-					</telerik:ChartSeriesProvider.SeriesDescriptors>
-				</telerik:ChartSeriesProvider>
-			</telerik:RadCartesianChart.SeriesProvider>
-			
-			<telerik:RadCartesianChart.Behaviors>
-				<telerik:ChartPanAndZoomBehavior ZoomMode="Both" PanMode="None" DragMode="None"/>
-				<telerik:ChartCrosshairBehavior />
-				
-					
-				<!-- https://www.telerik.com/products/wpf/documentation/controls/radchartview/features/behaviors/trackball -->
-				
-			</telerik:RadCartesianChart.Behaviors>
-
-		</telerik:RadCartesianChart>
-		
-	</Grid>
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="300">
+    <Grid>
+        <ContentControl Content="{Binding PlotControl, Mode=OneTime}"/>
+    </Grid>
 </UserControl>
