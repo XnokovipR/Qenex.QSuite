@@ -123,7 +123,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ComponentSpecification", "S
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Controls", "Controls", "{BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphControl", "Controls\GraphControl\GraphControl.csproj", "{437BFDD4-63CF-4F2E-AA57-0DAFE09B99A5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OldGraphControl", "Controls\OldGraphControl\OldGraphControl.csproj", "{437BFDD4-63CF-4F2E-AA57-0DAFE09B99A5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfComm", "Common\WpfComm\WpfComm.csproj", "{FDA9B35F-4CEA-4E3B-926A-1AE27A04E7BE}"
 EndProject
@@ -134,6 +134,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Control", "Controls\Control\Control.csproj", "{AC786CC9-B0C3-4FE0-BE81-DD7688165754}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DerivedWinControls", "Controls\DerivedWinControls\DerivedWinControls.csproj", "{ACAC97CF-3310-4FC4-9F56-7C868F40A175}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphControl", "Controls\GraphControl\GraphControl.csproj", "{BAF75EAA-57DF-4F1A-A3F7-15207E0243C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QClassExt", "Common\QClassExt\QClassExt.csproj", "{19C4B8FC-66EF-42D7-BB15-BFBD5D81707E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -305,6 +309,14 @@ Global
 		{ACAC97CF-3310-4FC4-9F56-7C868F40A175}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ACAC97CF-3310-4FC4-9F56-7C868F40A175}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ACAC97CF-3310-4FC4-9F56-7C868F40A175}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAF75EAA-57DF-4F1A-A3F7-15207E0243C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAF75EAA-57DF-4F1A-A3F7-15207E0243C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAF75EAA-57DF-4F1A-A3F7-15207E0243C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAF75EAA-57DF-4F1A-A3F7-15207E0243C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19C4B8FC-66EF-42D7-BB15-BFBD5D81707E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19C4B8FC-66EF-42D7-BB15-BFBD5D81707E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19C4B8FC-66EF-42D7-BB15-BFBD5D81707E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19C4B8FC-66EF-42D7-BB15-BFBD5D81707E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -363,6 +375,8 @@ Global
 		{8E2473DD-F5D1-4A7D-9D78-470C7020AA01} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
 		{AC786CC9-B0C3-4FE0-BE81-DD7688165754} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
 		{ACAC97CF-3310-4FC4-9F56-7C868F40A175} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
+		{BAF75EAA-57DF-4F1A-A3F7-15207E0243C5} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
+		{19C4B8FC-66EF-42D7-BB15-BFBD5D81707E} = {FA456E72-5D93-4641-9B58-DB7F4F1855F2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {30000164-E084-4EF1-818A-1B98829BA5EA}
