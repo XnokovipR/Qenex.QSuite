@@ -52,7 +52,13 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 			DiagramShape?.Background = new SolidColorBrush(value);
 		}
 	} = Colors.White;//Color.FromRgb(90, 90, 90);
-	
+
+	public Color ForegroundColor
+	{
+		get;
+		set { field = value; OnPropertyChanged(); }
+	}
+
 	public bool IsLocked { get; set { field = value; OnPropertyChanged(); } }
 	public bool IsRun { get; set { field = value; OnPropertyChanged(); } }
 	public List<IVariableBase> Variables { get; set { field = value; OnPropertyChanged(); } }
@@ -63,6 +69,12 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 
 	public abstract Task UpdateVariableValueAsync(IVariableBase variable);
 	public abstract void BindVariable(IVariableBase protVariable);
+	
+	public virtual void UpdateColorControl(Color backgroundColor, Color foregroundColor)
+	{
+		BackgroundColor = backgroundColor;
+		ForegroundColor = foregroundColor;
+	}
 
 	#endregion
 }

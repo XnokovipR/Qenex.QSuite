@@ -7,7 +7,6 @@ using Qenex.QInsight.Views;
 using Telerik.Windows.Diagrams.Core;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Controls.GraphControl.ViewModels;
-using Qenex.QSuite.Controls.GraphControl.Views;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Telerik.Windows.Controls;
 using Telerik.Windows.Controls.ColorEditor.ColorSchemas;
@@ -121,10 +120,17 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     private void AddControlToDiagram(IControlBase controlVm, UserControl control, double x, double y)
     {
+	    var fgColor = ShellWindow.MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ?
+		    ShellWindow.MainAppSettings.Design.DarkThemeTextColor : ShellWindow.MainAppSettings.Design.LightThemeTextColor;
+	    var bgColor = ShellWindow.MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? 
+		    ShellWindow.MainAppSettings.Design.DarkThemeControlBackgroundColor : ShellWindow.MainAppSettings.Design.LightThemeControlBackgroundColor;
+	    
 		var userControl = new RadDiagramShape();
 		controlVm.DiagramShape = userControl;
-		controlVm.BackgroundColor = ShellWindow.MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? 
-			ShellWindow.MainAppSettings.Design.DarkThemeControlBackgroundColor : ShellWindow.MainAppSettings.Design.LightThemeControlBackgroundColor;
+		controlVm.BackgroundColor = bgColor;
+		controlVm.ForegroundColor = fgColor;
+		controlVm.UpdateColorControl(bgColor, fgColor);
+		
 		userControl.Position = new Point(x, y);
 		userControl.Width = controlVm.Width;
 		userControl.Height = controlVm.Height;

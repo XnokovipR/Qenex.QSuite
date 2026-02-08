@@ -87,6 +87,11 @@ public interface IControlBase
 	Color BackgroundColor { get; set; }
 	
 	/// <summary>
+	/// Foreground color of the control.
+	/// </summary>
+	Color ForegroundColor { get; set; }
+	
+	/// <summary>
 	/// Indicates whether the control is locked for editing (moving, resizing, etc.).
 	/// </summary>
 	bool IsLocked { get; set; }
@@ -100,6 +105,8 @@ public interface IControlBase
 	#endregion
 
 	#region Public methods
+	
+	void UpdateColorControl(Color backgroundColor, Color foregroundColor);
 
 	Task UpdateVariableValueAsync(IVariableBase variable);
 	
