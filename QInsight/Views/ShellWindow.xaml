@@ -89,7 +89,7 @@
 	                            SmallImage="../Icons/Menu/Connect.png"
 								Command="{Binding RibbonConnectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 							<telerik:RadRibbonButton
-	                            Text="Close" 
+	                            Text="Disconnect" 
 	                            Size="Large"
 	                            SmallImage="../Icons/Menu/Disconnect.png"
 	                            Command="{Binding RibbonDisconnectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
