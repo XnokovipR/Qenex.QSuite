@@ -12,11 +12,15 @@
     <ItemGroup>
       <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.9" />
       <PackageReference Include="ScottPlot.WPF" Version="5.1.57" />
+      <PackageReference Include="Telerik.Windows.Controls.for.Wpf" Version="2025.4.1111" />
+      <PackageReference Include="Telerik.Windows.Controls.GridView.for.Wpf" Version="2025.4.1111" />
+      <PackageReference Include="Telerik.Windows.Controls.Navigation.for.Wpf" Version="2025.4.1111" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\..\Common\WpfComm\WpfComm.csproj" />
       <ProjectReference Include="..\Control\Control.csproj" />
+      <ProjectReference Include="..\DerivedWinControls\DerivedWinControls.csproj" />
     </ItemGroup>
 
     <ItemGroup>

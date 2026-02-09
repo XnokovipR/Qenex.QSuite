@@ -1,4 +1,5 @@
 ﻿using System.Windows.Media.Imaging;
+using OpenTK.Graphics.OpenGL;
 using Qenex.QSuite.Common.WpfComm;
 using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.Variables.QVariables;
@@ -50,7 +51,7 @@ public class GraphControlViewModel : ControlBase
 
         PlotControl = new WpfPlot();
         
-        PlotControl.Plot.Title("Real-Time Graph");
+        //PlotControl.Plot.Title("Real-Time Graph");
         PlotControl.Plot.Axes.Title.Label.FontSize = 20;
         
         PlotControl.Plot.Axes.Bottom.Label.Text = "Time [s]";
@@ -76,8 +77,38 @@ public class GraphControlViewModel : ControlBase
     #endregion
     
     #region Properties
+
+    public string ChartTitle
+    {
+        get;
+        set
+        {
+            field = value;
+            OnPropertyChanged();
+        }
+    } = string.Empty;
     
     public WpfPlot PlotControl { get; }
+
+    public int ChartTimeSpan
+    {
+        get;
+        set
+        {
+            if (value < 1) value = 1;
+            field = value; OnPropertyChanged();
+        }
+    } = 10;
+    
+    public int ChartBuffer
+    { 
+        get;
+        set
+        {
+            if (value < 50) value = 50;
+            field = value; OnPropertyChanged();
+        } 
+    } = 60;
     
     
     #endregion
@@ -134,6 +165,8 @@ public class GraphControlViewModel : ControlBase
 
     public override void BindVariable(IVariableBase variable)
     {
+        var ev = Variables.FirstOrDefault(v => v.Equals(variable));
+        if (ev != null) return;
         Variables.Add(variable);
 
         var c = chartColors[currentColorIndex++];
@@ -189,9 +222,9 @@ public class GraphControlViewModel : ControlBase
                 PlotControl.Plot.Axes.SetLimitsY(val * 1.1, top);
             }
             
-            PlotControl.Plot.Axes.SetLimitsX(xVal - 10,xVal + 2);
+            PlotControl.Plot.Axes.SetLimitsX(xVal - ChartTimeSpan - 1,xVal + 1);
 
-            if ((timestamp - lastUpdateTime).TotalMilliseconds > 60)
+            if ((timestamp - lastUpdateTime).TotalMilliseconds > ChartBuffer)
             {
                 PlotControl.Refresh();
                 lastUpdateTime = timestamp;
