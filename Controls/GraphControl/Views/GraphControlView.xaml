@@ -6,8 +6,17 @@
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
              xmlns:local="clr-namespace:Qenex.QSuite.Controls.GraphControl.Views"
+             xmlns:vm="clr-namespace:Qenex.QSuite.Controls.GraphControl.ViewModels"
+             d:DataContext="{d:DesignInstance vm:GraphControlViewModel, IsDesignTimeCreatable=False}"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300">
+    
+    <UserControl.Resources>
+        <Style TargetType="CheckBox"
+               BasedOn="{StaticResource CheckBoxStyle}">
+            <Setter Property="Focusable" Value="False"/>
+        </Style>
+    </UserControl.Resources>
     
     <Grid>
         <Grid.RowDefinitions>
@@ -15,9 +24,19 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         
-        <StackPanel Grid.Row="0" Orientation="Horizontal">
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
             
-            <telerik:RadExpander HorizontalAlignment="Left">
+            <telerik:RadExpander Grid.Column="0" HorizontalAlignment="Left">
+                <!-- <telerik:RadExpander.Header> -->
+                <!--     <StackPanel Grid.Column="0" Orientation="Horizontal"  HorizontalAlignment="Left"> -->
+                <!--         <CheckBox Margin="0" IsChecked="{Binding IsLocked, Mode=TwoWay}"/> -->
+                <!--     </StackPanel> -->
+                <!-- </telerik:RadExpander.Header> -->
+                
                 <telerik:RadExpander.HeaderButtonStyle>
                     <Style TargetType="telerik:RadToggleButton" BasedOn="{StaticResource ExpanderHeaderButtonStyle}">
                         <Setter Property="MinHeight" Value="20"/>
@@ -36,18 +55,22 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
                                 
-                                <q:QTextBlock Grid.Column="0" Grid.Row="0" Margin="5,3,5,8" Text="Title:" HorizontalAlignment="Left"/>
-                                <q:QTextBox Grid.Column="1" Grid.Row="0" Text="{Binding ChartTitle, Mode=TwoWay}"
+                                <q:QTextBlock Grid.Column="0" Grid.Row="0" Margin="5,5,5,8" Text="Lock:" HorizontalAlignment="Left"/>
+                                <CheckBox Grid.Column="1" Grid.Row="0" Margin="5,0,0,0" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
+                                
+                                <q:QTextBlock Grid.Column="0" Grid.Row="1" Margin="5,3,5,8" Text="Title:" HorizontalAlignment="Left"/>
+                                <q:QTextBox Grid.Column="1" Grid.Row="1" Text="{Binding ChartTitle, Mode=TwoWay}"
                                             Margin="5,0,0,0" HorizontalAlignment="Left" Height="20" Width="180" />
 
-                                <q:QTextBlock Grid.Column="0" Grid.Row="1" Margin="5,3,5,8" Text="Buffer [ms]:" HorizontalAlignment="Left"/>
-                                <q:QTextBox Grid.Column="1" Grid.Row="1" Text="{Binding ChartBuffer, Mode=TwoWay}"
+                                <q:QTextBlock Grid.Column="0" Grid.Row="2" Margin="5,3,5,8" Text="Buffer [ms]:" HorizontalAlignment="Left"/>
+                                <q:QTextBox Grid.Column="1" Grid.Row="2" Text="{Binding ChartBuffer, Mode=TwoWay}"
                                                  Margin="5,0,0,0" HorizontalAlignment="Left" Height="20" Width="50" />
 
-                                <q:QTextBlock Grid.Column="0" Grid.Row="2" Margin="5,3,0,8" Text="Time span [s]:" HorizontalAlignment="Left"/>
-                                <q:QTextBox Grid.Column="1" Grid.Row="2" Text="{Binding ChartTimeSpan, Mode=TwoWay}" 
+                                <q:QTextBlock Grid.Column="0" Grid.Row="3" Margin="5,3,0,8" Text="Time span [s]:" HorizontalAlignment="Left"/>
+                                <q:QTextBox Grid.Column="1" Grid.Row="3" Text="{Binding ChartTimeSpan, Mode=TwoWay}" 
                                                  Margin="5,0,0,0" HorizontalAlignment="Left" Height="20" Width="50"/>
                             </Grid>       
                         </telerik:RadTabItem>
@@ -67,15 +90,17 @@
                         </telerik:RadTabItem>
                         
                         <telerik:RadTabItem Header="Axis">
+                            <CheckBox/>
                             
                         </telerik:RadTabItem>
                     </telerik:RadTabControl.Items>
                 </telerik:RadTabControl>
             </telerik:RadExpander>
             
-            <q:QTextBlock Margin="10,3,0,0" Text="{Binding ChartTitle, Mode=TwoWay}"/>
+            <q:QTextBlock Grid.Column="1" Margin="10,3,0,0" Text="{Binding ChartTitle, Mode=TwoWay}"
+                          HorizontalAlignment="Center"/>
             
-        </StackPanel>
+        </Grid>
         
         <ContentControl Grid.Row="1" Content="{Binding PlotControl, Mode=OneTime}"/>
     </Grid>

@@ -54,7 +54,6 @@ public interface IControlBase
 	/// Minimum width of the control.
 	/// </summary>
 	int MinWidth { get; }
-	
 
 	/// <summary>
 	/// Control horizontal position of the left upper corner.
@@ -102,7 +101,7 @@ public interface IControlBase
 	/// Variables binded to the control.
 	/// </summary>
 	ObservableCollection<IVariableBase> Variables { get; set; }
-	
+		
 	#endregion
 
 	#region Public methods

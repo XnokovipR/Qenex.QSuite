@@ -142,6 +142,12 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 		userControl.HorizontalContentAlignment = HorizontalAlignment.Stretch;
 		userControl.VerticalContentAlignment = VerticalAlignment.Stretch;
 		userControl.AllowDrop = true;
+		userControl.IsManipulationEnabled = !controlVm.IsLocked;
+		userControl.IsManipulationAdornerVisible = !controlVm.IsLocked;
+		userControl.IsManipulationAdornerVisible = !controlVm.IsLocked;
+		userControl.IsDraggingEnabled = !controlVm.IsLocked;
+		userControl.IsRotationEnabled = !controlVm.IsLocked;
+		userControl.IsResizingEnabled = !controlVm.IsLocked;
 
 		userControl.Connectors.Clear();
 		var leftCon = new RadDiagramConnector()

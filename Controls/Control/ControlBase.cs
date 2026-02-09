@@ -59,10 +59,25 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 		get;
 		set { field = value; OnPropertyChanged(); }
 	}
-
-	public bool IsLocked { get; set { field = value; OnPropertyChanged(); } }
+	
 	public bool IsRun { get; set { field = value; OnPropertyChanged(); } }
 	public ObservableCollection<IVariableBase> Variables { get; set { field = value; OnPropertyChanged(); } }
+
+	public bool IsLocked
+	{
+		get;
+		set
+		{
+			field = value;
+			OnPropertyChanged();
+			DiagramShape?.IsManipulationEnabled = !value;
+			DiagramShape?.IsManipulationAdornerVisible = !value;
+			DiagramShape?.IsManipulationAdornerVisible = !value;
+			DiagramShape?.IsDraggingEnabled = !value;
+			DiagramShape?.IsRotationEnabled = !value;
+			DiagramShape?.IsResizingEnabled = !value;
+		}
+	} = false;
 
 	#endregion
 
