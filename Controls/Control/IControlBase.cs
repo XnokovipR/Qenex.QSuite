@@ -1,4 +1,5 @@
-﻿using System.Windows.Media;
+﻿using System.Collections.ObjectModel;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
@@ -100,7 +101,7 @@ public interface IControlBase
 	/// <summary>
 	/// Variables binded to the control.
 	/// </summary>
-	List<IVariableBase> Variables { get; set; }
+	ObservableCollection<IVariableBase> Variables { get; set; }
 	
 	#endregion
 

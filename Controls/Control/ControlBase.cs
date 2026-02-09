@@ -1,4 +1,5 @@
 
+using System.Collections.ObjectModel;
 using Qenex.QLibs.QUI;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -61,7 +62,7 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 
 	public bool IsLocked { get; set { field = value; OnPropertyChanged(); } }
 	public bool IsRun { get; set { field = value; OnPropertyChanged(); } }
-	public List<IVariableBase> Variables { get; set { field = value; OnPropertyChanged(); } }
+	public ObservableCollection<IVariableBase> Variables { get; set { field = value; OnPropertyChanged(); } }
 
 	#endregion
 
