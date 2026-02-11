@@ -3,7 +3,6 @@ using Qenex.QInsight.Models.Project;
 using Qenex.QLibs.XmlInOut;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
-using Qenex.QSuite;
 
 namespace Qenex.QInsight.Models.Project;
 
