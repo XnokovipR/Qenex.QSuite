@@ -192,7 +192,7 @@ public class SimpleOne2OneProtocol : ProtocolBase<int>
             }
             else if (scalarVariable.Values is Values<float> floatValues)
             {
-                floatValues.Value = 10 * (float)rnd.NextDouble();
+                floatValues.Value = (float)(5 + 5 * Math.Sin(DateTime.UtcNow.Second / 60.0 * 8 * Math.PI));
             }
             else if (scalarVariable.Values is Values<byte> byteValues)
             {
