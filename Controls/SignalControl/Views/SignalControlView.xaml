@@ -10,33 +10,54 @@
              mc:Ignorable="d"
              d:DesignHeight="60" d:DesignWidth="100"
              d:DataContext="{d:DesignInstance vm:SignalControlViewModel, IsDesignTimeCreatable=False}">
+	
+	<UserControl.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/Qenex.QSuite.Controls.Control;component/Style/SharedStyles.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</UserControl.Resources>
     
 	<Grid>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="Auto"/>	
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="Auto"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
 		
-		<!-- Converter={StaticResource BoolToColorConverter}, ConverterParameter=LawnGreen;DarkGray}" -->
-		<StackPanel Grid.Row="0" Orientation="Horizontal" Height="5">
-		<!-- 	<Border Background="{Binding IsRun, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" -->
-		<!-- 	        Width="15" Height="5" BorderThickness="0" BorderBrush="Black"/> -->
-		<!-- 	<Border Background="{Binding IsLocked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" -->
-		<!-- 	        Width="15" Height="5" BorderThickness="0" BorderBrush="Black"/> -->
-		</StackPanel>
+		<telerik:RadExpander Grid.Row="0" Grid.Column="0" Style="{StaticResource SquareExpanderStyle}" HorizontalAlignment="Left">
+			<Grid Margin="5">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
+	            
+				<q:QTextBlock Grid.Column="0" Grid.Row="0" Margin="5,0,5,0" Text="Lock:" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+				<CheckBox Grid.Column="1" Grid.Row="0" Margin="5,0,0,0" IsChecked="{Binding IsLocked, Mode=TwoWay}"
+				          VerticalAlignment="Center" MinHeight="0" Padding="0" MinWidth="0"/>
+			</Grid>
+		</telerik:RadExpander>
 		
-		<StackPanel Grid.Row="1" Orientation="Vertical" Margin="3">
-			<q:QTextBlock Text="{Binding VariableLabel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-			           Margin="0,0,0,3" TextWrapping="NoWrap"/>
+		<q:QTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding VariableLabel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+		              Margin="5,0,0,3" TextWrapping="NoWrap" HorizontalAlignment="Left"/>
+		
+		<StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Vertical" Margin="0,3,0,0">
 			
 			<Grid HorizontalAlignment="Stretch">
 				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="0.65*"/>	
-					<ColumnDefinition Width="0.35*"/>
+					<ColumnDefinition Width="*"/>	
+					<ColumnDefinition Width="Auto"/>
 				</Grid.ColumnDefinitions>	
 				
 				<q:QTextBox Grid.Column="0" Text="{Binding VariableValue, Mode=TwoWay, UpdateSourceTrigger=Default}"
-				            MinWidth="50" IsReadOnly="True" TextAlignment="Right"/>
+				            MinWidth="50" IsReadOnly="True" TextAlignment="Right" HorizontalAlignment="Stretch"/>
 				
 				<StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="5,0,0,0">
 					<q:QTextBlock Text="[" Margin="0,0,3,0"/>
