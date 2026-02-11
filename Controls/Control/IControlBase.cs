@@ -92,6 +92,11 @@ public interface IControlBase
 	Color ForegroundColor { get; set; }
 	
 	/// <summary>
+	/// Font size of the control.
+	/// </summary>
+	int FontSize { get; set; }
+	
+	/// <summary>
 	/// Indicates whether the control is locked for editing (moving, resizing, etc.).
 	/// </summary>
 	bool IsLocked { get; set; }
@@ -106,7 +111,7 @@ public interface IControlBase
 
 	#region Public methods
 	
-	void UpdateColorControl(Color backgroundColor, Color foregroundColor);
+	void UpdateThemeSettingsControl(Color backgroundColor, Color foregroundColor, int fontSize);
 
 	Task UpdateVariableValueAsync(IVariableBase variable);
 	

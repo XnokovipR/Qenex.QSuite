@@ -1,4 +1,5 @@
-﻿using System.Windows.Media.Imaging;
+﻿using System.IO;
+using System.Windows.Media.Imaging;
 using OpenTK.Graphics.OpenGL;
 using Qenex.QSuite.Common.WpfComm;
 using Qenex.QSuite.Controls.Control;
@@ -7,11 +8,13 @@ using Qenex.QSuite.Variables.QVariables.Values;
 using RtGraphControl.Models;
 using ScottPlot;
 using ScottPlot.WPF;
+using Media = System.Windows.Media;
 
 namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
 public class GraphControlViewModel : ControlBase
 {
+    private readonly string fontName = "Segoe UI";
     private Dictionary<string, ChartDataSeries> chartDataSeries;
     private DateTime baseTime;
     private DateTime lastUpdateTime;
@@ -124,12 +127,30 @@ public class GraphControlViewModel : ControlBase
     
     #region Overrides of ControlBase
 
-    public override void UpdateColorControl(System.Windows.Media.Color backgroundColor, System.Windows.Media.Color foregroundColor)
+    public override void UpdateThemeSettingsControl(System.Windows.Media.Color backgroundColor, System.Windows.Media.Color foregroundColor, int fontSize)
     {
-        base.UpdateColorControl(backgroundColor, foregroundColor);
+        base.UpdateThemeSettingsControl(backgroundColor, foregroundColor, fontSize);
+
+        var plotFontSize = (int)Math.Round(1.8 * fontSize);
+        PlotControl.Plot.Legend.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Title.Label.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Title.Label.Bold = false;
+        PlotControl.Plot.Axes.Bottom.Label.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Bottom.Label.Bold = false;
+        PlotControl.Plot.Axes.Top.Label.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Top.Label.Bold = false;
+        PlotControl.Plot.Axes.Left.Label.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Left.Label.Bold = false;
+        PlotControl.Plot.Axes.Right.Label.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Right.Label.Bold = false;
+        PlotControl.Plot.Axes.Bottom.TickLabelStyle.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Left.TickLabelStyle.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Top.TickLabelStyle.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Right.TickLabelStyle.FontSize = plotFontSize;
+        
         var bgColor = backgroundColor.ToScottPlotColor();
         var fgColor = foregroundColor.ToScottPlotColor();
-        
+            
         PlotControl.Plot.FigureBackground.Color = bgColor;
         PlotControl.Plot.DataBackground.Color = bgColor;
         PlotControl.Plot.DataBorder.Color = fgColor;
@@ -161,6 +182,8 @@ public class GraphControlViewModel : ControlBase
         {
             axis.FrameLineStyle.Color = fgColor;
         }
+        
+        PlotControl.Refresh();
     }
 
     public override void BindVariable(IVariableBase variable)

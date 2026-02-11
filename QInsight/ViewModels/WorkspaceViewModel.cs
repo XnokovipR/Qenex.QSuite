@@ -124,12 +124,13 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 		    ShellWindow.MainAppSettings.Design.DarkThemeTextColor : ShellWindow.MainAppSettings.Design.LightThemeTextColor;
 	    var bgColor = ShellWindow.MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? 
 		    ShellWindow.MainAppSettings.Design.DarkThemeControlBackgroundColor : ShellWindow.MainAppSettings.Design.LightThemeControlBackgroundColor;
+	    var fontSize = ShellWindow.MainAppSettings.Design.FontSize;
 	    
 		var userControl = new RadDiagramShape();
 		controlVm.DiagramShape = userControl;
 		controlVm.BackgroundColor = bgColor;
 		controlVm.ForegroundColor = fgColor;
-		controlVm.UpdateColorControl(bgColor, fgColor);
+		controlVm.UpdateThemeSettingsControl(bgColor, fgColor, fontSize > 0 ? fontSize : 12);
 		
 		userControl.Position = new Point(x, y);
 		userControl.Width = controlVm.Width;
