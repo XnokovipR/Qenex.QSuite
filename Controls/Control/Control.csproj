@@ -12,10 +12,19 @@
   <ItemGroup>
     <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.9" />
     <PackageReference Include="Telerik.Windows.Controls.Diagrams.for.Wpf" Version="2025.4.1111" />
+    <PackageReference Include="Telerik.Windows.Controls.for.Wpf" Version="2025.4.1111" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Protocols\Protocol\Protocol.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="Style\SharedStyles.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <XamlRuntime>Wpf</XamlRuntime>
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
 
 </Project>
