@@ -11,10 +11,11 @@ namespace Qenex.QSuite.Controls.SignalControl.ViewModels;
 public class SignalControlViewModel : ControlBase
 {
 	private DateTime previousUpdateTime = DateTime.MinValue;
+	private double prevValue;
 	
     public SignalControlViewModel()
     {
-		Width = 120;
+		Width = 140;
 		Height = 60;
 		
 		VariableLabel = "----------";
@@ -40,6 +41,16 @@ public class SignalControlViewModel : ControlBase
 	    } 
     } = 250;
     
+    public int DeathBendPercentage
+    { 
+	    get;
+	    set
+	    {
+		    if (value < 0) value = 0;
+		    field = value; OnPropertyChanged();
+	    } 
+    } = 5;
+    
     #endregion
 
     #region Derived properties
@@ -64,6 +75,12 @@ public class SignalControlViewModel : ControlBase
 	    if (dataValue == null ) return;
 	    if ((protVariable.Timestamp - previousUpdateTime).TotalMilliseconds < RefreshTime) return;
 	    previousUpdateTime = protVariable.Timestamp;
+
+	    if (double.TryParse(dataValue, out double doubleValue))
+	    {
+		    if (Math.Abs((doubleValue - prevValue) / prevValue * 100) < DeathBendPercentage) return;
+		    prevValue = doubleValue;
+	    }
 	    
 	    _ = Application.Current.Dispatcher.BeginInvoke(() =>
 	    {
