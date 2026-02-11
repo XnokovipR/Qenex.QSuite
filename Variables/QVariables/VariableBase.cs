@@ -20,6 +20,8 @@ public abstract class VariableBase : IVariableBase
     
     public string Description { get; set; }
     
+    public DateTime Timestamp { get; set; }
+    
     /// <summary>
     /// Reference to the modules to which the variable data will be sent.
     /// </summary>

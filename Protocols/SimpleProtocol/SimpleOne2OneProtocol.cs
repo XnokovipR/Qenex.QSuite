@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
+using System.Runtime.InteropServices.JavaScript;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
@@ -183,7 +184,8 @@ public class SimpleOne2OneProtocol : ProtocolBase<int>
             if (spec.VariableEvent is not PeriodicVarEvent periodicVarEvent) continue;
             var resultPeriod = (int)periodicVarEvent.Unit * periodicVarEvent.Period;
             if (resultPeriod != period) continue;
-                        
+
+            scalarVariable.Timestamp = DateTime.UtcNow;
             if (scalarVariable.Values is Values<int> intValues)
             {
                 intValues.Value = rnd.Next(-20, 20);

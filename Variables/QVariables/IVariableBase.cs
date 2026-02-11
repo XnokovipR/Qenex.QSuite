@@ -35,6 +35,11 @@ public interface IVariableBase
     string Description { get; set; }
     
     /// <summary>
+    /// Timestamp of the variable data. It is used to determine when the variable data was updated and to synchronize the data with other components.
+    /// </summary>
+    DateTime Timestamp { get; set; }
+    
+    /// <summary>
     /// Reference to the components (modules / drivers) to which the variable data will be sent.
     /// </summary>
     IList<IComponentSpecification> CommComponents { get; set; }
