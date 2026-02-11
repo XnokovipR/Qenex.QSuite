@@ -10,14 +10,16 @@ namespace Qenex.QSuite.Controls.SignalControl.ViewModels;
 
 public class SignalControlViewModel : ControlBase
 {
+	private DateTime previousUpdateTime = DateTime.MinValue;
+	
     public SignalControlViewModel()
     {
-		Width = 100;
+		Width = 120;
 		Height = 60;
 		
 		VariableLabel = "----------";
 		VariableValue = "";
-		VariableUnit = "";
+		VariableUnit = "-";
     }
 
     #region Properties
@@ -27,6 +29,16 @@ public class SignalControlViewModel : ControlBase
     public string VariableValue { get; set { field = value; OnPropertyChanged(); } }
 
     public string VariableUnit { get; set { field = value; OnPropertyChanged(); } }
+    
+    public int RefreshTime
+    { 
+	    get;
+	    set
+	    {
+		    if (value < 0) value = 0;
+		    field = value; OnPropertyChanged();
+	    } 
+    } = 250;
     
     #endregion
 
@@ -48,13 +60,16 @@ public class SignalControlViewModel : ControlBase
 		    ScalarVariable scVar => scVar.Values.ToString(),
 		    StringVariable stVar => stVar.Values
 	    };
-	    if (dataValue != null )
+	    
+	    if (dataValue == null ) return;
+	    if ((protVariable.Timestamp - previousUpdateTime).TotalMilliseconds < RefreshTime) return;
+	    previousUpdateTime = protVariable.Timestamp;
+	    
+	    _ = Application.Current.Dispatcher.BeginInvoke(() =>
 	    {
-		    _ = Application.Current.Dispatcher.BeginInvoke(() =>
-		    {
-			    VariableValue = dataValue;
-		    });
-	    }
+		    VariableValue = dataValue;
+	    });
+	    
     }
 
     public override void BindVariable(IVariableBase protVariable)

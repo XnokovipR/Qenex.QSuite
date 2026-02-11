@@ -37,11 +37,17 @@
 				</Grid.ColumnDefinitions>
 				<Grid.RowDefinitions>
 					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
 				</Grid.RowDefinitions>
 	            
-				<q:QTextBlock Grid.Column="0" Grid.Row="0" Margin="5,0,5,0" Text="Lock:" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+				<q:QTextBlock Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" Text="Lock:" HorizontalAlignment="Left" VerticalAlignment="Center"/>
 				<CheckBox Grid.Column="1" Grid.Row="0" Margin="5,0,0,0" IsChecked="{Binding IsLocked, Mode=TwoWay}"
 				          VerticalAlignment="Center" MinHeight="0" Padding="0" MinWidth="0"/>
+				
+				<q:QTextBlock Grid.Column="0" Grid.Row="1" Text="Refresh [ms]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Column="1" Grid.Row="1" Text="{Binding RefreshTime, Mode=TwoWay}"
+				            Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="50" VerticalAlignment="Center" />
+				
 			</Grid>
 		</telerik:RadExpander>
 		

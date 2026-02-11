@@ -200,7 +200,7 @@ public class GraphControlViewModel : ControlBase
 
             };
             
-            var timestamp = DateTime.UtcNow;
+            var timestamp = variable.Timestamp;
             
             series.XDateTimeVal.Add(timestamp);
             var xVal = (timestamp - baseTime).TotalSeconds;
