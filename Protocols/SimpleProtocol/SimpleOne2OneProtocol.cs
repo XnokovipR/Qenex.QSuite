@@ -188,11 +188,11 @@ public class SimpleOne2OneProtocol : ProtocolBase<int>
             scalarVariable.Timestamp = DateTime.UtcNow;
             if (scalarVariable.Values is Values<int> intValues)
             {
-                intValues.Value = rnd.Next(-20, 20);
+                intValues.Value = (int)(1000 * Math.Sin(DateTime.UtcNow.Second / 60.0 * 16 * Math.PI)) + (int)(100 * rnd.NextDouble() - 50.0);
             }
             else if (scalarVariable.Values is Values<float> floatValues)
             {
-                floatValues.Value = (float)(5 + 5 * Math.Sin(DateTime.UtcNow.Second / 60.0 * 8 * Math.PI));
+                floatValues.Value = (float)(750 * Math.Sin(DateTime.UtcNow.Second / 60.0 * 8 * Math.PI));
             }
             else if (scalarVariable.Values is Values<byte> byteValues)
             {
