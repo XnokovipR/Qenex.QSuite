@@ -132,6 +132,7 @@ public class GraphControlViewModel : ControlBase
         base.UpdateThemeSettingsControl(backgroundColor, foregroundColor, fontSize);
 
         var plotFontSize = (int)Math.Round(1.8 * fontSize);
+        var axesFontSize = (int)Math.Round(1.5 * fontSize);
         PlotControl.Plot.Legend.FontSize = plotFontSize;
         PlotControl.Plot.Axes.Title.Label.FontSize = plotFontSize;
         PlotControl.Plot.Axes.Title.Label.Bold = false;
@@ -143,10 +144,10 @@ public class GraphControlViewModel : ControlBase
         PlotControl.Plot.Axes.Left.Label.Bold = false;
         PlotControl.Plot.Axes.Right.Label.FontSize = plotFontSize;
         PlotControl.Plot.Axes.Right.Label.Bold = false;
-        PlotControl.Plot.Axes.Bottom.TickLabelStyle.FontSize = plotFontSize;
-        PlotControl.Plot.Axes.Left.TickLabelStyle.FontSize = plotFontSize;
-        PlotControl.Plot.Axes.Top.TickLabelStyle.FontSize = plotFontSize;
-        PlotControl.Plot.Axes.Right.TickLabelStyle.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Bottom.TickLabelStyle.FontSize = axesFontSize;
+        PlotControl.Plot.Axes.Left.TickLabelStyle.FontSize = axesFontSize;
+        PlotControl.Plot.Axes.Top.TickLabelStyle.FontSize = axesFontSize;
+        PlotControl.Plot.Axes.Right.TickLabelStyle.FontSize = axesFontSize;
         
         var bgColor = backgroundColor.ToScottPlotColor();
         var fgColor = foregroundColor.ToScottPlotColor();
