@@ -15,7 +15,7 @@ public class ChartVariable : PropertyChangedBase
     {
         XDateTimeVal = [];
         XVal = [];
-        YVal = [];        
+        YVal = [];     
     }
 
     #endregion

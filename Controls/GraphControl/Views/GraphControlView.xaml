@@ -67,13 +67,28 @@
                     <telerik:RadTabItem Header="Signals">
                         <telerik:RadGridView
                             AllowDrop="False"
-                            ItemsSource="{Binding Variables, Mode=TwoWay}"
+                            ItemsSource="{Binding ChartVariables, Mode=TwoWay}"
                             ShowGroupPanel="False" 
                             AutoGenerateColumns="False"
                             RowIndicatorVisibility="Collapsed">
                             
                             <telerik:RadGridView.Columns>
-                                <telerik:GridViewDataColumn Header="Label" DataMemberBinding="{Binding Path=Label}" IsReadOnly="True"/>
+                                <telerik:GridViewDataColumn Header="Id" IsFilterable="False" DataMemberBinding="{Binding Path=Variable.Id}" IsReadOnly="True"/>
+                                <telerik:GridViewDataColumn Header="Label" IsFilterable="False" DataMemberBinding="{Binding Path=Variable.Label}" IsReadOnly="True"/>
+                                <telerik:GridViewDataColumn Header="Color" IsFilterable="False" >
+                                    <telerik:GridViewDataColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <telerik:RadColorPicker 
+                                            SelectedColor="{Binding ChartColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            HeaderPalette="Standard" 
+                                            HeaderPaletteVisibility="Visible" 
+                                            MainPalette="Default" 
+                                            StandardPalette="Standard" 
+                                            StandardPaletteVisibility="Collapsed"
+                                            NoColorText="Line Color"/>
+                                        </DataTemplate>
+                                    </telerik:GridViewDataColumn.CellTemplate>
+                                </telerik:GridViewDataColumn>
                             </telerik:RadGridView.Columns>
                         </telerik:RadGridView>
                     </telerik:RadTabItem>

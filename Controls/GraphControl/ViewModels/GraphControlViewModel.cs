@@ -56,7 +56,7 @@ public class GraphControlViewModel : ControlBase
     
     #region Properties
     
-    public ObservableCollection<ChartVariable> ChartVariables;
+    public ObservableCollection<ChartVariable> ChartVariables { get; set; }
 
     public string ChartTitle { get; set { field = value; OnPropertyChanged(); } } = string.Empty;
     
@@ -91,9 +91,13 @@ public class GraphControlViewModel : ControlBase
         ChartVariables.Add(chartVariable);
         
         var signal = PlotControl.Plot.Add.SignalXY(chartVariable.XVal, chartVariable.YVal, ChartVariable.ToScottPlotColor(c));
+        signal.LegendText = $"{variable.Label} ({variable.Id})";
         chartVariable.ChartSignal = signal;
         chartVariable.ChartColor = c;
         chartVariable.Variable = variable;
+
+        PlotControl.Refresh();
+
         //PlotControl.Plot.Remove(signal);
     }
 
@@ -180,13 +184,23 @@ public class GraphControlViewModel : ControlBase
         PlotControl.Plot.Axes.Right.Label.ForeColor = fgColor;
         PlotControl.Plot.Axes.Right.Label.BackgroundColor = bgColor;
         PlotControl.Plot.Axes.Right.TickLabelStyle.ForeColor = fgColor;
-        PlotControl.Plot.Axes.Right.TickLabelStyle.BackgroundColor = bgColor;   
+        PlotControl.Plot.Axes.Right.TickLabelStyle.BackgroundColor = bgColor;
+
+        // Legend
+        PlotControl.Plot.Legend.BackgroundColor = bgColor;
+        PlotControl.Plot.Legend.FontColor = fgColor;
+        PlotControl.Plot.Legend.Alignment = Alignment.LowerLeft;
+        
+        // Grid
+        PlotControl.Plot.Grid.LineColor = new Color((fgColor.R + bgColor.R)/2, (fgColor.G + bgColor.G)/2, (fgColor.B + bgColor.B)/2, 0.25f);
+        
         
         foreach (var axis in PlotControl.Plot.Axes.GetAxes())
         {
             axis.FrameLineStyle.Color = fgColor;
         }
         
+        PlotControl.Plot.ShowLegend();
         PlotControl.Refresh();
     }
 
