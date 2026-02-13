@@ -1,47 +1,22 @@
-﻿using System.IO;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Media.Imaging;
-using OpenTK.Graphics.OpenGL;
 using Qenex.QSuite.Common.WpfComm;
 using Qenex.QSuite.Controls.Control;
+using Qenex.QSuite.Controls.GraphControl.Helpers;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.QVariables.Values;
 using RtGraphControl.Models;
 using ScottPlot;
 using ScottPlot.WPF;
-using Media = System.Windows.Media;
 
 namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
 public class GraphControlViewModel : ControlBase
 {
-    private readonly string fontName = "Segoe UI";
-    private Dictionary<string, ChartDataSeries> chartDataSeries;
     private DateTime baseTime;
     private DateTime lastUpdateTime;
     
-    private readonly Dictionary<int, System.Drawing.Color> chartColors = new Dictionary<int, System.Drawing.Color>
-    {
-        { 1, System.Drawing.Color.Red },
-        { 2, System.Drawing.Color.Blue },
-        { 3, System.Drawing.Color.Green },
-        { 4, System.Drawing.Color.Orange },
-        { 5, System.Drawing.Color.Purple },
-        { 6, System.Drawing.Color.Brown },
-        { 7, System.Drawing.Color.Magenta },
-        { 8, System.Drawing.Color.Cyan },
-        { 9, System.Drawing.Color.Yellow },
-        { 10, System.Drawing.Color.Gray },
-        { 11, System.Drawing.Color.Pink },
-        { 12, System.Drawing.Color.Lime },
-        { 13, System.Drawing.Color.Teal },
-        { 14, System.Drawing.Color.Navy },
-        { 15, System.Drawing.Color.Maroon },
-        { 16, System.Drawing.Color.Olive },
-        { 17, System.Drawing.Color.Silver },
-        { 18, System.Drawing.Color.Gold },
-        { 19, System.Drawing.Color.Coral },
-        { 20, System.Drawing.Color.Turquoise }
-    };
+
     private int currentColorIndex = 1;
     
     
@@ -74,45 +49,22 @@ public class GraphControlViewModel : ControlBase
         PlotControl.Plot.Axes.SetLimitsX(0, 5);
         PlotControl.Plot.Axes.SetLimitsY(0, 1);
         
-        chartDataSeries = new Dictionary<string, ChartDataSeries>();
+        ChartVariables = new ObservableCollection<ChartVariable>();
     }
 
     #endregion
     
     #region Properties
+    
+    public ObservableCollection<ChartVariable> ChartVariables;
 
-    public string ChartTitle
-    {
-        get;
-        set
-        {
-            field = value;
-            OnPropertyChanged();
-        }
-    } = string.Empty;
+    public string ChartTitle { get; set { field = value; OnPropertyChanged(); } } = string.Empty;
     
     public WpfPlot PlotControl { get; }
 
-    public int ChartTimeSpan
-    {
-        get;
-        set
-        {
-            if (value < 1) value = 1;
-            field = value; OnPropertyChanged();
-        }
-    } = 10;
+    public int ChartTimeSpan { get; set { if (value < 1) value = 1; field = value; OnPropertyChanged(); } } = 10;
     
-    public int ChartBuffer
-    { 
-        get;
-        set
-        {
-            if (value < 50) value = 50;
-            field = value; OnPropertyChanged();
-        } 
-    } = 60;
-    
+    public int ChartBuffer { get; set { if (value < 50) value = 50; field = value; OnPropertyChanged(); } } = 60;
     
     #endregion
     
@@ -126,7 +78,58 @@ public class GraphControlViewModel : ControlBase
     #endregion    
     
     #region Overrides of ControlBase
+    
 
+    public override void BindVariable(IVariableBase variable)
+    {
+        var ev = Variables.FirstOrDefault(v => v.Equals(variable));
+        if (ev != null) return;
+        Variables.Add(variable);
+        
+        var c = ChartHelper.ChartColors[currentColorIndex++];
+        var chartVariable = new ChartVariable(variable);
+        ChartVariables.Add(chartVariable);
+        
+        var signal = PlotControl.Plot.Add.SignalXY(chartVariable.XVal, chartVariable.YVal, ChartVariable.ToScottPlotColor(c));
+        chartVariable.ChartSignal = signal;
+        chartVariable.ChartColor = c;
+        chartVariable.Variable = variable;
+        //PlotControl.Plot.Remove(signal);
+    }
+
+    public override Task UpdateVariableValueAsync(IVariableBase variable)
+    {
+        // Only handle scalar variables contained in ChartVariables
+        if (variable is not ScalarVariable scalarVariable) return Task.CompletedTask;
+        var chartVariable = ChartVariables.FirstOrDefault(v => v.Variable.Name == scalarVariable.Name);
+        if (chartVariable == null) return Task.CompletedTask;
+        
+        // Initialize baseTime and lastUpdateTime on the first update
+        if (baseTime == DateTime.MinValue)
+        {
+            baseTime = DateTime.UtcNow;
+            lastUpdateTime = baseTime;
+        }
+        
+        var val = ConvertValueToDouble(scalarVariable);
+        
+        var timestamp = variable.Timestamp;
+        chartVariable.XDateTimeVal.Add(timestamp);
+        var xVal = (timestamp - baseTime).TotalSeconds;
+        chartVariable.XVal.Add(xVal);
+        chartVariable.YVal.Add(val);
+
+        RecalculateAxisLimits(xVal, val);
+
+        if ((timestamp - lastUpdateTime).TotalMilliseconds > ChartBuffer)
+        {
+            PlotControl.Refresh();
+            lastUpdateTime = timestamp;
+        }
+        
+        return Task.CompletedTask;
+    }
+    
     public override void UpdateThemeSettingsControl(System.Windows.Media.Color backgroundColor, System.Windows.Media.Color foregroundColor, int fontSize)
     {
         base.UpdateThemeSettingsControl(backgroundColor, foregroundColor, fontSize);
@@ -187,95 +190,42 @@ public class GraphControlViewModel : ControlBase
         PlotControl.Refresh();
     }
 
-    public override void BindVariable(IVariableBase variable)
-    {
-        var ev = Variables.FirstOrDefault(v => v.Equals(variable));
-        if (ev != null) return;
-        Variables.Add(variable);
+    #endregion
 
-        var c = chartColors[currentColorIndex++];
-        var series = new ChartDataSeries(variable.Name, c);
-        chartDataSeries.Add(variable.Name, series);
+    #region Private Methods
+
+    private void RecalculateAxisLimits(double xVal, double yVal)
+    {
+        var top = PlotControl.Plot.Axes.GetLimits().Top;
+        var bottom = PlotControl.Plot.Axes.GetLimits().Bottom;
+        if (yVal > top)
+        {
+            PlotControl.Plot.Axes.SetLimitsY(bottom, yVal * 1.1);    
+        }
+        else if (yVal < bottom && yVal > 0)
+        {
+            PlotControl.Plot.Axes.SetLimitsY(yVal * 0.7, top);
+        }
+        else if (yVal < bottom && yVal < 0)
+        {
+            PlotControl.Plot.Axes.SetLimitsY(yVal * 1.1, top);
+        }
         
-        PlotControl.Plot.Add.SignalXY(series.XVal, series.YVal, new Color(c));
+        PlotControl.Plot.Axes.SetLimitsX(xVal - ChartTimeSpan - 1,xVal + 1);
     }
 
-    public override Task UpdateVariableValueAsync(IVariableBase variable)
+    private double ConvertValueToDouble(ScalarVariable scalarVariable)
     {
-        if (variable is ScalarVariable scalarVariable)
+        return scalarVariable.Values switch
         {
-            if (baseTime == DateTime.MinValue)
-            {
-                baseTime = DateTime.UtcNow;
-                lastUpdateTime = baseTime;
-            }
-            
-            chartDataSeries.TryGetValue(scalarVariable.Name, out var series);
-            if (series == null) return Task.CompletedTask;
-
-            var val = scalarVariable.Values switch
-            {
-                Values<int> vi => Convert.ToDouble(vi.Value),
-                Values<double> vd => vd.Value,
-                Values<float> vf => Convert.ToDouble(vf.Value),
-                Values<bool> vf => Convert.ToDouble(vf.Value),
-                Values<byte> vf => Convert.ToDouble(vf.Value),
-                _ => 5
-
-            };
-            
-            var timestamp = variable.Timestamp;
-            
-            series.XDateTimeVal.Add(timestamp);
-            var xVal = (timestamp - baseTime).TotalSeconds;
-            series.XVal.Add(xVal);
-            series.YVal.Add(val);
-
-            var top = PlotControl.Plot.Axes.GetLimits().Top;
-            var bottom = PlotControl.Plot.Axes.GetLimits().Bottom;
-            if (val > top)
-            {
-                PlotControl.Plot.Axes.SetLimitsY(bottom, val * 1.1);    
-            }
-            else if (val < bottom && val > 0)
-            {
-                PlotControl.Plot.Axes.SetLimitsY(val * 0.7, top);
-            }
-            else if (val < bottom && val < 0)
-            {
-                PlotControl.Plot.Axes.SetLimitsY(val * 1.1, top);
-            }
-            
-            PlotControl.Plot.Axes.SetLimitsX(xVal - ChartTimeSpan - 1,xVal + 1);
-
-            if ((timestamp - lastUpdateTime).TotalMilliseconds > ChartBuffer)
-            {
-                PlotControl.Refresh();
-                lastUpdateTime = timestamp;
-            }
-            
-        }
-        return Task.CompletedTask;
+            Values<int> vi => Convert.ToDouble(vi.Value),
+            Values<double> vd => vd.Value,
+            Values<float> vf => Convert.ToDouble(vf.Value),
+            Values<bool> vf => Convert.ToDouble(vf.Value),
+            Values<byte> vf => Convert.ToDouble(vf.Value),
+            _ => throw new InvalidCastException("Unsupported variable type")
+        };
     }
 
     #endregion
-}
-
-public class ChartDataSeries
-{
-    public string Name { get; set; }
-    public System.Drawing.Color Color { get; set; }
-    
-    public List<DateTime> XDateTimeVal { get; set; }
-    public List<double> XVal { get; set; }
-    public List<double> YVal { get; set; }
-
-    public ChartDataSeries(string name, System.Drawing.Color color)
-    {
-        Name = name;
-        Color = color;
-        XDateTimeVal = [];
-        XVal = [];
-        YVal = [];
-    }
 }
