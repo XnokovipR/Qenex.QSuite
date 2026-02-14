@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using Qenex.QLibs.QUI;
@@ -44,6 +45,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         ClearGraphCommand = new RelayCommand<object>(ClearGraph);
         AddAxisCommand = new RelayCommand<object>(AddAxis);
         RemoveAxisCommand = new RelayCommand<object>(RemoveAxis);
+        ZoomToFitCommand = new RelayCommand<object>((i) => PlotControl?.Plot.Axes.AutoScale()); 
         
         Width = 300;
         Height = 200;
@@ -59,15 +61,8 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         PlotControl.UserInputProcessor.UserActionResponses.RemoveAll(
             x => x is ScottPlot.Interactivity.UserActionResponses.SingleClickContextMenu);
         
-        PlotControl.Plot.Axes.Left.Label.IsVisible = false;
-        PlotControl.Plot.Axes.Left.Label.Text = string.Empty;
-        PlotControl.Plot.Axes.Right.Label.IsVisible = false;
-        
-        PlotControl.Plot.Axes.SetLimitsX(0, 10);
-        PlotControl.Plot.Axes.SetLimitsY(-10, 10);
-        
-        VerticalAxes.Add(PlotControl.Plot.Axes.Left);
-
+        PlotControl.Plot.Axes.Remove(Edge.Left);
+        //PlotControl.Plot.Axes.Remove(Edge.Right);
     }
 
     #endregion
@@ -111,6 +106,9 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     public RelayCommand<object> RemoveChartVariableCommand { get; set; }
     public RelayCommand<object> AddAxisCommand { get; set; }
     public RelayCommand<object> RemoveAxisCommand { get; set; }
+    
+    public RelayCommand<object> ZoomToFitCommand { get; set; }
+    
     
     
     public ObservableCollection<ChartVariable> ChartVariables { get; set; }
@@ -197,7 +195,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         chartVariable.XVal.Add(xVal);
         chartVariable.YVal.Add(val);
 
-        RecalculateAxisLimits(xVal, val);
+        RecalculateAxisLimits(xVal, val, chartVariable.AxisIndex);
 
         if ((timestamp - lastUpdateTime).TotalMilliseconds > ChartBuffer)
         {
@@ -227,64 +225,65 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         // Crosshair
         cross.LineColor = foregroundColor;
         
+        // Legend
+        PlotControl.Plot.Legend.FontSize = plotFontSize;
+        PlotControl.Plot.Legend.BackgroundColor = backgroundColor;
+        PlotControl.Plot.Legend.FontColor = foregroundColor;
+        PlotControl.Plot.Legend.Alignment = Alignment.LowerLeft;
+        
         // Annotation
         annotation.LabelFontSize = plotFontSize;
         annotation.LabelFontColor = foregroundColor;
         annotation.LabelBackgroundColor = backgroundColor;
         
-        PlotControl.Plot.Legend.FontSize = plotFontSize;
-        PlotControl.Plot.Axes.Bottom.Label.Text = "Time [s]";
-        PlotControl.Plot.Axes.Title.Label.FontSize = plotFontSize;
-        PlotControl.Plot.Axes.Title.Label.Bold = false;
-        PlotControl.Plot.Axes.Bottom.Label.FontSize = plotFontSize;
-        PlotControl.Plot.Axes.Bottom.Label.Bold = false;
-        PlotControl.Plot.Axes.Top.Label.FontSize = plotFontSize;
-        PlotControl.Plot.Axes.Top.Label.Bold = false;
-        PlotControl.Plot.Axes.Left.Label.FontSize = plotFontSize;
-        PlotControl.Plot.Axes.Left.Label.Bold = false;
-        PlotControl.Plot.Axes.Right.Label.FontSize = plotFontSize;
-        PlotControl.Plot.Axes.Right.Label.Bold = false;
-        PlotControl.Plot.Axes.Bottom.TickLabelStyle.FontSize = axesFontSize;
-        PlotControl.Plot.Axes.Left.TickLabelStyle.FontSize = axesFontSize;
-        PlotControl.Plot.Axes.Top.TickLabelStyle.FontSize = axesFontSize;
-        PlotControl.Plot.Axes.Right.TickLabelStyle.FontSize = axesFontSize;
-        
-            
+        // Background
         PlotControl.Plot.FigureBackground.Color = backgroundColor;
         PlotControl.Plot.DataBackground.Color = backgroundColor;
         PlotControl.Plot.DataBorder.Color = foregroundColor;
         
+        // Set Title Axis <<
+        PlotControl.Plot.Axes.Title.Label.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Title.Label.Bold = false;
         PlotControl.Plot.Axes.Title.Label.ForeColor = foregroundColor;
         PlotControl.Plot.Axes.Title.Label.BackgroundColor = backgroundColor;
+        PlotControl.Plot.Axes.Title.IsVisible = false;
         
+        
+        // Set horizontal axes
+        PlotControl.Plot.Axes.SetLimitsX(0, 10);
+        PlotControl.Plot.Axes.Bottom.Label.Text = "Time [s]";
+        PlotControl.Plot.Axes.Bottom.Label.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Bottom.Label.Bold = false;   
+        PlotControl.Plot.Axes.Bottom.TickLabelStyle.FontSize = axesFontSize;
         PlotControl.Plot.Axes.Bottom.Label.ForeColor = foregroundColor;
         PlotControl.Plot.Axes.Bottom.Label.BackgroundColor = backgroundColor;
         PlotControl.Plot.Axes.Bottom.TickLabelStyle.ForeColor = foregroundColor;
         PlotControl.Plot.Axes.Bottom.TickLabelStyle.BackgroundColor = backgroundColor;
-        
-        PlotControl.Plot.Axes.Left.Label.ForeColor = foregroundColor;
-        PlotControl.Plot.Axes.Left.Label.BackgroundColor = backgroundColor;
-        PlotControl.Plot.Axes.Left.TickLabelStyle.ForeColor = foregroundColor;
-        PlotControl.Plot.Axes.Left.TickLabelStyle.BackgroundColor = backgroundColor;
-        
+
+        PlotControl.Plot.Axes.Top.Label.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Top.Label.Bold = false;
+        PlotControl.Plot.Axes.Top.TickLabelStyle.FontSize = axesFontSize;    
         PlotControl.Plot.Axes.Top.Label.ForeColor = foregroundColor;
         PlotControl.Plot.Axes.Top.Label.BackgroundColor = backgroundColor;
         PlotControl.Plot.Axes.Top.TickLabelStyle.ForeColor = foregroundColor;
-        PlotControl.Plot.Axes.Top.TickLabelStyle.BackgroundColor = backgroundColor;      
+        PlotControl.Plot.Axes.Top.TickLabelStyle.BackgroundColor = backgroundColor; 
         
+        // Set right empty axis as default
+        PlotControl.Plot.Axes.Right.Label.IsVisible = false;
+        PlotControl.Plot.Axes.Right.Label.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Right.Label.Bold = false;
+        PlotControl.Plot.Axes.Right.TickLabelStyle.FontSize = axesFontSize;    
         PlotControl.Plot.Axes.Right.Label.ForeColor = foregroundColor;
         PlotControl.Plot.Axes.Right.Label.BackgroundColor = backgroundColor;
         PlotControl.Plot.Axes.Right.TickLabelStyle.ForeColor = foregroundColor;
-        PlotControl.Plot.Axes.Right.TickLabelStyle.BackgroundColor = backgroundColor;
-
-        // Legend
-        PlotControl.Plot.Legend.BackgroundColor = backgroundColor;
-        PlotControl.Plot.Legend.FontColor = foregroundColor;
-        PlotControl.Plot.Legend.Alignment = Alignment.LowerLeft;
+        PlotControl.Plot.Axes.Right.TickLabelStyle.BackgroundColor = backgroundColor; 
         
+        // Add horizontal axes
+        AddAxis(Edge.Left, 0);
+        PlotControl.Plot.Axes.SetLimitsY(-10, 10);
+     
         // Grid
         PlotControl.Plot.Grid.LineColor = new Color((foregroundColor.R + backgroundColor.R)/2, (foregroundColor.G + backgroundColor.G)/2, (foregroundColor.B + backgroundColor.B)/2, 0.25f);
-        
         
         foreach (var axis in PlotControl.Plot.Axes.GetAxes())
         {
@@ -299,22 +298,30 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 
     #region Private Methods
 
-    private void RecalculateAxisLimits(double xVal, double yVal)
+    private void RecalculateAxisLimits(double xVal, double yVal, int axisIndex)
     {
-        var aa = PlotControl.Plot.Axes.GetLimits();
-        var top = PlotControl.Plot.Axes.GetLimits().Top;
-        var bottom = PlotControl.Plot.Axes.GetLimits().Bottom;
+        var yAxis = PlotControl.Plot.Axes.GetAxes().Where(x => x is VerticalAxis).Cast<VerticalAxis>().FirstOrDefault(x => x.Name.Contains($"Y->{axisIndex}"));
+        if (yAxis is null) return;
+
+        var top = yAxis.Max;
+        var bottom = yAxis.Min;
+        
+        //var top = PlotControl.Plot.Axes.GetLimits().Top;
+        //var bottom = PlotControl.Plot.Axes.GetLimits().Bottom;
         if (yVal > top)
         {
-            PlotControl.Plot.Axes.SetLimitsY(bottom, yVal * 1.1);    
+            yAxis.Max = yVal * 1.1;
+            //PlotControl.Plot.Axes.SetLimitsY(bottom, yVal * 1.1);    
         }
         else if (yVal < bottom && yVal > 0)
         {
-            PlotControl.Plot.Axes.SetLimitsY(yVal * 0.7, top);
+            yAxis.Min = yVal * 0.7;
+            //PlotControl.Plot.Axes.SetLimitsY(yVal * 0.7, top);
         }
         else if (yVal < bottom && yVal < 0)
         {
-            PlotControl.Plot.Axes.SetLimitsY(yVal * 1.1, top);
+            yAxis.Min = yVal * 1.1;
+            //PlotControl.Plot.Axes.SetLimitsY(yVal * 1.1, top);
         }
         
         PlotControl.Plot.Axes.SetLimitsX(xVal - ChartTimeSpan - 1,xVal + 1);
@@ -384,8 +391,14 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     
     private void AddAxis(object parameter)
     {
-        var newAxis = new VerticalAxis(Edge.Right)
+        AddAxis(Edge.Right, VerticalAxes.Count);
+    }
+
+    private void AddAxis(Edge edge, int index)
+    {
+        var newAxis = new VerticalAxis(edge)
         {
+            Name = $"Y->{index}",
             IsVisible = true,
             LabelBackgroundColor = backgroundColor,
             LabelFontColor = foregroundColor,
@@ -403,7 +416,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
             {
                 Color = foregroundColor,
             },
-             MinorTickStyle = new TickMarkStyle()
+            MinorTickStyle = new TickMarkStyle()
             {
                 Color = foregroundColor,
             },
@@ -412,6 +425,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
                 Color = foregroundColor
             }
         };
+        
         newAxis.RefreshAction = () =>
         {
             PlotControl.Refresh();
@@ -421,7 +435,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         PlotControl.Plot.Axes.SetLimitsY(bottom: -10, top: 10, yAxis: newAxis);
         
         VerticalAxes.Add(newAxis);
-        PlotControl.Refresh();
+        PlotControl.Refresh();        
     }
     
     private void RemoveAxis(object parameter)

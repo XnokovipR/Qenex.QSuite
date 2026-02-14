@@ -29,6 +29,8 @@
             <telerik:RadMenuItem Header="Lock" IsCheckable="True" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
             <telerik:RadMenuSeparatorItem/>
             <telerik:RadMenuItem Header="Clear Graph" Command="{Binding ClearGraphCommand}"/>
+            <telerik:RadMenuItem Header="Zoom to Fit" Command="{Binding ZoomToFitCommand}"/>
+            
         </telerik:RadContextMenu>    
     </telerik:RadContextMenu.ContextMenu>
     
@@ -153,8 +155,8 @@
                                     </telerik:GridViewColumn.CellTemplate>
                                 </telerik:GridViewColumn>
                                 <telerik:GridViewDataColumn Header="Visibility" IsFilterable="False" DataMemberBinding="{Binding Path=IsVisible}"/>
-                                <telerik:GridViewDataColumn Header="Min" IsFilterable="False" DataMemberBinding="{Binding Path=Min}"/>
-                                <telerik:GridViewDataColumn Header="Max" IsFilterable="False" DataMemberBinding="{Binding Path=Max}"/>
+                                <telerik:GridViewDataColumn Header="Min" IsFilterable="False" DataMemberBinding="{Binding Path=Minimum}"/>
+                                <telerik:GridViewDataColumn Header="Max" IsFilterable="False" DataMemberBinding="{Binding Path=Maximum}"/>
                             </telerik:RadGridView.Columns>
                             
                         </telerik:RadGridView>

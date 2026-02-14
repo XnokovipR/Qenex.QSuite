@@ -15,6 +15,8 @@ public sealed class VerticalAxis : YAxisBase
     }
     
     public override Edge Edge { get; }
+    
+    public string Name { get; set; } = string.Empty;
 
     public double Minimum 
     { 
@@ -36,7 +38,7 @@ public sealed class VerticalAxis : YAxisBase
             Max = value;
             RefreshAction?.Invoke();
         } 
-    } = -10.0;
+    } = 10.0;
     
 
 
