@@ -10,10 +10,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
       <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.9" />
       <PackageReference Include="ScottPlot.WPF" Version="5.1.57" />
       <PackageReference Include="Telerik.Windows.Controls.for.Wpf" Version="2025.4.1111" />
       <PackageReference Include="Telerik.Windows.Controls.GridView.for.Wpf" Version="2025.4.1111" />
+      <PackageReference Include="Telerik.Windows.Controls.Input.for.Wpf" Version="2025.4.1111" />
       <PackageReference Include="Telerik.Windows.Controls.Navigation.for.Wpf" Version="2025.4.1111" />
     </ItemGroup>
 

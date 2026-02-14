@@ -15,7 +15,9 @@ public class ChartVariable : PropertyChangedBase
     {
         XDateTimeVal = [];
         XVal = [];
-        YVal = [];     
+        YVal = [];   
+        LineWidth = 1.0f;
+        IsVisible = true;
     }
 
     #endregion
@@ -25,6 +27,10 @@ public class ChartVariable : PropertyChangedBase
     public IVariableBase Variable { get; set; } = null!;
     
     public Color ChartColor { get; set { field = value; OnPropertyChanged(); ChartSignal?.Color = ToScottPlotColor(value); } }
+    
+    public float LineWidth { get; set { field = value; OnPropertyChanged(); ChartSignal?.LineWidth = value; } }
+    
+    public bool IsVisible { get; set { field = value; OnPropertyChanged(); ChartSignal?.IsVisible = value; } }
     
     public SignalXY? ChartSignal { get; set { field = value; OnPropertyChanged(); } } = null!;
     

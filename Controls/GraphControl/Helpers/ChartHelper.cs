@@ -4,11 +4,11 @@ public class ChartHelper
 {
     public static readonly Dictionary<int, System.Windows.Media.Color> ChartColors = new Dictionary<int, System.Windows.Media.Color>
     {
-        { 1, System.Windows.Media.Colors.Yellow },
-        { 2, System.Windows.Media.Colors.Cyan },
-        { 3, System.Windows.Media.Colors.Magenta },
-        { 4, System.Windows.Media.Colors.Lime },
-        { 5, System.Windows.Media.Colors.Red },
+        { 1, System.Windows.Media.Colors.Red },
+        { 2, System.Windows.Media.Colors.Yellow },
+        { 3, System.Windows.Media.Colors.Cyan },
+        { 4, System.Windows.Media.Colors.Magenta },
+        { 5, System.Windows.Media.Colors.Lime },
         { 6, System.Windows.Media.Colors.Silver },
         { 7, System.Windows.Media.Colors.Coral },
         { 8, System.Windows.Media.Colors.Blue },

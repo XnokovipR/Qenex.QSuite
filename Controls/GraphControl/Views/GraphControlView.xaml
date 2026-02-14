@@ -4,12 +4,15 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
              xmlns:local="clr-namespace:Qenex.QSuite.Controls.GraphControl.Views"
              xmlns:vm="clr-namespace:Qenex.QSuite.Controls.GraphControl.ViewModels"
+             xmlns:control="clr-namespace:Qenex.QSuite.Controls.Control;assembly=Qenex.QSuite.Controls.Control"
              d:DataContext="{d:DesignInstance vm:GraphControlViewModel, IsDesignTimeCreatable=False}"
              mc:Ignorable="d"
-             d:DesignHeight="300" d:DesignWidth="300">
+             d:DesignHeight="300" d:DesignWidth="300"
+             Background="Transparent">
     
     <UserControl.Resources>
         <ResourceDictionary>
@@ -18,6 +21,14 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
+    
+    <telerik:RadContextMenu.ContextMenu>
+        <telerik:RadContextMenu>
+            <telerik:RadMenuItem Header="Lock" IsCheckable="True" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
+            <telerik:RadMenuSeparatorItem/>
+            <telerik:RadMenuItem Header="Clear Graph" Command="{Binding ClearGraphCommand}"/>
+        </telerik:RadContextMenu>    
+    </telerik:RadContextMenu.ContextMenu>
     
     <Grid>
         <Grid.RowDefinitions>
@@ -29,7 +40,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         
-        <telerik:RadExpander Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Style="{StaticResource SquareExpanderStyle}"
+        <telerik:RadExpander Grid.Row="0" Grid.Column="0" Style="{StaticResource SquareExpanderStyle}"
                              HorizontalAlignment="Left">
             <telerik:RadTabControl BackgroundVisibility="Collapsed">
                 <telerik:RadTabControl.Items>
@@ -44,22 +55,27 @@
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             
-                            <q:QTextBlock Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" Text="Lock:" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                            <CheckBox Grid.Column="1" Grid.Row="0" Margin="5,0,0,0" IsChecked="{Binding IsLocked, Mode=TwoWay}"
+                            <q:QTextBlock Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" Text="Hor. legend:" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <CheckBox Grid.Column="1" Grid.Row="0" Margin="5,0,0,0" IsChecked="{Binding IsLegendHorizontal, Mode=TwoWay}"
                                       VerticalAlignment="Center" MinHeight="0" Padding="0" MinWidth="0"/>
                             
-                            <q:QTextBlock Grid.Column="0" Grid.Row="1" Margin="0,3,0,0" Text="Title:" HorizontalAlignment="Left"/>
-                            <q:QTextBox Grid.Column="1" Grid.Row="1" Text="{Binding ChartTitle, Mode=TwoWay}"
+                            <q:QTextBlock Grid.Column="0" Grid.Row="1" Margin="0,0,0,0" Text="Cross:" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <CheckBox Grid.Column="1" Grid.Row="1" Margin="5,0,0,0" IsChecked="{Binding IsCrossEnabled, Mode=TwoWay}"
+                                      VerticalAlignment="Center" MinHeight="0" Padding="0" MinWidth="0"/>
+                            
+                            <q:QTextBlock Grid.Column="0" Grid.Row="2" Margin="0,3,0,0" Text="Title:" HorizontalAlignment="Left"/>
+                            <q:QTextBox Grid.Column="1" Grid.Row="2" Text="{Binding ChartTitle, Mode=TwoWay}"
                                         Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="180" />
 
-                            <q:QTextBlock Grid.Column="0" Grid.Row="2" Margin="0,3,0,0" Text="Buffer [ms]:" HorizontalAlignment="Left"/>
-                            <q:QTextBox Grid.Column="1" Grid.Row="2" Text="{Binding ChartBuffer, Mode=TwoWay}"
+                            <q:QTextBlock Grid.Column="0" Grid.Row="3" Margin="0,3,0,0" Text="Buffer [ms]:" HorizontalAlignment="Left"/>
+                            <q:QTextBox Grid.Column="1" Grid.Row="3" Text="{Binding ChartBuffer, Mode=TwoWay}"
                                              Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="50" />
 
-                            <q:QTextBlock Grid.Column="0" Grid.Row="3" Margin="0,3,0,0" Text="Time span [s]:" HorizontalAlignment="Left"/>
-                            <q:QTextBox Grid.Column="1" Grid.Row="3" Text="{Binding ChartTimeSpan, Mode=TwoWay}" 
+                            <q:QTextBlock Grid.Column="0" Grid.Row="4" Margin="0,3,0,0" Text="Time span [s]:" HorizontalAlignment="Left"/>
+                            <q:QTextBox Grid.Column="1" Grid.Row="4" Text="{Binding ChartTimeSpan, Mode=TwoWay}" 
                                              Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="50"/>
                         </Grid>       
                     </telerik:RadTabItem>
@@ -68,13 +84,21 @@
                         <telerik:RadGridView
                             AllowDrop="False"
                             ItemsSource="{Binding ChartVariables, Mode=TwoWay}"
+                            SelectedItem="{Binding SelectedChartVariable, Mode=TwoWay}"
                             ShowGroupPanel="False" 
                             AutoGenerateColumns="False"
                             RowIndicatorVisibility="Collapsed">
                             
+                            <telerik:RadContextMenu.ContextMenu>
+                                <telerik:RadContextMenu>
+                                    <telerik:RadMenuItem Header="Remove" Command="{Binding RemoveChartVariableCommand}"/>
+                                </telerik:RadContextMenu>    
+                            </telerik:RadContextMenu.ContextMenu>
+                            
                             <telerik:RadGridView.Columns>
                                 <telerik:GridViewDataColumn Header="Id" IsFilterable="False" DataMemberBinding="{Binding Path=Variable.Id}" IsReadOnly="True"/>
                                 <telerik:GridViewDataColumn Header="Label" IsFilterable="False" DataMemberBinding="{Binding Path=Variable.Label}" IsReadOnly="True"/>
+                                <telerik:GridViewDataColumn Header="Visibility" IsFilterable="False" DataMemberBinding="{Binding Path=IsVisible}" IsReadOnly="False"/>
                                 <telerik:GridViewDataColumn Header="Color" IsFilterable="False" >
                                     <telerik:GridViewDataColumn.CellTemplate>
                                     <DataTemplate>
@@ -89,6 +113,7 @@
                                         </DataTemplate>
                                     </telerik:GridViewDataColumn.CellTemplate>
                                 </telerik:GridViewDataColumn>
+                                <telerik:GridViewDataColumn Header="Width" IsFilterable="False" DataMemberBinding="{Binding Path=LineWidth}" IsReadOnly="False"/>
                             </telerik:RadGridView.Columns>
                         </telerik:RadGridView>
                     </telerik:RadTabItem>
@@ -102,8 +127,17 @@
         </telerik:RadExpander>
         
         <q:QTextBlock Grid.Row="0" Grid.Column="1" Margin="10,3,0,0" Text="{Binding ChartTitle, Mode=TwoWay}"
-                      HorizontalAlignment="Center"/>
+                      HorizontalAlignment="Center" Background="Transparent"/>
         
-        <ContentControl Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Content="{Binding PlotControl, Mode=OneTime}"/>
+        <ContentControl Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
+                        Content="{Binding PlotControl, Mode=OneTime}"
+                        control:MouseTrackerBehavior.Track="True" >
+            <i:Interaction.Triggers>
+                <i:EventTrigger EventName="MouseMove">
+                    <i:InvokeCommandAction Command="{Binding MouseMoveCommand}"
+                                           PassEventArgsToCommand="True"/>
+                </i:EventTrigger>
+            </i:Interaction.Triggers>
+        </ContentControl>
     </Grid>
 </UserControl>
