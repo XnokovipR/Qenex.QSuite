@@ -1,4 +1,5 @@
-﻿using Qenex.QLibs.QUI;
+﻿using System.Collections.ObjectModel;
+using Qenex.QLibs.QUI;
 using Qenex.QSuite.Variables.QVariables;
 using ScottPlot;
 using ScottPlot.Plottables;
@@ -11,7 +12,7 @@ public class ChartVariable : PropertyChangedBase
 {
     #region Constructors
 
-    public ChartVariable(IVariableBase variable)
+    public ChartVariable()
     {
         XDateTimeVal = [];
         XVal = [];
@@ -23,6 +24,8 @@ public class ChartVariable : PropertyChangedBase
     #endregion
 
     #region Properties
+    
+    public Func<int, int>? ChangeAxisAction { get; set; }
 
     public IVariableBase Variable { get; set; } = null!;
     
@@ -34,9 +37,34 @@ public class ChartVariable : PropertyChangedBase
     
     public SignalXY? ChartSignal { get; set { field = value; OnPropertyChanged(); } } = null!;
     
+    public int AxisIndex 
+    { 
+        get;
+        set 
+        {
+            var retIndex = ChangeAxisAction?.Invoke(value);
+            if (retIndex < value)
+            {
+                field = retIndex ?? value;
+                ChangeAxisAction?.Invoke(value);
+            }
+            else
+            {
+                field = value;
+            }
+            OnPropertyChanged();
+        } 
+    }
+    
     public List<DateTime> XDateTimeVal { get; set; }
     public List<double> XVal { get; set; }
     public List<double> YVal { get; set; } 
+
+    #endregion
+
+    #region Private Methods
+
+    
 
     #endregion
 

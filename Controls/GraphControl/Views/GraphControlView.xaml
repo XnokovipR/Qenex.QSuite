@@ -6,6 +6,7 @@
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
+             xmlns:localconverters="clr-namespace:Qenex.QSuite.Controls.GraphControl.Converters"
              xmlns:local="clr-namespace:Qenex.QSuite.Controls.GraphControl.Views"
              xmlns:vm="clr-namespace:Qenex.QSuite.Controls.GraphControl.ViewModels"
              xmlns:control="clr-namespace:Qenex.QSuite.Controls.Control;assembly=Qenex.QSuite.Controls.Control"
@@ -19,6 +20,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/Qenex.QSuite.Controls.Control;component/Style/SharedStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <localconverters:RowIndexConverter x:Key="RowIndexConverter"/>
         </ResourceDictionary>
     </UserControl.Resources>
     
@@ -114,12 +116,49 @@
                                     </telerik:GridViewDataColumn.CellTemplate>
                                 </telerik:GridViewDataColumn>
                                 <telerik:GridViewDataColumn Header="Width" IsFilterable="False" DataMemberBinding="{Binding Path=LineWidth}" IsReadOnly="False"/>
+                                <telerik:GridViewDataColumn Header="Axis Id" IsFilterable="False" DataMemberBinding="{Binding Path=AxisIndex}" IsReadOnly="False"/>
                             </telerik:RadGridView.Columns>
                         </telerik:RadGridView>
                     </telerik:RadTabItem>
                     
-                    <telerik:RadTabItem Header="Axis">
-                        <CheckBox/>
+                    <telerik:RadTabItem Header="Axes">
+                        <telerik:RadGridView
+                            AllowDrop="False"
+                            ItemsSource="{Binding VerticalAxes, Mode=TwoWay}"
+                            SelectedItem="{Binding SelectedVerticalAxis, Mode=TwoWay}"
+                            ShowGroupPanel="False" 
+                            AutoGenerateColumns="False"
+                            RowIndicatorVisibility="Collapsed">
+                            
+                            <telerik:RadContextMenu.ContextMenu>
+                                <telerik:RadContextMenu>
+                                    <telerik:RadMenuItem Header="Add" Command="{Binding AddAxisCommand}"/>
+                                    <telerik:RadMenuItem Header="Remove" Command="{Binding RemoveAxisCommand}"/>
+                                </telerik:RadContextMenu>    
+                            </telerik:RadContextMenu.ContextMenu>
+                            
+                            <telerik:RadGridView.Columns>
+                                <telerik:GridViewColumn Header="Id" IsFilterable="False" IsReadOnly="True">
+                                    <telerik:GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <q:QTextBlock>
+                                                <q:QTextBlock.Text>
+                                                    <MultiBinding Converter="{StaticResource RowIndexConverter}">
+                                                        <Binding />
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=telerik:RadGridView}" Path="Items"/>
+                                                    </MultiBinding>
+                                                </q:QTextBlock.Text>
+                                            </q:QTextBlock>
+                                        </DataTemplate>
+                                    </telerik:GridViewColumn.CellTemplate>
+                                </telerik:GridViewColumn>
+                                <telerik:GridViewDataColumn Header="Visibility" IsFilterable="False" DataMemberBinding="{Binding Path=IsVisible}"/>
+                                <telerik:GridViewDataColumn Header="Min" IsFilterable="False" DataMemberBinding="{Binding Path=Min}"/>
+                                <telerik:GridViewDataColumn Header="Max" IsFilterable="False" DataMemberBinding="{Binding Path=Max}"/>
+                            </telerik:RadGridView.Columns>
+                            
+                        </telerik:RadGridView>
+                        
                         
                     </telerik:RadTabItem>
                 </telerik:RadTabControl.Items>

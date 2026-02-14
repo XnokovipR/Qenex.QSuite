@@ -10,6 +10,7 @@ using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.QVariables.Values;
 using RtGraphControl.Models;
 using ScottPlot;
+using ScottPlot.AxisPanels;
 using ScottPlot.Plottables;
 using ScottPlot.WPF;
 
@@ -24,6 +25,10 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     private int currentColorIndex = 1;
     private readonly Crosshair cross;
     private readonly Annotation annotation;
+    private Color backgroundColor;
+    private Color foregroundColor;
+    private int axesFontSize;
+    private int plotFontSize;
 
     #endregion
     
@@ -31,9 +36,14 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 
     public GraphControlViewModel()
     {
+        ChartVariables = [];
+        VerticalAxes = [];
+        
         MouseMoveCommand = new RelayCommand<MouseEventArgs>(DisplayCursorBasedOnMouseMove);
         RemoveChartVariableCommand = new RelayCommand<object>(RemoveChartVariable);
         ClearGraphCommand = new RelayCommand<object>(ClearGraph);
+        AddAxisCommand = new RelayCommand<object>(AddAxis);
+        RemoveAxisCommand = new RelayCommand<object>(RemoveAxis);
         
         Width = 300;
         Height = 200;
@@ -49,44 +59,25 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         PlotControl.UserInputProcessor.UserActionResponses.RemoveAll(
             x => x is ScottPlot.Interactivity.UserActionResponses.SingleClickContextMenu);
         
-        //PlotControl.Plot.Title("Real-Time Graph");
-        PlotControl.Plot.Axes.Title.Label.FontSize = 20;
-        
-        PlotControl.Plot.Axes.Bottom.Label.Text = "Time [s]";
-        PlotControl.Plot.Axes.Bottom.Label.FontSize = 20;
-        PlotControl.Plot.Axes.Bottom.TickLabelStyle.FontSize = 18;
-
         PlotControl.Plot.Axes.Left.Label.IsVisible = false;
         PlotControl.Plot.Axes.Left.Label.Text = string.Empty;
-        PlotControl.Plot.Axes.Left.Label.FontSize = 20;
-        PlotControl.Plot.Axes.Left.TickLabelStyle.FontSize = 18;
-        
-        PlotControl.Plot.Axes.Top.Label.FontSize = 18;
-        PlotControl.Plot.Axes.Top.TickLabelStyle.FontSize = 18;
-
         PlotControl.Plot.Axes.Right.Label.IsVisible = false;
-        PlotControl.Plot.Axes.Right.Label.FontSize = 18;
-        PlotControl.Plot.Axes.Right.TickLabelStyle.FontSize = 18;
         
         PlotControl.Plot.Axes.SetLimitsX(0, 10);
         PlotControl.Plot.Axes.SetLimitsY(-10, 10);
         
-        ChartVariables = new ObservableCollection<ChartVariable>();
+        VerticalAxes.Add(PlotControl.Plot.Axes.Left);
+
     }
 
     #endregion
     
     #region Properties
+    
+    public ObservableCollection<IYAxis> VerticalAxes { get; set { field = value; OnPropertyChanged(); } }
+    public IYAxis SelectedVerticalAxis { get; set { field = value; OnPropertyChanged(); } }
 
-    public ChartVariable SelectedChartVariable
-    {
-        get;
-        set
-        {
-            field = value;
-            OnPropertyChanged();
-        }
-    }
+    public ChartVariable SelectedChartVariable { get; set { field = value; OnPropertyChanged(); } }
 
     public bool IsLegendHorizontal 
     {
@@ -118,6 +109,8 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     public RelayCommand<MouseEventArgs> MouseMoveCommand { get; set; }
     public RelayCommand<object> ClearGraphCommand { get; set; }
     public RelayCommand<object> RemoveChartVariableCommand { get; set; }
+    public RelayCommand<object> AddAxisCommand { get; set; }
+    public RelayCommand<object> RemoveAxisCommand { get; set; }
     
     
     public ObservableCollection<ChartVariable> ChartVariables { get; set; }
@@ -150,7 +143,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         Variables.Add(variable);
         
         var c = ChartHelper.ChartColors[currentColorIndex++];
-        var chartVariable = new ChartVariable(variable);
+        var chartVariable = new ChartVariable();
         ChartVariables.Add(chartVariable);
         
         var signal = PlotControl.Plot.Add.SignalXY(chartVariable.XVal, chartVariable.YVal, ChartVariable.ToScottPlotColor(c));
@@ -160,6 +153,22 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         chartVariable.ChartSignal = signal;
         chartVariable.ChartColor = c;
         chartVariable.Variable = variable;
+        chartVariable.ChangeAxisAction += axisIndex =>
+        {
+            var retIndex = axisIndex;
+            if (axisIndex < 0 || axisIndex >= VerticalAxes.Count)
+            {
+                retIndex = 0;
+                signal.Axes.YAxis = VerticalAxes[retIndex];    
+            }
+            else
+            {
+                signal.Axes.YAxis = VerticalAxes[axisIndex];    
+            }
+            
+            PlotControl.Refresh();
+            return retIndex;
+        };
 
         PlotControl.Refresh();
 
@@ -206,24 +215,25 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         return Task.CompletedTask;
     }
     
-    public override void UpdateThemeSettingsControl(System.Windows.Media.Color backgroundColor, System.Windows.Media.Color foregroundColor, int fontSize)
+    public override void UpdateThemeSettingsControl(System.Windows.Media.Color bgColor, System.Windows.Media.Color fgColor, int fontSize)
     {
-        base.UpdateThemeSettingsControl(backgroundColor, foregroundColor, fontSize);
+        base.UpdateThemeSettingsControl(bgColor, fgColor, fontSize);
 
-        var plotFontSize = (int)Math.Round(1.8 * fontSize);
-        var axesFontSize = (int)Math.Round(1.5 * fontSize);
-        var bgColor = backgroundColor.ToScottPlotColor();
-        var fgColor = foregroundColor.ToScottPlotColor();
+        plotFontSize = (int)Math.Round(1.8 * fontSize);
+        axesFontSize = (int)Math.Round(1.5 * fontSize);
+        backgroundColor = bgColor.ToScottPlotColor();
+        foregroundColor = fgColor.ToScottPlotColor();
         
         // Crosshair
-        cross.LineColor = fgColor;
+        cross.LineColor = foregroundColor;
         
         // Annotation
         annotation.LabelFontSize = plotFontSize;
-        annotation.LabelFontColor = fgColor;
-        annotation.LabelBackgroundColor = bgColor;
+        annotation.LabelFontColor = foregroundColor;
+        annotation.LabelBackgroundColor = backgroundColor;
         
         PlotControl.Plot.Legend.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Bottom.Label.Text = "Time [s]";
         PlotControl.Plot.Axes.Title.Label.FontSize = plotFontSize;
         PlotControl.Plot.Axes.Title.Label.Bold = false;
         PlotControl.Plot.Axes.Bottom.Label.FontSize = plotFontSize;
@@ -238,46 +248,47 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         PlotControl.Plot.Axes.Left.TickLabelStyle.FontSize = axesFontSize;
         PlotControl.Plot.Axes.Top.TickLabelStyle.FontSize = axesFontSize;
         PlotControl.Plot.Axes.Right.TickLabelStyle.FontSize = axesFontSize;
+        
             
-        PlotControl.Plot.FigureBackground.Color = bgColor;
-        PlotControl.Plot.DataBackground.Color = bgColor;
-        PlotControl.Plot.DataBorder.Color = fgColor;
+        PlotControl.Plot.FigureBackground.Color = backgroundColor;
+        PlotControl.Plot.DataBackground.Color = backgroundColor;
+        PlotControl.Plot.DataBorder.Color = foregroundColor;
         
-        PlotControl.Plot.Axes.Title.Label.ForeColor = fgColor;
-        PlotControl.Plot.Axes.Title.Label.BackgroundColor = bgColor;
+        PlotControl.Plot.Axes.Title.Label.ForeColor = foregroundColor;
+        PlotControl.Plot.Axes.Title.Label.BackgroundColor = backgroundColor;
         
-        PlotControl.Plot.Axes.Bottom.Label.ForeColor = fgColor;
-        PlotControl.Plot.Axes.Bottom.Label.BackgroundColor = bgColor;
-        PlotControl.Plot.Axes.Bottom.TickLabelStyle.ForeColor = fgColor;
-        PlotControl.Plot.Axes.Bottom.TickLabelStyle.BackgroundColor = bgColor;
+        PlotControl.Plot.Axes.Bottom.Label.ForeColor = foregroundColor;
+        PlotControl.Plot.Axes.Bottom.Label.BackgroundColor = backgroundColor;
+        PlotControl.Plot.Axes.Bottom.TickLabelStyle.ForeColor = foregroundColor;
+        PlotControl.Plot.Axes.Bottom.TickLabelStyle.BackgroundColor = backgroundColor;
         
-        PlotControl.Plot.Axes.Left.Label.ForeColor = fgColor;
-        PlotControl.Plot.Axes.Left.Label.BackgroundColor = bgColor;
-        PlotControl.Plot.Axes.Left.TickLabelStyle.ForeColor = fgColor;
-        PlotControl.Plot.Axes.Left.TickLabelStyle.BackgroundColor = bgColor;
+        PlotControl.Plot.Axes.Left.Label.ForeColor = foregroundColor;
+        PlotControl.Plot.Axes.Left.Label.BackgroundColor = backgroundColor;
+        PlotControl.Plot.Axes.Left.TickLabelStyle.ForeColor = foregroundColor;
+        PlotControl.Plot.Axes.Left.TickLabelStyle.BackgroundColor = backgroundColor;
         
-        PlotControl.Plot.Axes.Top.Label.ForeColor = fgColor;
-        PlotControl.Plot.Axes.Top.Label.BackgroundColor = bgColor;
-        PlotControl.Plot.Axes.Top.TickLabelStyle.ForeColor = fgColor;
-        PlotControl.Plot.Axes.Top.TickLabelStyle.BackgroundColor = bgColor;      
+        PlotControl.Plot.Axes.Top.Label.ForeColor = foregroundColor;
+        PlotControl.Plot.Axes.Top.Label.BackgroundColor = backgroundColor;
+        PlotControl.Plot.Axes.Top.TickLabelStyle.ForeColor = foregroundColor;
+        PlotControl.Plot.Axes.Top.TickLabelStyle.BackgroundColor = backgroundColor;      
         
-        PlotControl.Plot.Axes.Right.Label.ForeColor = fgColor;
-        PlotControl.Plot.Axes.Right.Label.BackgroundColor = bgColor;
-        PlotControl.Plot.Axes.Right.TickLabelStyle.ForeColor = fgColor;
-        PlotControl.Plot.Axes.Right.TickLabelStyle.BackgroundColor = bgColor;
+        PlotControl.Plot.Axes.Right.Label.ForeColor = foregroundColor;
+        PlotControl.Plot.Axes.Right.Label.BackgroundColor = backgroundColor;
+        PlotControl.Plot.Axes.Right.TickLabelStyle.ForeColor = foregroundColor;
+        PlotControl.Plot.Axes.Right.TickLabelStyle.BackgroundColor = backgroundColor;
 
         // Legend
-        PlotControl.Plot.Legend.BackgroundColor = bgColor;
-        PlotControl.Plot.Legend.FontColor = fgColor;
+        PlotControl.Plot.Legend.BackgroundColor = backgroundColor;
+        PlotControl.Plot.Legend.FontColor = foregroundColor;
         PlotControl.Plot.Legend.Alignment = Alignment.LowerLeft;
         
         // Grid
-        PlotControl.Plot.Grid.LineColor = new Color((fgColor.R + bgColor.R)/2, (fgColor.G + bgColor.G)/2, (fgColor.B + bgColor.B)/2, 0.25f);
+        PlotControl.Plot.Grid.LineColor = new Color((foregroundColor.R + backgroundColor.R)/2, (foregroundColor.G + backgroundColor.G)/2, (foregroundColor.B + backgroundColor.B)/2, 0.25f);
         
         
         foreach (var axis in PlotControl.Plot.Axes.GetAxes())
         {
-            axis.FrameLineStyle.Color = fgColor;
+            axis.FrameLineStyle.Color = foregroundColor;
         }
         
         PlotControl.Plot.ShowLegend();
@@ -290,6 +301,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 
     private void RecalculateAxisLimits(double xVal, double yVal)
     {
+        var aa = PlotControl.Plot.Axes.GetLimits();
         var top = PlotControl.Plot.Axes.GetLimits().Top;
         var bottom = PlotControl.Plot.Axes.GetLimits().Bottom;
         if (yVal > top)
@@ -368,6 +380,65 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         }
         
         PlotControl.Refresh();
+    }
+    
+    private void AddAxis(object parameter)
+    {
+        var newAxis = new VerticalAxis(Edge.Right)
+        {
+            IsVisible = true,
+            LabelBackgroundColor = backgroundColor,
+            LabelFontColor = foregroundColor,
+            LabelFontSize = plotFontSize,
+            LabelBorderColor = foregroundColor,
+            TickLabelStyle = new LabelStyle()
+            {
+                ForeColor = foregroundColor,
+                BackgroundColor = backgroundColor,
+                FontSize = axesFontSize,
+                PointColor = foregroundColor,
+            },
+
+            MajorTickStyle = new TickMarkStyle()
+            {
+                Color = foregroundColor,
+            },
+             MinorTickStyle = new TickMarkStyle()
+            {
+                Color = foregroundColor,
+            },
+            FrameLineStyle =
+            {
+                Color = foregroundColor
+            }
+        };
+        newAxis.RefreshAction = () =>
+        {
+            PlotControl.Refresh();
+        };
+
+        PlotControl.Plot.Axes.AddYAxis(newAxis);
+        PlotControl.Plot.Axes.SetLimitsY(bottom: -10, top: 10, yAxis: newAxis);
+        
+        VerticalAxes.Add(newAxis);
+        PlotControl.Refresh();
+    }
+    
+    private void RemoveAxis(object parameter)
+    {
+        if (VerticalAxes.Count > 1 && SelectedVerticalAxis != null)
+        {
+            var index = VerticalAxes.IndexOf(SelectedVerticalAxis);
+            if (index == 0) return;
+            
+            PlotControl.Plot.Axes.Remove(SelectedVerticalAxis);
+            VerticalAxes.Remove(SelectedVerticalAxis);
+            if (VerticalAxes.Count > 0)
+            {
+                SelectedVerticalAxis = VerticalAxes[Math.Min(index, VerticalAxes.Count - 1)];
+            }
+            PlotControl.Refresh();
+        }
     }
 
     #endregion
