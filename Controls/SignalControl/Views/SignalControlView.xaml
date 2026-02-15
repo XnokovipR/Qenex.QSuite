@@ -9,7 +9,8 @@
              xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
              mc:Ignorable="d"
              d:DesignHeight="60" d:DesignWidth="100"
-             d:DataContext="{d:DesignInstance vm:SignalControlViewModel, IsDesignTimeCreatable=False}">
+             d:DataContext="{d:DesignInstance vm:SignalControlViewModel, IsDesignTimeCreatable=False}"
+             Background="Transparent">
 	
 	<UserControl.Resources>
 		<ResourceDictionary>
@@ -18,6 +19,12 @@
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>
 	</UserControl.Resources>
+	
+	<telerik:RadContextMenu.ContextMenu>
+		<telerik:RadContextMenu>
+			<telerik:RadMenuItem Header="Lock" IsCheckable="True" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
+		</telerik:RadContextMenu>    
+	</telerik:RadContextMenu.ContextMenu>
     
 	<Grid>
 		<Grid.RowDefinitions>
@@ -38,19 +45,14 @@
 				<Grid.RowDefinitions>
 					<RowDefinition Height="Auto"/>
 					<RowDefinition Height="Auto"/>
-					<RowDefinition Height="Auto"/>
 				</Grid.RowDefinitions>
-	            
-				<q:QTextBlock Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" Text="Lock:" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-				<CheckBox Grid.Column="1" Grid.Row="0" Margin="5,0,0,0" IsChecked="{Binding IsLocked, Mode=TwoWay}"
-				          VerticalAlignment="Center" MinHeight="0" Padding="0" MinWidth="0"/>
 				
-				<q:QTextBlock Grid.Column="0" Grid.Row="1" Text="Refresh [ms]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
-				<q:QTextBox Grid.Column="1" Grid.Row="1" Text="{Binding RefreshTime, Mode=TwoWay}"
+				<q:QTextBlock Grid.Column="0" Grid.Row="0" Text="Refresh [ms]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Column="1" Grid.Row="0" Text="{Binding RefreshTime, Mode=TwoWay}"
 				            Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="50" VerticalAlignment="Center" />
 				
-				<q:QTextBlock Grid.Column="0" Grid.Row="2" Text="DeathBand [%]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
-				<q:QTextBox Grid.Column="1" Grid.Row="2" Text="{Binding DeathBendPercentage, Mode=TwoWay}"
+				<q:QTextBlock Grid.Column="0" Grid.Row="1" Text="DeathBand [%]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Column="1" Grid.Row="1" Text="{Binding DeathBendPercentage, Mode=TwoWay}"
 				            Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="50" VerticalAlignment="Center" />
 				
 			</Grid>
