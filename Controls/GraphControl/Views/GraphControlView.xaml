@@ -155,6 +155,7 @@
                                     </telerik:GridViewColumn.CellTemplate>
                                 </telerik:GridViewColumn>
                                 <telerik:GridViewDataColumn Header="Visibility" IsFilterable="False" DataMemberBinding="{Binding Path=IsVisible}"/>
+                                <telerik:GridViewDataColumn Header="AutoScale" IsFilterable="False" DataMemberBinding="{Binding Path=IsAutoScale}"/>
                                 <telerik:GridViewDataColumn Header="Min" IsFilterable="False" DataMemberBinding="{Binding Path=Minimum}"/>
                                 <telerik:GridViewDataColumn Header="Max" IsFilterable="False" DataMemberBinding="{Binding Path=Maximum}"/>
                             </telerik:RadGridView.Columns>

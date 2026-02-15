@@ -17,6 +17,8 @@ public sealed class VerticalAxis : YAxisBase
     public override Edge Edge { get; }
     
     public string Name { get; set; } = string.Empty;
+    
+    public bool IsAutoScale { get; set; } = true;
 
     public double Minimum 
     { 

@@ -195,7 +195,12 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         chartVariable.XVal.Add(xVal);
         chartVariable.YVal.Add(val);
 
-        RecalculateAxisLimits(xVal, val, chartVariable.AxisIndex);
+        if (((VerticalAxis)VerticalAxes[chartVariable.AxisIndex]).IsAutoScale)
+        {
+            RecalculateVerticalAxisLimits(xVal, val, chartVariable.AxisIndex);
+        }
+
+        PlotControl.Plot.Axes.SetLimitsX(xVal - ChartTimeSpan - 1,xVal + 1);
 
         if ((timestamp - lastUpdateTime).TotalMilliseconds > ChartBuffer)
         {
@@ -298,7 +303,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 
     #region Private Methods
 
-    private void RecalculateAxisLimits(double xVal, double yVal, int axisIndex)
+    private void RecalculateVerticalAxisLimits(double xVal, double yVal, int axisIndex)
     {
         var yAxis = PlotControl.Plot.Axes.GetAxes().Where(x => x is VerticalAxis).Cast<VerticalAxis>().FirstOrDefault(x => x.Name.Contains($"Y->{axisIndex}"));
         if (yAxis is null) return;
@@ -323,8 +328,6 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
             yAxis.Min = yVal * 1.1;
             //PlotControl.Plot.Axes.SetLimitsY(yVal * 1.1, top);
         }
-        
-        PlotControl.Plot.Axes.SetLimitsX(xVal - ChartTimeSpan - 1,xVal + 1);
     }
 
     private double ConvertValueToDouble(ScalarVariable scalarVariable)
