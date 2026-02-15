@@ -286,10 +286,15 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         // Add horizontal axes
         AddAxis(Edge.Left, 0);
         PlotControl.Plot.Axes.SetLimitsY(-10, 10);
-     
-        // Grid
-        PlotControl.Plot.Grid.LineColor = new Color((foregroundColor.R + backgroundColor.R)/2, (foregroundColor.G + backgroundColor.G)/2, (foregroundColor.B + backgroundColor.B)/2, 0.25f);
         
+        // Grid
+        var gridColor = new Color((foregroundColor.R + backgroundColor.R)/2, (foregroundColor.G + backgroundColor.G)/2, (foregroundColor.B + backgroundColor.B)/2, 0.2f);
+        PlotControl.Plot.Grid.LineColor = gridColor;
+        PlotControl.Plot.Grid.YAxis = VerticalAxes[0];
+        PlotControl.Plot.Grid.YAxisStyle.MajorLineStyle.IsVisible = true;
+        PlotControl.Plot.Grid.YAxisStyle.MajorLineStyle.Color = gridColor;
+     
+
         foreach (var axis in PlotControl.Plot.Axes.GetAxes())
         {
             axis.FrameLineStyle.Color = foregroundColor;
@@ -395,6 +400,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     private void AddAxis(object parameter)
     {
         AddAxis(Edge.Right, VerticalAxes.Count);
+        
     }
 
     private void AddAxis(Edge edge, int index)
@@ -440,6 +446,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         VerticalAxes.Add(newAxis);
         PlotControl.Refresh();        
     }
+    
     
     private void RemoveAxis(object parameter)
     {

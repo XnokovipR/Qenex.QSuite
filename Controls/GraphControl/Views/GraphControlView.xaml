@@ -30,7 +30,6 @@
             <telerik:RadMenuSeparatorItem/>
             <telerik:RadMenuItem Header="Clear Graph" Command="{Binding ClearGraphCommand}"/>
             <telerik:RadMenuItem Header="Zoom to Fit" Command="{Binding ZoomToFitCommand}"/>
-            
         </telerik:RadContextMenu>    
     </telerik:RadContextMenu.ContextMenu>
     
