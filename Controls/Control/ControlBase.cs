@@ -76,6 +76,8 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 		{
 			field = value;
 			OnPropertyChanged();
+			DiagramShape?.AllowDelete = !value;
+			DiagramShape?.AllowCut = !value;
 			DiagramShape?.IsManipulationEnabled = !value;
 			DiagramShape?.IsManipulationAdornerVisible = !value;
 			DiagramShape?.IsManipulationAdornerVisible = !value;
