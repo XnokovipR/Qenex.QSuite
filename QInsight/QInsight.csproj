@@ -95,7 +95,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\WpfComm\WpfComm.csproj" />
-    <ProjectReference Include="..\Controls\OldGraphControl\OldGraphControl.csproj" />
     <ProjectReference Include="..\Controls\DerivedWinControls\DerivedWinControls.csproj" />
     <ProjectReference Include="..\Controls\GraphControl\GraphControl.csproj" />
     <ProjectReference Include="..\Controls\SignalControl\SignalControl.csproj" />

@@ -2,9 +2,7 @@
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Controls.Control;
 using Telerik.Windows.Controls;
-using Qenex.QSuite.Controls.OldGraphControl;
 using Qenex.QSuite.Controls.GraphControl.ViewModels;
-using Qenex.QSuite.Controls.OldGraphControl.ViewModels;
 using Qenex.QSuite.Controls.SignalControl.Views;
 using Qenex.QSuite.Controls.SignalControl.ViewModels;
 
@@ -53,9 +51,6 @@ public class ControlsViewModel : ViewModelBase
     {
         if (isUserControlLoaded) return;
         
-        var gc = new OldGraphControlViewModel();
-        Controls.Add(gc);
-
         var sc = new SignalControlViewModel();
         Controls.Add(sc);
         
