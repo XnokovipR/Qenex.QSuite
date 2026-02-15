@@ -231,7 +231,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         cross.LineColor = foregroundColor;
         
         // Legend
-        PlotControl.Plot.Legend.FontSize = plotFontSize;
+        PlotControl.Plot.Legend.FontSize = axesFontSize;
         PlotControl.Plot.Legend.BackgroundColor = backgroundColor;
         PlotControl.Plot.Legend.FontColor = foregroundColor;
         PlotControl.Plot.Legend.Alignment = Alignment.LowerLeft;
