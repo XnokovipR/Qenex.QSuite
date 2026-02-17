@@ -6,7 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using ICSharpCode.AvalonEdit.Highlighting;
 using Qenex.QInsight.AppConfig;
+using Qenex.QInsight.Models;
 using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.Views;
 using Qenex.QSuite.Common.PluginManager;
@@ -19,6 +21,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 {
 	#region Private
 
+	internal static IHighlightingDefinition PythonHighlighting;
 	private readonly EventAggregator eventAggregator;
 	private readonly Logger logger;
 	
@@ -48,6 +51,8 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		eventAggregator = new EventAggregator();
 		logger = new Logger(LogLevel.Trace);
 		ViewModels = [];
+
+		PythonHighlighting = SyntaxHighlighting.LoadPythonHighlighting(false);
 
 		CreateViewModels();
 		CreateCommands();

@@ -14,10 +14,13 @@
 
   <ItemGroup>
     <Folder Include="Helpers\" />
+    <EmbeddedResource Include="Resources\PythonScriptDark.xshd" />
+    <EmbeddedResource Include="Resources\PythonScriptLight.xshd" />
   </ItemGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+    <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
     <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.9" />
     <PackageReference Include="Qenex.QLibs.QUI.TelerikDocking" Version="1.0.15" />
@@ -91,6 +94,10 @@
     <None Remove="Icons\SolutionExplorer\Workspaces.png" />
     <Content Include="Icons\QInsight.ico" />
     <Resource Include="Icons\SolutionExplorer\Workspaces.png" />
+    <None Remove="Icons\SolutionExplorer\ScriptFolder.png" />
+    <Resource Include="Icons\SolutionExplorer\ScriptFolder.png" />
+    <None Remove="Icons\SolutionExplorer\ScriptFile.png" />
+    <Resource Include="Icons\SolutionExplorer\ScriptFile.png" />
   </ItemGroup>
 
   <ItemGroup>

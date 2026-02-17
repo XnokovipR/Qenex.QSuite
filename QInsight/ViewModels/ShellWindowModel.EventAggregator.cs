@@ -3,6 +3,7 @@ using System.Windows;
 using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Models.Project;
+using Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 using Qenex.QInsight.Views;
 using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.TelerikDocking;
@@ -19,7 +20,7 @@ public partial class ShellWindowModel
 {
     private void SubscribeEventAggregatorMessages()
     {
-        eventAggregator.SubscribeAction<SolutionTreeViewWorkspaceMsg>(OnSolutionTreeViewWorkspaceMsg);
+        eventAggregator.SubscribeAction<SolutionExplorerItemMsg>(OnSolutionTreeViewWorkspaceMsg);
         eventAggregator.SubscribeAction<RemoveWorkspaceFromSolutionExplorerMsg>(RemoveWorkspace);
     }
 
@@ -35,15 +36,28 @@ public partial class ShellWindowModel
                 panetoRemove.RemoveFromParent();
             }
         }
-
     }
 
-    private void OnSolutionTreeViewWorkspaceMsg(SolutionTreeViewWorkspaceMsg msg)
+    private void OnSolutionTreeViewWorkspaceMsg(SolutionExplorerItemMsg msg)
     {
-        var workspaceVm = ViewModels.FirstOrDefault(vm => vm is IWorkspaceViewModel ws && ws.WinTitle.Equals(msg.Label));
-        if (workspaceVm != null)
+        switch (msg.Item)
         {
-            workspaceVm.IsHidden = !workspaceVm.IsHidden;
+            case WorkspaceWrapper workspaceWrapper:
+            {
+                var workspaceVm = ViewModels.FirstOrDefault(vm => vm is IWorkspaceViewModel ws && ws.WinTitle.Equals(workspaceWrapper.Label));
+                if (workspaceVm != null)
+                {
+                    workspaceVm.IsHidden = !workspaceVm.IsHidden;
+                }
+                break;
+            }
+            case ScriptWrapper scriptWrapper:
+            {
+                var script = scriptWrapper.Script;
+                var scriptViewModel = new ScriptViewModel(eventAggregator, script);
+                ViewModels.Add(scriptViewModel);
+                break;
+            }
         }
     }
 }

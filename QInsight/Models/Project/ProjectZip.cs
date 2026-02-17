@@ -18,16 +18,32 @@ public class ProjectZip
         var streams = prjZip.Unzip(zipFilePath);
 
 
+        var scriptFiles = new Dictionary<string, string>();
+        
         foreach (var stream in streams)
         {
+            using var memoryStream = new MemoryStream();
+            await stream.Value.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+            
             if (stream.Key == "XmlModule.xml")
             {
-                using var memoryStream = new MemoryStream();
-                await stream.Value.CopyToAsync(memoryStream);
-                memoryStream.Position = 0;
-
                 var xmlModule = XmlInOut<XmlModule>.LoadFromStream(memoryStream);
                 projectData.Module = xmlModule;
+            }
+            else if (stream.Key.Contains(".py"))
+            {
+                var reader = new StreamReader(memoryStream);
+                var scriptContent = await reader.ReadToEndAsync();
+                scriptFiles.Add(stream.Key, scriptContent);
+            }
+        }
+
+        foreach (var script in projectData.Module.Scripts)
+        {
+            if (scriptFiles.TryGetValue(script.FileName, out var content))
+            {
+                script.Content = content;
             }
         }
         

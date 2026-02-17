@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.Scripts.PythonScript</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Scripts.PythonScript</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Script\Script.csproj" />
+    </ItemGroup>
+
+</Project>

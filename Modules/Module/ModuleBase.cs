@@ -4,6 +4,7 @@ using Qenex.QSuite.Specifications.ComponentSpecification;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Scripts.Script;
 using Qenex.QSuite.Specifications.Specification;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
@@ -25,6 +26,7 @@ public abstract class ModuleBase : IModuleBase
         Presentations = new List<IPresentation>();
         Conversions = new List<IValConversion>();
         VarEvents = new List<IVarEvent>();
+        Scripts = new List<IScriptBase>();
     }
 
     #endregion
@@ -51,6 +53,8 @@ public abstract class ModuleBase : IModuleBase
     public IList<IValConversion> Conversions { get; set; }
     
     public IList<IVarEvent> VarEvents { get; set; }
+    
+    public IList<IScriptBase> Scripts { get; set; }
 
     #endregion
 
@@ -226,6 +230,33 @@ public abstract class ModuleBase : IModuleBase
     public virtual void RemoveDriver(IDriverBase driver)
     {
         Drivers.Remove(driver);
+    }
+
+    #endregion
+
+    #region Scripts
+    
+    public void AddScript(IScriptBase script)
+    {
+        if (Scripts.FirstOrDefault(s => s.FileName == script.FileName) != null)
+        {
+            Logger?.Log(LogLevel.Warn, $"Script with Name {script.FileName} already exists.");
+            return;
+        }
+        Scripts.Add(script);
+    }
+
+    public void AddScripts(IList<IScriptBase> scripts)
+    {
+        foreach (var script in scripts)
+        {
+            AddScript(script);
+        }
+    }
+
+    public void RemoveScript(IScriptBase script)
+    {
+        Scripts.Remove(script);
     }
 
     #endregion

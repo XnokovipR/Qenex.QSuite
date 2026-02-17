@@ -56,4 +56,9 @@ public class XmlModule
     [XmlArrayItem(typeof(XmlScalarVariable), ElementName = "scalarVariable")]
     [XmlArrayItem(typeof(XmlStringVariable), ElementName = "stringVariable")]
     public List<XmlVariable> Variables { get; set; }
+    
+    // Python Scripts
+    [XmlArray("scripts")]
+    [XmlArrayItem(typeof(XmlScript), ElementName = "script")]
+    public List<XmlScript> Scripts { get; set; }
 }

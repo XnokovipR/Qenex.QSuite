@@ -18,6 +18,8 @@
       <ProjectReference Include="..\..\Drivers\Driver\Driver.csproj" />
       <ProjectReference Include="..\..\LogSystems\LogSystem\LogSystem.csproj" />
       <ProjectReference Include="..\..\Protocols\Protocol\Protocol.csproj" />
+      <ProjectReference Include="..\..\Scripts\PythonScript\PythonScript.csproj" />
+      <ProjectReference Include="..\..\Scripts\Script\Script.csproj" />
       <ProjectReference Include="..\Module\Module.csproj" />
       <ProjectReference Include="..\UnifModule\UnifModule.csproj" />
     </ItemGroup>

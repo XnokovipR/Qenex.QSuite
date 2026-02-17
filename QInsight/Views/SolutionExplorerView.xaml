@@ -6,11 +6,13 @@
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
+             xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
              xmlns:conv="clr-namespace:Qenex.QInsight.Converters"
              xmlns:wrappers="clr-namespace:Qenex.QInsight.ViewModels.SolutionExplorerWrappers"
              xmlns:dragdrop="clr-namespace:Qenex.QInsight.DragDrop"
              xmlns:viewableItem="clr-namespace:Qenex.QInsight.ViewModels.ViewableItem"
              mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:SolutionExplorerViewModel, IsDesignTimeCreatable=False}"
              d:DesignHeight="300" d:DesignWidth="300">
     
     <UserControl.Resources> 

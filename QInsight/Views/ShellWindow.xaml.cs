@@ -22,6 +22,9 @@ public partial class ShellWindow : Window
 	private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
 
 	internal static AppSettings MainAppSettings = null!;
+	internal static Color ForegroundColor;
+	internal static Color BackgroundColor;
+	
 	public static bool IsDarkTheme = false;
 
 	public ShellWindow()
@@ -31,6 +34,12 @@ public partial class ShellWindow : Window
 		try
 		{
 			ProcessAppSettings("QInsightAppSettings.xml");
+
+			IsDarkTheme = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark;
+			ForegroundColor = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ?
+				MainAppSettings.Design.DarkThemeTextColor : MainAppSettings.Design.LightThemeTextColor;
+			BackgroundColor = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? 
+				MainAppSettings.Design.DarkThemeControlBackgroundColor : MainAppSettings.Design.LightThemeControlBackgroundColor;
 			
 			SourceInitialized += WindowSourceInitialized;
 
@@ -77,7 +86,7 @@ public partial class ShellWindow : Window
 	private void WindowSourceInitialized(object sender, EventArgs e)
 	{
 		var hwnd = new WindowInteropHelper(Application.Current.MainWindow).Handle;
-		IsDarkTheme = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark;//IsDarkThemeEnabled();
+		//IsDarkTheme = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark;//IsDarkThemeEnabled();
 		SetImmersiveDarkMode(hwnd, IsDarkTheme);
 		Resources["AppBorderBrush"] = IsDarkTheme
 			? new SolidColorBrush(Color.FromRgb(50, 50, 50)) // Dark border color

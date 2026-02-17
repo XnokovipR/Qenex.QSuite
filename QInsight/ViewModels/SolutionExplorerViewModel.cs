@@ -10,6 +10,7 @@ using Qenex.QLibs.QUI.TelerikDocking;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Scripts.Script;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.VariableEvents;
@@ -41,7 +42,8 @@ public class SolutionExplorerViewModel : ViewModelBase
         
         TreeViewDoubleCLickCommand = new RelayCommand<IViewableItem>(treeViewItem =>
         {
-            EventAggregator.Publish(new SolutionTreeViewWorkspaceMsg() { Label = treeViewItem.Label });
+            
+            EventAggregator.Publish(new SolutionExplorerItemMsg() { Item = treeViewItem });
         });
 
         RemoveViewableItemCommand = new RelayCommand<IViewableItem>(item =>
@@ -124,6 +126,9 @@ public class SolutionExplorerViewModel : ViewModelBase
         CreatePresentationWrapper(projectWrapper.Children, realPrjData.Module.Presentations);
         
         CreateVariableEventWrapper(projectWrapper.Children, realPrjData.Module.VarEvents);
+        
+        CreateScriptsWrapper(projectWrapper.Children, realPrjData.Module.Scripts);
+        
         return projectWrapper;
     }
     
@@ -285,6 +290,20 @@ public class SolutionExplorerViewModel : ViewModelBase
         if (item != null)
         {
             Workspaces.Remove(item);
+        }
+    }
+
+    private void CreateScriptsWrapper(ObservableCollection<IViewableItem> children, IList<IScriptBase> scripts)
+    {
+        // Add scripts node
+        var scriptsNode = new NodeWrapper(NodeWrapper.NodeType.Scripts);
+        children.Add(scriptsNode);
+
+        // Add scripts
+        foreach (var script in scripts)
+        {
+            var scriptWrapper = new ScriptWrapper(script);
+            scriptsNode.Children.Add(scriptWrapper);
         }
     }
 

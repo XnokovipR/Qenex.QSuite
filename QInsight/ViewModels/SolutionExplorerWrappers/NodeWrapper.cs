@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Media.Imaging;
 using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QSuite.Common.WpfComm;
+using Telerik.Windows.Diagrams.Core;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
@@ -48,6 +49,7 @@ public class NodeWrapper : IViewableItem
     {
         return typeOfNode switch
         {
+            NodeType.Scripts => "ScriptFolder.png",
             NodeType.Drivers => "Drivers.png",
             NodeType.Protocols => "Protocols.png",
             NodeType.Variables => "Variables.png",
@@ -67,7 +69,8 @@ public class NodeWrapper : IViewableItem
         Variables,
         Events,
         Presentations,
-        Workspaces
+        Workspaces,
+        Scripts
     }
 
     

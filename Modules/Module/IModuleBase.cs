@@ -2,6 +2,7 @@ using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Specifications.ComponentSpecification;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Scripts.Script;
 using Qenex.QSuite.Specifications.Specification;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
@@ -30,6 +31,10 @@ public interface IModuleBase : IComponentSpecification, ICoreCommunication
     void AddPresentation(IPresentation presentation);
     void AddPresentations(IList<IPresentation> presentations);
     void RemovePresentation(IPresentation presentation);
+    
+    void AddScript(IScriptBase script);
+    void AddScripts(IList<IScriptBase> scripts);
+    void RemoveScript(IScriptBase script);
     
     void AddConversion(IValConversion conversion);
     void AddConversions(IList<IValConversion> conversions);

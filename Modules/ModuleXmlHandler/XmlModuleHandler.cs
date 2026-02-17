@@ -6,6 +6,8 @@ using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Scripts.PythonScript;
+using Qenex.QSuite.Scripts.Script;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.QVariables.Values;
@@ -55,6 +57,9 @@ public class XmlModuleHandler
 
         // Add Presentations
         module.AddPresentations(GetPresentations(module.Conversions, xmlModule.Presentations));
+        
+        // Add scripts
+        module.AddScripts(GetScripts(xmlModule.Scripts));
 
         // Add variables
         module.AddVariables(GetVariables(module.Presentations, xmlModule.Variables, module.VarEvents));
@@ -213,6 +218,24 @@ public class XmlModuleHandler
             
         }
         return presentations;
+    }
+    
+    private List<IScriptBase> GetScripts(IEnumerable<XmlScript> xmlPythonScripts) 
+    {
+        var scripts = new List<IScriptBase>();
+        
+        foreach (var xmlPythonScript in xmlPythonScripts)
+        {
+            var script = new PyScript
+            {
+                FileName = xmlPythonScript.FileName,
+                Content = xmlPythonScript.Content
+            };
+
+            scripts.Add(script);
+        }
+        
+        return scripts;
     }
 
     private IValuesBase CreateScalarValues(IEnumerable<IPresentation> presentations, XmlValues xmlValues)

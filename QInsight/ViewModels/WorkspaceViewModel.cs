@@ -120,10 +120,8 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     private void AddControlToDiagram(IControlBase controlVm, UserControl control, double x, double y)
     {
-	    var fgColor = ShellWindow.MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ?
-		    ShellWindow.MainAppSettings.Design.DarkThemeTextColor : ShellWindow.MainAppSettings.Design.LightThemeTextColor;
-	    var bgColor = ShellWindow.MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? 
-		    ShellWindow.MainAppSettings.Design.DarkThemeControlBackgroundColor : ShellWindow.MainAppSettings.Design.LightThemeControlBackgroundColor;
+	    var fgColor = ShellWindow.ForegroundColor;
+	    var bgColor = ShellWindow.BackgroundColor;
 	    var fontSize = ShellWindow.MainAppSettings.Design.FontSize;
 	    
 		var userControl = new RadDiagramShape();
