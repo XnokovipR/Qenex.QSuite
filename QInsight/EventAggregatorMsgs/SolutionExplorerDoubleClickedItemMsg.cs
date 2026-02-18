@@ -2,7 +2,7 @@
 
 namespace Qenex.QInsight.EventAggregatorMsgs;
 
-public class SolutionExplorerItemMsg
+public class SolutionExplorerDoubleClickedItemMsg
 {
     public IViewableItem Item { get; set; } = null!;
 }

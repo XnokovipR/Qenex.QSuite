@@ -40,11 +40,17 @@ public class SolutionExplorerViewModel : ViewModelBase
             }
         });
         
-        TreeViewDoubleCLickCommand = new RelayCommand<IViewableItem>(treeViewItem =>
+        TreeViewDoubleClickCommand = new RelayCommand<IViewableItem>(treeViewItem =>
         {
-            
-            EventAggregator.Publish(new SolutionExplorerItemMsg() { Item = treeViewItem });
+            EventAggregator.Publish(new SolutionExplorerDoubleClickedItemMsg() { Item = treeViewItem });
         });
+        
+        TreeViewClickCommand = new RelayCommand<IViewableItem>(treeViewItem =>
+        {
+            EventAggregator.Publish(new SolutionExplorerClickedItemMsg() { Item = treeViewItem });
+        });
+        
+        
 
         RemoveViewableItemCommand = new RelayCommand<IViewableItem>(item =>
         {
@@ -87,7 +93,8 @@ public class SolutionExplorerViewModel : ViewModelBase
     // Displayed workspaces in treeview
     public ObservableCollection<IViewableItem> Workspaces { get; set; }
     
-    public RelayCommand<IViewableItem> TreeViewDoubleCLickCommand { get; set; }
+    public RelayCommand<IViewableItem> TreeViewDoubleClickCommand { get; set; }
+    public RelayCommand<IViewableItem> TreeViewClickCommand { get; set; }
     public RelayCommand<IViewableItem> RemoveViewableItemCommand { get; set; }
     
     

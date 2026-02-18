@@ -20,25 +20,44 @@ public partial class ShellWindowModel
 {
     private void SubscribeEventAggregatorMessages()
     {
-        eventAggregator.SubscribeAction<SolutionExplorerItemMsg>(OnSolutionTreeViewWorkspaceMsg);
+        eventAggregator.SubscribeAction<SolutionExplorerClickedItemMsg>(OnSolutionExplorerClickedMsg);
+        eventAggregator.SubscribeAction<SolutionExplorerDoubleClickedItemMsg>(OnSolutionExplorerDoubleClickedMsg);
         eventAggregator.SubscribeAction<RemoveWorkspaceFromSolutionExplorerMsg>(RemoveWorkspace);
     }
-
-    private void RemoveWorkspace(RemoveWorkspaceFromSolutionExplorerMsg msg)
+    private void OnSolutionExplorerClickedMsg(SolutionExplorerClickedItemMsg msg)
     {
-        var radGroup = shellRadDocking.SplitItems.OfType<RadPaneGroup>().FirstOrDefault(i => i.Name.Contains("WorkspacePaneGroup"));
+        var propViewModel = ViewModels.FirstOrDefault(vm => vm.Name.Contains("PropertiesViewModel"));
+        if (propViewModel == null) return;
+        ViewModels.Remove(propViewModel);
         
-        if (radGroup != null)
+        switch (msg.Item)
         {
-            var panetoRemove = radGroup.Items.OfType<QRadDocumentPane>().FirstOrDefault(p => p.Name == msg.Name);
-            if (panetoRemove != null)
+            case WorkspaceWrapper workspaceWrapper:
             {
-                panetoRemove.RemoveFromParent();
+                var workspaceVm = ViewModels.FirstOrDefault(vm => vm is IWorkspaceViewModel ws && ws.WinTitle.Equals(workspaceWrapper.Label));
+                if (workspaceVm != null)
+                {
+                    var workspacePropertiesViewModel = new WorkspacePropertiesViewModel(eventAggregator, workspaceVm.Header);
+                    ViewModels.Add(workspacePropertiesViewModel);
+                }
+                break;
+            }
+            case ScriptWrapper scriptWrapper:
+            {
+                var scriptPropertiesViewModel = new ScriptPropertiesViewModel(eventAggregator, scriptWrapper.Script);
+                ViewModels.Add(scriptPropertiesViewModel);
+                break;
+            }
+            default:
+            {
+                var stdPropertiesViewModel = new PropertiesViewModel(eventAggregator);
+                ViewModels.Add(stdPropertiesViewModel);
+                break;
             }
         }
     }
 
-    private void OnSolutionTreeViewWorkspaceMsg(SolutionExplorerItemMsg msg)
+    private void OnSolutionExplorerDoubleClickedMsg(SolutionExplorerDoubleClickedItemMsg msg)
     {
         switch (msg.Item)
         {
@@ -57,6 +76,20 @@ public partial class ShellWindowModel
                 var scriptViewModel = new ScriptViewModel(eventAggregator, script);
                 ViewModels.Add(scriptViewModel);
                 break;
+            }
+        }
+    }
+    
+    private void RemoveWorkspace(RemoveWorkspaceFromSolutionExplorerMsg msg)
+    {
+        var radGroup = shellRadDocking.SplitItems.OfType<RadPaneGroup>().FirstOrDefault(i => i.Name.Contains("WorkspacePaneGroup"));
+        
+        if (radGroup != null)
+        {
+            var panetoRemove = radGroup.Items.OfType<QRadDocumentPane>().FirstOrDefault(p => p.Name == msg.Name);
+            if (panetoRemove != null)
+            {
+                panetoRemove.RemoveFromParent();
             }
         }
     }

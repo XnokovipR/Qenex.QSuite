@@ -41,9 +41,14 @@
             
             <i:Interaction.Triggers>
                 <i:EventTrigger EventName="ItemDoubleClick">
-                    <i:InvokeCommandAction Command="{Binding TreeViewDoubleCLickCommand}" PassEventArgsToCommand="True"
+                    <i:InvokeCommandAction Command="{Binding TreeViewDoubleClickCommand}" PassEventArgsToCommand="True"
                                            CommandParameter="{Binding ElementName=SolutionTreeView, Path=SelectedItem}"/>
                 </i:EventTrigger>
+                <i:EventTrigger EventName="ItemClick">
+                    <i:InvokeCommandAction Command="{Binding TreeViewClickCommand}" PassEventArgsToCommand="True"
+                                           CommandParameter="{Binding ElementName=SolutionTreeView, Path=SelectedItem}"/>
+                </i:EventTrigger>
+                
             </i:Interaction.Triggers>
             
             <telerik:RadTreeView.ItemTemplate> 

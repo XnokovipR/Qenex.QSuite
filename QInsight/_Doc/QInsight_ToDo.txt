@@ -1,0 +1,8 @@
+QInsight - To Do
+************************************
+
+- kompletní uložení/otevření projektu
+	- uložení workspaců včetně všech controls (jejich polohy i vnitřní nastavení)
+- python skripty (trigger, časový, apod.)
+- reálné drivery, protokoly
+- ukldání nasbíranýhc dat
