@@ -1,0 +1,30 @@
+##----------------------------------------------------------------------------------------------------------------##
+	Skripty: nastavení
+##----------------------------------------------------------------------------------------------------------------##
+
+každy skript musí mít nasl. vlastnosti:
+	- FileName
+	- Content
+	- poslední čas puštění skriptu
+	- průměrný čas ...
+	- max. čas ...
+	
+	- shared (spustí se pouze jednou, ale věci jsou přístupné skrz ostatní skripty)
+	- on request (můžeš jej pustit na vyžádání)
+	- periodically
+	- on value changed
+
+kliknu na skript:
+	1x klik:	zobrazí se pouze Properties
+	2x klik:	zorazí se Properties + otevře se skript
+	
+Property okno:
+	- Zobrazovat nastavení jména skriptu
+	- volání skriptu
+		- startup (executed at start, shared among other scripts)
+		- manual
+		- periodic
+		- on value changed
+	
+
+	
