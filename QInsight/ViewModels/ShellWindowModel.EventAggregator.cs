@@ -26,9 +26,8 @@ public partial class ShellWindowModel
     }
     private void OnSolutionExplorerClickedMsg(SolutionExplorerClickedItemMsg msg)
     {
-        var propViewModel = ViewModels.FirstOrDefault(vm => vm.Name.Contains("PropertiesViewModel"));
-        if (propViewModel == null) return;
-        ViewModels.Remove(propViewModel);
+        var vm = ViewModels.FirstOrDefault(vm => vm.Name.Equals("PropertiesViewModel"));
+        if (vm is not PropertiesViewModel propVm) return;
         
         switch (msg.Item)
         {
@@ -37,21 +36,18 @@ public partial class ShellWindowModel
                 var workspaceVm = ViewModels.FirstOrDefault(vm => vm is IWorkspaceViewModel ws && ws.WinTitle.Equals(workspaceWrapper.Label));
                 if (workspaceVm != null)
                 {
-                    var workspacePropertiesViewModel = new WorkspacePropertiesViewModel(eventAggregator, workspaceVm.Header);
-                    ViewModels.Add(workspacePropertiesViewModel);
+                    propVm.SelectedViewModel = new WorkspacePropertiesViewModel(eventAggregator, workspaceVm.Header);
                 }
                 break;
             }
             case ScriptWrapper scriptWrapper:
             {
-                var scriptPropertiesViewModel = new ScriptPropertiesViewModel(eventAggregator, scriptWrapper.Script);
-                ViewModels.Add(scriptPropertiesViewModel);
+                propVm.SelectedViewModel = new ScriptPropertiesViewModel(eventAggregator, scriptWrapper.Script);
                 break;
             }
             default:
             {
-                var stdPropertiesViewModel = new PropertiesViewModel(eventAggregator);
-                ViewModels.Add(stdPropertiesViewModel);
+                propVm.SelectedViewModel = new EmptyPropertiesViewModel(eventAggregator);
                 break;
             }
         }

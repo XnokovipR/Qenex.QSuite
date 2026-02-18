@@ -2,9 +2,9 @@
 
 namespace Qenex.QInsight.Views;
 
-public partial class PropertiesViewModel : UserControl
+public partial class PropertiesView : UserControl
 {
-    public PropertiesViewModel()
+    public PropertiesView()
     {
         InitializeComponent();
     }
