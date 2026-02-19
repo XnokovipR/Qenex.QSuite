@@ -21,7 +21,8 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 {
 	#region Private
 
-	internal static IHighlightingDefinition PythonHighlighting;
+	internal static readonly IHighlightingDefinition PythonHighlighting  = SyntaxHighlighting.LoadPythonHighlighting(ShellWindow.IsDarkTheme);
+
 	private readonly EventAggregator eventAggregator;
 	private readonly Logger logger;
 	
@@ -37,10 +38,8 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	// ViewModels
 	private RadDocking shellRadDocking;
 	private SolutionExplorerViewModel solutionExplorerViewModel;
-	private LogsViewModel logsViewModel;
 	private PropertiesViewModel propertiesViewModel;
 	private ControlsViewModel controlsViewModel;
-	private ObservableCollection<IViewModelBase> viewModels;
 
 	#endregion
 
@@ -51,9 +50,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		eventAggregator = new EventAggregator();
 		logger = new Logger(LogLevel.Trace);
 		ViewModels = [];
-
-		PythonHighlighting = SyntaxHighlighting.LoadPythonHighlighting(false);
-
+		
 		CreateViewModels();
 		CreateCommands();
 		SubscribeEventAggregatorMessages();
@@ -65,14 +62,14 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 
 	public LogsViewModel LogsViewModel
 	{
-		get => logsViewModel;
-		set { logsViewModel = value; OnPropertyChanged(); }
+		get;
+		set { field = value; OnPropertyChanged(); }
 	}
 
 	public ObservableCollection<IViewModelBase> ViewModels
 	{
-		get => viewModels;
-		set { viewModels = value; OnPropertyChanged(); }
+		get;
+		set { field = value; OnPropertyChanged(); }
 	}
 
 	#endregion

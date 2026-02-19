@@ -15,4 +15,6 @@ public interface IViewableItem
     ObservableCollection<IViewableItem> Children { get; set; }
     
     Dictionary<string, object>? CustomTags { get; set; }
+    
+    public void Update(object o) {}
 }

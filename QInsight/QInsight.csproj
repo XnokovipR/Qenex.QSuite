@@ -101,6 +101,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Common\InpBindingManager\InpBindingManager.csproj" />
     <ProjectReference Include="..\Common\WpfComm\WpfComm.csproj" />
     <ProjectReference Include="..\Controls\DerivedWinControls\DerivedWinControls.csproj" />
     <ProjectReference Include="..\Controls\GraphControl\GraphControl.csproj" />

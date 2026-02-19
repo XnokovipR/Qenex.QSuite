@@ -2,16 +2,6 @@
 
 namespace Qenex.QInsight.ViewModels;
 
-public class EmptyPropertiesViewModel(EventAggregator ea) : ViewModelBase(ea)
+public class EmptyPropertiesViewModel(EventAggregator ea) : IPropertiesViewModel
 {
-
-    #region ViewModelBase implementation
-
-    public override string Header { get; set; } = "Empty Properties";
-    public override string Name { get; set; } = "PropertiesViewModel";
-    public override DockingPosition DockPosition { get; set; } = DockingPosition.Right;
-    public override bool IsDocument => false;
-
-    #endregion
-    
 }

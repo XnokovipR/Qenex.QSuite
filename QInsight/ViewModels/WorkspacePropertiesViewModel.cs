@@ -1,16 +1,30 @@
 ﻿using Qenex.QLibs.QUI;
+using Qenex.QLibs.QUI.TelerikDocking;
 
 namespace Qenex.QInsight.ViewModels;
 
-public class WorkspacePropertiesViewModel(EventAggregator ea, string workspaceHeader) : ViewModelBase(ea)
+public class WorkspacePropertiesViewModel : PropertyChangedBaseWithValidation, IPropertiesViewModel
 {
-
-    #region ViewModelBase implementation
-
-    public override string Header { get; set; } = "Work Properties";
-    public override string Name { get; set; } = "WorkPropertiesViewModel";
-    public override DockingPosition DockPosition { get; set; } = DockingPosition.Right;
-    public override bool IsDocument => false;
-
-    #endregion
+    private IWorkspaceViewModel workspaceViewModel;
+    private EventAggregator eventAggregator;
+    private Action<string> update;
+    
+    public WorkspacePropertiesViewModel(EventAggregator ea, IWorkspaceViewModel workspaceVm, Action<string> updateAction)
+    {
+        eventAggregator = ea;
+        update = updateAction;
+        workspaceViewModel = workspaceVm;
+    }
+    
+    public string WorkspaceTitle
+    {
+        get => workspaceViewModel.WinTitle;
+        set
+        {
+            if (value == string.Empty) return;
+            workspaceViewModel.WinTitle = value;
+            OnPropertyChanged();
+            update?.Invoke(value);
+        }
+    }
 }

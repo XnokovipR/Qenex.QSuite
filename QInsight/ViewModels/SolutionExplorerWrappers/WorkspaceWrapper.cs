@@ -20,7 +20,7 @@ public class WorkspaceWrapper : PropertyChangedBase, IViewableItem
     
     #region UI Properties
     
-    public IWorkspaceViewModel WorkspaceViewModel { get => field; init { field = value; OnPropertyChanged(); } }
+    public IWorkspaceViewModel WorkspaceViewModel { get; init { field = value; OnPropertyChanged(); } }
     
     public string Name => WorkspaceViewModel.Name;
 
@@ -29,7 +29,15 @@ public class WorkspaceWrapper : PropertyChangedBase, IViewableItem
         get => WorkspaceViewModel.WinTitle;
         set { WorkspaceViewModel.WinTitle = value; OnPropertyChanged(); }
     }
-    
+
+    public void Update(object o)
+    {
+        if (o is string strO)
+        {
+            Label = strO;
+        }
+    }
+
     public FontWeight LabelWeight => FontWeights.Normal;
 
     public Visibility ToolTipVisibility => Visibility.Visible;

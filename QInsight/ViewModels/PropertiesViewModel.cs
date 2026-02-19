@@ -4,7 +4,7 @@ namespace Qenex.QInsight.ViewModels;
 
 public class PropertiesViewModel(EventAggregator ea) : ViewModelBase(ea)
 {
-    public ViewModelBase SelectedViewModel
+    public IPropertiesViewModel SelectedViewModel
     {
         get;
         set
