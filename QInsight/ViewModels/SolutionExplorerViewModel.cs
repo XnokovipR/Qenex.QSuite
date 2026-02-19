@@ -91,7 +91,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     public ObservableCollection<IViewableItem> ProjectModules { get; set; }
     
     // Displayed workspaces in treeview
-    public ObservableCollection<IViewableItem> Workspaces { get; set; }
+    public ObservableCollection<IViewableItem>? Workspaces { get; set; }
     
     public RelayCommand<IViewableItem> TreeViewDoubleClickCommand { get; set; }
     public RelayCommand<IViewableItem> TreeViewClickCommand { get; set; }
@@ -302,15 +302,19 @@ public class SolutionExplorerViewModel : ViewModelBase
 
     private void CreateScriptsWrapper(ObservableCollection<IViewableItem> children, IList<IScriptBase> scripts)
     {
-        // Add scripts node
-        var scriptsNode = new NodeWrapper(NodeWrapper.NodeType.Scripts);
-        children.Add(scriptsNode);
+        // Add scripts node id does not exist
+        if (!children.Any(ch => ch is NodeWrapper { TypeOfNode: NodeWrapper.NodeType.Scripts }))
+        {
+            var scriptsNode = new NodeWrapper(NodeWrapper.NodeType.Scripts);
+            children.Add(scriptsNode);
+        }
 
         // Add scripts
+        var scrNode = children.First(ch => ch is NodeWrapper { TypeOfNode: NodeWrapper.NodeType.Scripts });
         foreach (var script in scripts)
         {
             var scriptWrapper = new ScriptWrapper(script);
-            scriptsNode.Children.Add(scriptWrapper);
+            scrNode.Children.Add(scriptWrapper);
         }
     }
 

@@ -3,28 +3,16 @@ using Qenex.QLibs.QUI.TelerikDocking;
 
 namespace Qenex.QInsight.ViewModels;
 
-public class WorkspacePropertiesViewModel : PropertyChangedBaseWithValidation, IPropertiesViewModel
+public class WorkspacePropertiesViewModel(EventAggregator ea, IWorkspaceViewModel workspaceVm) : PropertyChangedBaseWithValidation, IPropertiesViewModel
 {
-    private IWorkspaceViewModel workspaceViewModel;
-    private EventAggregator eventAggregator;
-    private Action<string> update;
-    
-    public WorkspacePropertiesViewModel(EventAggregator ea, IWorkspaceViewModel workspaceVm, Action<string> updateAction)
-    {
-        eventAggregator = ea;
-        update = updateAction;
-        workspaceViewModel = workspaceVm;
-    }
-    
     public string WorkspaceTitle
     {
-        get => workspaceViewModel.WinTitle;
+        get => workspaceVm.WinTitle;
         set
         {
             if (value == string.Empty) return;
-            workspaceViewModel.WinTitle = value;
+            workspaceVm.WinTitle = value;
             OnPropertyChanged();
-            update?.Invoke(value);
         }
     }
 }

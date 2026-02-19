@@ -58,7 +58,7 @@
                         <Image Source="{Binding Icon}"
                                RenderOptions.BitmapScalingMode="Fant"
                                Stretch="Fill" Width="24" Height="24"/>
-                        <TextBlock VerticalAlignment="Center" Text="{Binding Label}" FontWeight="{Binding LabelWeight}"/>
+                        <TextBlock VerticalAlignment="Center" Text="{Binding Label, Mode=TwoWay}" FontWeight="{Binding LabelWeight}"/>
                         <StackPanel.ToolTip>
                             <ToolTip Visibility="{Binding ToolTipVisibility}">
                                 <StackPanel Orientation="Vertical">

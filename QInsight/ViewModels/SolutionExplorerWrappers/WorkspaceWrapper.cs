@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -12,31 +13,33 @@ namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
 public class WorkspaceWrapper : PropertyChangedBase, IViewableItem
 {
+    private readonly IWorkspaceViewModel workspaceViewModel;
 
-    public WorkspaceWrapper(IWorkspaceViewModel workspaceViewModel)
+    public WorkspaceWrapper(IWorkspaceViewModel wsViewModel)
     {
-        WorkspaceViewModel = workspaceViewModel;
+        workspaceViewModel = wsViewModel;
+        Label = workspaceViewModel.WinTitle;
+
+        if (workspaceViewModel is INotifyPropertyChanged npc)
+        {
+            npc.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(IWorkspaceViewModel.WinTitle))
+                {
+                    Label = workspaceViewModel.WinTitle;
+                }
+            };
+        }
     }
     
     #region UI Properties
-    
-    public IWorkspaceViewModel WorkspaceViewModel { get; init { field = value; OnPropertyChanged(); } }
-    
-    public string Name => WorkspaceViewModel.Name;
 
-    public string Label
-    {
-        get => WorkspaceViewModel.WinTitle;
-        set { WorkspaceViewModel.WinTitle = value; OnPropertyChanged(); }
-    }
+    
+    
+    public string Name => workspaceViewModel.Name;
 
-    public void Update(object o)
-    {
-        if (o is string strO)
-        {
-            Label = strO;
-        }
-    }
+    public string Label { get; set { field = value; OnPropertyChanged(); } }
+    
 
     public FontWeight LabelWeight => FontWeights.Normal;
 
@@ -55,9 +58,9 @@ public class WorkspaceWrapper : PropertyChangedBase, IViewableItem
         var sb = new StringBuilder();
         sb.Append("Workspace:");
         sb.Append(Environment.NewLine);
-        sb.Append($"Header\t{WorkspaceViewModel.WinTitle}");
+        sb.Append($"Header\t{workspaceViewModel.WinTitle}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Name\t{WorkspaceViewModel.Name}");
+        sb.Append($"Name\t{workspaceViewModel.Name}");
 
         return sb.ToString();
     }

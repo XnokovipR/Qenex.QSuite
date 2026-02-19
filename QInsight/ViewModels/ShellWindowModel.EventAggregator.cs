@@ -35,7 +35,7 @@ public partial class ShellWindowModel
             {
                 if (ViewModels.FirstOrDefault(viewModelBase => viewModelBase is IWorkspaceViewModel ws && ws.WinTitle.Equals(workspaceWrapper.Label)) is IWorkspaceViewModel workspaceVm)
                 {
-                    propVm.SelectedViewModel = new WorkspacePropertiesViewModel(eventAggregator, workspaceVm, workspaceWrapper.Update);
+                    propVm.SelectedViewModel = new WorkspacePropertiesViewModel(eventAggregator, workspaceVm);//, workspaceWrapper.Update);
                 }
                 break;
             }
