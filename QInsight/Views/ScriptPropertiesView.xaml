@@ -4,9 +4,20 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
+			 xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
+             xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
+			 xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:inp="clr-namespace:Qenex.QSuite.Common.InpBindingManager;assembly=Qenex.QSuite.Common.InpBindingManager"
              mc:Ignorable="d"
-             d:DesignHeight="300" d:DesignWidth="300">
-    <Grid>
-        <TextBlock Text="Script Properties" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-    </Grid>
+             d:DesignHeight="300" d:DesignWidth="300"
+			 d:DataContext="{d:DesignInstance vm:ScriptPropertiesViewModel, IsDesignTimeCreatable=False}">
+	
+	<StackPanel Orientation="Vertical" Margin="5,5,5,5">
+		<q:QTextBlock Text="File Name" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,0,0,5"/>
+		<q:QTextBox Text="{Binding ScriptWrapper.FileName, Mode=TwoWay}"
+                    inp:InputManager.UpdatePropertySourceWhenEnterPressed="q:QTextBox.Text"/>
+		
+		<q:QTextBlock Text="Execution model" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,5"/>
+		<telerik:RadComboBox ItemsSource="{Binding ExecutionModes}" SelectedValuePath="Value" SelectedValue="{Binding ScriptWrapper.ExecutionMode, Mode=TwoWay}"/>
+	</StackPanel>
 </UserControl>

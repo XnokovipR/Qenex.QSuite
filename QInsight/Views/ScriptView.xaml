@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
              xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
+			 xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
              xmlns:editing="clr-namespace:ICSharpCode.AvalonEdit.Editing;assembly=ICSharpCode.AvalonEdit"
              xmlns:rendering="clr-namespace:ICSharpCode.AvalonEdit.Rendering;assembly=ICSharpCode.AvalonEdit"
@@ -13,8 +14,8 @@
              d:DataContext="{d:DesignInstance vm:ScriptViewModel, IsDesignTimeCreatable=False}">
     
     <Grid>
-        
-        <avalonEdit:TextEditor 
+
+		<avalonEdit:TextEditor 
             Document="{Binding Document}"
             ShowLineNumbers="True"
             FontFamily="Consolas, Cascadia Code,Menlo,Monospace"
@@ -22,6 +23,5 @@
             Background="{Binding BackgroundColor}"
             Foreground="{Binding ForegroundColor}"
             SyntaxHighlighting="{Binding PyHighlighting}"/>
-        
-    </Grid>
+	</Grid>
 </UserControl>

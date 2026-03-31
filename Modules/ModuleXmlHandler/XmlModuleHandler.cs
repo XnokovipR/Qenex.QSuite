@@ -229,8 +229,10 @@ public class XmlModuleHandler
             var script = new PyScript
             {
                 FileName = xmlPythonScript.FileName,
-                Content = xmlPythonScript.Content
-            };
+                Content = xmlPythonScript.Content,
+				ExecutionMode = Enum.Parse<ScriptExecutionMode>(xmlPythonScript.ExecutionMode.ToString()),
+                
+			};
 
             scripts.Add(script);
         }

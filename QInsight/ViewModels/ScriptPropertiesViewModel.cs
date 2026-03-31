@@ -1,10 +1,21 @@
-﻿using Qenex.QInsight.ViewModels;
+﻿using HarfBuzzSharp;
+using Qenex.QInsight.ViewModels;
+using Qenex.QInsight.ViewModels.ModelWrappers;
+using Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 using Qenex.QLibs.QUI;
+using Qenex.QLibs.QUI.TelerikDocking;
 using Qenex.QSuite.Scripts.Script;
+using Telerik.Windows.Data;
 
 namespace Qenex.QInsight.ViewModels;
 
-public class ScriptPropertiesViewModel(EventAggregator ea, IScriptBase s) : IPropertiesViewModel
+public class ScriptPropertiesViewModel : PropertyChangedBaseWithValidation, IPropertiesViewModel
 {
-    private IScriptBase script = s;
+	public ScriptPropertiesViewModel(EventAggregator ea, ScriptWrapper scriptWrapper)
+	{
+		ScriptWrapper = scriptWrapper;
+	}
+	public IEnumerable<EnumMemberViewModel> ExecutionModes { get; }	= EnumDataSource.FromType<ScriptExecutionMode>();
+
+	public ScriptWrapper ScriptWrapper { get; set; }
 }

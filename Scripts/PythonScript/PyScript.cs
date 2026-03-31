@@ -5,10 +5,15 @@ namespace Qenex.QSuite.Scripts.PythonScript;
 public class PyScript : IScriptBase
 {
     private int executionCount;
+    
+    public ScriptFileType ScriptType => ScriptFileType.Python;
     public string FileName { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
 
-    public double LastExecutionInterval
+    public ScriptExecutionMode ExecutionMode { get; set; } = ScriptExecutionMode.Manual;
+	public string AdditionalInfo { get; set; } = string.Empty;
+
+	public double LastExecutionInterval
     {
         get => field;
         set
