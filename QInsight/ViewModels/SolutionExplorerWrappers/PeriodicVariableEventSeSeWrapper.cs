@@ -9,9 +9,9 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class PeriodicVariableEventWrapper : PropertyChangedBase, IVariableEventWrapper
+public class PeriodicVariableEventSeSeWrapper : PropertyChangedBase, IVariableEventSeWrapper
 {
-    public PeriodicVariableEventWrapper(PeriodicVarEvent variableEvent)
+    public PeriodicVariableEventSeSeWrapper(PeriodicVarEvent variableEvent)
     {
         VariableEvent = variableEvent;
     }

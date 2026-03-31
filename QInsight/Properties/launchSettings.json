@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "QInsight": {
+      "commandName": "Project",
+      "commandLineArgs": "d:\\Projects\\Qenex\\Source\\Qenex.QSuite\\QInsight\\bin\\Debug\\net10.0-windows\\QSuite-Project.zip"
+    }
+  }
+}

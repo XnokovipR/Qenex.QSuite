@@ -11,6 +11,7 @@ using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Scripts.Script;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
 using Telerik.Windows.Controls.Docking;
@@ -265,7 +266,6 @@ public partial class ShellWindowModel
                 pane.RemoveFromParent();
             }
         });
-
     }
     
     // Run menu

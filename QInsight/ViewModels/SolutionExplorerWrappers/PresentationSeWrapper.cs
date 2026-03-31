@@ -9,9 +9,9 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class PresentationWrapper : PropertyChangedBase, IViewableItem
+public class PresentationSeWrapper : PropertyChangedBase, IViewableItem
 {
-    public PresentationWrapper(IPresentation presentation)
+    public PresentationSeWrapper(IPresentation presentation)
     {
         Presentation = presentation;
     }

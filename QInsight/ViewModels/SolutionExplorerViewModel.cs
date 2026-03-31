@@ -3,6 +3,7 @@ using System.Net.Mime;
 using System.Windows;
 using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Models.Project;
+using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QLibs.QUI;
 using Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
@@ -33,7 +34,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     {
         EventAggregator.SubscribeAction<RemoveWorkspaceFromMainMenuMsg>(msg =>
         {
-            var ws = Workspaces?.OfType<WorkspaceWrapper>().FirstOrDefault(ws => ws.Name == msg.Name);
+            var ws = Workspaces?.OfType<WorkspaceSeWrapper>().FirstOrDefault(ws => ws.Name == msg.Name);
             if (ws != null)
             {
                 RemoveWorkspaceWrapper(ws);
@@ -64,7 +65,7 @@ public class SolutionExplorerViewModel : ViewModelBase
                 {
                     if (arg.DialogResult != true) return;
 
-                    if (item is WorkspaceWrapper wsw)
+                    if (item is WorkspaceSeWrapper wsw)
                     {
                         RemoveWorkspaceWrapper(item);
                         EventAggregator.Publish(new RemoveWorkspaceFromSolutionExplorerMsg() { Name = wsw.Name });
@@ -76,7 +77,7 @@ public class SolutionExplorerViewModel : ViewModelBase
         ProjectModules = [];
         EventAggregator.SubscribeAction<AddWorkspaceEaMsg>(msg =>
         {
-            var childrens = ProjectModules.FirstOrDefault(p => p is ProjectWrapper)?.Children;
+            var childrens = ProjectModules.FirstOrDefault(p => p is ProjectSeWrapper)?.Children;
             if (childrens != null)
             {
                 AddWorkspaceWrapper(childrens, msg.WorkspaceViewModel);
@@ -124,7 +125,7 @@ public class SolutionExplorerViewModel : ViewModelBase
 
     private IViewableItem CreateProjectWrapper(RealProjectData realPrjData)
     {
-        var projectWrapper = new ProjectWrapper(realPrjData.Module);
+        var projectWrapper = new ProjectSeWrapper(realPrjData.Module);
         
         CreateDriverWrappers(projectWrapper.Children, realPrjData.Module.Drivers);
         
@@ -142,13 +143,13 @@ public class SolutionExplorerViewModel : ViewModelBase
     private void CreateDriverWrappers(ObservableCollection<IViewableItem> children, IList<IDriverBase> drivers)
     {
         // Add drivers node
-        var driversNode = new NodeWrapper(NodeWrapper.NodeType.Drivers, "Communicated");
+        var driversNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Drivers, "Communicated");
         children.Add(driversNode);
         
         // Add drivers
         foreach (var driver in drivers)
         {
-            var driverWrapper = new DriverWrapper(driver);
+            var driverWrapper = new DriverSeWrapper(driver);
             // Add protocols
             CreateProtocolWrappers(driverWrapper.Children, driver.Protocols);
             driversNode.Children.Add(driverWrapper);
@@ -158,7 +159,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     private void CreateVariableWrapper(ObservableCollection<IViewableItem> children, IList<IVariableBase> variables)
     {
         // Add variables node
-        var variablesNode = new NodeWrapper(NodeWrapper.NodeType.Variables);
+        var variablesNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Variables);
         children.Add(variablesNode);
         
         // Add variables
@@ -186,7 +187,7 @@ public class SolutionExplorerViewModel : ViewModelBase
             if (existingNamespace == null)
             {
                 // Create a new namespace node
-                var namespaceNode = new NodeWrapper(NodeWrapper.NodeType.OnlyPrefixFolder, ns);
+                var namespaceNode = new NodeSeWrapper(NodeSeWrapper.NodeType.OnlyPrefixFolder, ns);
                 tempVariablesNode.Add(namespaceNode);
                 tempVariablesNode = namespaceNode.Children;
             }
@@ -196,7 +197,7 @@ public class SolutionExplorerViewModel : ViewModelBase
                 tempVariablesNode = existingNamespace.Children;
             }
         }
-        var variableWrapper = new VariableWrapper(variable);
+        var variableWrapper = new VariableSeWrapper(variable);
         tempVariablesNode.Add(variableWrapper);
         
     }
@@ -204,13 +205,13 @@ public class SolutionExplorerViewModel : ViewModelBase
     private void CreatePresentationWrapper(ObservableCollection<IViewableItem> children, IList<IPresentation> presentations)
     {
         // Add presentations node
-        var presentationsNode = new NodeWrapper(NodeWrapper.NodeType.Presentations);
+        var presentationsNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Presentations);
         children.Add(presentationsNode);
         
         // Add presentations
         foreach (var presentation in presentations)
         {
-            var presentationWrapper = new PresentationWrapper(presentation);
+            var presentationWrapper = new PresentationSeWrapper(presentation);
             presentationsNode.Children.Add(presentationWrapper);
         }
     }
@@ -218,7 +219,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     private void CreateVariableEventWrapper(ObservableCollection<IViewableItem> children, IList<IVarEvent> events)
     {
         // Add events node
-        var eventsNode = new NodeWrapper(NodeWrapper.NodeType.Events);
+        var eventsNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Events);
         children.Add(eventsNode);
         
         // Add events
@@ -226,17 +227,17 @@ public class SolutionExplorerViewModel : ViewModelBase
         {
             if (variableEvent is PeriodicVarEvent periodicVarEvent)
             {
-                var periodicEventWrapper = new PeriodicVariableEventWrapper(periodicVarEvent);
+                var periodicEventWrapper = new PeriodicVariableEventSeSeWrapper(periodicVarEvent);
                 eventsNode.Children.Add(periodicEventWrapper);
             }
             else if (variableEvent is OnValueChangedVarEvent onChangeVarEvent)
             {
-                var onChangeEventWrapper = new OnValueChangedVariableEventWrapper(onChangeVarEvent);
+                var onChangeEventWrapper = new OnValueChangedVariableEventSeSeWrapper(onChangeVarEvent);
                 eventsNode.Children.Add(onChangeEventWrapper);
             }
             else if (variableEvent is OnRequestVarEvent onRequestVarEvent)
             {
-                var onTimeEventWrapper = new OnRequestVariableEventWrapper(onRequestVarEvent);
+                var onTimeEventWrapper = new OnRequestVariableEventSeSeWrapper(onRequestVarEvent);
                 eventsNode.Children.Add(onTimeEventWrapper);
             }
         }
@@ -245,13 +246,13 @@ public class SolutionExplorerViewModel : ViewModelBase
     private void CreateProtocolWrappers(ObservableCollection<IViewableItem> children, IList<IProtocolBase> protocols)
     {
         // Add protocols node
-        var protocolsNode = new NodeWrapper(NodeWrapper.NodeType.Protocols, "Communicated");
+        var protocolsNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Protocols, "Communicated");
         children.Add(protocolsNode);
         
         // Add protocols
         foreach (var protocol in protocols)
         {
-            var protocolWrapper = new ProtocolWrapper(protocol);
+            var protocolWrapper = new ProtocolSeWrapper(protocol);
             // Add variables
             CreateProtocolVariableWrappers(protocolWrapper.Children, protocol.Variables);
             protocolsNode.Children.Add(protocolWrapper);
@@ -261,7 +262,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     private void CreateProtocolVariableWrappers(ObservableCollection<IViewableItem> children, IList<IProtocolVariable> variables)
     {
         // Add variables node
-        var variablesNode = new NodeWrapper(NodeWrapper.NodeType.Variables, "Communicated");
+        var variablesNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Variables, "Communicated");
         children.Add(variablesNode);
         
         // Add variables
@@ -276,17 +277,17 @@ public class SolutionExplorerViewModel : ViewModelBase
     private void AddWorkspaceWrapper(ObservableCollection<IViewableItem> children, IWorkspaceViewModel workspaceViewModel)
     {
         // Add workspaces node if not exists
-        if (!children.Any(ch => ch is NodeWrapper { TypeOfNode: NodeWrapper.NodeType.Workspaces }))
+        if (!children.Any(ch => ch is NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Workspaces }))
         {
-            var workspacesNode = new NodeWrapper(NodeWrapper.NodeType.Workspaces);
+            var workspacesNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Workspaces);
             Workspaces = workspacesNode.Children;
             children.Add(workspacesNode);   
             
         }
         
         // Add workspace
-        var workspaces = children.First(ch => ch is NodeWrapper { TypeOfNode: NodeWrapper.NodeType.Workspaces });
-        var workspaceWrapper = new WorkspaceWrapper(workspaceViewModel);
+        var workspaces = children.First(ch => ch is NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Workspaces });
+        var workspaceWrapper = new WorkspaceSeWrapper(workspaceViewModel);
         workspaces.Children.Add(workspaceWrapper);
     }
     
@@ -303,18 +304,19 @@ public class SolutionExplorerViewModel : ViewModelBase
     private void CreateScriptsWrapper(ObservableCollection<IViewableItem> children, IList<IScriptBase> scripts)
     {
         // Add scripts node id does not exist
-        if (!children.Any(ch => ch is NodeWrapper { TypeOfNode: NodeWrapper.NodeType.Scripts }))
+        if (!children.Any(ch => ch is NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Scripts }))
         {
-            var scriptsNode = new NodeWrapper(NodeWrapper.NodeType.Scripts);
+            var scriptsNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Scripts);
             children.Add(scriptsNode);
         }
 
         // Add scripts
-        var scrNode = children.First(ch => ch is NodeWrapper { TypeOfNode: NodeWrapper.NodeType.Scripts });
+        var scrNode = children.First(ch => ch is NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Scripts });
         foreach (var script in scripts)
         {
             var scriptWrapper = new ScriptWrapper(script);
-            scrNode.Children.Add(scriptWrapper);
+            var scriptSeWrapper = new ScriptSeWrapper(scriptWrapper);
+            scrNode.Children.Add(scriptSeWrapper);
         }
     }
 

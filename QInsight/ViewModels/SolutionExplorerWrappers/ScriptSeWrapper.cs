@@ -1,47 +1,62 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QLibs.QUI;
+using Qenex.QLibs.QUI.TelerikDocking;
 using Qenex.QSuite.Common.WpfComm;
 using Qenex.QSuite.Scripts.Script;
 using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class ScriptWrapper : PropertyChangedBase, IViewableItem
+public class ScriptSeWrapper : PropertyChangedBase, IViewableItem
 {
-    public ScriptWrapper(IScriptBase script)
+    public ScriptSeWrapper(ScriptWrapper scrWrapper)
     {
-        Script = script;
+        ScriptWrapper = scrWrapper;
+        Label = ScriptWrapper.FileName;
+        
+        if (ScriptWrapper is INotifyPropertyChanged npc)
+        {
+            npc.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(ScriptWrapper.FileName))
+                {
+                    Label = ScriptWrapper.FileName;
+                }
+            };
+        }
     }
+    
+    public ScriptWrapper ScriptWrapper { get; set; }
 
     #region UI Properties
 
     public string Label
     {
-        get => $"{Script.FileName} ({Script.AverageExecutionInterval:0.00} ms)";
+        get;//$"{scriptViewModel.FileName}";// ({scriptViewModel.AverageExecutionInterval:0.00} ms)";
         set
         {
-            Script.FileName = $"{value} ({Script.AverageExecutionInterval:0.00} ms)";
+            field = value;
             OnPropertyChanged();
-        }
-    }
+		}
+	}
 
     public double AverageExecutionInterval
     {
-        get => Script.AverageExecutionInterval;
+        get => ScriptWrapper.AverageExecutionInterval;
         set
         {
-            Script.AverageExecutionInterval = value;
+            ScriptWrapper.AverageExecutionInterval = value;
             // Update the label to reflect the new average execution interval
-            Label = Script.FileName;
             OnPropertyChanged();
-        }
+            OnPropertyChanged(nameof(Label));
+		}
     }
-
-    public IScriptBase Script { get; set; }
 
     public FontWeight LabelWeight => FontWeights.Normal;
 
@@ -60,13 +75,13 @@ public class ScriptWrapper : PropertyChangedBase, IViewableItem
         var sb = new StringBuilder();
         sb.Append("Script:");
         sb.Append(Environment.NewLine);
-        sb.Append($"File\t{Script.FileName}");
+        sb.Append($"File\t{ScriptWrapper.FileName}");
         sb.Append(Environment.NewLine);
-        sb.Append($"Last ex.\t{Script.LastExecutionInterval:0.00} ms");
+        sb.Append($"Last ex.\t{ScriptWrapper.LastExecutionInterval:0.00} ms");
         sb.Append(Environment.NewLine);
-        sb.Append($"Avg. ex.\t{Script.AverageExecutionInterval:0.00} ms");
+        sb.Append($"Avg. ex.\t{ScriptWrapper.AverageExecutionInterval:0.00} ms");
         sb.Append(Environment.NewLine);
-        sb.Append($"Max ex.\t{Script.AverageExecutionInterval:0.00} ms");
+        sb.Append($"Max ex.\t{ScriptWrapper.MaxExecutionInterval:0.00} ms");
         sb.Append(Environment.NewLine);
 
         return sb.ToString();

@@ -13,8 +13,8 @@
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300"
              x:Name="WorkspaceUserControl">
-    
-    <!-- primitives:BackgroundGrid.CellSize="{Binding GridCellSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" -->
+
+	<!-- primitives:BackgroundGrid.CellSize="{Binding GridCellSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" -->
     <telerik:RadDiagram
         Name="RadDiagram"
         IsZoomEnabled="False"
@@ -24,18 +24,17 @@
         primitives:BackgroundGrid.IsGridVisible="{Binding IsGridVisible, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
         primitives:BackgroundGrid.LineStroke="{Binding GridLineColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
         primitives:BackgroundPageGrid.IsGridVisible="{Binding IsPageGridVisible, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-        
-        <i:Interaction.Behaviors>
-            <dragdrop:WorkspaceDragAndDropBehavior/>
-        </i:Interaction.Behaviors>
-    </telerik:RadDiagram>
+
+		<i:Interaction.Behaviors>
+			<dragdrop:WorkspaceDragAndDropBehavior/>
+		</i:Interaction.Behaviors>
+	</telerik:RadDiagram>
     
     <i:Interaction.Triggers>
-        <i:EventTrigger EventName="Loaded">
-            <i:InvokeCommandAction Command="{Binding WorkspaceViewLoadedCommand}" 
+		<i:EventTrigger EventName="Loaded">
+			<i:InvokeCommandAction Command="{Binding WorkspaceViewLoadedCommand}" 
                                    CommandParameter="{Binding ElementName=RadDiagram}"/>
-            <!-- CommandParameter="{Binding ElementName=WorkspaceUserControl}"/> -->
-        </i:EventTrigger>
-    </i:Interaction.Triggers>
+		</i:EventTrigger>
+	</i:Interaction.Triggers>
 </UserControl>
  

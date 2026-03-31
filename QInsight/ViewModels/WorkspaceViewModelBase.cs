@@ -4,10 +4,15 @@ using Qenex.QLibs.QUI.TelerikDocking;
 
 namespace Qenex.QInsight.ViewModels;
 
-public abstract class WorkspaceViewModelBase(EventAggregator ea) : PropertyChangedBaseWithValidation, IWorkspaceViewModel
+public abstract class WorkspaceViewModelBase : PropertyChangedBaseWithValidation, IWorkspaceViewModel
 {
 	private bool isHidden;
-	protected readonly EventAggregator EventAggregator = ea;
+	protected EventAggregator EventAggregator { get; init; }
+
+	protected WorkspaceViewModelBase(EventAggregator ea)
+	{
+		EventAggregator = ea;
+	}
 
 	#region Inherited from IToolViewModel (derived from IViewModelBase, IViewModelExtData)
 

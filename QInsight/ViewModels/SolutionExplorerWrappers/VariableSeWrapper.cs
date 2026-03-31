@@ -11,9 +11,9 @@ using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class VariableWrapper : PropertyChangedBase, IViewableItem
+public class VariableSeWrapper : PropertyChangedBase, IViewableItem
 {
-    public VariableWrapper(IVariableBase variable)
+    public VariableSeWrapper(IVariableBase variable)
     {
         Variable = variable;
     }

@@ -11,11 +11,11 @@ using Qenex.QLibs.QUI.TelerikDocking;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class WorkspaceWrapper : PropertyChangedBase, IViewableItem
+public class WorkspaceSeWrapper : PropertyChangedBase, IViewableItem
 {
     private readonly IWorkspaceViewModel workspaceViewModel;
 
-    public WorkspaceWrapper(IWorkspaceViewModel wsViewModel)
+    public WorkspaceSeWrapper(IWorkspaceViewModel wsViewModel)
     {
         workspaceViewModel = wsViewModel;
         Label = workspaceViewModel.WinTitle;
@@ -33,13 +33,9 @@ public class WorkspaceWrapper : PropertyChangedBase, IViewableItem
     }
     
     #region UI Properties
-
-    
-    
     public string Name => workspaceViewModel.Name;
 
     public string Label { get; set { field = value; OnPropertyChanged(); } }
-    
 
     public FontWeight LabelWeight => FontWeights.Normal;
 

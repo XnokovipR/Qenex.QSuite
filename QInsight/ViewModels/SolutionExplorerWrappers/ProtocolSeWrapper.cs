@@ -9,9 +9,9 @@ using Qenex.QSuite.Protocols.Protocol;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class ProtocolWrapper : PropertyChangedBase, IViewableItem
+public class ProtocolSeWrapper : PropertyChangedBase, IViewableItem
 {
-    public ProtocolWrapper(IProtocolBase protocol)
+    public ProtocolSeWrapper(IProtocolBase protocol)
     {
         Protocol = protocol;
     }

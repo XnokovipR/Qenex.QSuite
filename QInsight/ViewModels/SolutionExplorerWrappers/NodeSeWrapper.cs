@@ -7,14 +7,14 @@ using Telerik.Windows.Diagrams.Core;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class NodeWrapper : IViewableItem
+public class NodeSeWrapper : IViewableItem
 {
     //private readonly NodeType nodeType;
     private readonly string prefix;
     private readonly string suffix;
     
 
-    public NodeWrapper(NodeType nType, string labelPrefix = "", string labelSuffix = "")
+    public NodeSeWrapper(NodeType nType, string labelPrefix = "", string labelSuffix = "")
     {
         prefix = labelPrefix;
         suffix = labelSuffix;

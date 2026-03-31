@@ -3,6 +3,7 @@ using System.Windows;
 using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Models.Project;
+using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 using Qenex.QInsight.Views;
 using Qenex.QLibs.QUI;
@@ -31,7 +32,7 @@ public partial class ShellWindowModel
         
         switch (msg.Item)
         {
-            case WorkspaceWrapper workspaceWrapper:
+            case WorkspaceSeWrapper workspaceWrapper:
             {
                 if (ViewModels.FirstOrDefault(viewModelBase => viewModelBase is IWorkspaceViewModel ws && ws.WinTitle.Equals(workspaceWrapper.Label)) is IWorkspaceViewModel workspaceVm)
                 {
@@ -39,9 +40,9 @@ public partial class ShellWindowModel
                 }
                 break;
             }
-            case ScriptWrapper scriptWrapper:
+            case ScriptSeWrapper scriptSeWrapper:
             {
-                propVm.SelectedViewModel = new ScriptPropertiesViewModel(eventAggregator, scriptWrapper.Script);
+                propVm.SelectedViewModel = new ScriptPropertiesViewModel(eventAggregator, scriptSeWrapper.ScriptWrapper);
                 break;
             }
             default:
@@ -56,7 +57,7 @@ public partial class ShellWindowModel
     {
         switch (msg.Item)
         {
-            case WorkspaceWrapper workspaceWrapper:
+            case WorkspaceSeWrapper workspaceWrapper:
             {
                 var workspaceVm = ViewModels.FirstOrDefault(vm => vm is IWorkspaceViewModel ws && ws.WinTitle.Equals(workspaceWrapper.Label));
                 if (workspaceVm != null)
@@ -65,10 +66,9 @@ public partial class ShellWindowModel
                 }
                 break;
             }
-            case ScriptWrapper scriptWrapper:
+            case ScriptSeWrapper scriptSeWrapper:
             {
-                var script = scriptWrapper.Script;
-                var scriptViewModel = new ScriptViewModel(eventAggregator, script);
+                var scriptViewModel = new ScriptViewModel(eventAggregator, scriptSeWrapper.ScriptWrapper);
                 ViewModels.Add(scriptViewModel);
                 break;
             }

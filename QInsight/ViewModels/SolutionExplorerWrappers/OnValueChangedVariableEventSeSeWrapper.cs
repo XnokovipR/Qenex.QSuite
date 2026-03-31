@@ -9,9 +9,9 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class OnValueChangedVariableEventWrapper : PropertyChangedBase, IVariableEventWrapper
+public class OnValueChangedVariableEventSeSeWrapper : PropertyChangedBase, IVariableEventSeWrapper
 {
-    public OnValueChangedVariableEventWrapper(OnValueChangedVarEvent variableEvent)
+    public OnValueChangedVariableEventSeSeWrapper(OnValueChangedVarEvent variableEvent)
     {
         VariableEvent = variableEvent;
     }

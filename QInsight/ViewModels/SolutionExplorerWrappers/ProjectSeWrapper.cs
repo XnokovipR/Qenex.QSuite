@@ -9,9 +9,9 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class ProjectWrapper : PropertyChangedBase, IViewableItem
+public class ProjectSeWrapper : PropertyChangedBase, IViewableItem
 {
-    public ProjectWrapper(IModuleBase prjModule)
+    public ProjectSeWrapper(IModuleBase prjModule)
     {
         PrjModule = prjModule;
     }

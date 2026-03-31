@@ -9,9 +9,9 @@ using Qenex.QSuite.Drivers.Driver;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
-public class DriverWrapper : PropertyChangedBase, IViewableItem
+public class DriverSeWrapper : PropertyChangedBase, IViewableItem
 {
-    public DriverWrapper(IDriverBase driver)
+    public DriverSeWrapper(IDriverBase driver)
     {
         Driver = driver;
     }

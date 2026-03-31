@@ -32,13 +32,13 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
     
     private void OnDragInitialized(object sender, DragInitializeEventArgs e)
     {
-        if (((FrameworkElement)e.OriginalSource).DataContext is not VariableWrapper varWrapper) return;
+        if (((FrameworkElement)e.OriginalSource).DataContext is not VariableSeWrapper varWrapper) return;
         if (varWrapper.Variable is not IVariableBase variable) return;
         
         if (sender is not RadTreeView treeView) return;
         if (treeView.DataContext is not SolutionExplorerViewModel vm) return;
 
-        var defaultEvent = ((IVariableEventWrapper)vm.ProjectModules.First().Children.First(i => i.Label.Contains("Events")).Children.First()).VariableEvent;
+        var defaultEvent = ((IVariableEventSeWrapper)vm.ProjectModules.First().Children.First(i => i.Label.Contains("Events")).Children.First()).VariableEvent;
         var defaultProtocol = vm.ProjectModules
             .First().Children
             .First(i => i.Label.Contains("Communicated Drivers")).Children
@@ -97,7 +97,7 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         {
             var draggedVariable = (IVariableBase)DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
             var defaultEvent = (IVarEvent)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultEvent");
-            var defaultProtocol = (ProtocolWrapper)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultProtocol");
+            var defaultProtocol = (ProtocolSeWrapper)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultProtocol");
             var defaultDriverProtocolVariables = (ObservableCollection<IViewableItem>)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultDriverProtocolVariables"); 
             var chosenControl = (IControlBase)DragDropPayloadManager.GetDataFromObject(e.Data, "ChosenControl");
             
