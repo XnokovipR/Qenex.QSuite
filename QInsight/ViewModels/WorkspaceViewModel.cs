@@ -76,20 +76,9 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
         //EventAggregator.Publish(new LogMessage(LogLevel.Info, $"{Name} visibility changed to {isVisible}"));
     }
 
-    #region Commands methods
+	#region Commands methods
 
-    // private void OnWorkspaceViewLoaded(UserControl userControl)
-    // {
-    //     if (isViewLoaded) return;
-    //     isViewLoaded = true;
-    //
-    //     // code here:
-    //
-    //
-    // }
-    
-    
-     private RadDiagram diagram;
+	private RadDiagram diagram;
      private void OnWorkspaceViewLoaded(RadDiagram radDiagram)
      {
         if (isViewLoaded) return;
