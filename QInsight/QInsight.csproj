@@ -98,6 +98,10 @@
     <Resource Include="Icons\SolutionExplorer\ScriptFolder.png" />
     <None Remove="Icons\SolutionExplorer\ScriptFile.png" />
     <Resource Include="Icons\SolutionExplorer\ScriptFile.png" />
+    <None Remove="Icons\Menu\ScriptSettings.png" />
+    <Resource Include="Icons\Menu\ScriptSettings.png" />
+    <None Remove="Icons\Menu\ScriptVariablesSettings.png" />
+    <Resource Include="Icons\Menu\ScriptVariablesSettings.png" />
   </ItemGroup>
 
   <ItemGroup>

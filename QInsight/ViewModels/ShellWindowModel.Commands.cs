@@ -42,6 +42,9 @@ public partial class ShellWindowModel
     public RelayCommandAsync<RadDocking> RibbonConnectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonDisconnectCommand { get; set; }
     
+    public RelayCommand<RadDocking> RibbonScriptVariablesSettingsCommand { get; set; }
+    public RelayCommand<RadDocking> RibbonScriptsSettingsCommand { get; set; }
+    
     
     public RelayCommand<object> RibbonAboutAppCommand { get; set; }
 
@@ -65,6 +68,9 @@ public partial class ShellWindowModel
         RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync);
         RibbonDisconnectCommand = new RelayCommandAsync<RadDocking>(DisconnectAsync);
         
+        RibbonScriptVariablesSettingsCommand = new RelayCommand<RadDocking>(OpenScriptVariablesOptions);
+        RibbonScriptsSettingsCommand = new RelayCommand<RadDocking>(RemoveScriptVariablesOptions);
+        
         RibbonAboutAppCommand = new RelayCommand<object>((o) =>
         {
             var aboutViewModel = new AboutAppViewModel();
@@ -84,6 +90,7 @@ public partial class ShellWindowModel
             aboutViewModel.SetParentWindow(aboutDlg);
             aboutDlg.ShowDialog();
         });
+        
         
         PanelCloseCommandAsync = new RelayCommandAsync<StateChangeEventArgs>(ClosePanelAsync);
     }
@@ -177,6 +184,8 @@ public partial class ShellWindowModel
 
 	#region Ribbon command methods
 
+    #region Project menu
+
     private async Task OpenProjectAsync(object obj)
     {
         var lastProjectPath = /*ShellWindow.MainAppSettings.LastProjectPath ??*/ Environment.CurrentDirectory;
@@ -207,18 +216,8 @@ public partial class ShellWindowModel
                 logger?.Log(LogLevel.Warn, $"Failed to load project file \"{Path.GetFileName(filePath)}\".");
                 return;
             }
+
             realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, logger);
-            // realProjectData.Module.Drivers[0].Protocols[0].Variables[0].SubscribeAsyncValueChanged(async protVar =>
-            // {
-            //     await Task.Run(() =>
-            //     {
-            //         if (protVar.Variable is ScalarVariable sv)
-            //         {
-            //             Console.WriteLine($"Variable {sv.Label} changed to {sv.Values}");
-            //         }
-            //     }, CancellationToken.None);
-            // });
-                
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
                 
             ChangeIsProjectMade(true);
@@ -230,7 +229,10 @@ public partial class ShellWindowModel
             logger.Log(LogLevel.Error, e.Message);
         }        
     }
-   
+
+    #endregion
+    
+    #region Workspace menu
 
     private async Task AddWorkspaceAsync(RadDocking docking)
     {
@@ -246,7 +248,7 @@ public partial class ShellWindowModel
     
     private void RemoveWorkspace(RadDocking docking)
     {
-        if (docking.ActivePane is not QRadDocumentPane pane)
+        if (docking.ActivePane is not QRadDocumentPane pane || !pane.Header.Equals("Workspace"))
         {
             eventAggregator.Publish(new LogMessage(LogLevel.Warn, "No active workspace to remove."));
             return;
@@ -268,7 +270,38 @@ public partial class ShellWindowModel
         });
     }
     
-    // Run menu
+    #endregion
+
+    #region Script menu
+
+    private void OpenScriptVariablesOptions(RadDocking docking)
+    {
+        var foundScriptVariablesSettingsViewModel = ViewModels.FirstOrDefault(vm => vm is IWorkspaceViewModel { Name: "ScriptVariablesSettingsViewModel" });
+        if (foundScriptVariablesSettingsViewModel != null)
+        {
+            // switch to that
+            if (foundScriptVariablesSettingsViewModel.IsHidden)
+            {
+                foundScriptVariablesSettingsViewModel.IsHidden =  false;
+            }
+        }
+        else
+        {
+            var scriptVariablesSettingsViewModel = new ScriptVariablesSettingsViewModel(eventAggregator);
+            ViewModels.Add(scriptVariablesSettingsViewModel);
+        }
+    }
+
+    private void RemoveScriptVariablesOptions(RadDocking docking)
+    {
+        
+    }
+    
+
+    #endregion
+
+    #region Run menu
+
     private async Task ConnectAsync(object obj)
     {
         List<Task> startTasks = realProjectData.Module.Drivers.Select(driver => driver.StartAsync()).ToList();
@@ -281,7 +314,7 @@ public partial class ShellWindowModel
         await Task.WhenAll(stopTasks);
     }
     
-    
+    #endregion    
 
 	#endregion
     
