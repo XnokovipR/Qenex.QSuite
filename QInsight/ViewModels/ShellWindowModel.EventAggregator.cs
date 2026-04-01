@@ -68,8 +68,16 @@ public partial class ShellWindowModel
             }
             case ScriptSeWrapper scriptSeWrapper:
             {
-                var scriptViewModel = new ScriptViewModel(eventAggregator, scriptSeWrapper.ScriptWrapper);
-                ViewModels.Add(scriptViewModel);
+                var foundScriptViewModel = ViewModels.FirstOrDefault(vm => vm is IWorkspaceViewModel ws && ws.WinTitle.Equals(scriptSeWrapper.Label));
+                if (foundScriptViewModel != null)
+                {
+                    foundScriptViewModel.IsHidden = !foundScriptViewModel.IsHidden;
+                }
+                else
+                {
+                    var scriptViewModel = new ScriptViewModel(eventAggregator, scriptSeWrapper.ScriptWrapper);
+                    ViewModels.Add(scriptViewModel);
+                }
                 break;
             }
         }
