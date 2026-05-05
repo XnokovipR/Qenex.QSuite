@@ -9,6 +9,8 @@ public class ScriptingContext
 {
     private readonly ILogger? logger;
     private readonly TaskFactory pythonFactory;
+    private PythonLogWriter stdoutWriter;
+    private PythonLogWriter stderrWriter;
     
     #region Constructors
 
@@ -53,6 +55,15 @@ public class ScriptingContext
 
         using (Py.GIL())
         {
+            stdoutWriter = new PythonLogWriter(logger!, LogLevel.Info);
+            stderrWriter = new PythonLogWriter(logger!, LogLevel.Error);
+            
+            using (var sys = Py.Import("sys"))
+            {
+                sys.SetAttr("stdout", stdoutWriter.ToPython());
+                sys.SetAttr("stderr", stderrWriter.ToPython());
+            }
+            
             SharedScope = Py.CreateScope("qenex_scripts_shared");
 
             foreach (var binding in VariableBindings)
@@ -80,9 +91,17 @@ public class ScriptingContext
         
         using (Py.GIL())
         {
+            using (var sys = Py.Import("sys"))
+            {
+                sys.SetAttr("stdout", sys.GetAttr("__stdout__"));
+                sys.SetAttr("stderr", sys.GetAttr("__stderr__"));
+            }
+            
             SharedScope?.Dispose();
             SharedScope = null;
         }
+        stdoutWriter = null!;
+        stderrWriter = null!;
     }
 
     #endregion
