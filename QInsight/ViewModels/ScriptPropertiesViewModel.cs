@@ -4,7 +4,7 @@ using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.TelerikDocking;
-using Qenex.QSuite.Scripts.Script;
+using Qenex.QSuite.Scripting.Script;
 using Telerik.Windows.Data;
 
 namespace Qenex.QInsight.ViewModels;

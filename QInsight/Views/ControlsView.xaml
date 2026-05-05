@@ -19,9 +19,9 @@
         </Style>
         
         <DataTemplate x:Key="ControlItemTemplate">
-            <StackPanel Orientation="Horizontal" Height="20" ToolTip="{Binding Description}">
+            <StackPanel Orientation="Horizontal" Height="25" ToolTip="{Binding Description}">
                 <Image Source="{Binding Icon}" Margin="5,0,10,0"/>
-                <TextBlock Text="{Binding Label}" />
+                <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
             </StackPanel>
         </DataTemplate>
     </UserControl.Resources>

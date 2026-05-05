@@ -1,6 +1,5 @@
 ﻿using Qenex.QLibs.QUI;
-using Qenex.QSuite.Scripts.PythonScript;
-using Qenex.QSuite.Scripts.Script;
+using Qenex.QSuite.Scripting.Script;
 
 namespace Qenex.QInsight.ViewModels.ModelWrappers;
 

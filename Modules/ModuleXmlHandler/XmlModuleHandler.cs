@@ -6,8 +6,8 @@ using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Protocols.Protocol;
-using Qenex.QSuite.Scripts.PythonScript;
-using Qenex.QSuite.Scripts.Script;
+using Qenex.QSuite.Scripting.PythonScript;
+using Qenex.QSuite.Scripting.Script;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.QVariables.Values;
@@ -59,7 +59,7 @@ public class XmlModuleHandler
         module.AddPresentations(GetPresentations(module.Conversions, xmlModule.Presentations));
         
         // Add scripts
-        module.AddScripts(GetScripts(xmlModule.Scripts));
+        module.Scripting.AddScripts(GetScripts(xmlModule.Scripts));
 
         // Add variables
         module.AddVariables(GetVariables(module.Presentations, xmlModule.Variables, module.VarEvents));

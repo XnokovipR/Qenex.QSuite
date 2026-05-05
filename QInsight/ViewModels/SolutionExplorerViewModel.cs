@@ -11,7 +11,7 @@ using Qenex.QLibs.QUI.TelerikDocking;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
-using Qenex.QSuite.Scripts.Script;
+using Qenex.QSuite.Scripting.Script;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.VariableEvents;
@@ -135,7 +135,7 @@ public class SolutionExplorerViewModel : ViewModelBase
         
         CreateVariableEventWrapper(projectWrapper.Children, realPrjData.Module.VarEvents);
         
-        CreateScriptsWrapper(projectWrapper.Children, realPrjData.Module.Scripts);
+        CreateScriptsWrapper(projectWrapper.Children, realPrjData.Module.Scripting.Scripts);
         
         return projectWrapper;
     }

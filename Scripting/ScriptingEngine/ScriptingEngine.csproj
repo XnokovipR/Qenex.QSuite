@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Qenex.QSuite.Scripting.ScriptingEngine</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Scripting.ScriptingEngine</AssemblyName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\LogSystems\LogSystem\LogSystem.csproj" />
+      <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
+      <ProjectReference Include="..\Script\Script.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="pythonnet" Version="3.0.5" />
+    </ItemGroup>
+
+</Project>

@@ -5,7 +5,7 @@ using ICSharpCode.AvalonEdit.Highlighting;
 using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QInsight.Views;
 using Qenex.QLibs.QUI;
-using Qenex.QSuite.Scripts.Script;
+using Qenex.QSuite.Scripting.Script;
 
 namespace Qenex.QInsight.ViewModels;
 

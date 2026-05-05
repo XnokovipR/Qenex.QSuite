@@ -11,7 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Qenex.QLibs.XmlInOut" Version="1.0.1" />
+      <PackageReference Include="Qenex.QLibs.XmlInOut" Version="1.0.2" />
     </ItemGroup>
 
     <ItemGroup>

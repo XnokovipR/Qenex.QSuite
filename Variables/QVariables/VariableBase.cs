@@ -11,6 +11,8 @@ namespace Qenex.QSuite.Variables.QVariables;
 /// </summary>
 public abstract class VariableBase : IVariableBase
 {
+    #region Properties
+
     public int Id { get; set; }
     
     public string Namespace { get; set; }
@@ -26,4 +28,13 @@ public abstract class VariableBase : IVariableBase
     /// Reference to the modules to which the variable data will be sent.
     /// </summary>
     public IList<IComponentSpecification> CommComponents { get; set; }
+
+    #endregion
+
+    #region Methods
+
+    public abstract object GetValue();
+    public abstract void SetValue(object value);
+
+    #endregion
 }

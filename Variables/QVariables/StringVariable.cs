@@ -10,4 +10,14 @@ public class StringVariable : VariableBase
         get => values;
         set { values = value; Size = value.Length; }
     }
+
+    public override object GetValue()
+    {
+        return Values;
+    }
+
+    public override void SetValue(object value)
+    {
+        Values = value.ToString();
+    }
 }

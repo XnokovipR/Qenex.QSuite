@@ -9,6 +9,8 @@ namespace Qenex.QSuite.Variables.QVariables;
 /// </summary>
 public interface IVariableBase
 {
+    #region Properties
+
     /// <summary>
     /// Id of the variable.
     /// </summary>
@@ -43,4 +45,14 @@ public interface IVariableBase
     /// Reference to the components (modules / drivers) to which the variable data will be sent.
     /// </summary>
     IList<IComponentSpecification> CommComponents { get; set; }
+
+    #endregion
+    
+    #region Methods
+
+    object GetValue();
+    void SetValue(object value);
+
+    #endregion
+
 }

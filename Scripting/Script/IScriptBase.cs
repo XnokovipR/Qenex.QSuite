@@ -1,4 +1,4 @@
-﻿namespace Qenex.QSuite.Scripts.Script;
+﻿namespace Qenex.QSuite.Scripting.Script;
 
 public interface IScriptBase
 {

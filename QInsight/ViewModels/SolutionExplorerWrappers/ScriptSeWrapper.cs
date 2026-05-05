@@ -8,8 +8,6 @@ using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.TelerikDocking;
 using Qenex.QSuite.Common.WpfComm;
-using Qenex.QSuite.Scripts.Script;
-using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 

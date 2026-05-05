@@ -11,7 +11,7 @@ using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
-using Qenex.QSuite.Scripts.Script;
+using Qenex.QSuite.Scripting.Script;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
 using Telerik.Windows.Controls.Docking;
@@ -296,7 +296,6 @@ public partial class ShellWindowModel
     {
         
     }
-    
 
     #endregion
 
@@ -304,14 +303,16 @@ public partial class ShellWindowModel
 
     private async Task ConnectAsync(object obj)
     {
-        List<Task> startTasks = realProjectData.Module.Drivers.Select(driver => driver.StartAsync()).ToList();
-        await Task.WhenAll(startTasks);        
+        //List<Task> startTasks = realProjectData.Module.Drivers.Select(driver => driver.StartAsync()).ToList();
+        //await Task.WhenAll(startTasks);
+        _ = realProjectData.Module.StartAsync();
     }
     
     private async Task DisconnectAsync(object obj)
     {
-        List<Task> stopTasks = realProjectData.Module.Drivers.Select(driver => driver.StopAsync()).ToList();
-        await Task.WhenAll(stopTasks);
+        //List<Task> stopTasks = realProjectData.Module.Drivers.Select(driver => driver.StopAsync()).ToList();
+        //await Task.WhenAll(stopTasks);
+        _ = realProjectData.Module.StopAsync();
     }
     
     #endregion    

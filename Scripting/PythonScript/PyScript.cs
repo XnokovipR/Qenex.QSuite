@@ -1,6 +1,6 @@
-﻿using Qenex.QSuite.Scripts.Script;
+﻿using Qenex.QSuite.Scripting.Script;
 
-namespace Qenex.QSuite.Scripts.PythonScript;
+namespace Qenex.QSuite.Scripting.PythonScript;
 
 public class PyScript : IScriptBase
 {

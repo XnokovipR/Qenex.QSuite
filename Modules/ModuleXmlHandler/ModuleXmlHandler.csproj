@@ -10,7 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Qenex.QLibs.XmlInOut" Version="1.0.0" />
+      <PackageReference Include="Qenex.QLibs.XmlInOut" Version="1.0.2" />
     </ItemGroup>
 
     <ItemGroup>
@@ -18,8 +18,7 @@
       <ProjectReference Include="..\..\Drivers\Driver\Driver.csproj" />
       <ProjectReference Include="..\..\LogSystems\LogSystem\LogSystem.csproj" />
       <ProjectReference Include="..\..\Protocols\Protocol\Protocol.csproj" />
-      <ProjectReference Include="..\..\Scripts\PythonScript\PythonScript.csproj" />
-      <ProjectReference Include="..\..\Scripts\Script\Script.csproj" />
+      <ProjectReference Include="..\..\Scripting\PythonScript\PythonScript.csproj" />
       <ProjectReference Include="..\Module\Module.csproj" />
       <ProjectReference Include="..\UnifModule\UnifModule.csproj" />
     </ItemGroup>
