@@ -9,4 +9,7 @@ public interface IValuesBase
     int Length { get; set; }
     
     IPresentation ValPresentation { get; set; }
+    
+    object GetValue();
+    void SetValue(object value);
 }
