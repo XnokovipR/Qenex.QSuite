@@ -28,8 +28,8 @@
 
     <ItemGroup>
       <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.9" />
-      <PackageReference Include="Telerik.Windows.Controls.for.Wpf" Version="2025.4.1111" />
-      <PackageReference Include="Telerik.Windows.Controls.Navigation.for.Wpf" Version="2025.4.1111" />
+      <PackageReference Include="Telerik.Windows.Controls.for.Wpf" Version="2026.1.415" />
+      <PackageReference Include="Telerik.Windows.Controls.Navigation.for.Wpf" Version="2026.1.415" />
     </ItemGroup>
 
     <ItemGroup>
