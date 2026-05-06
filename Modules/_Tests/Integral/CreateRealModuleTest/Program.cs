@@ -32,7 +32,7 @@ class Program
         var xmlModule = XmlInOut<XmlModule>.LoadFromFile(@"..\..\..\..\..\..\ModuleXmlHandler\Docs\XmlModule.xml");
         
         var xmlModuleHandler = new XmlModuleHandler(driversDetails, protocolsDetails, logger);
-        var realModule = xmlModuleHandler.CreateModule<UnifiedModule>(xmlModule);
+        var realModule = xmlModuleHandler.CreateModule<UnifiedModule>(xmlModule, new UnifiedModuleFactory(), logger);
 
         foreach (var driver in realModule.Drivers)
         {

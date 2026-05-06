@@ -193,7 +193,7 @@
     <!--+           Scripts                                           +-->
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
 	<scripts>
-		<script fileName="shared.py" executionMode="Startup"/>
-		<script fileName="script.py" executionMode="Periodic" additionalInfo="period=5;unit=s"/>
+		<script fileName="startup.py" executionMode="Startup"/>
+		<script fileName="periodic.py" executionMode="Periodic" additionalInfo="period=5;unit=s"/>
 	</scripts>
 </module>
