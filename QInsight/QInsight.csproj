@@ -13,7 +13,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Helpers\" />
     <EmbeddedResource Include="Resources\PythonScriptDark.xshd" />
     <EmbeddedResource Include="Resources\PythonScriptLight.xshd" />
   </ItemGroup>
