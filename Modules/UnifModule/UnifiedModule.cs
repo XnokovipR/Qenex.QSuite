@@ -11,7 +11,7 @@ namespace Qenex.QSuite.UnifModule;
 /// </summary>
 public class UnifiedModule : ModuleBase
 {
-    public UnifiedModule()
+    public UnifiedModule(ILogger? logger) : base(logger)
     {
         Specification = new SpecificationBase()
         {

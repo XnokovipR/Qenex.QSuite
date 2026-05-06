@@ -27,7 +27,7 @@ public abstract class ModuleBase : IModuleBase
         Presentations = new List<IPresentation>();
         Conversions = new List<IValConversion>();
         VarEvents = new List<IVarEvent>();
-        Scripting = new ScriptingContext();
+        Scripting = new ScriptingContext(logger);
     }
 
     #endregion

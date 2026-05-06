@@ -30,10 +30,11 @@ public class XmlModuleHandler
         this.logger = logger;
     }
     
-    public T? CreateModule<T>(XmlModule xmlModule) where T: class, IModuleBase, new()
+    public T? CreateModule<T>(XmlModule xmlModule, IModuleFactory<T> factory, ILogger logger) where T: class, IModuleBase
     {
-        var module = new T();
-        
+        var module = factory.Create(logger);
+
+        //var module = new T();
         // Module xml name must match with the module name
         if (module.Specification.Name != xmlModule.Name)
         {

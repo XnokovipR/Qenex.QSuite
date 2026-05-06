@@ -18,7 +18,7 @@ public class RealProjectData
         ILogger? logger = null)
     {
         var xmlModuleHandler = new XmlModuleHandler(drvPlugins, protocolPlugins, logger);
-        var realModule = xmlModuleHandler.CreateModule<UnifiedModule>(projectFileData.Module);
+        var realModule = xmlModuleHandler.CreateModule(projectFileData.Module, new UnifiedModuleFactory(), logger);
         
         if (realModule == null)
         {
