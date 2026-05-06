@@ -65,6 +65,12 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		get;
 		set { field = value; OnPropertyChanged(); }
 	}
+	
+	public ScriptLogsViewModel ScriptLogsViewModel
+	{
+		get;
+		set { field = value; OnPropertyChanged(); }
+	}
 
 	public ObservableCollection<IViewModelBase> ViewModels
 	{
@@ -87,6 +93,10 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		LogsViewModel = new LogsViewModel(eventAggregator);
 		logger.RegisterSubscriber(LogsViewModel);
 		ViewModels.Add(LogsViewModel);
+		
+		ScriptLogsViewModel = new ScriptLogsViewModel(eventAggregator);
+		logger.RegisterSubscriber(ScriptLogsViewModel);
+		ViewModels.Add(ScriptLogsViewModel);
 
 		propertiesViewModel = new PropertiesViewModel(eventAggregator);
 		ViewModels.Add(propertiesViewModel);
