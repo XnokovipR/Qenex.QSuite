@@ -11,6 +11,8 @@ public class ScriptingContext
     private readonly TaskFactory pythonFactory;
     private PythonLogWriter stdoutWriter;
     private PythonLogWriter stderrWriter;
+    private static readonly object pythonInitLock = new();
+    private static bool pythonRuntimeInitialized;
     
     #region Constructors
 
@@ -35,16 +37,14 @@ public class ScriptingContext
     #endregion
 
     #region Scope
+    
 
     public Task InitializeSharedScopeAsync(IList<IVariableBase> variables) =>
         pythonFactory.StartNew(() => InitializeSharedScope(variables));
     
     private void InitializeSharedScope(IList<IVariableBase> variables)
     {
-        var pythonDll = @"c:\Users\radek\AppData\Local\Python\pythoncore-3.13-64\python313.dll ";
-        Runtime.PythonDLL = pythonDll;
-        PythonEngine.Initialize();
-        PythonEngine.BeginAllowThreads();
+        EnsurePythonRuntimeInitialized();
         
         var variablesById = variables.ToDictionary(v => v.Id);
         foreach (var varById in variablesById)
@@ -76,10 +76,28 @@ public class ScriptingContext
 
                 SharedScope.Set(binding.PythonName, new VariableBridge(variable));
             }
+
+            //SharedScope.Exec("print(\"Ahoj - toto je test\")");
         }
         
         // Execute startup scripts - executed only once
         ExecuteScripts(ScriptExecutionMode.Startup);
+    }
+
+    private void EnsurePythonRuntimeInitialized()
+    {
+        if (pythonRuntimeInitialized) return;
+
+        lock (pythonInitLock)
+        {
+            if (pythonRuntimeInitialized) return;
+            if (PythonEngine.IsInitialized) { pythonRuntimeInitialized = true; return; }
+
+            Runtime.PythonDLL = @"c:\Users\radek\AppData\Local\Python\pythoncore-3.13-64\python313.dll";
+            PythonEngine.Initialize();
+            PythonEngine.BeginAllowThreads();
+            pythonRuntimeInitialized = true;
+        }
     }
     
     public Task DisposeSharedScopeAsync() => pythonFactory.StartNew(DisposeSharedScope);
@@ -138,11 +156,14 @@ public class ScriptingContext
         {
             try
             {
-                SharedScope!.Exec(script.Content);
+                using (Py.GIL())
+                {
+                    SharedScope!.Exec(script.Content);
+                }
             }
             catch (PythonException e)
             {
-                logger?.Log(LogLevel.Warn, "Python script exception", e);
+                logger?.Log(LogLevel.Warn, $"python script \"{script.FileName}\": {e.Message}");
             }
         }
     }
