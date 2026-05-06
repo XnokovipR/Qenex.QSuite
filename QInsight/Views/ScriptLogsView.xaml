@@ -15,6 +15,13 @@
                             HorizontalContentAlignment="Stretch"
                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+            
+            <telerik:RadListBox.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Clear All" Command="{Binding ClearLogCommand}"/>
+                </ContextMenu>
+            </telerik:RadListBox.ContextMenu>
+            
             <telerik:RadListBox.ItemTemplate>
                 <DataTemplate>
                     <Grid>
@@ -28,7 +35,7 @@
                                    Foreground="{telerik:Windows11Resource ResourceKey=IconBrush}"/>
                         <TextBlock Grid.Column="1"
                                    Text="{Binding Message}"
-                                   Margin="8,0,0,0"
+                                   Margin="3,0,0,0"
                                    TextWrapping="NoWrap"/>
                     </Grid>
                 </DataTemplate>
