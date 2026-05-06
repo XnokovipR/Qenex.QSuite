@@ -15,6 +15,7 @@ public class NLogSubscriber : ILogSubscriber
 	{
 		{LogSystem.LogLevel.Trace, logger.Trace},
 		{LogSystem.LogLevel.Debug, logger.Debug},
+		{LogSystem.LogLevel.Script, logger.Info},
 		{LogSystem.LogLevel.Info, logger.Info},
 		{LogSystem.LogLevel.Warn, logger.Warn},
 		{LogSystem.LogLevel.Error, logger.Error},

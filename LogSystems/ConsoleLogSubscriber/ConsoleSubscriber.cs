@@ -11,6 +11,7 @@ public class ConsoleSubscriber : ILogSubscriber
 	{
 		[LogLevel.Debug] = ConsoleColor.Green,
 		[LogLevel.Trace] = ConsoleColor.Cyan,
+		[LogLevel.Script] = ConsoleColor.White,
 		[LogLevel.Info] = ConsoleColor.Gray,
 		[LogLevel.Warn] = ConsoleColor.Yellow,
 		[LogLevel.Error] = ConsoleColor.Red,

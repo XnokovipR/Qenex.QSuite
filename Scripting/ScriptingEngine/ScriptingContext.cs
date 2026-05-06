@@ -55,8 +55,8 @@ public class ScriptingContext
 
         using (Py.GIL())
         {
-            stdoutWriter = new PythonLogWriter(logger!, LogLevel.Info);
-            stderrWriter = new PythonLogWriter(logger!, LogLevel.Error);
+            stdoutWriter = new PythonLogWriter(logger!, LogLevel.Script);
+            stderrWriter = new PythonLogWriter(logger!, LogLevel.Script);
             
             using (var sys = Py.Import("sys"))
             {
