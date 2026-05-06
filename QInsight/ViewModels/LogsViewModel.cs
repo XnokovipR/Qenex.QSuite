@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Windows.Threading;
 using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.Wpf;
 using Qenex.QSuite.LogSystems.LogSystem;
@@ -7,8 +8,10 @@ namespace Qenex.QInsight.ViewModels;
 
 public class LogsViewModel : ViewModelBase, ILogSubscriber
 {
+    private readonly Dispatcher dispatcher;
     public LogsViewModel(EventAggregator ea) : base(ea)
     {
+        dispatcher = Dispatcher.CurrentDispatcher;
         EventAggregator.SubscribeAction<LogMessage>(Log);
         LogMessages = [];
         
@@ -37,7 +40,14 @@ public class LogsViewModel : ViewModelBase, ILogSubscriber
 
     public void Log(ILogMessage message)
     {
-        LogMessages.Add(message);
+        if (dispatcher.CheckAccess())
+        {
+            LogMessages.Add(message);
+        }
+        else
+        {
+            dispatcher.BeginInvoke(() => LogMessages.Add(message));
+        }
     }
 
     public Task LogAsync(ILogMessage message, CancellationToken ct)
