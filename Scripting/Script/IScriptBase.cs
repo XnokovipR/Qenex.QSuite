@@ -8,7 +8,10 @@ public interface IScriptBase
     ScriptExecutionMode ExecutionMode { get; set; }
     string AdditionalInfo { get; set; }
 
-	double LastExecutionInterval { get; set; }
-    double AverageExecutionInterval { get; set; }
-    double MaxExecutionInterval { get; set; }
+    bool IsEnabled { get; set; }
+    ScriptRunState RunState { get; set; }
+	double LastExecutionDurationMs { get; set; }
+    double AverageExecutionDurationMs { get; set; }
+    double MaxExecutionDurationMs { get; set; }
+    
 }

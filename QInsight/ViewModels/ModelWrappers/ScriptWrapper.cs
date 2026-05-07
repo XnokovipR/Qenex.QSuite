@@ -60,33 +60,33 @@ public class ScriptWrapper : PropertyChangedBase
  
     public double LastExecutionInterval
     {
-        get => script.LastExecutionInterval;
+        get => script.LastExecutionDurationMs;
         set
         {
-            if (Math.Abs(script.LastExecutionInterval - value) < 1e-9) return;
-            script.LastExecutionInterval = value;
+            if (Math.Abs(script.LastExecutionDurationMs - value) < 1e-9) return;
+            script.LastExecutionDurationMs = value;
             OnPropertyChanged();
         }
     }
 
     public double AverageExecutionInterval
     {
-        get => script.AverageExecutionInterval;
+        get => script.AverageExecutionDurationMs;
         set
         {
-            if (Math.Abs(script.AverageExecutionInterval - value) < 1e-9) return;
-            script.AverageExecutionInterval = value;
+            if (Math.Abs(script.AverageExecutionDurationMs - value) < 1e-9) return;
+            script.AverageExecutionDurationMs = value;
             OnPropertyChanged();
         }
     }
 
     public double MaxExecutionInterval
     {
-        get => script.MaxExecutionInterval;
+        get => script.MaxExecutionDurationMs;
         set
         {            
-            if (Math.Abs(script.MaxExecutionInterval - value) < 1e-9) return;
-            script.MaxExecutionInterval = value;
+            if (Math.Abs(script.MaxExecutionDurationMs - value) < 1e-9) return;
+            script.MaxExecutionDurationMs = value;
             OnPropertyChanged();
         }
     }

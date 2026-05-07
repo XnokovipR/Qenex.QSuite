@@ -10,10 +10,12 @@ public class PyScript : IScriptBase
     public string FileName { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
 
+    public string AdditionalInfo { get; set; } = string.Empty;
+    public bool IsEnabled { get; set; }
     public ScriptExecutionMode ExecutionMode { get; set; } = ScriptExecutionMode.Manual;
-	public string AdditionalInfo { get; set; } = string.Empty;
+    public ScriptRunState RunState { get; set; }
 
-	public double LastExecutionInterval
+    public double LastExecutionDurationMs
     {
         get => field;
         set
@@ -22,20 +24,20 @@ public class PyScript : IScriptBase
             // Update the average  & max execution interval
             if (executionCount == 0)
             {
-                AverageExecutionInterval = value;
-                MaxExecutionInterval = value;
+                AverageExecutionDurationMs = value;
+                MaxExecutionDurationMs = value;
             }
             else
             {
-                AverageExecutionInterval = ((AverageExecutionInterval * executionCount) + value) / (executionCount++);
+                AverageExecutionDurationMs = ((AverageExecutionDurationMs * executionCount) + value) / (executionCount++);
             }
             
-            if (value > MaxExecutionInterval)
+            if (value > MaxExecutionDurationMs)
             {
-                MaxExecutionInterval = value;
+                MaxExecutionDurationMs = value;
             }
         }
     }
-    public double AverageExecutionInterval { get; set; }
-    public double MaxExecutionInterval { get; set; }
+    public double AverageExecutionDurationMs { get; set; }
+    public double MaxExecutionDurationMs { get; set; }
 }

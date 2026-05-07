@@ -9,7 +9,7 @@ public enum ScriptExecutionMode
 {
 	[Display(Name = "Manual")]	Manual,
 	[Display(Name ="Periodic")]	Periodic,
-	[Display(Name = "On Value Changed")] OnValueChanged,
+	[Display(Name = "Event Triggered")] EventTriggered,
 	[Display(Name = "Startup")]	Startup,
 	[Display(Name = "Shutdown")] Shutdown
 	
