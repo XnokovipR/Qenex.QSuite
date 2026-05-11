@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Windows.Media;
 using System.Xml.Serialization;
 using Qenex.QLibs.XmlInOut;
 
@@ -48,7 +49,13 @@ public class AppSettings
 			Design = new DesignManager()
 			{
 				AppTheme = ApplicationTheme.Light,
-				FontSize = 12
+				FontSize = 12,
+				LightThemeTextColor = Color.FromRgb(0,0,0),
+				LightThemeTextBoxBackgroundColor = Color.FromRgb(220,220,220),
+				LightThemeControlBackgroundColor = Color.FromRgb(248,248, 248),
+				DarkThemeTextColor = Color.FromRgb(220,220,220),
+				DarkThemeTextBoxBackgroundColor = Color.FromRgb(30,30,30),
+				DarkThemeControlBackgroundColor = Color.FromRgb(40,40,40)
 			},
 			WinStyle = new WindowStyle()
 			{
