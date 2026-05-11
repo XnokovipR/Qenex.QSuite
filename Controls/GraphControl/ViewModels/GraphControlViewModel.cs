@@ -222,8 +222,8 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     {
         base.UpdateThemeSettingsControl(bgColor, fgColor, fontSize);
 
-        plotFontSize = (int)Math.Round(1.8 * fontSize);
-        axesFontSize = (int)Math.Round(1.5 * fontSize);
+        plotFontSize = (int)Math.Round(1.0 * fontSize);
+        axesFontSize = (int)Math.Round(1.0 * fontSize);
         backgroundColor = bgColor.ToScottPlotColor();
         foregroundColor = fgColor.ToScottPlotColor();
         
