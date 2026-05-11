@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.Text;
 using System.Windows.Threading;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.LogSystems.LogSystem;
@@ -8,19 +9,26 @@ namespace Qenex.QInsight.ViewModels;
 public class ScriptLogsViewModel : ViewModelBase, ILogSubscriber
 {
     private readonly Dispatcher dispatcher;
+    private readonly StringBuilder logBuilder;
     
     public ScriptLogsViewModel(EventAggregator ea) : base(ea)
     {
         dispatcher = Dispatcher.CurrentDispatcher;
         EventAggregator.SubscribeAction<LogMessage>(Log);
-        LogMessages = [];
+        logBuilder = new StringBuilder();
         
-        ClearLogCommand = new RelayCommand<object>(_ => LogMessages.Clear());
+        ClearLogCommand = new RelayCommand<object>(_ =>
+        {
+            logBuilder.Clear();
+            LogText = string.Empty;
+        });
     }
 
     #region Properties
 
-    public ObservableCollection<ILogMessage> LogMessages { get; set; }
+    public string LogText { get => field;
+        set { field = value; OnPropertyChanged(); }
+    }
     public RelayCommand<object> ClearLogCommand { get; set; }
     
     
@@ -44,17 +52,23 @@ public class ScriptLogsViewModel : ViewModelBase, ILogSubscriber
         
         if (dispatcher.CheckAccess())
         {
-            LogMessages.Add(message);
+            AddLog(message);
         }
         else
         {
-            dispatcher.BeginInvoke(() => LogMessages.Add(message));
+            dispatcher.BeginInvoke(() => AddLog(message));
         }
     }
 
     public Task LogAsync(ILogMessage message, CancellationToken ct)
     {
         throw new NotImplementedException();
+    }
+
+    private void AddLog(ILogMessage msg)
+    {
+        logBuilder.AppendLine($"{msg.Timestamp:HH:mm:ss.fff}   {msg.Message}");
+        LogText = logBuilder.ToString();
     }
 
     #endregion

@@ -6,40 +6,29 @@
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
+             xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:ScriptLogsViewModel, IsDesignTimeCreatable=False}"
              d:DesignHeight="300" d:DesignWidth="300"
              >
     <Grid>
-        <telerik:RadListBox ItemsSource="{Binding LogMessages}"
-                            HorizontalContentAlignment="Stretch"
-                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                            ScrollViewer.VerticalScrollBarVisibility="Auto">
-            
-            <telerik:RadListBox.ContextMenu>
+        <q:QTextBox Text="{Binding LogText}"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 TextWrapping="NoWrap"
+                 FontFamily="Consolas"
+                 BorderThickness="0"
+                 HorizontalScrollBarVisibility="Auto"
+                 VerticalScrollBarVisibility="Auto"
+                 Background="{telerik:Windows11Resource ResourceKey=PrimaryBackgroundBrush}"
+                 Foreground="{telerik:Windows11Resource ResourceKey=PrimaryForegroundBrush}">
+    
+            <TextBox.ContextMenu>
                 <ContextMenu>
-                    <MenuItem Header="Clear All" Command="{Binding ClearLogCommand}"/>
+                    <MenuItem Header="Clear All"
+                              Command="{Binding ClearLogCommand}" />
                 </ContextMenu>
-            </telerik:RadListBox.ContextMenu>
-            
-            <telerik:RadListBox.ItemTemplate>
-                <DataTemplate>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="160"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Column="0"
-                                   Text="{Binding Timestamp, StringFormat=yyyy/MM/dd HH:mm:ss.fff}"
-                                   Foreground="{telerik:Windows11Resource ResourceKey=IconBrush}"/>
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding Message}"
-                                   Margin="3,0,0,0"
-                                   TextWrapping="NoWrap"/>
-                    </Grid>
-                </DataTemplate>
-            </telerik:RadListBox.ItemTemplate>
-        </telerik:RadListBox>
+            </TextBox.ContextMenu>
+        </q:QTextBox>
     </Grid>
 </UserControl>
