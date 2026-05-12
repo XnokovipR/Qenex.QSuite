@@ -1,8 +1,15 @@
-# AGENTS.md
+# Qenex.QSuite
 
-## Scope
+## Purpose
 
-This file defines repository-wide instructions for Codex and other AI coding agents.
+Qenex.QSuite is a multi-project C# solution that serves for control, logging, visualization of real-time data from/to electronics devices such as engine unit (ECU), raspberry pi,
+arduino, and similar. It also includes a scripting engine for automating operations. The solution is designed to be modular, maintainable, and extensible.
+It contains project for communication protocols, hardware drivers, logging systems, application modules.
+It can be executed as either console applictaion (in a future also as a service) on Windows, Linux, MacOS or as a WPF application on Windows. 
+The WPF application is used for visualization of real-time data and control of connected devices. 
+The console application is used for running the backend logic without UI, e.g. for automated testing, data processing, or headless operation.
+
+## Repository structure
 
 Each top-level directory contains either subdirectories or a separate C# project and may include its own `AGENTS.md`.
 The subdirecotries contain either other subdirectories or a separate C# project and may include its own `AGENTS.md`.
@@ -10,25 +17,55 @@ Project-local `AGENTS.md` files override this root file for files inside their d
 
 Top-level directories:
 
-- `Common`
-- `Controls`
-- `Drivers`
-- `Helpers`
-- `LogSystems`
-- `Modules`
-- `Protocols`
-- `QInsight`
-- `Scripting`
-- `Specifications`
-- `Variables`
+- `Common` - shared primitives, common abstractions, base types, universal utilities such as PluginManager for loading plugins. 
+- `Controls` - UI controls, visual components for the WPF application.
+- `Drivers` - hardware/device drivers, low-level device communication, hardware abstraction, and driver lifecycle code.
+- `Helpers` - utility functions and implementation helpers.
+- `LogSystems` - logging system for logging messages, errors, diagnostics, and other information.
+- `Modules` - application module serves as a main module which includes drivers, protocols, variables, reading project data from xml file and loading them into individual sub-parts (driver, protocols, variables) and orchestrating the whole application. This parh can be used in console application as well as in WPF application. 
+- `Protocols` - communication protocols.
+- `QInsight` - main WPF application for visualization of real-time data and control of connected devices.
+- `Scripting` - support python scripting engine for automating operations, running scripts in modules.
+- `Specifications` - common specifications for protocols, devices, or other components.
+- `Variables` - communication variables in the system.
 
 ## Repository Model
 
 This repository is a multi-project C# solution.
-
 Assume that projects are intentionally separated by responsibility. Do not move types between projects unless the change is explicitly requested or clearly required by dependency direction.
-
 Prefer small, localized changes over broad refactoring.
+
+## AGENTS.md hierarchy
+
+This root `AGENTS.md` gives only global rules and solution structure.
+Before modifying code, always check for a more specific `AGENTS.md` in the target directory or project directory.
+More specific files override this file.
+
+## General coding rules
+Generated or modified code must follow the existing code structure, style, naming, and design logic.
+
+Before suggesting or changing code:
+
+- Inspect nearby existing classes, interfaces, methods, and tests.
+- Reuse existing abstractions, patterns, helper classes, factories, converters, and naming conventions.
+- Prefer extending the current design over introducing a new parallel design.
+- Do not replace established architecture unless explicitly requested.
+- Keep changes consistent with the surrounding project and with related projects in the same game suite.
+- When adding new code, place it where similar functionality already exists.
+
+## Code continuity rules
+
+- Follow the existing structure, naming, and style in this project.
+- Inspect similar classes before adding new ones.
+- Inspect nearby existing classes, interfaces, methods, and tests.
+- Place new code near similar existing functionality.
+- Extend existing patterns instead of introducing parallel designs.
+- Reuse existing abstractions, patterns, helper classes, factories, converters, and naming conventions.
+- Prefer extending the current design over introducing a new parallel design.
+- Do not replace established architecture unless explicitly requested.
+- Keep changes consistent with the surrounding project and with related projects in the same game suite.
+- When adding new code, place it where similar functionality already exists.
+
 
 ## Agent Precedence
 
