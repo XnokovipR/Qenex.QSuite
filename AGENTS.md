@@ -2,11 +2,16 @@
 
 ## Purpose
 
-Qenex.QSuite is a multi-project C# solution for control, logging, and visualization of real-time data from and to electronic devices such as ECUs, Raspberry Pi, Arduino, and similar systems.
+Qenex.QSuite is a multi-project C# solution for control, logging, and visualization of real-time data from and to electronic devices
+such as ECUs, Raspberry Pi, Arduino, remote computers and other similar systems.
 
-The solution also includes a scripting engine for automating operations. It is designed to be modular, maintainable, and extensible.
+The solution also includes a scripting engine for automating operations. 
+It will allow users to create python scripts to automate operations, data processing, and device control.
+
+The Qenex.QSuite is designed to be modular, maintainable, and extensible.
 
 The repository contains projects for:
+
 - communication protocols
 - hardware drivers
 - logging systems
@@ -16,25 +21,22 @@ The repository contains projects for:
 - shared abstractions and infrastructure
 
 The solution can run:
+
 - as a console application on Windows, Linux, and macOS
 - in the future also as a service
 - as a WPF application on Windows (QInsight project)
 
-The WPF application is used for visualization of real-time data and control of connected devices.
+The WPF application (QInsight) is used for visualization of real-time data and control of connected devices.
 
 The console application is used for backend logic without UI, for example:
+
 - automated testing
 - data processing
 - headless operation
 
 ## Repository structure
 
-Each top-level directory contains either:
-- subdirectories
-- a separate C# project
-- its own `AGENTS.md`
-
-Subdirectories may also contain their own projects and `AGENTS.md` files.
+Each top-level directory may contain one or more C# projects, subdirectories, and optionally its own `AGENTS.md`.
 
 Project-local `AGENTS.md` files supplement and override this root file within their directory scope.
 
@@ -120,7 +122,7 @@ When editing files, apply instructions in this order:
 3. This root `AGENTS.md`.
 4. Existing code style and patterns.
 
-If instructions conflict, ask for clarification.
+If instructions conflict, follow the more specific instruction. Ask for clarification only when the conflict cannot be resolved safely.
 
 ## Code continuity rules
 
@@ -137,11 +139,12 @@ Before suggesting or changing code:
 - Do not replace established architecture unless explicitly requested.
 - Keep changes consistent with surrounding projects and modules.
 - When adding new code, place it where similar functionality already exists.
-- Avoid creating duplicate utilities, helpers, DTOs, converters, or abstractions when equivalent functionality already exists.
+- Avoid creating duplicate utilities, helpers, converters, or abstractions when equivalent functionality already exists.
 
 ## General C# rules
 
-Use modern C# already used by the project, but do not introduce newer language features unless the target framework and existing project style clearly support them.
+Use modern C# already used by the project, but do not introduce newer language features unless the target framework 
+and existing project style clearly support them.
 
 Write clean, maintainable code following principles already used by the solution:
 - SOLID principles
