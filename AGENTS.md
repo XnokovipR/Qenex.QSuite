@@ -1,5 +1,9 @@
 # Qenex.QSuite
 
+## Scope
+
+This file applies to the entire Qenex.QSuite repository and all its projects.
+
 ## Purpose
 
 Qenex.QSuite is a multi-project C# solution for control, logging, and visualization of real-time data from and to electronic devices
