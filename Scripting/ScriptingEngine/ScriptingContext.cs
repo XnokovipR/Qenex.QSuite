@@ -9,19 +9,19 @@ public class ScriptingContext
 {
     private readonly ILogger? logger;
     private readonly TaskFactory pythonFactory;
-    private PythonLogWriter stdoutWriter;
-    private PythonLogWriter stderrWriter;
+    private PythonLogWriter stdoutWriter = null!;
+    private PythonLogWriter stderrWriter = null!;
     private static readonly object pythonInitLock = new();
     private static bool pythonRuntimeInitialized;
     
     #region Constructors
 
-    public ScriptingContext(ILogger? log = null)
+    public ScriptingContext(ScriptEngineSettings settings, ILogger? log = null)
     {
         logger = log;
         pythonFactory = new TaskFactory(new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler);
         VariableBindings = [];
-        EngineSettings = new ScriptEngineSettings();
+        EngineSettings = settings ?? throw new ArgumentNullException(nameof(settings));
         Scripts = new List<IScriptBase>();
     }
 
@@ -93,7 +93,18 @@ public class ScriptingContext
             if (pythonRuntimeInitialized) return;
             if (PythonEngine.IsInitialized) { pythonRuntimeInitialized = true; return; }
 
-            Runtime.PythonDLL = @"c:\Users\radek\AppData\Local\Python\pythoncore-3.13-64\python313.dll";
+            if (string.IsNullOrWhiteSpace(EngineSettings.PythonDllPath))
+            {
+                throw new InvalidOperationException("Python DLL path is not configured.");
+            }
+
+            if (!File.Exists(EngineSettings.PythonDllPath))
+            {
+                //logger?.Log(LogLevel.Error, $"Configured Python DLL path was not found: {EngineSettings.PythonDllPath}");
+                throw new FileNotFoundException("Configured Python DLL path was not found.", EngineSettings.PythonDllPath);
+            }
+
+            Runtime.PythonDLL = EngineSettings.PythonDllPath;
             PythonEngine.Initialize();
             PythonEngine.BeginAllowThreads();
             pythonRuntimeInitialized = true;

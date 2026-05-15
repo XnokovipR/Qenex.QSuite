@@ -1,6 +1,7 @@
-﻿using Qenex.QSuite.Common.PluginManager;
+using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.ModuleXmlHandler;
+using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.UnifModule;
 
 namespace Qenex.QInsight.Models.Project;
@@ -15,10 +16,11 @@ public class RealProjectData
         IList<PluginDetails> drvPlugins, 
         IList<PluginDetails> protocolPlugins, 
         ProjectFilesData projectFileData,
+        ScriptEngineSettings scriptEngineSettings,
         ILogger? logger = null)
     {
         var xmlModuleHandler = new XmlModuleHandler(drvPlugins, protocolPlugins, logger);
-        var realModule = xmlModuleHandler.CreateModule(projectFileData.Module, new UnifiedModuleFactory(), logger);
+        var realModule = xmlModuleHandler.CreateModule(projectFileData.Module, new UnifiedModuleFactory(), scriptEngineSettings, logger);
         
         if (realModule == null)
         {

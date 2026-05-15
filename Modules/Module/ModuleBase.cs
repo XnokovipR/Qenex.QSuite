@@ -19,7 +19,7 @@ public abstract class ModuleBase : IModuleBase
 
     #region Constructors
 
-    protected ModuleBase(ILogger? logger = null)
+    protected ModuleBase(ScriptEngineSettings scriptEngineSettings, ILogger? logger = null)
     {
         Logger = logger;
         Variables = new List<IVariableBase>();
@@ -27,7 +27,7 @@ public abstract class ModuleBase : IModuleBase
         Presentations = new List<IPresentation>();
         Conversions = new List<IValConversion>();
         VarEvents = new List<IVarEvent>();
-        Scripting = new ScriptingContext(logger);
+        Scripting = new ScriptingContext(scriptEngineSettings, logger);
     }
 
     #endregion

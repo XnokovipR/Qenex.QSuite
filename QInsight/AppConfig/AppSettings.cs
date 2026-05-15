@@ -2,6 +2,7 @@
 using System.Windows.Media;
 using System.Xml.Serialization;
 using Qenex.QLibs.XmlInOut;
+using Qenex.QSuite.Scripting.ScriptingEngine;
 
 namespace Qenex.QInsight.AppConfig;
 
@@ -19,6 +20,7 @@ public class AppSettings
 	[XmlElement("IsAppSettingRead")] public bool IsAppSettingRead { get; set; }
 	[XmlElement("WindowStyle")] public WindowStyle WinStyle { get; set; } = null!;
 	[XmlElement("DesignManager")] public DesignManager Design { get; set; } = null!;
+	[XmlElement("ScriptEngineSettings")] public ScriptEngineSettings ScriptEngine { get; set; } = null!;
 
 	#endregion
 
@@ -29,7 +31,7 @@ public class AppSettings
 		AppSettings settings;
 		try
 		{
-			settings = XmlInOut<AppSettings>.LoadFromFile(fileName);
+			settings = EnsureDefaults(XmlInOut<AppSettings>.LoadFromFile(fileName));
 			
 		}
 		catch (FileNotFoundException)
@@ -65,6 +67,10 @@ public class AppSettings
 				Left = 200,
 				Top = 200,
 				WinState = System.Windows.WindowState.Normal
+			},
+			ScriptEngine = new ScriptEngineSettings()
+			{
+				PythonDllPath = string.Empty
 			}
 			
 		};
@@ -73,6 +79,15 @@ public class AppSettings
 	public static void SaveAppSettingsToFile(string fileName, AppSettings settings)
 	{
 		XmlInOut<AppSettings>.SaveToFile(fileName, settings);
+	}
+
+	private static AppSettings EnsureDefaults(AppSettings settings)
+	{
+		var defaults = GetDefaultAppSettings();
+		settings.WinStyle ??= defaults.WinStyle;
+		settings.Design ??= defaults.Design;
+		settings.ScriptEngine ??= defaults.ScriptEngine;
+		return settings;
 	}
 
 	#endregion

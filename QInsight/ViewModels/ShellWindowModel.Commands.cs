@@ -217,7 +217,7 @@ public partial class ShellWindowModel
                 return;
             }
 
-            realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, logger);
+            realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, ShellWindow.MainAppSettings.ScriptEngine, logger);
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
                 
             ChangeIsProjectMade(true);
@@ -303,16 +303,26 @@ public partial class ShellWindowModel
 
     private async Task ConnectAsync(object obj)
     {
-        //List<Task> startTasks = realProjectData.Module.Drivers.Select(driver => driver.StartAsync()).ToList();
-        //await Task.WhenAll(startTasks);
-        _ = realProjectData.Module.StartAsync();
+        try
+        {
+            await realProjectData.Module.StartAsync();
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, e.Message);
+        }
     }
     
     private async Task DisconnectAsync(object obj)
     {
-        //List<Task> stopTasks = realProjectData.Module.Drivers.Select(driver => driver.StopAsync()).ToList();
-        //await Task.WhenAll(stopTasks);
-        _ = realProjectData.Module.StopAsync();
+        try
+        {
+            await realProjectData.Module.StopAsync();
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, e.Message);
+        }
     }
     
     #endregion    

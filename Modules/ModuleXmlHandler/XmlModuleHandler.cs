@@ -4,10 +4,10 @@ using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Modules.Module;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 using Qenex.QSuite.Common.PluginManager;
-using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Scripting.PythonScript;
 using Qenex.QSuite.Scripting.Script;
+using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.QVariables.Values;
@@ -30,9 +30,9 @@ public class XmlModuleHandler
         this.logger = logger;
     }
     
-    public T? CreateModule<T>(XmlModule xmlModule, IModuleFactory<T> factory, ILogger logger) where T: class, IModuleBase
+    public T? CreateModule<T>(XmlModule xmlModule, IModuleFactory<T> factory, ScriptEngineSettings scriptEngineSettings, ILogger? logger) where T: class, IModuleBase
     {
-        var module = factory.Create(logger);
+        var module = factory.Create(scriptEngineSettings, logger);
 
         //var module = new T();
         // Module xml name must match with the module name

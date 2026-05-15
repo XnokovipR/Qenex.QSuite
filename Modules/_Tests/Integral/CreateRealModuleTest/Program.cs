@@ -11,6 +11,7 @@ using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.UnifModule;
 using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QSuite.Modules.Tests.CreateRealModuleTest;
@@ -32,7 +33,7 @@ class Program
         var xmlModule = XmlInOut<XmlModule>.LoadFromFile(@"..\..\..\..\..\..\ModuleXmlHandler\Docs\XmlModule.xml");
         
         var xmlModuleHandler = new XmlModuleHandler(driversDetails, protocolsDetails, logger);
-        var realModule = xmlModuleHandler.CreateModule<UnifiedModule>(xmlModule, new UnifiedModuleFactory(), logger);
+        var realModule = xmlModuleHandler.CreateModule<UnifiedModule>(xmlModule, new UnifiedModuleFactory(), new ScriptEngineSettings(), logger);
 
         foreach (var driver in realModule.Drivers)
         {
