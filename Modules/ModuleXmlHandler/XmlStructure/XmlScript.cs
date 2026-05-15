@@ -17,5 +17,6 @@ public enum XmlScriptExecutionMode
 	Manual,
 	Periodic,
 	OnValueChanged,
-	Startup
+	Startup,
+	Shutdown
 }

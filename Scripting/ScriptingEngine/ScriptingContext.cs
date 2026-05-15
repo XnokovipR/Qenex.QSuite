@@ -11,6 +11,8 @@ public class ScriptingContext
     private readonly TaskFactory pythonFactory;
     private PythonLogWriter stdoutWriter = null!;
     private PythonLogWriter stderrWriter = null!;
+    private CancellationTokenSource? periodicScriptsCts;
+    private readonly List<Task> periodicScriptTasks = [];
     private static readonly object pythonInitLock = new();
     private static bool pythonRuntimeInitialized;
     
@@ -80,8 +82,9 @@ public class ScriptingContext
             //SharedScope.Exec("print(\"Ahoj - toto je test\")");
         }
         
-        // Execute startup scripts - executed only once
+        // Execute startup scripts - executed only once.
         ExecuteScripts(ScriptExecutionMode.Startup);
+        StartPeriodicScripts();
     }
 
     private void EnsurePythonRuntimeInitialized()
@@ -111,7 +114,11 @@ public class ScriptingContext
         }
     }
     
-    public Task DisposeSharedScopeAsync() => pythonFactory.StartNew(DisposeSharedScope);
+    public async Task DisposeSharedScopeAsync()
+    {
+        await StopPeriodicScriptsAsync();
+        await pythonFactory.StartNew(DisposeSharedScope);
+    }
 
     private void DisposeSharedScope()
     {
@@ -162,21 +169,155 @@ public class ScriptingContext
 
     private void ExecuteScripts(ScriptExecutionMode scriptMode)
     {
-        var startupScripts = Scripts.Where(s => s.ExecutionMode == scriptMode);
-        foreach (var script in startupScripts)
+        var scripts = Scripts.Where(s => s.ExecutionMode == scriptMode);
+        foreach (var script in scripts)
         {
-            try
+            ExecuteScript(script);
+        }
+    }
+
+    private void ExecuteScript(IScriptBase script)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        script.RunState = ScriptRunState.Running;
+
+        try
+        {
+            using (Py.GIL())
             {
-                using (Py.GIL())
-                {
-                    SharedScope!.Exec(script.Content);
-                }
+                SharedScope!.Exec(script.Content);
             }
-            catch (PythonException e)
+
+            script.RunState = ScriptRunState.Idle;
+        }
+        catch (PythonException e)
+        {
+            script.RunState = ScriptRunState.Faulted;
+            logger?.Log(LogLevel.Warn, $"python script \"{script.FileName}\": {e.Message}");
+        }
+        catch (Exception e)
+        {
+            script.RunState = ScriptRunState.Faulted;
+            logger?.Log(LogLevel.Error, $"script \"{script.FileName}\": {e.Message}");
+        }
+        finally
+        {
+            stopwatch.Stop();
+            script.LastExecutionDurationMs = stopwatch.Elapsed.TotalMilliseconds;
+        }
+    }
+
+    private void StartPeriodicScripts()
+    {
+        if (periodicScriptsCts != null)
+        {
+            return;
+        }
+
+        periodicScriptsCts = new CancellationTokenSource();
+        foreach (var script in Scripts.Where(s => s.ExecutionMode == ScriptExecutionMode.Periodic))
+        {
+            if (!TryGetPeriodicInterval(script, out var interval))
             {
-                logger?.Log(LogLevel.Warn, $"python script \"{script.FileName}\": {e.Message}");
+                continue;
+            }
+
+            periodicScriptTasks.Add(RunPeriodicScriptAsync(script, interval, periodicScriptsCts.Token));
+        }
+    }
+
+    private async Task StopPeriodicScriptsAsync()
+    {
+        if (periodicScriptsCts == null)
+        {
+            return;
+        }
+
+        await periodicScriptsCts.CancelAsync();
+
+        try
+        {
+            await Task.WhenAll(periodicScriptTasks);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            periodicScriptsCts.Dispose();
+            periodicScriptsCts = null;
+            periodicScriptTasks.Clear();
+        }
+    }
+
+    private async Task RunPeriodicScriptAsync(IScriptBase script, TimeSpan interval, CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(interval);
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(ct))
+            {
+                await pythonFactory.StartNew(() => ExecuteScript(script), ct);
             }
         }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private bool TryGetPeriodicInterval(IScriptBase script, out TimeSpan interval)
+    {
+        interval = TimeSpan.Zero;
+        var settings = ParseAdditionalInfo(script.AdditionalInfo);
+
+        if (!settings.TryGetValue("period", out var periodText) ||
+            !double.TryParse(periodText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var period) ||
+            period <= 0)
+        {
+            logger?.Log(LogLevel.Warn, $"Periodic script \"{script.FileName}\" has invalid period setting.");
+            return false;
+        }
+
+        if (!settings.TryGetValue("unit", out var unit))
+        {
+            logger?.Log(LogLevel.Warn, $"Periodic script \"{script.FileName}\" has no unit setting.");
+            return false;
+        }
+
+        interval = unit.Trim().ToLowerInvariant() switch
+        {
+            "ms" or "msec" or "millisec" or "millisecond" or "milliseconds" => TimeSpan.FromMilliseconds(period),
+            "s" or "sec" or "second" or "seconds" => TimeSpan.FromSeconds(period),
+            "m" or "min" or "minute" or "minutes" => TimeSpan.FromMinutes(period),
+            "h" or "hour" or "hours" => TimeSpan.FromHours(period),
+            _ => TimeSpan.Zero
+        };
+
+        if (interval > TimeSpan.Zero)
+        {
+            return true;
+        }
+
+        logger?.Log(LogLevel.Warn, $"Periodic script \"{script.FileName}\" has unsupported unit setting \"{unit}\".");
+        return false;
+    }
+
+    private static Dictionary<string, string> ParseAdditionalInfo(string additionalInfo)
+    {
+        var settings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var parts = additionalInfo.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var part in parts)
+        {
+            var keyValue = part.Split('=', 2, StringSplitOptions.TrimEntries);
+            if (keyValue.Length == 2)
+            {
+                settings[keyValue[0]] = keyValue[1];
+            }
+        }
+
+        return settings;
     }
     
     #endregion

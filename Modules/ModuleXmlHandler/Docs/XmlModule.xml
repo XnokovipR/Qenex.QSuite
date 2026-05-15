@@ -194,6 +194,7 @@
     <!--+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-->
 	<scripts>
 		<script fileName="startup.py" executionMode="Startup"/>
-		<script fileName="periodic.py" executionMode="Periodic" additionalInfo="period=5;unit=s"/>
+		<script fileName="shutdown.py" executionMode="Shutdown"/>
+		<script fileName="periodic.py" executionMode="Periodic" additionalInfo="period=1;unit=s"/>
 	</scripts>
 </module>

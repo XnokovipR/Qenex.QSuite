@@ -232,6 +232,7 @@ public class XmlModuleHandler
                 FileName = xmlPythonScript.FileName,
                 Content = xmlPythonScript.Content,
 				ExecutionMode = Enum.Parse<ScriptExecutionMode>(xmlPythonScript.ExecutionMode.ToString()),
+                AdditionalInfo = xmlPythonScript.AdditionalInfo,
                 
 			};
 
