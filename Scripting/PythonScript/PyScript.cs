@@ -1,11 +1,11 @@
-﻿using Qenex.QSuite.Scripting.Script;
+using Qenex.QSuite.Scripting.Script;
 
 namespace Qenex.QSuite.Scripting.PythonScript;
 
 public class PyScript : IScriptBase
 {
     private int executionCount;
-    
+
     public ScriptFileType ScriptType => ScriptFileType.Python;
     public string FileName { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
@@ -17,11 +17,14 @@ public class PyScript : IScriptBase
 
     public double LastExecutionDurationMs
     {
-        get => field;
+        get;
         set
         {
+            if (Math.Abs(field - value) < 1e-9) return;
+
             field = value;
-            // Update the average  & max execution interval
+
+            // Update the average & max execution interval
             if (executionCount == 0)
             {
                 AverageExecutionDurationMs = value;
@@ -29,15 +32,37 @@ public class PyScript : IScriptBase
             }
             else
             {
-                AverageExecutionDurationMs = ((AverageExecutionDurationMs * executionCount) + value) / (executionCount++);
+                AverageExecutionDurationMs = ((AverageExecutionDurationMs * executionCount) + value) / (executionCount + 1);
             }
-            
+
+            executionCount++;
+
             if (value > MaxExecutionDurationMs)
             {
                 MaxExecutionDurationMs = value;
             }
         }
     }
-    public double AverageExecutionDurationMs { get; set; }
-    public double MaxExecutionDurationMs { get; set; }
+
+    public double AverageExecutionDurationMs
+    {
+        get;
+        set
+        {
+            if (Math.Abs(field - value) < 1e-9) return;
+
+            field = value;
+        }
+    }
+
+    public double MaxExecutionDurationMs
+    {
+        get;
+        set
+        {
+            if (Math.Abs(field - value) < 1e-9) return;
+
+            field = value;
+        }
+    }
 }

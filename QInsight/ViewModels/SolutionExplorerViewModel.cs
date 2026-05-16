@@ -12,6 +12,7 @@ using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Scripting.Script;
+using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.VariableEvents;
@@ -135,7 +136,7 @@ public class SolutionExplorerViewModel : ViewModelBase
         
         CreateVariableEventWrapper(projectWrapper.Children, realPrjData.Module.VarEvents);
         
-        CreateScriptsWrapper(projectWrapper.Children, realPrjData.Module.Scripting.Scripts);
+        CreateScriptsWrapper(projectWrapper.Children, realPrjData.Module.Scripting);
         
         return projectWrapper;
     }
@@ -301,7 +302,7 @@ public class SolutionExplorerViewModel : ViewModelBase
         }
     }
 
-    private void CreateScriptsWrapper(ObservableCollection<IViewableItem> children, IList<IScriptBase> scripts)
+    private void CreateScriptsWrapper(ObservableCollection<IViewableItem> children, ScriptingContext scriptingContext)
     {
         // Add scripts node id does not exist
         if (!children.Any(ch => ch is NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Scripts }))
@@ -312,9 +313,9 @@ public class SolutionExplorerViewModel : ViewModelBase
 
         // Add scripts
         var scrNode = children.First(ch => ch is NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Scripts });
-        foreach (var script in scripts)
+        foreach (var script in scriptingContext.Scripts)
         {
-            var scriptWrapper = new ScriptWrapper(script);
+            var scriptWrapper = new ScriptWrapper(script, scriptingContext);
             var scriptSeWrapper = new ScriptSeWrapper(scriptWrapper);
             scrNode.Children.Add(scriptSeWrapper);
         }

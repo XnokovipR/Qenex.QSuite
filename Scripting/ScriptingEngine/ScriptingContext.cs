@@ -35,6 +35,7 @@ public class ScriptingContext
     public IList<VariableBinding> VariableBindings { get; set; }
     public ScriptEngineSettings EngineSettings { get; set; }
     public PyModule? SharedScope { get; internal set; }
+    public event EventHandler<ScriptExecutedEventArgs>? ScriptExecuted;
     
     #endregion
 
@@ -204,6 +205,7 @@ public class ScriptingContext
         {
             stopwatch.Stop();
             script.LastExecutionDurationMs = stopwatch.Elapsed.TotalMilliseconds;
+            OnScriptExecuted(script);
         }
     }
 
@@ -321,4 +323,14 @@ public class ScriptingContext
     }
     
     #endregion
+
+    private void OnScriptExecuted(IScriptBase script)
+    {
+        ScriptExecuted?.Invoke(this, new ScriptExecutedEventArgs(script));
+    }
+}
+
+public class ScriptExecutedEventArgs(IScriptBase script) : EventArgs
+{
+    public IScriptBase Script { get; } = script;
 }
