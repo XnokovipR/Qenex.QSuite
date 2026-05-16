@@ -22,6 +22,9 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	#region Private
 
 	internal static readonly IHighlightingDefinition PythonHighlighting  = SyntaxHighlighting.LoadPythonHighlighting(ShellWindow.IsDarkTheme);
+	
+	private string runtimeSettingLayoutFile = "QInsightRuntimeSettings.xml";
+	private string editModeSettingLayoutFile = "QInsightEditSettings.xml";
 
 	private readonly EventAggregator eventAggregator;
 	private readonly Logger logger;
@@ -59,6 +62,8 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	#endregion
 
 	#region Properties
+
+	public bool IsRuntimeStarted { get; set; } = false;
 
 	public LogsViewModel LogsViewModel
 	{

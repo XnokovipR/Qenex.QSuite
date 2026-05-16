@@ -45,6 +45,7 @@ public partial class ShellWindowModel
     public RelayCommand<RadDocking> RibbonScriptVariablesSettingsCommand { get; set; }
     public RelayCommand<RadDocking> RibbonScriptsSettingsCommand { get; set; }
     
+    public RelayCommand<RadDocking> RibbonSaveLayoutCommand { get; set; }
     
     public RelayCommand<object> RibbonAboutAppCommand { get; set; }
 
@@ -70,6 +71,11 @@ public partial class ShellWindowModel
         
         RibbonScriptVariablesSettingsCommand = new RelayCommand<RadDocking>(OpenScriptVariablesOptions);
         RibbonScriptsSettingsCommand = new RelayCommand<RadDocking>(RemoveScriptVariablesOptions);
+
+        RibbonSaveLayoutCommand = new RelayCommand<RadDocking>(r =>
+        {
+            SaveLayout(r);
+        });
         
         RibbonAboutAppCommand = new RelayCommand<object>((o) =>
         {
@@ -122,7 +128,11 @@ public partial class ShellWindowModel
         {
             shellRadDocking = docking;
             
-            Application.Current.MainWindow.WindowState = ShellWindow.MainAppSettings.WinStyle.WinState;
+            Application.Current.MainWindow!.WindowState = ShellWindow.MainAppSettings.WinStyle.WinState;
+            
+            // Load layout settings
+            LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
+            
             
             // Load drivers, protocols and controls
             pluginLoader = new PluginLoader(logger);
@@ -306,9 +316,11 @@ public partial class ShellWindowModel
         try
         {
             await realProjectData.Module.StartAsync();
+            IsRuntimeStarted = true;
         }
         catch (Exception e)
         {
+            IsRuntimeStarted = false;
             logger.Log(LogLevel.Error, e.Message);
         }
     }
@@ -318,6 +330,7 @@ public partial class ShellWindowModel
         try
         {
             await realProjectData.Module.StopAsync();
+            IsRuntimeStarted = false;
         }
         catch (Exception e)
         {
@@ -325,7 +338,45 @@ public partial class ShellWindowModel
         }
     }
     
-    #endregion    
+    #endregion
+
+    #region Options
+    
+    private void LoadSettingsFromFile(RadDocking radDocking, string settingsLayoutFile)
+    {
+        try
+        {
+            using (var stream = new FileStream(settingsLayoutFile, FileMode.Open))
+            {
+                radDocking.Tag = "Settings";
+                radDocking.LoadLayout(stream);
+            }
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Warn, $"Open settings file {settingsLayoutFile}", e);
+        }
+    } 
+
+    private void SaveLayout(RadDocking radDocking)
+    {
+        var settingsLayoutFile = IsRuntimeStarted ? runtimeSettingLayoutFile : editModeSettingLayoutFile;
+        try
+        {
+            using (var stream = new FileStream(settingsLayoutFile, FileMode.Create))
+            {
+                radDocking.Tag = "Settings";
+                radDocking.SaveLayout(stream);
+            }
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, $"Save settings file {settingsLayoutFile}", e);
+        }
+        logger.Log(LogLevel.Info, $"Layout settings saved.");
+    }
+
+    #endregion
 
 	#endregion
     
