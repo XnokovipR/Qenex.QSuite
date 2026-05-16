@@ -20,6 +20,7 @@
                  BorderThickness="0"
                  HorizontalScrollBarVisibility="Auto"
                  VerticalScrollBarVisibility="Auto"
+                 local:TextBoxAutoScrollBehavior.AutoScroll="True"
                  Background="{telerik:Windows11Resource ResourceKey=PrimaryBackgroundBrush}"
                  Foreground="{telerik:Windows11Resource ResourceKey=PrimaryForegroundBrush}">
     
