@@ -19,5 +19,9 @@
 		
 		<q:QTextBlock Text="Execution model" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,5"/>
 		<telerik:RadComboBox ItemsSource="{Binding ExecutionModes}" SelectedValuePath="Value" SelectedValue="{Binding ScriptWrapper.ExecutionMode, Mode=TwoWay}"/>
+
+		<q:QTextBlock Text="Parameters" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,5"/>
+		<q:QTextBox Text="{Binding ScriptWrapper.AdditionalInfo, Mode=TwoWay}"
+		            inp:InputManager.UpdatePropertySourceWhenEnterPressed="q:QTextBox.Text"/>
 	</StackPanel>
 </UserControl>
