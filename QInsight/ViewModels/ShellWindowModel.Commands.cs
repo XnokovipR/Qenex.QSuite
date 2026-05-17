@@ -313,6 +313,7 @@ public partial class ShellWindowModel
 
     private async Task ConnectAsync(object obj)
     {
+        LoadSettingsFromFile(shellRadDocking, runtimeSettingLayoutFile);
         try
         {
             await realProjectData.Module.StartAsync();
@@ -324,9 +325,10 @@ public partial class ShellWindowModel
             logger.Log(LogLevel.Error, e.Message);
         }
     }
-    
+
     private async Task DisconnectAsync(object obj)
     {
+        LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
         try
         {
             await realProjectData.Module.StopAsync();
