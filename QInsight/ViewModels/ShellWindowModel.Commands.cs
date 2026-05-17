@@ -368,12 +368,12 @@ public partial class ShellWindowModel
                 radDocking.Tag = "Settings";
                 radDocking.SaveLayout(stream);
             }
+            logger.Log(LogLevel.Info, $"Layout settings saved.");
         }
         catch (Exception e)
         {
             logger.Log(LogLevel.Error, $"Save settings file {settingsLayoutFile}", e);
         }
-        logger.Log(LogLevel.Info, $"Layout settings saved.");
     }
 
     #endregion
