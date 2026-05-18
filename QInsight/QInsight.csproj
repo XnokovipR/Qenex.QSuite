@@ -22,7 +22,7 @@
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.142" />
     <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.9" />
-    <PackageReference Include="Qenex.QLibs.QUI.TelerikDocking" Version="1.0.16" />
+    <PackageReference Include="Qenex.QLibs.QUI.TelerikDocking" Version="1.0.17" />
     <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.6" />
     <PackageReference Include="Telerik.Licensing" Version="1.8.2" />
     <PackageReference Include="Telerik.Windows.Controls.Chart.Direct2D.for.Wpf" Version="2026.1.415" />
