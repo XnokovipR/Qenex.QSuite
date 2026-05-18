@@ -155,6 +155,9 @@
 					<telerik:EventBinding Command="{Binding PanelCloseCommandAsync}"
 					                      EventName="Close"
 					                      PassEventArgsToCommand="True"/>
+					<telerik:EventBinding Command="{Binding DockingElementLayoutCleaningCommandAsync}"
+					                      EventName="ElementLayoutCleaning"
+					                      PassEventArgsToCommand="True"/>
 				</telerik:EventToCommandBehavior.EventBindings>
 
 				<telerik:RadDocking.DocumentHost>

@@ -28,6 +28,9 @@ public partial class ShellWindowModel
     public RelayCommand<RadDocking> ShellWindowClosingCommand { get; set; }
     
     public RelayCommandAsync<StateChangeEventArgs> PanelCloseCommandAsync { get; set; }
+    
+    public RelayCommand<LayoutSerializationCleaningEventArgs> DockingElementLayoutCleaningCommand { get; set; }
+    
 
 
     #endregion
@@ -99,6 +102,8 @@ public partial class ShellWindowModel
         
         
         PanelCloseCommandAsync = new RelayCommandAsync<StateChangeEventArgs>(ClosePanelAsync);
+        DockingElementLayoutCleaningCommand =
+            new RelayCommand<LayoutSerializationCleaningEventArgs>(DockingElementLayoutCleaning);
     }
 
     #endregion
@@ -188,6 +193,11 @@ public partial class ShellWindowModel
         // }
         
         await Task.CompletedTask;
+    }
+
+    private void DockingElementLayoutCleaning(LayoutSerializationCleaningEventArgs e)
+    {
+        
     }
 
 	#endregion
