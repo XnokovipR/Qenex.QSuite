@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AppSettings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <IsAppSettingRead>true</IsAppSettingRead>
+  <WindowStyle>
+    <ScreenId>0</ScreenId>
+    <Width>2230</Width>
+    <Height>1253</Height>
+    <Top>-6.857142857142857</Top>
+    <Left>-6.857142857142857</Left>
+    <WindowState>Maximized</WindowState>
+  </WindowStyle>
+  <DesignManager>
+    <Theme>Light</Theme>
+    <FontSize>12</FontSize>
+    <LightThemeTextColor>0,0,0</LightThemeTextColor>
+    <LightThemeTextBoxBackgroundColor>220,220,220</LightThemeTextBoxBackgroundColor>
+    <LightThemeControlBackgroundColor>248,248,248</LightThemeControlBackgroundColor>
+    <DarkThemeTextColor>220,220,220</DarkThemeTextColor>
+    <DarkThemeTextBoxBackgroundColor>30,30,30</DarkThemeTextBoxBackgroundColor>
+    <DarkThemeControlBackgroundColor>40,40,40</DarkThemeControlBackgroundColor>
+  </DesignManager>
+  <ScriptEngineSettings>
+    <PythonDllPath>c:\Users\radek\AppData\Local\Python\pythoncore-3.13-64\python313.dll </PythonDllPath>
+  </ScriptEngineSettings>
+</AppSettings>
