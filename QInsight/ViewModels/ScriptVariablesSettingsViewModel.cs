@@ -14,7 +14,7 @@ public class ScriptVariablesSettingsViewModel : WorkspaceViewModelBase
     #region ViewModelBase implementation
 
     public override string Header { get; set; } = "";
-    public override string Name { get; set; } = "ScriptVariablesSettingsViewModel";
+    public override string Name { get; set; } = $"WorkspaceViewModel_ScriptVariableSettings_{Guid.NewGuid().ToString().Replace("-", "_")}";
     public override string WinTitle { get => "Script-Variables Settings"; set { return; } }
     public override DockingPosition DockPosition { get; set; } = DockingPosition.Workspace;
     public override bool IsDocument => true;

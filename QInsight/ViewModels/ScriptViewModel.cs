@@ -56,7 +56,7 @@ public class ScriptViewModel : WorkspaceViewModelBase
     #region ViewModelBase implementation
 
     public override string Header { get; set; } = "";
-    public override string Name { get; set; } = $"WorkspaceViewModel__{Guid.NewGuid().ToString().Replace("-", "_")}";
+    public override string Name { get; set; } = $"WorkspaceViewModel_Script_{Guid.NewGuid().ToString().Replace("-", "_")}";
     public override string WinTitle { get => field; set { field = value; OnPropertyChanged(); } }
     public override DockingPosition DockPosition { get; set; } = DockingPosition.Workspace;
     public override bool IsDocument => true;

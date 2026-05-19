@@ -155,25 +155,27 @@
 					<telerik:EventBinding Command="{Binding PanelCloseCommandAsync}"
 					                      EventName="Close"
 					                      PassEventArgsToCommand="True"/>
-					<telerik:EventBinding Command="{Binding DockingElementLayoutCleaningCommandAsync}"
+					<telerik:EventBinding Command="{Binding DockingElementLayoutCleaningCommand}"
 					                      EventName="ElementLayoutCleaning"
+					                      PassEventArgsToCommand="True"/>
+					<telerik:EventBinding Command="{Binding DockingElementLayoutSavingCommand}"
+					                      EventName="ElementLayoutSaving"
 					                      PassEventArgsToCommand="True"/>
 				</telerik:EventToCommandBehavior.EventBindings>
 
 				<telerik:RadDocking.DocumentHost>
-					<telerik:RadSplitContainer>
-						<telerik:RadPaneGroup x:Name="WorkspacePaneGroup" telerik:RadDocking.SerializationTag="WorkspacePaneGroup"/>
+					<telerik:RadSplitContainer InitialPosition="DockedTop" telerik:RadDocking.SerializationTag="WorkspaceViewModelSplitContainer">
 					</telerik:RadSplitContainer>
 				</telerik:RadDocking.DocumentHost>
-
+				
 				<telerik:RadSplitContainer InitialPosition="DockedLeft">
 					<telerik:RadPaneGroup x:Name="LeftPaneGroup" telerik:RadDocking.SerializationTag="LeftPaneGroup"/>
 				</telerik:RadSplitContainer>
-
+				
 				<telerik:RadSplitContainer InitialPosition="DockedRight">
 					<telerik:RadPaneGroup x:Name="RightPaneGroup" telerik:RadDocking.SerializationTag="RightPaneGroup"/>
 				</telerik:RadSplitContainer>
-
+				
 				<telerik:RadSplitContainer InitialPosition="DockedBottom">
 					<telerik:RadPaneGroup x:Name="BottomPaneGroup" telerik:RadDocking.SerializationTag="BottomPaneGroup"/>
 				</telerik:RadSplitContainer>

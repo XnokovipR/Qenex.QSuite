@@ -30,9 +30,8 @@ public partial class ShellWindowModel
     public RelayCommandAsync<StateChangeEventArgs> PanelCloseCommandAsync { get; set; }
     
     public RelayCommand<LayoutSerializationCleaningEventArgs> DockingElementLayoutCleaningCommand { get; set; }
+    public RelayCommand<LayoutSerializationSavingEventArgs> DockingElementLayoutSavingCommand { get; set; }
     
-
-
     #endregion
 
     #region Ribbon command Properties
@@ -104,6 +103,7 @@ public partial class ShellWindowModel
         PanelCloseCommandAsync = new RelayCommandAsync<StateChangeEventArgs>(ClosePanelAsync);
         DockingElementLayoutCleaningCommand =
             new RelayCommand<LayoutSerializationCleaningEventArgs>(DockingElementLayoutCleaning);
+        DockingElementLayoutSavingCommand = new RelayCommand<LayoutSerializationSavingEventArgs>(DockingElementLayoutSaving);
     }
 
     #endregion
@@ -194,10 +194,23 @@ public partial class ShellWindowModel
         
         await Task.CompletedTask;
     }
-
+    
+    private void DockingElementLayoutSaving(LayoutSerializationSavingEventArgs e)
+    {
+        var tag = e.AffectedElementSerializationTag;
+        if (tag.Contains("WorkspaceViewModel"))
+        {
+            e.Cancel = true;
+        }
+    }
+    
     private void DockingElementLayoutCleaning(LayoutSerializationCleaningEventArgs e)
     {
-        
+        var tag = e.AffectedElementSerializationTag;
+        if (tag.Contains("WorkspaceViewModel"))
+        {
+            e.Cancel = true;
+        }
     }
 
 	#endregion
@@ -358,15 +371,14 @@ public partial class ShellWindowModel
     {
         try
         {
-            using (var stream = new FileStream(settingsLayoutFile, FileMode.Open))
-            {
-                radDocking.Tag = "Settings";
-                radDocking.LoadLayout(stream);
-            }
+            if (!File.Exists(settingsLayoutFile)) throw new FileNotFoundException($"Settings layout file \"{settingsLayoutFile}\" not found.");
+            using var stream = new FileStream(settingsLayoutFile, FileMode.Open);
+            //radDocking.Tag = "Settings";
+            radDocking.LoadLayout(stream);
         }
         catch (Exception e)
         {
-            logger.Log(LogLevel.Warn, $"Open settings file {settingsLayoutFile}", e);
+            logger.Log(LogLevel.Warn, $"Open settings file {settingsLayoutFile} failed.", e);
         }
     } 
 
@@ -375,16 +387,15 @@ public partial class ShellWindowModel
         var settingsLayoutFile = IsRuntimeStarted ? runtimeSettingLayoutFile : editModeSettingLayoutFile;
         try
         {
-            using (var stream = new FileStream(settingsLayoutFile, FileMode.Create))
-            {
-                radDocking.Tag = "Settings";
-                radDocking.SaveLayout(stream);
-            }
+            using var stream = new FileStream(settingsLayoutFile, FileMode.Create);
+            //radDocking.Tag = "Settings";
+            radDocking.SaveLayout(stream);
+            
             logger.Log(LogLevel.Info, $"Layout settings saved.");
         }
         catch (Exception e)
         {
-            logger.Log(LogLevel.Error, $"Save settings file {settingsLayoutFile}", e);
+            logger.Log(LogLevel.Error, $"Save settings file {settingsLayoutFile} failed.", e);
         }
     }
 

@@ -63,7 +63,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     #region ViewModelBase implementation
 
     public override string Header { get; set; } = "Workspace";
-    public override string Name { get; set; } = $"WorkspaceViewModel__{Guid.NewGuid().ToString().Replace("-", "_")}";
+    public override string Name { get; set; } = $"WorkspaceViewModel_WsControls_{Guid.NewGuid().ToString().Replace("-", "_")}";
     public override string WinTitle { get; set { field = value; OnPropertyChanged(); } } = "Workspace" + Random.Shared.Next(1, 9999);
     public override DockingPosition DockPosition { get; set; } = DockingPosition.Workspace;
     public override bool IsDocument => true;
