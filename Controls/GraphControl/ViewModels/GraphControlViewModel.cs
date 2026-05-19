@@ -19,6 +19,12 @@ namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
 public class GraphControlViewModel : ControlBase, IHasMousePosition
 {
+    #region Const
+
+    private const double PlotFontSizeMultiplier = 1.5;
+
+    #endregion
+    
     #region Fields
 
     private DateTime baseTime;
@@ -222,8 +228,8 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     {
         base.UpdateThemeSettingsControl(bgColor, fgColor, fontSize);
 
-        plotFontSize = (int)Math.Round(1.0 * fontSize);
-        axesFontSize = (int)Math.Round(1.0 * fontSize);
+        plotFontSize = (int)Math.Round(PlotFontSizeMultiplier * fontSize);
+        axesFontSize = (int)Math.Round(PlotFontSizeMultiplier * fontSize);
         backgroundColor = bgColor.ToScottPlotColor();
         foregroundColor = fgColor.ToScottPlotColor();
         
