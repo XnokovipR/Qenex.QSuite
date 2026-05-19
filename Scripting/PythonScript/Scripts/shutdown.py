@@ -1,0 +1,1 @@
+﻿print("Shutdown python script executed")

@@ -1,3 +1,5 @@
-﻿from qenex_scripts_shared import *
-
-my_result1 = my_const + 1
+﻿for i in range(101):
+	if i % 10 == 0:
+		printf(f"Periodic script: i = {i}")
+		
+print("------------------------------")
