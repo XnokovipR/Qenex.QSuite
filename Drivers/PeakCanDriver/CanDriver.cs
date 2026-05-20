@@ -31,10 +31,10 @@ public class CanDriver : DriverBase
 
     #endregion
 
-    public override void SetConfiguration(string rawSettings, string rawEncryptedSettings)
+    public override void SetConfiguration()
     {
-        settings = $"can: {rawSettings}";
-        encryptedSettings = $"encrypted-can: {rawEncryptedSettings}";
+        settings = $"can: {RawSettings}";
+        encryptedSettings = $"encrypted-can: {RawEncryptedSettings}";
     }
 
     #region Driver control

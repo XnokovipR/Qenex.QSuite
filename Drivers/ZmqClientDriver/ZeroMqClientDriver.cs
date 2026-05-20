@@ -36,10 +36,10 @@ public class ZeroMqClientDriver : DriverBase
 
     #endregion
 
-    public override void SetConfiguration(string rawSettings, string rawEncryptedSettings)
+    public override void SetConfiguration()
     {
-        settings = $"zmq-client: {rawSettings}";
-        encryptedSettings = $"encrypted-zmq-client: {rawEncryptedSettings}";
+        settings = $"zmq-client: {RawSettings}";
+        encryptedSettings = $"encrypted-zmq-client: {RawEncryptedSettings}";
     }
 
     #region Driver control

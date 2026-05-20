@@ -40,10 +40,10 @@ public class ZeroMqServerDriver : DriverBase
 
     #region Configuration
 
-    public override void SetConfiguration(string rawSettings, string rawEncryptedSettings)
+    public override void SetConfiguration()
     {
-        settings = $"zmq-server: {rawSettings}";
-        encryptedSettings = $"encrypted-zmq-server: {rawEncryptedSettings}";
+        settings = $"zmq-server: {RawSettings}";
+        encryptedSettings = $"encrypted-zmq-server: {RawEncryptedSettings}";
     }
 
     #endregion

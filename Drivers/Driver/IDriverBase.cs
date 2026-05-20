@@ -12,13 +12,15 @@ public interface IDriverBase : ICoreCommunication, IComponentSpecification
 
     int Id { get; set; }
     string Label { get; set; }
+    string RawSettings { get; set; }
+    string RawEncryptedSettings { get; set; }
     IList<IProtocolBase> Protocols { get; init; }
 
     #endregion
 
     #region Configuration
 
-    void SetConfiguration(string rawSettings, string rawEncryptedSettings);
+    void SetConfiguration();
     void AddProtocol(IProtocolBase protocol);
     void AddProtocols(IEnumerable<IProtocolBase> protocols);
     void RemoveProtocol(IProtocolBase protocol);

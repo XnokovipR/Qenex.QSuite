@@ -22,7 +22,7 @@ public class Xcp : ProtocolBase<int>
         };
     }
 
-    public override void SetConfiguration(string rawSettings, string rawEncryptedSettings)
+    public override void SetConfiguration()
     {
         
     }

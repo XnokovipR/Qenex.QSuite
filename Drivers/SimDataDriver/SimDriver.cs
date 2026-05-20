@@ -40,13 +40,13 @@ public class SimDriver : DriverBase
 
     #region Configuration
 
-    public override void SetConfiguration(string rawSettings, string rawEncryptedSettings)
+    public override void SetConfiguration()
     {
-        settings = rawSettings;
-        encryptedSettings = rawEncryptedSettings;
+        settings = RawSettings;
+        encryptedSettings = RawEncryptedSettings;
         
         var rnd = new Random();
-        var rawData = rawSettings.Split(";");
+        var rawData = RawSettings.Split(";");
         var numbers = rawData.FirstOrDefault(r => r.Contains("periodes="))?.Split('=')[1].Split(',');
         if (numbers is not { Length: 1 }) throw new Exception("Invalid number of driver periods.");
         

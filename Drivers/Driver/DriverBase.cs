@@ -39,7 +39,7 @@ public abstract class DriverBase : IDriverBase
 
     #endregion
 
-    public abstract void SetConfiguration(string rawSettings, string rawEncryptedSettings);
+    public abstract void SetConfiguration();
 
     #region Protocols
 

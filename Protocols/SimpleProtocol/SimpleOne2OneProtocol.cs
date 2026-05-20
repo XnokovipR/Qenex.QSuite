@@ -43,7 +43,7 @@ public class SimpleOne2OneProtocol : ProtocolBase<int>
     
     #region Configuration
 
-    public override void SetConfiguration(string rawSettings, string rawEncryptedSettings)
+    public override void SetConfiguration()
     {
     }
 

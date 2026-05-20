@@ -20,8 +20,10 @@ public interface IProtocolBase: ICoreCommunication, IComponentSpecification
     /// Variables that are communicated with the protocol.
     /// </summary>
     IList<IProtocolVariable> Variables { get; set; }
+    string RawSettings { get; set; }
+    string RawEncryptedSettings { get; set; }
     
-    void SetConfiguration(string rawSettings, string rawEncryptedSettings);
+    void SetConfiguration();
 
     IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated);
     IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent variableEvent, string id);

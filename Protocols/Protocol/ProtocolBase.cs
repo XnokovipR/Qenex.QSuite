@@ -42,7 +42,7 @@ public abstract class ProtocolBase<T> : IProtocolBase
     #endregion
 
     #region Configuration
-    public abstract void SetConfiguration(string rawSettings, string rawEncryptedSettings);
+    public abstract void SetConfiguration();
     
     #endregion
 

@@ -106,8 +106,8 @@ public class XmlModuleHandler
                 Ref = driver.Specification.Name,
                 Label = driver.Label,
                 IsEnabled = driver.IsEnabled,
-                Settings = GetRawConfigurationValue(driver, "RawSettings", "settings"),
-                EncryptedSettings = GetRawConfigurationValue(driver, "RawEncryptedSettings", "encryptedSettings"),
+                Settings = driver.RawSettings,
+                EncryptedSettings = driver.RawEncryptedSettings,
                 ProtocolReferences = GetXmlProtocolReferences(driver.Protocols)
             });
         }
@@ -138,8 +138,8 @@ public class XmlModuleHandler
             {
                 Ref = protocol.Specification.Name,
                 IsEnabled = protocol.IsEnabled,
-                Settings = GetRawConfigurationValue(protocol, "RawSettings", "settings"),
-                EncryptedSettings = GetRawConfigurationValue(protocol, "RawEncryptedSettings", "encryptedSettings"),
+                Settings = protocol.RawSettings,
+                EncryptedSettings = protocol.RawEncryptedSettings,
                 VariableReferences = GetXmlVariableReferences(protocol.Variables)
             });
         }
@@ -332,24 +332,6 @@ public class XmlModuleHandler
         }
 
         return xmlScripts;
-    }
-
-    private string GetRawConfigurationValue(object component, string propertyName, string fieldName)
-    {
-        var property = component.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
-        if (property?.GetValue(component) is string propertyValue)
-        {
-            return propertyValue;
-        }
-
-        var field = component.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
-        return field?.GetValue(component) as string ?? string.Empty;
-    }
-
-    private static void StoreRawConfigurationValue(object component, string settings, string encryptedSettings)
-    {
-        component.GetType().GetProperty("RawSettings", BindingFlags.Instance | BindingFlags.Public)?.SetValue(component, settings);
-        component.GetType().GetProperty("RawEncryptedSettings", BindingFlags.Instance | BindingFlags.Public)?.SetValue(component, encryptedSettings);
     }
 
     private string GetCommParam(IProtVariableSpecification specification)
@@ -619,8 +601,9 @@ public class XmlModuleHandler
             
             driver.Label = driverRef.Label;
             driver.IsEnabled = driverRef.IsEnabled;
-            StoreRawConfigurationValue(driver, driverRef.Settings, driverRef.EncryptedSettings);
-            driver.SetConfiguration(driverRef.Settings, driverRef.EncryptedSettings);
+            driver.RawSettings = driverRef.Settings;
+            driver.RawEncryptedSettings = driverRef.EncryptedSettings;
+            driver.SetConfiguration();
             driver.AddProtocols(GetProtocols(protocolsdetails, variables, varEvents, driverRef.ProtocolReferences, xmlModule));
             
             
@@ -661,7 +644,8 @@ public class XmlModuleHandler
                 continue;
             }
 
-            StoreRawConfigurationValue(protocol, protocolRef.Settings, protocolRef.EncryptedSettings);
+            protocol.RawSettings = protocolRef.Settings;
+            protocol.RawEncryptedSettings = protocolRef.EncryptedSettings;
             foreach (var variableRef in protocolRef.VariableReferences)
             {
                 var variable = variables.FirstOrDefault(v => v.Id == variableRef.Ref);
@@ -688,7 +672,7 @@ public class XmlModuleHandler
             }
             
             protocol.IsEnabled = protocolRef.IsEnabled;
-            protocol.SetConfiguration(protocolRef.Settings, protocolRef.EncryptedSettings);
+            protocol.SetConfiguration();
             tempProtocols.Add(protocol);
         }
         
