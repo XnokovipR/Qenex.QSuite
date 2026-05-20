@@ -1,7 +1,10 @@
 ﻿using System.IO.Compression;
 using Qenex.QLibs.XmlInOut;
+using System.Text;
 using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.ModuleXmlHandler;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
+using Qenex.QSuite.Modules.Module;
 
 namespace Qenex.QSuite.Helpers.ProjectFile;
 
@@ -37,13 +40,14 @@ public class ProjectZip(ILogger? logger = null)
     {
         try
         {
-            using var zipArchive = ZipFile.Open(filePath, ZipArchiveMode.Create);
+            await using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.ReadWrite);
+            using var zipArchive = new ZipArchive(fileStream, ZipArchiveMode.Create);
 
 			foreach (var stream in streams)
             {
-                if (string.IsNullOrEmpty(stream.Key) || stream.Value.Length == 0)
+                if (string.IsNullOrEmpty(stream.Key))
                 {
-                    throw new NullReferenceException($"Cannot zip \"{stream.Key}\" stream is empty or key is empty");
+                    throw new NullReferenceException("Cannot zip stream with empty key.");
                 }
 
                 var zipEntry = zipArchive.CreateEntry(stream.Key, CompressionLevel.Optimal);
@@ -57,5 +61,59 @@ public class ProjectZip(ILogger? logger = null)
             logger?.Log(LogLevel.Error, e.Message);
         }
 
+    }
+
+    public async Task ZipModuleAsync(string filePath, IModuleBase module)
+    {
+        var xmlModuleHandler = new XmlModuleHandler([], [], logger);
+        var xmlModule = xmlModuleHandler.CreateXmlModule(module);
+        await ZipModuleAsync(filePath, xmlModule);
+    }
+
+    public async Task ZipModuleAsync(string filePath, XmlModule xmlModule)
+    {
+        var streams = new Dictionary<string, Stream>
+        {
+            { "XmlModule.xml", CreateXmlModuleStream(xmlModule) }
+        };
+
+        foreach (var script in xmlModule.Scripts.Where(s => s.FileName.EndsWith(".py", StringComparison.OrdinalIgnoreCase)))
+        {
+            streams[script.FileName] = new MemoryStream(Encoding.UTF8.GetBytes(script.Content ?? string.Empty));
+        }
+
+        await ZipAsync(filePath, streams);
+    }
+
+    private static Stream CreateXmlModuleStream(XmlModule xmlModule)
+    {
+        var xmlModuleForProjectFile = new XmlModule
+        {
+            Name = xmlModule.Name,
+            Label = xmlModule.Label,
+            Description = xmlModule.Description,
+            Version = xmlModule.Version,
+            Author = xmlModule.Author,
+            Company = xmlModule.Company,
+            CreatedOn = xmlModule.CreatedOn,
+            DriverReferences = xmlModule.DriverReferences,
+            Drivers = xmlModule.Drivers,
+            Protocols = xmlModule.Protocols,
+            Presentations = xmlModule.Presentations,
+            Conversions = xmlModule.Conversions,
+            Events = xmlModule.Events,
+            Variables = xmlModule.Variables,
+            Scripts = xmlModule.Scripts.Select(script => new XmlScript
+            {
+                FileName = script.FileName,
+                ExecutionMode = script.ExecutionMode,
+                AdditionalInfo = script.AdditionalInfo
+            }).ToList()
+        };
+
+        var stream = new MemoryStream();
+        XmlInOut<XmlModule>.SaveToStream(stream, xmlModuleForProjectFile);
+        stream.Position = 0;
+        return stream;
     }
 }

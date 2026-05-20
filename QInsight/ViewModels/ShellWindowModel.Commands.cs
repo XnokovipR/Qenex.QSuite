@@ -37,6 +37,7 @@ public partial class ShellWindowModel
     #region Ribbon command Properties
 
     public RelayCommandAsync<RadDocking> RibbonOpenProjectCommand { get; set; }
+    public RelayCommandAsync<RadDocking> RibbonSaveProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonCloseProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonAddWorkspaceCommand { get; set; }
     public RelayCommand<RadDocking> RibbonRemoveWorkspaceCommand { get; set; }
@@ -64,6 +65,7 @@ public partial class ShellWindowModel
         ShellWindowSizeChangedCommand = new RelayCommand<object>(OnShellWindowSizeChanged);
         
         RibbonOpenProjectCommand = new RelayCommandAsync<RadDocking>(OpenProjectAsync);
+        RibbonSaveProjectCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsync);
         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(async (d) => await Task.CompletedTask);
         RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync);
         RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace);
@@ -254,7 +256,41 @@ public partial class ShellWindowModel
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
                 
             ChangeIsProjectMade(true);
-            logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\"loaded.");
+            logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\" opened.");
+                
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, e.Message);
+        }        
+    }
+    
+    private async Task SaveProjectAsync(object obj)
+    {
+        var lastProjectPath = /*ShellWindow.MainAppSettings.LastProjectPath ??*/ Environment.CurrentDirectory;
+        var dlg = new RadSaveFileDialog()
+        {
+            Owner = App.Current.MainWindow,
+            Filter = "QInsight project files (*.zip)|*.zip",
+            InitialDirectory = lastProjectPath
+        };
+
+        dlg.ShowDialog();
+
+        
+        if (dlg.DialogResult == true)
+        {
+            await SaveProjectFileAsync(dlg.FileName);
+        }
+    }
+    
+    private async Task SaveProjectFileAsync(string filePath)
+    {
+        try
+        {
+            await ProjectZip.ZipProjectFileAsync(filePath, realProjectData, logger);
+                
+            logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\" saved.");
                 
         }
         catch (Exception e)

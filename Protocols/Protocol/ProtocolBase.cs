@@ -34,6 +34,8 @@ public abstract class ProtocolBase<T> : IProtocolBase
     public int Id { get; set; }
     
     public ISpecification Specification { get; set; }
+    public string RawSettings { get; set; } = string.Empty;
+    public string RawEncryptedSettings { get; set; } = string.Empty;
     
     public IList<IProtocolVariable> Variables { get; set; }
 

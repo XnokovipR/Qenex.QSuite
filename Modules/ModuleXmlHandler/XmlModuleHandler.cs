@@ -1,5 +1,7 @@
 ﻿using Qenex.QSuite.Specifications.ComponentSpecification;
 using Qenex.QSuite.Drivers.Driver;
+using System.Globalization;
+using System.Reflection;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Modules.Module;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
@@ -69,6 +71,334 @@ public class XmlModuleHandler
         module.AddDrivers(GetDrivers(driversDetails, protocolsDetails, module.Variables, module.VarEvents, xmlModule));
         
         return module;
+    }
+
+    public XmlModule CreateXmlModule(IModuleBase module)
+    {
+        return new XmlModule
+        {
+            Name = module.Specification.Name,
+            Label = module.Specification.Label,
+            Description = module.Specification.Description,
+            Version = module.Specification.Version?.ToString() ?? string.Empty,
+            Author = module.Specification.Author ?? string.Empty,
+            Company = module.Specification.Company ?? string.Empty,
+            CreatedOn = module.Specification.CreatedOn,
+            DriverReferences = GetXmlDriverReferences(module.Drivers),
+            Drivers = GetXmlDrivers(module.Drivers),
+            Protocols = GetXmlProtocols(module.Drivers.SelectMany(d => d.Protocols)),
+            Presentations = GetXmlPresentations(module.Presentations),
+            Conversions = GetXmlConversions(module.Conversions),
+            Events = GetXmlVarEvents(module.VarEvents),
+            Variables = GetXmlVariables(module.Variables),
+            Scripts = GetXmlScripts(module.Scripting.Scripts)
+        };
+    }
+
+    private List<XmlDriverReference> GetXmlDriverReferences(IEnumerable<IDriverBase> drivers)
+    {
+        var xmlDriverReferences = new List<XmlDriverReference>();
+
+        foreach (var driver in drivers)
+        {
+            xmlDriverReferences.Add(new XmlDriverReference
+            {
+                Ref = driver.Specification.Name,
+                Label = driver.Label,
+                IsEnabled = driver.IsEnabled,
+                Settings = GetRawConfigurationValue(driver, "RawSettings", "settings"),
+                EncryptedSettings = GetRawConfigurationValue(driver, "RawEncryptedSettings", "encryptedSettings"),
+                ProtocolReferences = GetXmlProtocolReferences(driver.Protocols)
+            });
+        }
+
+        return xmlDriverReferences;
+    }
+
+    private List<XmlDriver> GetXmlDrivers(IEnumerable<IDriverBase> drivers)
+    {
+        return drivers
+            .GroupBy(d => new { d.Specification.Name, Version = d.Specification.Version?.ToString() ?? string.Empty })
+            .Select((group, index) => new XmlDriver
+            {
+                Id = group.First().Id != 0 ? group.First().Id : index + 1,
+                Name = group.Key.Name,
+                Version = group.Key.Version
+            })
+            .ToList();
+    }
+
+    private List<XmlProtocolReference> GetXmlProtocolReferences(IEnumerable<IProtocolBase> protocols)
+    {
+        var xmlProtocolReferences = new List<XmlProtocolReference>();
+
+        foreach (var protocol in protocols)
+        {
+            xmlProtocolReferences.Add(new XmlProtocolReference
+            {
+                Ref = protocol.Specification.Name,
+                IsEnabled = protocol.IsEnabled,
+                Settings = GetRawConfigurationValue(protocol, "RawSettings", "settings"),
+                EncryptedSettings = GetRawConfigurationValue(protocol, "RawEncryptedSettings", "encryptedSettings"),
+                VariableReferences = GetXmlVariableReferences(protocol.Variables)
+            });
+        }
+
+        return xmlProtocolReferences;
+    }
+
+    private List<XmlProtocol> GetXmlProtocols(IEnumerable<IProtocolBase> protocols)
+    {
+        return protocols
+            .GroupBy(p => new
+            {
+                p.Specification.Name,
+                p.Specification.Label,
+                Version = p.Specification.Version?.ToString() ?? string.Empty
+            })
+            .Select((group, index) => new XmlProtocol
+            {
+                Id = group.First().Id != 0 ? group.First().Id : index + 1,
+                Name = group.Key.Name,
+                Label = group.Key.Label,
+                Version = group.Key.Version
+            })
+            .ToList();
+    }
+
+    private List<XmlVariableReferenceBase> GetXmlVariableReferences(IEnumerable<IProtocolVariable> protocolVariables)
+    {
+        return protocolVariables.Select(protocolVariable => new XmlVariableReference
+        {
+            Ref = protocolVariable.Variable.Id,
+            IsCommunicated = protocolVariable.IsCommunicated,
+            CommParam = GetCommParam(protocolVariable.ProtocolVariableSpecification)
+        }).Cast<XmlVariableReferenceBase>().ToList();
+    }
+
+    private List<XmlPresentation> GetXmlPresentations(IEnumerable<IPresentation> presentations)
+    {
+        return presentations.Select(presentation => new XmlPresentation
+        {
+            Name = presentation.Name,
+            Label = presentation.Label,
+            Min = presentation.Min,
+            Max = presentation.Max,
+            PrintFormat = presentation.PrintFormat,
+            Unit = presentation.Unit,
+            ConversionReference = new XmlConversionReference { Ref = presentation.Conversion.Name }
+        }).ToList();
+    }
+
+    private List<XmlConversion> GetXmlConversions(IEnumerable<IValConversion> conversions)
+    {
+        var xmlConversions = new List<XmlConversion>();
+
+        foreach (var conversion in conversions)
+        {
+            if (conversion is LinearValConversion linearConversion)
+            {
+                xmlConversions.Add(new XmlLinearConversion
+                {
+                    Name = linearConversion.Name,
+                    Multiplier = linearConversion.Multiplier,
+                    Offset = linearConversion.Offset
+                });
+            }
+            else if (conversion is EnumValConversion enumConversion)
+            {
+                xmlConversions.Add(new XmlEnumConversion
+                {
+                    Name = enumConversion.Name,
+                    Enums = enumConversion.Enums.Select(e => new XmlEnum
+                    {
+                        Name = e.Name,
+                        Value = e.Value
+                    }).ToList()
+                });
+            }
+            else
+            {
+                logger?.Log(LogLevel.Warn, $"Conversion type {conversion.GetType()} is not supported.");
+            }
+        }
+
+        return xmlConversions;
+    }
+
+    private List<XmlVarEvent> GetXmlVarEvents(IEnumerable<IVarEvent> varEvents)
+    {
+        var xmlVarEvents = new List<XmlVarEvent>();
+
+        foreach (var varEvent in varEvents)
+        {
+            if (varEvent is PeriodicVarEvent periodicVarEvent)
+            {
+                xmlVarEvents.Add(new PeriodicXmlVarEvent
+                {
+                    Name = periodicVarEvent.Name,
+                    Period = periodicVarEvent.Period,
+                    Unit = periodicVarEvent.Unit.ToString()
+                });
+            }
+            else if (varEvent is OnRequestVarEvent)
+            {
+                xmlVarEvents.Add(new OnRequestXmlVarEvent { Name = varEvent.Name });
+            }
+            else if (varEvent is OnValueChangedVarEvent onValueChangedVarEvent)
+            {
+                xmlVarEvents.Add(new OnValueChangedXmlVarEvent
+                {
+                    Name = onValueChangedVarEvent.Name,
+                    Threshold = onValueChangedVarEvent.Threshold
+                });
+            }
+            else
+            {
+                logger?.Log(LogLevel.Warn, $"Variable event type {varEvent.GetType()} is not supported.");
+            }
+        }
+
+        return xmlVarEvents;
+    }
+
+    private List<XmlVariable> GetXmlVariables(IEnumerable<IVariableBase> variables)
+    {
+        var xmlVariables = new List<XmlVariable>();
+
+        foreach (var variable in variables)
+        {
+            if (variable is ScalarVariable scalarVariable)
+            {
+                xmlVariables.Add(new XmlScalarVariable
+                {
+                    Id = scalarVariable.Id,
+                    Namespace = scalarVariable.Namespace,
+                    Name = scalarVariable.Name,
+                    Label = scalarVariable.Label,
+                    Description = scalarVariable.Description,
+                    Size = scalarVariable.Size,
+                    Values = new XmlValues
+                    {
+                        DataType = Enum.Parse<XmlValuesDataType>(scalarVariable.Values.ValueType.ToString()),
+                        Size = scalarVariable.Values.Size,
+                        Length = scalarVariable.Values.Length,
+                        PresentationReference = new XmlPresentationReference
+                        {
+                            Ref = scalarVariable.Values.ValPresentation.Name
+                        }
+                    }
+                });
+            }
+            else if (variable is StringVariable stringVariable)
+            {
+                xmlVariables.Add(new XmlStringVariable
+                {
+                    Id = stringVariable.Id,
+                    Namespace = stringVariable.Namespace,
+                    Name = stringVariable.Name,
+                    Label = stringVariable.Label,
+                    Description = stringVariable.Description
+                });
+            }
+            else
+            {
+                logger?.Log(LogLevel.Warn, $"Variable type {variable.GetType()} is not supported.");
+            }
+        }
+
+        return xmlVariables;
+    }
+
+    private List<XmlScript> GetXmlScripts(IEnumerable<IScriptBase> scripts)
+    {
+        var xmlScripts = new List<XmlScript>();
+
+        foreach (var script in scripts)
+        {
+            if (!Enum.TryParse<XmlScriptExecutionMode>(script.ExecutionMode.ToString(), out var executionMode))
+            {
+                logger?.Log(LogLevel.Warn, $"Script execution mode {script.ExecutionMode} is not supported by XML module.");
+                executionMode = XmlScriptExecutionMode.Manual;
+            }
+
+            xmlScripts.Add(new XmlScript
+            {
+                FileName = script.FileName,
+                Content = script.Content,
+                ExecutionMode = executionMode,
+                AdditionalInfo = script.AdditionalInfo
+            });
+        }
+
+        return xmlScripts;
+    }
+
+    private string GetRawConfigurationValue(object component, string propertyName, string fieldName)
+    {
+        var property = component.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+        if (property?.GetValue(component) is string propertyValue)
+        {
+            return propertyValue;
+        }
+
+        var field = component.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+        return field?.GetValue(component) as string ?? string.Empty;
+    }
+
+    private static void StoreRawConfigurationValue(object component, string settings, string encryptedSettings)
+    {
+        component.GetType().GetProperty("RawSettings", BindingFlags.Instance | BindingFlags.Public)?.SetValue(component, settings);
+        component.GetType().GetProperty("RawEncryptedSettings", BindingFlags.Instance | BindingFlags.Public)?.SetValue(component, encryptedSettings);
+    }
+
+    private string GetCommParam(IProtVariableSpecification specification)
+    {
+        var properties = specification.GetType()
+            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Where(p => p.CanRead)
+            .ToList();
+
+        var parameters = new List<string>();
+        AddCommParam(parameters, properties, specification, "Direction", value => value.ToString()!.ToLowerInvariant());
+        AddCommParam(parameters, properties, specification, "VariableEvent", value => ((IVarEvent)value).Name, "eventRef");
+        AddCommParam(parameters, properties, specification, "Multiplier");
+
+        foreach (var property in properties.Where(p => p.Name is not ("Name" or "Direction" or "VariableEvent" or "Multiplier")))
+        {
+            var value = property.GetValue(specification);
+            if (value == null)
+            {
+                continue;
+            }
+
+            parameters.Add($"{ToCamelCase(property.Name)}=\"{Convert.ToString(value, CultureInfo.InvariantCulture)}\"");
+        }
+
+        return string.Join(";", parameters);
+    }
+
+    private static void AddCommParam(
+        ICollection<string> parameters,
+        IEnumerable<PropertyInfo> properties,
+        object specification,
+        string propertyName,
+        Func<object, string>? valueFormatter = null,
+        string? parameterName = null)
+    {
+        var property = properties.FirstOrDefault(p => p.Name == propertyName);
+        var value = property?.GetValue(specification);
+        if (value == null)
+        {
+            return;
+        }
+
+        parameters.Add($"{parameterName ?? ToCamelCase(propertyName)}=\"{(valueFormatter?.Invoke(value) ?? Convert.ToString(value, CultureInfo.InvariantCulture))}\"");
+    }
+
+    private static string ToCamelCase(string value)
+    {
+        return string.IsNullOrEmpty(value) ? value : char.ToLowerInvariant(value[0]) + value[1..];
     }
 
     private List<IVariableBase> GetVariables(IEnumerable<IPresentation> presentations, IEnumerable<XmlVariable> xmlVariables, IEnumerable<IVarEvent> variableEvents)
@@ -289,6 +619,7 @@ public class XmlModuleHandler
             
             driver.Label = driverRef.Label;
             driver.IsEnabled = driverRef.IsEnabled;
+            StoreRawConfigurationValue(driver, driverRef.Settings, driverRef.EncryptedSettings);
             driver.SetConfiguration(driverRef.Settings, driverRef.EncryptedSettings);
             driver.AddProtocols(GetProtocols(protocolsdetails, variables, varEvents, driverRef.ProtocolReferences, xmlModule));
             
@@ -330,6 +661,7 @@ public class XmlModuleHandler
                 continue;
             }
 
+            StoreRawConfigurationValue(protocol, protocolRef.Settings, protocolRef.EncryptedSettings);
             foreach (var variableRef in protocolRef.VariableReferences)
             {
                 var variable = variables.FirstOrDefault(v => v.Id == variableRef.Ref);

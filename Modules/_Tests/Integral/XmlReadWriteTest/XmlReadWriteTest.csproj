@@ -15,7 +15,11 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\..\..\Common\PluginManager\PluginManager.csproj" />
+      <ProjectReference Include="..\..\..\..\Drivers\Driver\Driver.csproj" />
+      <ProjectReference Include="..\..\..\..\Helpers\ProjectFile\ProjectFile.csproj" />
       <ProjectReference Include="..\..\..\ModuleXmlHandler\ModuleXmlHandler.csproj" />
+      <ProjectReference Include="..\..\..\UnifModule\UnifModule.csproj" />
     </ItemGroup>
 
 </Project>

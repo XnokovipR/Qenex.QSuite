@@ -27,6 +27,8 @@ public abstract class DriverBase : IDriverBase
     // So, the driver should have an Id to distinguish between them.
     public int Id { get; set; }
     public string Label { get; set; } = null!;
+    public string RawSettings { get; set; } = string.Empty;
+    public string RawEncryptedSettings { get; set; } = string.Empty;
     public bool IsEnabled { get; set; }
     
     public bool IsStarted { get; protected set; } = false;

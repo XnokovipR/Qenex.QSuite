@@ -54,5 +54,11 @@ public class ProjectZip
         return projectData;
     }
 
+    public static async Task ZipProjectFileAsync(string zipFilePath, RealProjectData realProjectData, ILogger? logger = null)
+    {
+        var prjZip = new Qenex.QSuite.Helpers.ProjectFile.ProjectZip(logger);
+        await prjZip.ZipModuleAsync(zipFilePath, realProjectData.Module);
+    }
+
     #endregion
 }
