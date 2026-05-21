@@ -20,6 +20,14 @@ namespace Qenex.QInsight.ViewModels;
 
 public partial class ShellWindowModel
 {
+    #region Fields
+
+    // if true, only elements with the specified tag condition will be saved/cleaned in layout saving/cleaning process.
+    // If false, elements with the specified tag condition will be excluded from layout saving/cleaning process.
+    bool requireSerializationTag = false;
+    
+    #endregion
+    
     #region Windows command Properties
    
     public RelayCommand<object> ShellWindowLocationChangedCommand { get; set; }
@@ -49,6 +57,8 @@ public partial class ShellWindowModel
     public RelayCommand<RadDocking> RibbonScriptsSettingsCommand { get; set; }
     
     public RelayCommand<RadDocking> RibbonSaveLayoutCommand { get; set; }
+    public RelayCommand<RadDocking> RibbonSaveWorkspaceLayoutCommand { get; set; }
+    
     
     public RelayCommand<object> RibbonAboutAppCommand { get; set; }
 
@@ -78,7 +88,15 @@ public partial class ShellWindowModel
 
         RibbonSaveLayoutCommand = new RelayCommand<RadDocking>(r =>
         {
+            requireSerializationTag = false;
             SaveLayout(r);
+        });
+        
+        RibbonSaveWorkspaceLayoutCommand = new RelayCommand<RadDocking>(r =>
+        {
+            requireSerializationTag = true;
+            SaveLayout(r,"ws");
+            requireSerializationTag = false;
         });
         
         RibbonAboutAppCommand = new RelayCommand<object>((o) =>
@@ -199,19 +217,39 @@ public partial class ShellWindowModel
     
     private void DockingElementLayoutSaving(LayoutSerializationSavingEventArgs e)
     {
-        var tag = e.AffectedElementSerializationTag;
-        if (tag.Contains("WorkspaceViewModel"))
+        CancelLayoutSavingByTagCondition(e, "WorkspaceViewModel", requireSerializationTag);
+        // var tag = e.AffectedElementSerializationTag;
+        // if (!tag.Contains("WorkspaceViewModel"))
+        // {
+        //     e.Cancel = true;
+        // }
+    }
+    
+    private void CancelLayoutSavingByTagCondition(LayoutSerializationSavingEventArgs eventArgs, string conditionString, bool reqSerializationTag)
+    {
+        var hasConditionString = eventArgs.AffectedElementSerializationTag.Contains(conditionString);
+        if (hasConditionString != reqSerializationTag)
         {
-            e.Cancel = true;
+            eventArgs.Cancel = true;
         }
     }
     
     private void DockingElementLayoutCleaning(LayoutSerializationCleaningEventArgs e)
     {
-        var tag = e.AffectedElementSerializationTag;
-        if (tag.Contains("WorkspaceViewModel"))
+        CancelLayoutSCleaningByTagCondition(e, "WorkspaceViewModel", requireSerializationTag);
+        // var tag = e.AffectedElementSerializationTag;
+        // if (!tag.Contains("WorkspaceViewModel"))
+        // {
+        //     e.Cancel = true;
+        // }
+    }
+
+    private void CancelLayoutSCleaningByTagCondition(LayoutSerializationCleaningEventArgs eventArgs, string conditionString, bool reqSerializationTag)
+    {
+        var hasConditionString = eventArgs.AffectedElementSerializationTag.Contains(conditionString);
+        if (hasConditionString != reqSerializationTag)
         {
-            e.Cancel = true;
+            eventArgs.Cancel = true;
         }
     }
 
@@ -418,9 +456,14 @@ public partial class ShellWindowModel
         }
     } 
 
-    private void SaveLayout(RadDocking radDocking)
+    private void SaveLayout(RadDocking radDocking, string? filePrep = null)
     {
         var settingsLayoutFile = IsRuntimeStarted ? runtimeSettingLayoutFile : editModeSettingLayoutFile;
+        if (filePrep != null)
+        {
+            settingsLayoutFile = $"{filePrep}_{settingsLayoutFile}";
+        }
+        
         try
         {
             using var stream = new FileStream(settingsLayoutFile, FileMode.Create);

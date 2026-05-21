@@ -133,6 +133,11 @@
 								Size="Large"
 								SmallImage="../Icons/QInsight.png"
 								Command="{Binding RibbonSaveLayoutCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+							<telerik:RadRibbonButton
+								Text="Save Workspace" 
+								Size="Large"
+								SmallImage="../Icons/QInsight.png"
+								Command="{Binding RibbonSaveWorkspaceLayoutCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
 
@@ -173,15 +178,15 @@
 					</telerik:RadSplitContainer>
 				</telerik:RadDocking.DocumentHost>
 				
-				<telerik:RadSplitContainer InitialPosition="DockedLeft">
+				<telerik:RadSplitContainer InitialPosition="DockedLeft" telerik:RadDocking.SerializationTag="DockedLeft">
 					<telerik:RadPaneGroup x:Name="LeftPaneGroup" telerik:RadDocking.SerializationTag="LeftPaneGroup"/>
 				</telerik:RadSplitContainer>
 				
-				<telerik:RadSplitContainer InitialPosition="DockedRight">
+				<telerik:RadSplitContainer InitialPosition="DockedRight" telerik:RadDocking.SerializationTag="DockedRight">
 					<telerik:RadPaneGroup x:Name="RightPaneGroup" telerik:RadDocking.SerializationTag="RightPaneGroup"/>
 				</telerik:RadSplitContainer>
 				
-				<telerik:RadSplitContainer InitialPosition="DockedBottom">
+				<telerik:RadSplitContainer InitialPosition="DockedBottom" telerik:RadDocking.SerializationTag="DockedBottom">
 					<telerik:RadPaneGroup x:Name="BottomPaneGroup" telerik:RadDocking.SerializationTag="BottomPaneGroup"/>
 				</telerik:RadSplitContainer>
 
