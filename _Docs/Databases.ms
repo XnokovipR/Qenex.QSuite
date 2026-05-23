@@ -1,0 +1,1 @@
+﻿docker run -d --name Qenex.PostgreSql -e TZ=Europe/Prague -e PGTZ=Europe/Prague -p 5432:5432 -e POSTGRES_PASSWORD=3u4yaVLP4fuAnR8hYX3tp9VQ -e POSTGRES_USER=admin -e POSTGRES_DB=qenex_db postgres
