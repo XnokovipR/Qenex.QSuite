@@ -68,7 +68,7 @@ public class XmlModuleHandler
         module.AddVariables(GetVariables(module.Presentations, xmlModule.Variables, module.VarEvents));
         
         // Add project drivers structure - including protocols and variables, presentations, conversions
-        module.AddDrivers(GetDrivers(driversDetails, protocolsDetails, module.Variables, module.VarEvents, xmlModule));
+        module.AddDrivers(GetDrivers(driversDetails, protocolsDetails, module.Variables, module.VarEvents, module.Scripting, xmlModule));
         
         return module;
     }
@@ -84,7 +84,7 @@ public class XmlModuleHandler
             Author = module.Specification.Author ?? string.Empty,
             Company = module.Specification.Company ?? string.Empty,
             CreatedOn = module.Specification.CreatedOn,
-            DriverReferences = GetXmlDriverReferences(module.Drivers),
+            DriverReferences = GetXmlDriverReferences(module.Drivers, module.Scripting),
             Drivers = GetXmlDrivers(module.Drivers),
             Protocols = GetXmlProtocols(module.Drivers.SelectMany(d => d.Protocols)),
             Presentations = GetXmlPresentations(module.Presentations),
@@ -95,7 +95,7 @@ public class XmlModuleHandler
         };
     }
 
-    private List<XmlDriverReference> GetXmlDriverReferences(IEnumerable<IDriverBase> drivers)
+    private List<XmlDriverReference> GetXmlDriverReferences(IEnumerable<IDriverBase> drivers, ScriptingContext scripting)
     {
         var xmlDriverReferences = new List<XmlDriverReference>();
 
@@ -108,7 +108,7 @@ public class XmlModuleHandler
                 IsEnabled = driver.IsEnabled,
                 Settings = driver.RawSettings,
                 EncryptedSettings = driver.RawEncryptedSettings,
-                ProtocolReferences = GetXmlProtocolReferences(driver.Protocols)
+                ProtocolReferences = GetXmlProtocolReferences(driver.Protocols, scripting)
             });
         }
 
@@ -128,7 +128,7 @@ public class XmlModuleHandler
             .ToList();
     }
 
-    private List<XmlProtocolReference> GetXmlProtocolReferences(IEnumerable<IProtocolBase> protocols)
+    private List<XmlProtocolReference> GetXmlProtocolReferences(IEnumerable<IProtocolBase> protocols, ScriptingContext scripting)
     {
         var xmlProtocolReferences = new List<XmlProtocolReference>();
 
@@ -140,7 +140,7 @@ public class XmlModuleHandler
                 IsEnabled = protocol.IsEnabled,
                 Settings = protocol.RawSettings,
                 EncryptedSettings = protocol.RawEncryptedSettings,
-                VariableReferences = GetXmlVariableReferences(protocol.Variables)
+                VariableReferences = GetXmlVariableReferences(protocol.Variables, scripting)
             });
         }
 
@@ -166,13 +166,20 @@ public class XmlModuleHandler
             .ToList();
     }
 
-    private List<XmlVariableReferenceBase> GetXmlVariableReferences(IEnumerable<IProtocolVariable> protocolVariables)
+    private List<XmlVariableReferenceBase> GetXmlVariableReferences(IEnumerable<IProtocolVariable> protocolVariables, ScriptingContext scripting)
     {
         return protocolVariables.Select(protocolVariable => new XmlVariableReference
         {
             Ref = protocolVariable.Variable.Id,
             IsCommunicated = protocolVariable.IsCommunicated,
-            CommParam = GetCommParam(protocolVariable.ProtocolVariableSpecification)
+            CommParam = GetCommParam(protocolVariable.ProtocolVariableSpecification),
+            Scripts = scripting.GetOnValueChangedScriptTriggers(protocolVariable.Variable.Id)
+                .Select(trigger => new XmlScriptReference
+                {
+                    Ref = trigger.ScriptFileName,
+                    AdditionalInfo = trigger.AdditionalInfo
+                })
+                .ToList()
         }).Cast<XmlVariableReferenceBase>().ToList();
     }
 
@@ -566,7 +573,7 @@ public class XmlModuleHandler
         return values;
     }
 
-    private List<IDriverBase> GetDrivers(IList<PluginDetails> driversDetails, IList<PluginDetails> protocolsdetails, IList<IVariableBase> variables, IList<IVarEvent> varEvents, XmlModule xmlModule)
+    private List<IDriverBase> GetDrivers(IList<PluginDetails> driversDetails, IList<PluginDetails> protocolsdetails, IList<IVariableBase> variables, IList<IVarEvent> varEvents, ScriptingContext scripting, XmlModule xmlModule)
     {
         var tempDrivers = new List<IDriverBase>();
         
@@ -604,7 +611,7 @@ public class XmlModuleHandler
             driver.RawSettings = driverRef.Settings;
             driver.RawEncryptedSettings = driverRef.EncryptedSettings;
             driver.SetConfiguration();
-            driver.AddProtocols(GetProtocols(protocolsdetails, variables, varEvents, driverRef.ProtocolReferences, xmlModule));
+            driver.AddProtocols(GetProtocols(protocolsdetails, variables, varEvents, scripting, driverRef.ProtocolReferences, xmlModule));
             
             
             tempDrivers.Add(driver);
@@ -613,7 +620,7 @@ public class XmlModuleHandler
         return tempDrivers;
     }
     
-    private IList<IProtocolBase> GetProtocols(IList<PluginDetails> protocolsDetails, IList<IVariableBase> variables, IList<IVarEvent> varEvents, IList<XmlProtocolReference> xmlProtocolReferences, XmlModule xmlModule)
+    private IList<IProtocolBase> GetProtocols(IList<PluginDetails> protocolsDetails, IList<IVariableBase> variables, IList<IVarEvent> varEvents, ScriptingContext scripting, IList<XmlProtocolReference> xmlProtocolReferences, XmlModule xmlModule)
     {
         var tempProtocols = new List<IProtocolBase>();
         
@@ -669,6 +676,11 @@ public class XmlModuleHandler
                 
                 protocolVariable.IsCommunicated = variableRef.IsCommunicated;
                 protocol.AddVariable(protocolVariable);
+
+                foreach (var scriptRef in variableRef.Scripts)
+                {
+                    scripting.AddOnValueChangedScriptTrigger(variable.Id, scriptRef.Ref, scriptRef.AdditionalInfo);
+                }
             }
             
             protocol.IsEnabled = protocolRef.IsEnabled;

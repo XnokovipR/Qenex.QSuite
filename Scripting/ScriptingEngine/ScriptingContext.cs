@@ -1,4 +1,5 @@
 ﻿using Python.Runtime;
+using System.Globalization;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Scripting.Script;
 using Qenex.QSuite.Variables.QVariables;
@@ -13,6 +14,7 @@ public class ScriptingContext
     private PythonLogWriter stderrWriter = null!;
     private CancellationTokenSource? periodicScriptsCts;
     private readonly List<Task> periodicScriptTasks = [];
+    private readonly Dictionary<int, double> lastOnValueChangedValues = [];
     private static readonly object pythonInitLock = new();
     private static bool pythonRuntimeInitialized;
     
@@ -23,6 +25,7 @@ public class ScriptingContext
         logger = log;
         pythonFactory = new TaskFactory(new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler);
         VariableBindings = [];
+        OnValueChangedScriptTriggers = [];
         EngineSettings = settings ?? throw new ArgumentNullException(nameof(settings));
         Scripts = new List<IScriptBase>();
     }
@@ -33,6 +36,7 @@ public class ScriptingContext
     
     public IList<IScriptBase> Scripts { get; set; }
     public IList<VariableBinding> VariableBindings { get; set; }
+    public IList<OnValueChangedScriptTrigger> OnValueChangedScriptTriggers { get; set; }
     public ScriptEngineSettings EngineSettings { get; set; }
     public PyModule? SharedScope { get; internal set; }
     public event EventHandler<ScriptExecutedEventArgs>? ScriptExecuted;
@@ -48,6 +52,8 @@ public class ScriptingContext
     private void InitializeSharedScope(IList<IVariableBase> variables)
     {
         EnsurePythonRuntimeInitialized();
+        VariableBindings.Clear();
+        lastOnValueChangedValues.Clear();
         
         var variablesById = variables.ToDictionary(v => v.Id);
         foreach (var varById in variablesById)
@@ -168,6 +174,41 @@ public class ScriptingContext
         Scripts.Remove(script);
     }
 
+    public void AddOnValueChangedScriptTrigger(int variableId, string scriptFileName, string additionalInfo)
+    {
+        if (string.IsNullOrWhiteSpace(scriptFileName))
+        {
+            logger?.Log(LogLevel.Warn, $"OnValueChanged script trigger for variable {variableId} has empty script reference.");
+            return;
+        }
+
+        if (OnValueChangedScriptTriggers.Any(t =>
+                t.VariableId == variableId &&
+                t.ScriptFileName == scriptFileName &&
+                t.AdditionalInfo == additionalInfo))
+        {
+            return;
+        }
+
+        OnValueChangedScriptTriggers.Add(new OnValueChangedScriptTrigger(variableId, scriptFileName, additionalInfo));
+    }
+
+    public IEnumerable<OnValueChangedScriptTrigger> GetOnValueChangedScriptTriggers(int variableId)
+    {
+        return OnValueChangedScriptTriggers.Where(t => t.VariableId == variableId);
+    }
+
+    public bool HasOnValueChangedScriptTriggers(int variableId)
+    {
+        return OnValueChangedScriptTriggers.Any(t => t.VariableId == variableId);
+    }
+
+    public Task HandleVariableValueChangedAsync(IVariableBase variable)
+    {
+        var value = variable.GetValue();
+        return pythonFactory.StartNew(() => HandleVariableValueChanged(variable.Id, variable.Name, value));
+    }
+
     private void ExecuteScripts(ScriptExecutionMode scriptMode)
     {
         var scripts = Scripts.Where(s => s.ExecutionMode == scriptMode);
@@ -177,7 +218,7 @@ public class ScriptingContext
         }
     }
 
-    private void ExecuteScript(IScriptBase script)
+    private void ExecuteScript(IScriptBase script, Action? beforeExecute = null)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         script.RunState = ScriptRunState.Running;
@@ -186,6 +227,7 @@ public class ScriptingContext
         {
             using (Py.GIL())
             {
+                beforeExecute?.Invoke();
                 SharedScope!.Exec(script.Content);
             }
 
@@ -206,6 +248,99 @@ public class ScriptingContext
             stopwatch.Stop();
             script.LastExecutionDurationMs = stopwatch.Elapsed.TotalMilliseconds;
             OnScriptExecuted(script);
+        }
+    }
+
+    private void HandleVariableValueChanged(int variableId, string variableName, object value)
+    {
+        if (!TryConvertToDouble(value, out var newValue))
+        {
+            logger?.Log(LogLevel.Warn, $"OnValueChanged script trigger for variable \"{variableName}\" skipped because value \"{value}\" is not numeric.");
+            return;
+        }
+
+        if (!lastOnValueChangedValues.TryGetValue(variableId, out var oldValue))
+        {
+            lastOnValueChangedValues[variableId] = newValue;
+            return;
+        }
+
+        // lastOnValueChangedValues[variableId] = newValue;
+        var delta = Math.Abs(newValue - oldValue);
+
+        foreach (var trigger in GetOnValueChangedScriptTriggers(variableId))
+        {
+            if (!TryGetOnValueChangedThreshold(trigger, out var threshold))
+            {
+                continue;
+            }
+
+            if (delta <= threshold)
+            {
+                continue;
+            }
+
+            ExecuteOnValueChangedScript(trigger, variableName, oldValue, newValue, delta);
+            lastOnValueChangedValues[variableId] = newValue;
+        }
+    }
+
+    private void ExecuteOnValueChangedScript(OnValueChangedScriptTrigger trigger, string variableName, double oldValue, double newValue, double delta)
+    {
+        var script = Scripts.FirstOrDefault(s => s.FileName == trigger.ScriptFileName);
+        if (script == null)
+        {
+            logger?.Log(LogLevel.Warn, $"OnValueChanged script \"{trigger.ScriptFileName}\" was not found.");
+            return;
+        }
+
+        if (script.ExecutionMode != ScriptExecutionMode.OnValueChanged)
+        {
+            logger?.Log(LogLevel.Warn, $"Script \"{script.FileName}\" is referenced by an OnValueChanged trigger but has execution mode {script.ExecutionMode}.");
+            return;
+        }
+
+        ExecuteScript(script, () =>
+        {
+            SharedScope!.Set("qenex_trigger_variable_id", trigger.VariableId);
+            SharedScope.Set("qenex_trigger_variable_name", variableName);
+            SharedScope.Set("qenex_trigger_old_value", oldValue);
+            SharedScope.Set("qenex_trigger_new_value", newValue);
+            SharedScope.Set("qenex_trigger_delta", delta);
+        });
+    }
+
+    private bool TryGetOnValueChangedThreshold(OnValueChangedScriptTrigger trigger, out double threshold)
+    {
+        threshold = 0;
+        var settings = ParseAdditionalInfo(trigger.AdditionalInfo);
+
+        if (!settings.TryGetValue("threshold", out var thresholdText) || string.IsNullOrWhiteSpace(thresholdText))
+        {
+            return true;
+        }
+
+        if (double.TryParse(thresholdText, NumberStyles.Float, CultureInfo.InvariantCulture, out threshold))
+        {
+            threshold = Math.Abs(threshold);
+            return true;
+        }
+
+        logger?.Log(LogLevel.Warn, $"OnValueChanged script \"{trigger.ScriptFileName}\" has invalid threshold setting \"{thresholdText}\".");
+        return false;
+    }
+
+    private static bool TryConvertToDouble(object value, out double result)
+    {
+        try
+        {
+            result = Convert.ToDouble(value, CultureInfo.InvariantCulture);
+            return true;
+        }
+        catch
+        {
+            result = 0;
+            return false;
         }
     }
 

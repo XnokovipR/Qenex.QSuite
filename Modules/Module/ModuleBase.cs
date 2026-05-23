@@ -16,6 +16,7 @@ namespace Qenex.QSuite.Modules.Module;
 
 public abstract class ModuleBase : IModuleBase
 {
+    private readonly List<(IProtocolVariable ProtocolVariable, Func<IProtocolVariable, Task> Handler)> onValueChangedScriptSubscriptions = [];
 
     #region Constructors
 
@@ -246,12 +247,14 @@ public abstract class ModuleBase : IModuleBase
     public virtual async Task StartAsync(CancellationToken ct = default)
     {
         await Scripting.InitializeSharedScopeAsync(Variables);
+        SubscribeOnValueChangedScriptTriggers();
         var tasks = Drivers.Select(driver => driver.StartAsync(ct));
         await Task.WhenAll(tasks);
     }
 
     public virtual async Task StopAsync(CancellationToken ct = default)
     {
+        UnsubscribeOnValueChangedScriptTriggers();
         await Scripting.DisposeSharedScopeAsync();
         var tasks = Drivers.Select(driver => driver.StopAsync(ct));
         await Task.WhenAll(tasks);
@@ -266,5 +269,34 @@ public abstract class ModuleBase : IModuleBase
     }
 
     #endregion
+
+    private void SubscribeOnValueChangedScriptTriggers()
+    {
+        UnsubscribeOnValueChangedScriptTriggers();
+
+        foreach (var protocolVariable in Drivers.SelectMany(driver => driver.Protocols).SelectMany(protocol => protocol.Variables))
+        {
+            if (!Scripting.HasOnValueChangedScriptTriggers(protocolVariable.Variable.Id))
+            {
+                continue;
+            }
+
+            Func<IProtocolVariable, Task> handler = changedProtocolVariable =>
+                Scripting.HandleVariableValueChangedAsync(changedProtocolVariable.Variable);
+
+            protocolVariable.SubscribeAsyncValueChanged(handler);
+            onValueChangedScriptSubscriptions.Add((protocolVariable, handler));
+        }
+    }
+
+    private void UnsubscribeOnValueChangedScriptTriggers()
+    {
+        foreach (var subscription in onValueChangedScriptSubscriptions)
+        {
+            subscription.ProtocolVariable.UnsubscribeAsyncValueChanged(subscription.Handler);
+        }
+
+        onValueChangedScriptSubscriptions.Clear();
+    }
     
 }
