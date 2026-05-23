@@ -1,0 +1,9 @@
+﻿Python scripts 
+    - on value change
+    
+Save project
+    - save workspaces including controls with connections to variables
+    
+Log data
+
+Real communication with HW

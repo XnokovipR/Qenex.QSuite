@@ -105,8 +105,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimDataDriver", "Drivers\Si
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Docs", "_Docs", "{13E43C71-CABE-41C2-AAFF-D1187A145C10}"
 	ProjectSection(SolutionItems) = preProject
-		_Docs\QSuite_Controls.md = _Docs\QSuite_Controls.md
-		_Docs\QSuite_Todo.md = _Docs\QSuite_Todo.md
+		_Docs\QSuite_ToDoTasks.txt = _Docs\QSuite_ToDoTasks.txt
+		_Docs\Databases.ms = _Docs\Databases.ms
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Helpers", "Helpers", "{B7F7DBA0-5B21-4833-9ADC-C0158CBC6268}"
@@ -136,9 +136,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GraphControl", "Controls\GraphControl\GraphControl.csproj", "{BAF75EAA-57DF-4F1A-A3F7-15207E0243C5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scripting", "Scripting", "{1D625907-6616-458F-8DB2-3D5EE476CF95}"
-	ProjectSection(SolutionItems) = preProject
-		Scripting\AGENTS.md = Scripting\AGENTS.md
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InpBindingManager", "Common\InpBindingManager\InpBindingManager.csproj", "{204DC97F-7782-484B-8F62-9262E969E7FB}"
 EndProject
