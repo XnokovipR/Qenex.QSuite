@@ -10,30 +10,30 @@
              d:DesignHeight="300" d:DesignWidth="300"
              d:DataContext="{d:DesignInstance vm:ScriptVariablesSettingsViewModel, IsDesignTimeCreatable=False}">
     <Grid AllowDrop="False">
-        <telerik:RadGridView
-            AllowDrop="False"
-            ItemsSource="{Binding LogMessages}"
-            ShowGroupPanel="False" 
-            AutoGenerateColumns="False"
-            RowStyleSelector="{StaticResource LogLevelStyleSelector}"
-            RowIndicatorVisibility="Collapsed">
-
-            <telerik:RadGridView.SortDescriptors>
-                <telerik:SortDescriptor Member="Timestamp" SortDirection="Descending"/>
-            </telerik:RadGridView.SortDescriptors>
-
-            <telerik:RadGridView.ContextMenu>
-                <ContextMenu>
-                    <MenuItem Header="Clear All" Command="{Binding ClearLogCommand}"/>
-                </ContextMenu>
-            </telerik:RadGridView.ContextMenu>
-
-            <telerik:RadGridView.Columns>
-                <telerik:GridViewDataColumn Width="160" Header="Timestamp" DataMemberBinding="{Binding Path=Timestamp, StringFormat=yyyy/MM/dd HH:mm:ss.fff}" IsReadOnly="True"/>
-                <telerik:GridViewDataColumn Width="100" Header="Level" DataMemberBinding="{Binding Level}" IsReadOnly="True"/>
-                <telerik:GridViewDataColumn Header="Message" DataMemberBinding="{Binding Message}" IsReadOnly="True" Width="*"/>
-            </telerik:RadGridView.Columns>
-
-        </telerik:RadGridView>
+        <!-- <telerik:RadGridView -->
+        <!--     AllowDrop="False" -->
+        <!--     ItemsSource="{Binding LogMessages}" -->
+        <!--     ShowGroupPanel="False"  -->
+        <!--     AutoGenerateColumns="False" -->
+        <!--     RowStyleSelector="{StaticResource LogLevelStyleSelector}" -->
+        <!--     RowIndicatorVisibility="Collapsed"> -->
+        <!-- -->
+        <!--     <telerik:RadGridView.SortDescriptors> -->
+        <!--         <telerik:SortDescriptor Member="Timestamp" SortDirection="Descending"/> -->
+        <!--     </telerik:RadGridView.SortDescriptors> -->
+        <!-- -->
+        <!--     <telerik:RadGridView.ContextMenu> -->
+        <!--         <ContextMenu> -->
+        <!--             <MenuItem Header="Clear All" Command="{Binding ClearLogCommand}"/> -->
+        <!--         </ContextMenu> -->
+        <!--     </telerik:RadGridView.ContextMenu> -->
+        <!-- -->
+        <!--     <telerik:RadGridView.Columns> -->
+        <!--         <telerik:GridViewDataColumn Width="160" Header="Timestamp" DataMemberBinding="{Binding Path=Timestamp, StringFormat=yyyy/MM/dd HH:mm:ss.fff}" IsReadOnly="True"/> -->
+        <!--         <telerik:GridViewDataColumn Width="100" Header="Level" DataMemberBinding="{Binding Level}" IsReadOnly="True"/> -->
+        <!--         <telerik:GridViewDataColumn Header="Message" DataMemberBinding="{Binding Message}" IsReadOnly="True" Width="*"/> -->
+        <!--     </telerik:RadGridView.Columns> -->
+        <!-- -->
+        <!-- </telerik:RadGridView> -->
     </Grid>
 </UserControl>
