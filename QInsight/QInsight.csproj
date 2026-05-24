@@ -101,6 +101,10 @@
     <Resource Include="Icons\Menu\ScriptSettings.png" />
     <None Remove="Icons\Menu\ScriptVariablesSettings.png" />
     <Resource Include="Icons\Menu\ScriptVariablesSettings.png" />
+    <None Remove="Icons\Menu\SaveProject.png" />
+    <Resource Include="Icons\Menu\SaveProject.png" />
+    <None Remove="Icons\Menu\SaveProjectAs.png" />
+    <Resource Include="Icons\Menu\SaveProjectAs.png" />
   </ItemGroup>
 
   <ItemGroup>
