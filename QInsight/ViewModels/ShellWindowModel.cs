@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +21,8 @@ namespace Qenex.QInsight.ViewModels;
 public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 {
 	#region Private
+
+	private const string AppTitle = "QInsight";
 
 	internal static readonly IHighlightingDefinition PythonHighlighting  = SyntaxHighlighting.LoadPythonHighlighting(ShellWindow.IsDarkTheme);
 	
@@ -65,6 +68,12 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	#region Properties
 
 	public bool IsRuntimeStarted { get; set; } = false;
+
+	public string WindowTitle
+	{
+		get;
+		set { field = value; OnPropertyChanged(); }
+	} = AppTitle;
 
 	public LogsViewModel LogsViewModel
 	{
@@ -112,6 +121,17 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	private void SetDefaultPropertiesView()
 	{
 		propertiesViewModel.SelectedViewModel = new EmptyPropertiesViewModel(eventAggregator);
+	}
+
+	private void SetProjectWindowTitle(string? projectFilePath)
+	{
+		if (string.IsNullOrWhiteSpace(projectFilePath))
+		{
+			WindowTitle = AppTitle;
+			return;
+		}
+
+		WindowTitle = $"{AppTitle} - {Path.GetFileNameWithoutExtension(projectFilePath)}";
 	}
 
 	#endregion

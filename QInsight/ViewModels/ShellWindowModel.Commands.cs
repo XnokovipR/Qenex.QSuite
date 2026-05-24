@@ -296,6 +296,7 @@ public partial class ShellWindowModel
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
                 
             currentProjectFilePath = Path.GetFullPath(filePath);
+            SetProjectWindowTitle(currentProjectFilePath);
             ChangeIsProjectMade(true);
             logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\" opened.");
                 
@@ -348,6 +349,7 @@ public partial class ShellWindowModel
             if (saved)
             {
                 currentProjectFilePath = Path.GetFullPath(dlg.FileName);
+                SetProjectWindowTitle(currentProjectFilePath);
             }
         }
     }
@@ -449,6 +451,7 @@ public partial class ShellWindowModel
             
             realProjectData = null!;
             currentProjectFilePath = null;
+            SetProjectWindowTitle(currentProjectFilePath);
             ChangeIsProjectMade(false);
             
             ScriptLogsViewModel.ClearLog();
