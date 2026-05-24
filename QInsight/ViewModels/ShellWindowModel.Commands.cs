@@ -46,6 +46,7 @@ public partial class ShellWindowModel
 
     public RelayCommandAsync<RadDocking> RibbonOpenProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonSaveProjectCommand { get; set; }
+    public RelayCommandAsync<RadDocking> RibbonSaveProjectAsCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonCloseProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonAddWorkspaceCommand { get; set; }
     public RelayCommand<RadDocking> RibbonRemoveWorkspaceCommand { get; set; }
@@ -76,6 +77,7 @@ public partial class ShellWindowModel
         
         RibbonOpenProjectCommand = new RelayCommandAsync<RadDocking>(OpenProjectAsync);
         RibbonSaveProjectCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsync);
+        RibbonSaveProjectAsCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsAsync);
         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(async (d) => await Task.CompletedTask);
         RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync);
         RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace);
@@ -293,6 +295,7 @@ public partial class ShellWindowModel
             realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, ShellWindow.MainAppSettings.ScriptEngine, logger);
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
                 
+            currentProjectFilePath = Path.GetFullPath(filePath);
             ChangeIsProjectMade(true);
             logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\" opened.");
                 
@@ -305,6 +308,29 @@ public partial class ShellWindowModel
     
     private async Task SaveProjectAsync(object obj)
     {
+        if (!isProjectMade)
+        {
+            logger.Log(LogLevel.Warn, "No project to save.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentProjectFilePath))
+        {
+            await SaveProjectAsAsync(obj);
+            return;
+        }
+
+        await SaveProjectFileAsync(currentProjectFilePath);
+    }
+    
+    private async Task SaveProjectAsAsync(object obj)
+    {
+        if (!isProjectMade)
+        {
+            logger.Log(LogLevel.Warn, "No project to save.");
+            return;
+        }
+        
         var lastProjectPath = /*ShellWindow.MainAppSettings.LastProjectPath ??*/ Environment.CurrentDirectory;
         var dlg = new RadSaveFileDialog()
         {
@@ -318,23 +344,83 @@ public partial class ShellWindowModel
         
         if (dlg.DialogResult == true)
         {
-            await SaveProjectFileAsync(dlg.FileName);
+            var saved = await SaveProjectFileAsync(dlg.FileName);
+            if (saved)
+            {
+                currentProjectFilePath = Path.GetFullPath(dlg.FileName);
+            }
         }
     }
     
-    private async Task SaveProjectFileAsync(string filePath)
+    private async Task<bool> SaveProjectFileAsync(string filePath)
     {
+        var tempFilePath = GetTempProjectFilePath(filePath);
+        var hasProjectBackup = false;
+        
         try
         {
+            if (File.Exists(tempFilePath))
+            {
+                File.Delete(tempFilePath);
+            }
+            
+            if (File.Exists(filePath))
+            {
+                File.Move(filePath, tempFilePath);
+                hasProjectBackup = true;
+            }
+            
             await ProjectZip.ZipProjectFileAsync(filePath, realProjectData, logger);
                 
+            if (hasProjectBackup)
+            {
+                File.Delete(tempFilePath);
+            }
+            
             logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\" saved.");
+            return true;
                 
         }
         catch (Exception e)
         {
+            RestoreProjectFile(filePath, tempFilePath, hasProjectBackup);
             logger.Log(LogLevel.Error, e.Message);
+            return false;
         }        
+    }
+
+    private static string GetTempProjectFilePath(string filePath)
+    {
+        var directoryName = Path.GetDirectoryName(filePath);
+        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+        var extension = Path.GetExtension(filePath);
+        var tempFileName = $"{fileNameWithoutExtension}_temp{extension}";
+
+        return string.IsNullOrWhiteSpace(directoryName)
+            ? tempFileName
+            : Path.Combine(directoryName, tempFileName);
+    }
+
+    private void RestoreProjectFile(string filePath, string tempFilePath, bool hasProjectBackup)
+    {
+        if (!hasProjectBackup || !File.Exists(tempFilePath))
+        {
+            return;
+        }
+
+        try
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+
+            File.Move(tempFilePath, filePath);
+        }
+        catch (Exception restoreException)
+        {
+            logger.Log(LogLevel.Error, $"Project file \"{Path.GetFileName(filePath)}\" restore failed.", restoreException);
+        }
     }
 
     #endregion

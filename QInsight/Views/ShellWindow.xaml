@@ -65,6 +65,11 @@
 								SmallImage="../Icons/Menu/OpenProject.png"
 								Command="{Binding RibbonSaveProjectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 							<telerik:RadRibbonButton
+								Text="Save as" 
+								Size="Large"
+								SmallImage="../Icons/Menu/OpenProject.png"
+								Command="{Binding RibbonSaveProjectAsCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+							<telerik:RadRibbonButton
 	                            Text="Close" 
 	                            Size="Large"
 	                            SmallImage="../Icons/Menu/CloseProject.png"

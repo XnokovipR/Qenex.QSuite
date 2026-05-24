@@ -37,6 +37,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	// Project
 	private RealProjectData realProjectData;
 	private bool isProjectMade;
+	private string? currentProjectFilePath;
 
 	// ViewModels
 	private RadDocking shellRadDocking;
