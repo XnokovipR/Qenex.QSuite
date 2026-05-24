@@ -113,8 +113,8 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
             }
             else
             {
-                var a = defaultDriverProtocolVariables.Cast<ProtocolVariableWrapper>().First(v => v.ProtocolVariable.Variable.Label.Equals(draggedVariable.Label));
-                if (a is ProtocolVariableWrapper existingProtVarWrapper)
+                var protVarWrapper = defaultDriverProtocolVariables.Cast<ProtocolVariableWrapper>().First(v => v.ProtocolVariable.Variable.Label.Equals(draggedVariable.Label));
+                if (protVarWrapper is ProtocolVariableWrapper existingProtVarWrapper)
                 {
                     protVariable = existingProtVarWrapper.ProtocolVariable;
                 }
