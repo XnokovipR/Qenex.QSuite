@@ -99,7 +99,10 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
             var defaultEvent = (IVarEvent)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultEvent");
             var defaultProtocol = (ProtocolSeWrapper)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultProtocol");
             var defaultDriverProtocolVariables = (ObservableCollection<IViewableItem>)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultDriverProtocolVariables"); 
-            var chosenControl = (IControlBase)DragDropPayloadManager.GetDataFromObject(e.Data, "ChosenControl");
+            if (DragDropPayloadManager.GetDataFromObject(e.Data, "ChosenControl") is not IControlBase chosenControl)
+            {
+                return;
+            }
             
             // Add variable to Communicated Drivers
             IProtocolVariable? protVariable = null;
