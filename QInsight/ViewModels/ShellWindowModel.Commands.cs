@@ -508,7 +508,7 @@ public partial class ShellWindowModel
     
     private void RemoveWorkspace(RadDocking docking)
     {
-        if (docking.ActivePane is not QRadDocumentPane pane || !pane.Header.Equals("Workspace"))
+        if (docking.ActivePane is not QRadDocumentPane pane || pane.DataContext is not WorkspaceViewModel workspaceViewModel)
         {
             eventAggregator.Publish(new LogMessage(LogLevel.Warn, "No active workspace to remove."));
             return;
@@ -516,7 +516,7 @@ public partial class ShellWindowModel
         
         RadWindow.Confirm(new DialogParameters()
         {
-            Content = $"Do you want to remove workspace \"{pane.Header}\"?",
+            Content = $"Do you want to remove workspace \"{workspaceViewModel.WinTitle}\"?",
             Header = "Remove Workspace",
             Owner = Application.Current.MainWindow,
             DialogStartupLocation = WindowStartupLocation.CenterOwner,
@@ -524,7 +524,8 @@ public partial class ShellWindowModel
             {
                 if (arg.DialogResult != true) return;
                 
-                eventAggregator.Publish<RemoveWorkspaceFromMainMenuMsg>(new RemoveWorkspaceFromMainMenuMsg() { Name = pane.Name, Label = pane.Header.ToString()! });
+                eventAggregator.Publish<RemoveWorkspaceFromMainMenuMsg>(new RemoveWorkspaceFromMainMenuMsg() { Name = workspaceViewModel.Name, Label = workspaceViewModel.WinTitle });
+                ViewModels.Remove(workspaceViewModel);
                 pane.RemoveFromParent();
             }
         });
