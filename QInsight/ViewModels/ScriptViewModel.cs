@@ -2,6 +2,7 @@
 using System.Windows.Media;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Highlighting;
+using Qenex.QInsight.Models;
 using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QInsight.Views;
 using Qenex.QLibs.QUI;
@@ -18,7 +19,7 @@ public class ScriptViewModel : WorkspaceViewModelBase
         ForegroundColor = ShellWindow.ForegroundColor;
         BackgroundColor = ShellWindow.BackgroundColor;
         FontSize = ShellWindow.MainAppSettings.Design.FontSize + 1;
-        PyHighlighting = ShellWindowModel.PythonHighlighting;
+        PyHighlighting = SyntaxHighlighting.LoadPythonHighlighting(ShellWindow.IsDarkTheme);
         
         ScriptWrapper = s;
         Document = new TextDocument(ScriptWrapper.Content);

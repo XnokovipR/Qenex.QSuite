@@ -1,13 +1,19 @@
 <?xml version="1.0"?>
 <SyntaxDefinition name="Python" extensions=".py" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <!-- Edit Color foreground values to customize AvalonEdit Python highlighting for dark theme. -->
   <Color name="Comment" foreground="#6A9955" />
-  <Color name="String" foreground="#CE9178" />
-  <Color name="Keyword" foreground="#569CD6" fontWeight="bold" />
+  <Color name="String" foreground="#9CDCFE" />
+  <Color name="Keyword" foreground="#C586C0" />
   <Color name="BuiltinFunction" foreground="#DCDCAA" />
+  <Color name="FunctionCall" foreground="#DCDCAA" />
+  <Color name="Type" foreground="#4EC9B0" />
+  <Color name="Constant" foreground="#569CD6" />
   <Color name="Number" foreground="#B5CEA8" />
   <Color name="Decorator" foreground="#D7BA7D" />
   <Color name="ClassName" foreground="#4EC9B0" />
   <Color name="Self" foreground="#9CDCFE" fontStyle="italic" />
+  <Color name="EscapeSequence" foreground="#D7BA7D" />
+  <Color name="FormatSpecifier" foreground="#F44747" />
 
   <RuleSet>
     <Span color="Comment">
@@ -17,23 +23,33 @@
     <Span color="String" multiline="true">
       <Begin>"""</Begin>
       <End>"""</End>
+      <RuleSet>
+        <Rule color="EscapeSequence">\\.</Rule>
+        <Rule color="FormatSpecifier">%[a-zA-Z]</Rule>
+      </RuleSet>
     </Span>
     <Span color="String" multiline="true">
       <Begin>'''</Begin>
       <End>'''</End>
+      <RuleSet>
+        <Rule color="EscapeSequence">\\.</Rule>
+        <Rule color="FormatSpecifier">%[a-zA-Z]</Rule>
+      </RuleSet>
     </Span>
     <Span color="String">
       <Begin>"</Begin>
       <End>"</End>
       <RuleSet>
-        <Span begin="\\" end="." />
+        <Rule color="EscapeSequence">\\.</Rule>
+        <Rule color="FormatSpecifier">%[a-zA-Z]</Rule>
       </RuleSet>
     </Span>
     <Span color="String">
       <Begin>'</Begin>
       <End>'</End>
       <RuleSet>
-        <Span begin="\\" end="." />
+        <Rule color="EscapeSequence">\\.</Rule>
+        <Rule color="FormatSpecifier">%[a-zA-Z]</Rule>
       </RuleSet>
     </Span>
 
@@ -75,9 +91,27 @@
       <Word>while</Word>
       <Word>with</Word>
       <Word>yield</Word>
+    </Keywords>
+
+    <Keywords color="Constant">
       <Word>True</Word>
       <Word>False</Word>
       <Word>None</Word>
+    </Keywords>
+
+    <Keywords color="Type">
+      <Word>bool</Word>
+      <Word>bytes</Word>
+      <Word>complex</Word>
+      <Word>dict</Word>
+      <Word>float</Word>
+      <Word>frozenset</Word>
+      <Word>int</Word>
+      <Word>list</Word>
+      <Word>object</Word>
+      <Word>set</Word>
+      <Word>str</Word>
+      <Word>tuple</Word>
     </Keywords>
 
     <Keywords color="BuiltinFunction">
@@ -85,14 +119,6 @@
       <Word>range</Word>
       <Word>len</Word>
       <Word>type</Word>
-      <Word>int</Word>
-      <Word>float</Word>
-      <Word>str</Word>
-      <Word>list</Word>
-      <Word>dict</Word>
-      <Word>tuple</Word>
-      <Word>set</Word>
-      <Word>bool</Word>
       <Word>input</Word>
       <Word>open</Word>
       <Word>super</Word>
@@ -118,6 +144,10 @@
       <Word>self</Word>
       <Word>cls</Word>
     </Keywords>
+
+    <Rule color="FunctionCall">
+      \b[A-Za-z_][A-Za-z0-9_]*(?=\s*\()
+    </Rule>
 
     <Rule color="Number">
       \b0[xX][0-9a-fA-F]+\b|\b0[oO][0-7]+\b|\b0[bB][01]+\b|\b[0-9]+\.?[0-9]*([eE][+-]?[0-9]+)?\b

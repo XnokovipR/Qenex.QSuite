@@ -13,8 +13,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\PythonScriptDark.xshd" />
+    <None Remove="Resources\PythonScriptLight.xshd" />
     <EmbeddedResource Include="Resources\PythonScriptDark.xshd" />
     <EmbeddedResource Include="Resources\PythonScriptLight.xshd" />
+    <Content Include="Resources\PythonScriptDark.xshd">
+      <Link>SyntaxHighlighting\PythonScriptDark.xshd</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\PythonScriptLight.xshd">
+      <Link>SyntaxHighlighting\PythonScriptLight.xshd</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

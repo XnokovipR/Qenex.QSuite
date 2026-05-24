@@ -7,9 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using ICSharpCode.AvalonEdit.Highlighting;
 using Qenex.QInsight.AppConfig;
-using Qenex.QInsight.Models;
 using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.Views;
 using Qenex.QSuite.Common.PluginManager;
@@ -23,8 +21,6 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	#region Private
 
 	private const string AppTitle = "QInsight";
-
-	internal static readonly IHighlightingDefinition PythonHighlighting  = SyntaxHighlighting.LoadPythonHighlighting(ShellWindow.IsDarkTheme);
 	
 	private string runtimeSettingLayoutFile = "QInsightRuntimeSettings.xml";
 	private string editModeSettingLayoutFile = "QInsightEditSettings.xml";
