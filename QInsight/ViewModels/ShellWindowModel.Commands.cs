@@ -78,7 +78,7 @@ public partial class ShellWindowModel
         RibbonOpenProjectCommand = new RelayCommandAsync<RadDocking>(OpenProjectAsync);
         RibbonSaveProjectCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsync);
         RibbonSaveProjectAsCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsAsync);
-        RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(async (d) => await Task.CompletedTask);
+         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(CloseProjectAsync);
         RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync);
         RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace);
 
@@ -420,6 +420,73 @@ public partial class ShellWindowModel
         catch (Exception restoreException)
         {
             logger.Log(LogLevel.Error, $"Project file \"{Path.GetFileName(filePath)}\" restore failed.", restoreException);
+        }
+    }
+
+    private async Task CloseProjectAsync(object obj)
+    {
+        if (!isProjectMade)
+        {
+            logger.Log(LogLevel.Warn, "No project to close.");
+            return;
+        }
+
+        if (!await ConfirmCloseProjectAsync())
+        {
+            return;
+        }
+
+        try
+        {
+            if (IsRuntimeStarted)
+            {
+                await realProjectData.Module.StopAsync();
+                IsRuntimeStarted = false;
+            }
+            
+            await CloseProjectWorkspacesAsync();
+            solutionExplorerViewModel.DisposeAll();
+            
+            realProjectData = null!;
+            currentProjectFilePath = null;
+            ChangeIsProjectMade(false);
+            
+            ScriptLogsViewModel.ClearLog();
+            LogsViewModel.ClearLog();
+            SetDefaultPropertiesView();
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, e.Message);
+        }
+    }
+
+    private Task<bool> ConfirmCloseProjectAsync()
+    {
+        var closeConfirmed = new TaskCompletionSource<bool>();
+        RadWindow.Confirm(new DialogParameters()
+        {
+            Content = "Do you want to close current project?",
+            Header = "Close Project",
+            Owner = Application.Current.MainWindow,
+            DialogStartupLocation = WindowStartupLocation.CenterOwner,
+            Closed = (_, arg) => closeConfirmed.SetResult(arg.DialogResult == true)
+        });
+
+        return closeConfirmed.Task;
+    }
+
+    private async Task CloseProjectWorkspacesAsync()
+    {
+        var workspaceViewModels = ViewModels.Where(vm => vm is IWorkspaceViewModel).ToList();
+        foreach (var workspaceViewModelBase in workspaceViewModels)
+        {
+            if (workspaceViewModelBase is IWorkspaceViewModel workspaceViewModel)
+            {
+                await workspaceViewModel.CleanAsync();
+            }
+            
+            ViewModels.Remove(workspaceViewModelBase);
         }
     }
 

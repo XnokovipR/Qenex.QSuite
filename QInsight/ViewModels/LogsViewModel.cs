@@ -15,7 +15,7 @@ public class LogsViewModel : ViewModelBase, ILogSubscriber
         EventAggregator.SubscribeAction<LogMessage>(Log);
         LogMessages = [];
         
-        ClearLogCommand = new RelayCommand<object>(_ => LogMessages.Clear());
+        ClearLogCommand = new RelayCommand<object>(_ => ClearLog());
 	}
 
     #region Properties
@@ -37,6 +37,18 @@ public class LogsViewModel : ViewModelBase, ILogSubscriber
     #endregion
     
     #region ILogger implementation
+
+    public void ClearLog()
+    {
+        if (dispatcher.CheckAccess())
+        {
+            LogMessages.Clear();
+        }
+        else
+        {
+            dispatcher.BeginInvoke(LogMessages.Clear);
+        }
+    }
 
     public void Log(ILogMessage message)
     {

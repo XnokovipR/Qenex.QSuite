@@ -19,8 +19,7 @@ public class ScriptLogsViewModel : ViewModelBase, ILogSubscriber
         
         ClearLogCommand = new RelayCommand<object>(_ =>
         {
-            logBuilder.Clear();
-            LogText = string.Empty;
+            ClearLog();
         });
     }
 
@@ -46,6 +45,18 @@ public class ScriptLogsViewModel : ViewModelBase, ILogSubscriber
     
     #region ILogger implementation
 
+    public void ClearLog()
+    {
+        if (dispatcher.CheckAccess())
+        {
+            ClearLogCore();
+        }
+        else
+        {
+            dispatcher.BeginInvoke(ClearLogCore);
+        }
+    }
+
     public void Log(ILogMessage message)
     {
         if (message.Level != LogLevel.Script) return;
@@ -69,6 +80,12 @@ public class ScriptLogsViewModel : ViewModelBase, ILogSubscriber
     {
         logBuilder.AppendLine($"{msg.Timestamp:HH:mm:ss.fff}   {msg.Message}");
         LogText = logBuilder.ToString();
+    }
+
+    private void ClearLogCore()
+    {
+        logBuilder.Clear();
+        LogText = string.Empty;
     }
 
     #endregion

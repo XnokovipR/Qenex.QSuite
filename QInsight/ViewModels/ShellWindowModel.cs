@@ -105,7 +105,13 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		ViewModels.Add(ScriptLogsViewModel);
 
 		propertiesViewModel = new PropertiesViewModel(eventAggregator);
+		SetDefaultPropertiesView();
 		ViewModels.Add(propertiesViewModel);
+	}
+
+	private void SetDefaultPropertiesView()
+	{
+		propertiesViewModel.SelectedViewModel = new EmptyPropertiesViewModel(eventAggregator);
 	}
 
 	#endregion

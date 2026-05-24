@@ -117,6 +117,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     public void DisposeAll()
     {
         ProjectModules.Clear();
+        Workspaces = null;
         realProjectData = null!;
     }
 
