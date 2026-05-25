@@ -18,6 +18,8 @@
     <telerik:RadDiagram
         Name="RadDiagram"
         IsZoomEnabled="False"
+        ScrollViewer.HorizontalScrollBarVisibility="Auto"
+        ScrollViewer.VerticalScrollBarVisibility="Auto"
         primitives:BackgroundGrid.IsDynamic="True"
         IsSnapToGridEnabled="{Binding IsSnapToGridEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
         Background="{Binding BackgroundColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
