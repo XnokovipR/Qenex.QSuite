@@ -20,6 +20,9 @@ public class ProjectFilesData
     #region Project file properties
 
     public XmlModule Module { get; set; } = null!;
+    public List<WorkspaceProjectData> Workspaces { get; set; } = [];
+    public List<ScriptDocumentProjectData> ScriptDocuments { get; set; } = [];
+    public byte[]? WorkspaceLayout { get; set; }
 
     #endregion
 }

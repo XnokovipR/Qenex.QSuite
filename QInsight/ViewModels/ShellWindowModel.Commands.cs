@@ -1,8 +1,10 @@
 ﻿using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Models.Project;
+using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QInsight.Views;
 using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.TelerikDocking;
@@ -292,8 +294,14 @@ public partial class ShellWindowModel
                 return;
             }
 
+            await CloseProjectWorkspacesAsync();
             realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, ShellWindow.MainAppSettings.ScriptEngine, logger);
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
+            LoadProjectWorkspaces(projectData.Workspaces);
+            LoadProjectScriptDocuments(projectData.ScriptDocuments);
+            await Application.Current.Dispatcher.InvokeAsync(
+                () => LoadWorkspaceLayoutFromData(projectData.WorkspaceLayout),
+                DispatcherPriority.ApplicationIdle);
                 
             currentProjectFilePath = Path.GetFullPath(filePath);
             SetProjectWindowTitle(currentProjectFilePath);
@@ -372,7 +380,10 @@ public partial class ShellWindowModel
                 hasProjectBackup = true;
             }
             
-            await ProjectZip.ZipProjectFileAsync(filePath, realProjectData, logger);
+            var workspaces = CreateWorkspaceProjectData();
+            var scriptDocuments = CreateScriptDocumentProjectData();
+            using var workspaceLayoutStream = CreateWorkspaceLayoutStream(shellRadDocking);
+            await ProjectZip.ZipProjectFileAsync(filePath, realProjectData, workspaces, scriptDocuments, workspaceLayoutStream, logger);
                 
             if (hasProjectBackup)
             {
@@ -508,6 +519,44 @@ public partial class ShellWindowModel
 
         await Task.CompletedTask;
     }
+
+    private void LoadProjectWorkspaces(IEnumerable<WorkspaceProjectData> workspaces)
+    {
+        foreach (var workspace in workspaces)
+        {
+            var workspaceViewModel = new WorkspaceViewModel(eventAggregator)
+            {
+                Name = workspace.Name,
+                WinTitle = workspace.WinTitle
+            };
+
+            ViewModels.Add(workspaceViewModel);
+            eventAggregator.Publish(new AddWorkspaceEaMsg() { WorkspaceViewModel = workspaceViewModel });
+        }
+    }
+
+    private void LoadProjectScriptDocuments(IEnumerable<ScriptDocumentProjectData> scriptDocuments)
+    {
+        foreach (var scriptDocument in scriptDocuments)
+        {
+            var script = realProjectData.Module.Scripting.Scripts.FirstOrDefault(script =>
+                script.FileName.Equals(scriptDocument.FileName, StringComparison.OrdinalIgnoreCase));
+
+            if (script == null)
+            {
+                logger.Log(LogLevel.Warn, $"Script document \"{scriptDocument.FileName}\" was not found in project.");
+                continue;
+            }
+
+            var scriptWrapper = new ScriptWrapper(script, realProjectData.Module.Scripting);
+            var scriptViewModel = new ScriptViewModel(eventAggregator, scriptWrapper)
+            {
+                Name = scriptDocument.Name
+            };
+
+            ViewModels.Add(scriptViewModel);
+        }
+    }
     
     private void RemoveWorkspace(RadDocking docking)
     {
@@ -613,6 +662,30 @@ public partial class ShellWindowModel
         }
     } 
 
+    private void LoadWorkspaceLayoutFromData(byte[]? workspaceLayoutData)
+    {
+        if (workspaceLayoutData == null || workspaceLayoutData.Length == 0)
+        {
+            return;
+        }
+
+        var previousRequireSerializationTag = requireSerializationTag;
+        try
+        {
+            requireSerializationTag = true;
+            using var stream = new MemoryStream(workspaceLayoutData);
+            shellRadDocking.LoadLayout(stream);
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Warn, "Open workspace layout from project file failed.", e);
+        }
+        finally
+        {
+            requireSerializationTag = previousRequireSerializationTag;
+        }
+    }
+
     private void SaveLayout(RadDocking radDocking, string? filePrep = null)
     {
         var settingsLayoutFile = IsRuntimeStarted ? runtimeSettingLayoutFile : editModeSettingLayoutFile;
@@ -632,6 +705,40 @@ public partial class ShellWindowModel
         catch (Exception e)
         {
             logger.Log(LogLevel.Error, $"Save settings file {settingsLayoutFile} failed.", e);
+        }
+    }
+
+    private List<WorkspaceProjectData> CreateWorkspaceProjectData()
+    {
+        return ViewModels
+            .OfType<WorkspaceViewModel>()
+            .Select(WorkspaceProjectData.FromWorkspace)
+            .ToList();
+    }
+
+    private List<ScriptDocumentProjectData> CreateScriptDocumentProjectData()
+    {
+        return ViewModels
+            .OfType<ScriptViewModel>()
+            .Select(ScriptDocumentProjectData.FromScriptViewModel)
+            .ToList();
+    }
+
+    private MemoryStream CreateWorkspaceLayoutStream(RadDocking radDocking)
+    {
+        var stream = new MemoryStream();
+        var previousRequireSerializationTag = requireSerializationTag;
+
+        try
+        {
+            requireSerializationTag = true;
+            radDocking.SaveLayout(stream);
+            stream.Position = 0;
+            return stream;
+        }
+        finally
+        {
+            requireSerializationTag = previousRequireSerializationTag;
         }
     }
 
