@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "Qenex.QSuite.Variables.VariableEvents/1.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Variables.VariableEvents.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Qenex.QSuite.Variables.VariableEvents/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

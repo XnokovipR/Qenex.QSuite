@@ -17,6 +17,7 @@ namespace Qenex.QSuite.Modules.Module;
 public abstract class ModuleBase : IModuleBase
 {
     private readonly List<(IProtocolVariable ProtocolVariable, Func<IProtocolVariable, Task> Handler)> onValueChangedScriptSubscriptions = [];
+    private readonly List<(IProtocolVariable ProtocolVariable, Func<IProtocolVariable, Task> Handler)> protocolVariableSinkSubscriptions = [];
 
     #region Constructors
 
@@ -248,16 +249,34 @@ public abstract class ModuleBase : IModuleBase
     {
         await Scripting.InitializeSharedScopeAsync(Variables);
         SubscribeOnValueChangedScriptTriggers();
-        var tasks = Drivers.Select(driver => driver.StartAsync(ct));
-        await Task.WhenAll(tasks);
+
+        var sinkDrivers = Drivers
+            .Where(driver => driver is IProtocolVariableSinkDriver)
+            .ToList();
+        var sourceDrivers = Drivers
+            .Where(driver => driver is not IProtocolVariableSinkDriver)
+            .ToList();
+
+        await Task.WhenAll(sinkDrivers.Select(driver => driver.StartAsync(ct)));
+        SubscribeProtocolVariableSinkDrivers(sourceDrivers, sinkDrivers);
+        await Task.WhenAll(sourceDrivers.Select(driver => driver.StartAsync(ct)));
     }
 
     public virtual async Task StopAsync(CancellationToken ct = default)
     {
         UnsubscribeOnValueChangedScriptTriggers();
         await Scripting.DisposeSharedScopeAsync();
-        var tasks = Drivers.Select(driver => driver.StopAsync(ct));
-        await Task.WhenAll(tasks);
+
+        var sinkDrivers = Drivers
+            .Where(driver => driver is IProtocolVariableSinkDriver)
+            .ToList();
+        var sourceDrivers = Drivers
+            .Where(driver => driver is not IProtocolVariableSinkDriver)
+            .ToList();
+
+        await Task.WhenAll(sourceDrivers.Select(driver => driver.StopAsync(ct)));
+        UnsubscribeProtocolVariableSinkDrivers();
+        await Task.WhenAll(sinkDrivers.Select(driver => driver.StopAsync(ct)));
     }
 
     public virtual void Dispose()
@@ -297,6 +316,43 @@ public abstract class ModuleBase : IModuleBase
         }
 
         onValueChangedScriptSubscriptions.Clear();
+    }
+
+    private void SubscribeProtocolVariableSinkDrivers(
+        IEnumerable<IDriverBase> sourceDrivers,
+        IEnumerable<IDriverBase> sinkDrivers)
+    {
+        UnsubscribeProtocolVariableSinkDrivers();
+
+        var sourceProtocolVariables = sourceDrivers
+            .SelectMany(driver => driver.Protocols)
+            .SelectMany(protocol => protocol.Variables)
+            .ToList();
+
+        foreach (var sinkDriver in sinkDrivers.OfType<IProtocolVariableSinkDriver>())
+        {
+            foreach (var protocolVariable in sourceProtocolVariables)
+            {
+                if (!sinkDriver.CanSubscribe(protocolVariable))
+                {
+                    continue;
+                }
+
+                Func<IProtocolVariable, Task> handler = sinkDriver.OnProtocolVariableValueChangedAsync;
+                protocolVariable.SubscribeAsyncValueChanged(handler);
+                protocolVariableSinkSubscriptions.Add((protocolVariable, handler));
+            }
+        }
+    }
+
+    private void UnsubscribeProtocolVariableSinkDrivers()
+    {
+        foreach (var subscription in protocolVariableSinkSubscriptions)
+        {
+            subscription.ProtocolVariable.UnsubscribeAsyncValueChanged(subscription.Handler);
+        }
+
+        protocolVariableSinkSubscriptions.Clear();
     }
     
 }

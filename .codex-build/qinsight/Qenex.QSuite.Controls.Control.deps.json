@@ -1,0 +1,422 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "Qenex.QSuite.Controls.Control/1.0.0": {
+        "dependencies": {
+          "Qenex.QLibs.QUI": "1.0.10",
+          "Qenex.QSuite.Protocols.Protocol": "1.0.0",
+          "Telerik.Windows.Controls.Diagrams.for.Wpf": "2026.1.415",
+          "Telerik.Windows.Controls.for.Wpf": "2026.1.415",
+          "Qenex.QSuite.Common.CoreComm.Reference": "1.0.0.0",
+          "Qenex.QSuite.LogSystems.LogSystem.Reference": "1.0.0.0",
+          "Qenex.QSuite.Protocols.Protocol.Reference": "1.0.0.0",
+          "Qenex.QSuite.Specifications.ComponentSpecification.Reference": "1.0.0.0",
+          "Qenex.QSuite.Specifications.ProtocolVariableSpecification.Reference": "1.0.0.0",
+          "Qenex.QSuite.Specifications.Specification.Reference": "1.0.0.0",
+          "Qenex.QSuite.Variables.QVariables.Reference": "1.0.0.0",
+          "Qenex.QSuite.Variables.ValuePresentation.Reference": "1.0.0.0",
+          "Qenex.QSuite.Variables.VariableEvents.Reference": "1.0.0.0",
+          "Qenex.Variables.QSuite.ValueConversion.Reference": "1.0.0.0"
+        },
+        "runtime": {
+          "Qenex.QSuite.Controls.Control.dll": {}
+        }
+      },
+      "Qenex.QLibs.QUI/1.0.10": {
+        "runtime": {
+          "lib/net10.0/Qenex.QLibs.QUI.dll": {
+            "assemblyVersion": "1.0.10.0",
+            "fileVersion": "1.0.10.0"
+          }
+        }
+      },
+      "System.Data.OleDb/8.0.0": {
+        "runtime": {
+          "lib/net8.0/System.Data.OleDb.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.23.53103"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/win/lib/net8.0/System.Data.OleDb.dll": {
+            "rid": "win",
+            "assetType": "runtime",
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.23.53103"
+          }
+        }
+      },
+      "Telerik.Licensing/1.8.2": {
+        "runtime": {
+          "lib/net10.0/Telerik.Licensing.Runtime.dll": {
+            "assemblyVersion": "1.8.2.0",
+            "fileVersion": "1.8.2.0"
+          }
+        }
+      },
+      "Telerik.Windows.Controls.Diagrams.for.Wpf/2026.1.415": {
+        "dependencies": {
+          "Telerik.Licensing": "1.8.2",
+          "Telerik.Windows.Controls.for.Wpf": "2026.1.415",
+          "Telerik.Windows.Diagrams.Core.for.Wpf": "2026.1.415"
+        },
+        "runtime": {
+          "lib/net8.0-windows/Telerik.Windows.Controls.Diagrams.dll": {
+            "assemblyVersion": "2026.1.415.80",
+            "fileVersion": "2026.1.415.80"
+          }
+        }
+      },
+      "Telerik.Windows.Controls.for.Wpf/2026.1.415": {
+        "dependencies": {
+          "System.Data.OleDb": "8.0.0",
+          "Telerik.Licensing": "1.8.2"
+        },
+        "runtime": {
+          "lib/net8.0-windows/Telerik.Windows.Controls.dll": {
+            "assemblyVersion": "2026.1.415.80",
+            "fileVersion": "2026.1.415.80"
+          }
+        }
+      },
+      "Telerik.Windows.Diagrams.Core.for.Wpf/2026.1.415": {
+        "dependencies": {
+          "Telerik.Licensing": "1.8.2"
+        },
+        "runtime": {
+          "lib/net8.0-windows/Telerik.Windows.Diagrams.Core.dll": {
+            "assemblyVersion": "2026.1.415.80",
+            "fileVersion": "2026.1.415.80"
+          }
+        }
+      },
+      "Qenex.QSuite.Common.CoreComm/1.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Common.CoreComm.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.LogSystems.LogSystem/1.0.0": {
+        "runtime": {
+          "Qenex.QSuite.LogSystems.LogSystem.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Protocols.Protocol/1.0.0": {
+        "dependencies": {
+          "Qenex.QSuite.Common.CoreComm": "1.0.0",
+          "Qenex.QSuite.LogSystems.LogSystem": "1.0.0",
+          "Qenex.QSuite.Specifications.ComponentSpecification": "1.0.0",
+          "Qenex.QSuite.Specifications.Specification": "1.0.0",
+          "Qenex.QSuite.Variables.QVariables": "1.0.0",
+          "Qenex.QSuite.Variables.VariableEvents": "1.0.0"
+        },
+        "runtime": {
+          "Qenex.QSuite.Protocols.Protocol.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Specifications.ComponentSpecification/1.0.0": {
+        "dependencies": {
+          "Qenex.QSuite.Specifications.Specification": "1.0.0"
+        },
+        "runtime": {
+          "Qenex.QSuite.Specifications.ComponentSpecification.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Specifications.ProtocolVariableSpecification/1.0.0": {
+        "dependencies": {
+          "Qenex.QSuite.Specifications.Specification": "1.0.0"
+        },
+        "runtime": {
+          "Qenex.QSuite.Specifications.ProtocolVariableSpecification.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Specifications.Specification/1.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Specifications.Specification.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Variables.QVariables/1.0.0": {
+        "dependencies": {
+          "Qenex.QSuite.Specifications.ComponentSpecification": "1.0.0",
+          "Qenex.QSuite.Specifications.ProtocolVariableSpecification": "1.0.0",
+          "Qenex.QSuite.Variables.ValuePresentation": "1.0.0",
+          "Qenex.QSuite.Variables.VariableEvents": "1.0.0"
+        },
+        "runtime": {
+          "Qenex.QSuite.Variables.QVariables.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Variables.ValuePresentation/1.0.0": {
+        "dependencies": {
+          "Qenex.Variables.QSuite.ValueConversion": "1.0.0"
+        },
+        "runtime": {
+          "Qenex.QSuite.Variables.ValuePresentation.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Variables.VariableEvents/1.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Variables.VariableEvents.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Qenex.Variables.QSuite.ValueConversion/1.0.0": {
+        "runtime": {
+          "Qenex.Variables.QSuite.ValueConversion.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Common.CoreComm.Reference/1.0.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Common.CoreComm.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.LogSystems.LogSystem.Reference/1.0.0.0": {
+        "runtime": {
+          "Qenex.QSuite.LogSystems.LogSystem.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Protocols.Protocol.Reference/1.0.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Protocols.Protocol.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Specifications.ComponentSpecification.Reference/1.0.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Specifications.ComponentSpecification.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Specifications.ProtocolVariableSpecification.Reference/1.0.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Specifications.ProtocolVariableSpecification.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Specifications.Specification.Reference/1.0.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Specifications.Specification.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Variables.QVariables.Reference/1.0.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Variables.QVariables.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Variables.ValuePresentation.Reference/1.0.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Variables.ValuePresentation.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Qenex.QSuite.Variables.VariableEvents.Reference/1.0.0.0": {
+        "runtime": {
+          "Qenex.QSuite.Variables.VariableEvents.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "Qenex.Variables.QSuite.ValueConversion.Reference/1.0.0.0": {
+        "runtime": {
+          "Qenex.Variables.QSuite.ValueConversion.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Qenex.QSuite.Controls.Control/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QLibs.QUI/1.0.10": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-KVRi8jhb7k/74H+qfCCP/ZvCsjvLS5W76V4MmlIOJHlWjNyR3LAOjCUuTTMiS/JCnzM4P/D+QGMXYvIJVQ08mQ==",
+      "path": "qenex.qlibs.qui/1.0.10",
+      "hashPath": "qenex.qlibs.qui.1.0.10.nupkg.sha512"
+    },
+    "System.Data.OleDb/8.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-FpUTcQ0E8mFvcYp8UZA3NX8wgmhmsCue56g1zfkr1xdOnT5FrYYmC5DWQ9xCw8o8zuxVBKLZvliqEGgmeoalaQ==",
+      "path": "system.data.oledb/8.0.0",
+      "hashPath": "system.data.oledb.8.0.0.nupkg.sha512"
+    },
+    "Telerik.Licensing/1.8.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+LEIcXj33e2eyzxAErLejUFI2OuKOCFt4GyGfusf+EH7/YITmBU0381eJVwKyF3ZGux9OSzzmu1oaUPG/NYhLQ==",
+      "path": "telerik.licensing/1.8.2",
+      "hashPath": "telerik.licensing.1.8.2.nupkg.sha512"
+    },
+    "Telerik.Windows.Controls.Diagrams.for.Wpf/2026.1.415": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-NykvWq8U7SnE+LnmFb9XNcZMSS8ubZv9wAd/+aQTOBOOqbYApvZlO/cfFLqnKDF4GUEU/3fWIcDt5ik+UAvrnw==",
+      "path": "telerik.windows.controls.diagrams.for.wpf/2026.1.415",
+      "hashPath": "telerik.windows.controls.diagrams.for.wpf.2026.1.415.nupkg.sha512"
+    },
+    "Telerik.Windows.Controls.for.Wpf/2026.1.415": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-MktoHQ1yaj/oa9R8xUI+Ii0ajlvKzwXuu6Nc1OJAZ97PxzmE+RT2QoqUcJF4XXLOju7XqJhD4We/QUNupzeOjA==",
+      "path": "telerik.windows.controls.for.wpf/2026.1.415",
+      "hashPath": "telerik.windows.controls.for.wpf.2026.1.415.nupkg.sha512"
+    },
+    "Telerik.Windows.Diagrams.Core.for.Wpf/2026.1.415": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-s8Kst0b34nYUU8+nO8czvfD+vS+6O2sF7SqzdjSizkbzAY7RGm1CYirovadNHc0RFV0eae/IrsGwZyW3Ho6QlQ==",
+      "path": "telerik.windows.diagrams.core.for.wpf/2026.1.415",
+      "hashPath": "telerik.windows.diagrams.core.for.wpf.2026.1.415.nupkg.sha512"
+    },
+    "Qenex.QSuite.Common.CoreComm/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.LogSystems.LogSystem/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Protocols.Protocol/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Specifications.ComponentSpecification/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Specifications.ProtocolVariableSpecification/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Specifications.Specification/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Variables.QVariables/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Variables.ValuePresentation/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Variables.VariableEvents/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.Variables.QSuite.ValueConversion/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Common.CoreComm.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.LogSystems.LogSystem.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Protocols.Protocol.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Specifications.ComponentSpecification.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Specifications.ProtocolVariableSpecification.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Specifications.Specification.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Variables.QVariables.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Variables.ValuePresentation.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.QSuite.Variables.VariableEvents.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Qenex.Variables.QSuite.ValueConversion.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

@@ -32,6 +32,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     
     private bool isViewLoaded;
     private List<ControlBase> controlsToLoad = [];
+    private List<IProtocolVariable> activeProtocolVariables = [];
     private readonly List<(IProtocolVariable ProtocolVariable, Func<IProtocolVariable, Task> Handler)> loadedVariableSubscriptions = [];
 
     #endregion
@@ -84,17 +85,30 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 	private RadDiagram diagram;
 	 private void OnWorkspaceViewLoaded(RadDiagram radDiagram)
 	 {
-        if (isViewLoaded) return;
+        if (isViewLoaded && ReferenceEquals(diagram, radDiagram)) return;
+        var controlsToRestore = isViewLoaded
+	        ? GetControlProjectData()
+	        : controlsToLoad.ToList();
+
          isViewLoaded = true;
          diagram = radDiagram;
          GridCellSize = Telerik.Windows.Controls.Diagrams.Primitives.BackgroundGrid.GetCellSize(diagram).Height;
 
-         foreach (var controlData in controlsToLoad)
+         var diagramAlreadyContainsControls = GetDiagramControls(diagram).Any();
+         if (!diagramAlreadyContainsControls)
          {
-             AddControlToDiagram(controlData);
+	         foreach (var controlData in controlsToRestore)
+	         {
+		         AddControlToDiagram(controlData);
+	         }
          }
 
          controlsToLoad.Clear();
+
+         if (activeProtocolVariables.Count > 0)
+         {
+	         BindLoadedControlVariables(activeProtocolVariables);
+         }
 	}
 
      public List<ControlBase> GetControlProjectData()
@@ -231,14 +245,13 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     public void BindLoadedControlVariables(IEnumerable<IProtocolVariable> protocolVariables)
     {
 	    UnsubscribeLoadedControlVariables();
-	    var projectProtocolVariables = protocolVariables.ToList();
-	    var controls = isViewLoaded
-		    ? controlsToLoad.Concat(GetDiagramControls().Select(item => item.Control)).Distinct()
-		    : controlsToLoad;
+	    activeProtocolVariables = protocolVariables.ToList();
+	    var projectProtocolVariables = activeProtocolVariables;
+	    var controls = GetWorkspaceControls();
 
 	    foreach (var control in controls)
 	    {
-		    foreach (var variableReference in control.LinkedVariables.ToList())
+		    foreach (var variableReference in GetControlVariableReferences(control))
 		    {
 			    var protocolVariable = projectProtocolVariables.FirstOrDefault(v =>
 				    ControlBase.IsVariableReferenceMatch(variableReference, v.Variable));
@@ -246,7 +259,17 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 			    {
 				    control.BindVariable(protocolVariable.Variable);
 				    Func<IProtocolVariable, Task> handler = changedProtocolVariable =>
-					    control.UpdateVariableValueAsync(changedProtocolVariable.Variable);
+				    {
+					    if (Application.Current?.Dispatcher == null || Application.Current.Dispatcher.CheckAccess())
+					    {
+						    return control.UpdateVariableValueAsync(changedProtocolVariable.Variable);
+					    }
+
+					    return Application.Current.Dispatcher
+						    .InvokeAsync(() => control.UpdateVariableValueAsync(changedProtocolVariable.Variable))
+						    .Task
+						    .Unwrap();
+				    };
 
 				    protocolVariable.SubscribeAsyncValueChanged(handler);
 				    loadedVariableSubscriptions.Add((protocolVariable, handler));
@@ -258,11 +281,13 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     public override void Clean()
     {
 	    UnsubscribeLoadedControlVariables();
+	    activeProtocolVariables.Clear();
     }
 
     public override Task CleanAsync(CancellationToken ct = default)
     {
 	    UnsubscribeLoadedControlVariables();
+	    activeProtocolVariables.Clear();
 	    return Task.CompletedTask;
     }
 
@@ -273,11 +298,46 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     private IEnumerable<(RadDiagramShape Shape, ControlBase Control)> GetDiagramControls()
     {
-	    return diagram
+	    return GetDiagramControls(diagram);
+    }
+
+    private static IEnumerable<(RadDiagramShape Shape, ControlBase Control)> GetDiagramControls(RadDiagram sourceDiagram)
+    {
+	    return sourceDiagram
 		    .Shapes
 		    .OfType<RadDiagramShape>()
 		    .Select(shape => (Shape: shape, Control: (shape.Content as UserControl)?.DataContext as ControlBase))
 		    .Where(item => item.Control != null)!;
+    }
+
+    private IEnumerable<ControlBase> GetWorkspaceControls()
+    {
+	    if (!isViewLoaded)
+	    {
+		    return controlsToLoad;
+	    }
+
+	    return controlsToLoad
+		    .Concat(GetDiagramControls().Select(item => item.Control))
+		    .Distinct();
+    }
+
+    private static IEnumerable<string> GetControlVariableReferences(ControlBase control)
+    {
+	    var references = control.LinkedVariables.ToList();
+	    references.AddRange(control.Variables.Select(ControlBase.GetVariableReference));
+
+	    if (control is GraphControlViewModel graphControl)
+	    {
+		    references.AddRange(graphControl.ChartVariableBindings.Select(binding => binding.VariableReference));
+		    references.AddRange(graphControl.ChartVariables
+			    .Where(chartVariable => chartVariable.Variable != null)
+			    .Select(chartVariable => ControlBase.GetVariableReference(chartVariable.Variable)));
+	    }
+
+	    return references
+		    .Where(reference => !string.IsNullOrWhiteSpace(reference))
+		    .Distinct();
     }
 
     private static void SynchronizeSavedVariableBindings(ControlBase control)

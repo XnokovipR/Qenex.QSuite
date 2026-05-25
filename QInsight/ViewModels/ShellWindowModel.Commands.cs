@@ -27,6 +27,10 @@ public partial class ShellWindowModel
     // if true, only elements with the specified tag condition will be saved/cleaned in layout saving/cleaning process.
     // If false, elements with the specified tag condition will be excluded from layout saving/cleaning process.
     bool requireSerializationTag = false;
+    private bool isReplayMode;
+    private IReplayDriver? activeReplayDriver;
+    private List<(IDriverBase Driver, bool IsEnabled)>? replayDriverStates;
+    private List<(IProtocolBase Protocol, bool IsEnabled)>? replayProtocolStates;
     
     #endregion
     
@@ -55,6 +59,9 @@ public partial class ShellWindowModel
     
     public RelayCommandAsync<RadDocking> RibbonConnectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonDisconnectCommand { get; set; }
+    public RelayCommandAsync<RadDocking> RibbonImportDataLogCommand { get; set; }
+    public RelayCommandAsync<RadDocking> RibbonReplayCommand { get; set; }
+    public RelayCommandAsync<RadDocking> RibbonStopReplayCommand { get; set; }
     
     public RelayCommand<RadDocking> RibbonScriptVariablesSettingsCommand { get; set; }
     public RelayCommand<RadDocking> RibbonScriptsSettingsCommand { get; set; }
@@ -86,6 +93,9 @@ public partial class ShellWindowModel
 
         RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync);
         RibbonDisconnectCommand = new RelayCommandAsync<RadDocking>(DisconnectAsync);
+        RibbonImportDataLogCommand = new RelayCommandAsync<RadDocking>(ImportDataLogAsync);
+        RibbonReplayCommand = new RelayCommandAsync<RadDocking>(ReplayAsync);
+        RibbonStopReplayCommand = new RelayCommandAsync<RadDocking>(StopReplayAsync);
         
         RibbonScriptVariablesSettingsCommand = new RelayCommand<RadDocking>(OpenScriptVariablesOptions);
         RibbonScriptsSettingsCommand = new RelayCommand<RadDocking>(RemoveScriptVariablesOptions);
@@ -634,6 +644,12 @@ public partial class ShellWindowModel
 
     private async Task DisconnectAsync(object obj)
     {
+        if (isReplayMode)
+        {
+            await StopReplayAsync(obj);
+            return;
+        }
+
         LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
         try
         {
@@ -689,6 +705,155 @@ public partial class ShellWindowModel
         }
     }
 
+    private async Task ReplayAsync(object obj)
+    {
+        if (!isProjectMade)
+        {
+            logger.Log(LogLevel.Warn, "No project opened for replay.");
+            return;
+        }
+
+        if (IsRuntimeStarted)
+        {
+            logger.Log(LogLevel.Warn, "Stop runtime before starting replay.");
+            return;
+        }
+
+        var replayDriver = FindReplayDriver();
+        if (replayDriver == null)
+        {
+            logger.Log(LogLevel.Warn, "No FileDataReplayDriver found. Import a data log first.");
+            return;
+        }
+
+        var replayProtocol = FindReplayProtocol(replayDriver);
+        if (replayProtocol == null)
+        {
+            logger.Log(LogLevel.Warn, "No DataLogReplayProtocol found in replay driver.");
+            return;
+        }
+
+        try
+        {
+            SaveReplayStates();
+            ApplyReplayStates(replayDriver, replayProtocol);
+            SubscribeReplayCompleted(replayDriver);
+            LoadSettingsFromFile(shellRadDocking, runtimeSettingLayoutFile);
+            RebindWorkspaceControlVariables(replayProtocol.Variables);
+            IsRuntimeStarted = true;
+            isReplayMode = true;
+            await realProjectData.Module.StartAsync();
+
+            if (!isReplayMode)
+            {
+                return;
+            }
+
+            solutionExplorerViewModel.ReloadProjectData(realProjectData);
+            logger.Log(LogLevel.Info, "Replay started.");
+        }
+        catch (Exception e)
+        {
+            UnsubscribeReplayCompleted();
+            RestoreReplayStates();
+            LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
+            RebindWorkspaceControlVariables(GetProjectProtocolVariables());
+            IsRuntimeStarted = false;
+            isReplayMode = false;
+            logger.Log(LogLevel.Error, $"Replay start failed: {e.Message}");
+        }
+    }
+
+    private async Task StopReplayAsync(object obj)
+    {
+        if (!isReplayMode)
+        {
+            logger.Log(LogLevel.Warn, "Replay is not running.");
+            return;
+        }
+
+        var stopFailed = false;
+
+        try
+        {
+            if (IsRuntimeStarted)
+            {
+                await realProjectData.Module.StopAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            stopFailed = true;
+            logger.Log(LogLevel.Error, $"Replay runtime stop failed: {e.Message}");
+        }
+        finally
+        {
+            IsRuntimeStarted = false;
+            isReplayMode = false;
+            UnsubscribeReplayCompleted();
+            RestoreReplayStates();
+            LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
+            RebindWorkspaceControlVariables(GetProjectProtocolVariables());
+            solutionExplorerViewModel.ReloadProjectData(realProjectData);
+
+            if (!stopFailed)
+            {
+                logger.Log(LogLevel.Info, "Replay stopped.");
+            }
+        }
+    }
+
+    private async Task ImportDataLogAsync(object obj)
+    {
+        if (!isProjectMade)
+        {
+            logger.Log(LogLevel.Warn, "No project opened for data log import.");
+            return;
+        }
+
+        if (IsRuntimeStarted)
+        {
+            logger.Log(LogLevel.Warn, "Stop runtime before importing a data log.");
+            return;
+        }
+
+        var dlg = new RadOpenFileDialog()
+        {
+            Owner = App.Current.MainWindow,
+            Multiselect = false,
+            Filter = "QSuite data log files (*.msgpack)|*.msgpack|All files (*.*)|*.*",
+            InitialDirectory = Environment.CurrentDirectory
+        };
+
+        dlg.ShowDialog();
+        if (dlg.DialogResult != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var replayDriver = CreateFileDataReplayDriver(dlg.FileName);
+            var existingReplayDriver = realProjectData.Module.Drivers.FirstOrDefault(driver =>
+                driver.Specification.Name.Equals("FileDataReplayDriver", StringComparison.OrdinalIgnoreCase));
+            if (existingReplayDriver != null)
+            {
+                existingReplayDriver.Dispose();
+                realProjectData.Module.RemoveDriver(existingReplayDriver);
+            }
+
+            realProjectData.Module.AddDriver(replayDriver);
+            solutionExplorerViewModel.ReloadProjectData(realProjectData);
+            logger.Log(LogLevel.Info, $"Data log \"{Path.GetFileName(dlg.FileName)}\" imported for replay.");
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, $"Data log import failed: {e.Message}");
+        }
+
+        await Task.CompletedTask;
+    }
+
     private void SaveLayout(RadDocking radDocking, string? filePrep = null)
     {
         var settingsLayoutFile = IsRuntimeStarted ? runtimeSettingLayoutFile : editModeSettingLayoutFile;
@@ -732,6 +897,159 @@ public partial class ShellWindowModel
         return realProjectData.Module.Drivers
             .SelectMany(driver => driver.Protocols)
             .SelectMany(protocol => protocol.Variables);
+    }
+
+    private IDriverBase CreateFileDataReplayDriver(string logFilePath)
+    {
+        var driverDetails = driverPlugins.FirstOrDefault(plugin =>
+            plugin.Name.Equals("FileDataReplayDriver", StringComparison.OrdinalIgnoreCase));
+        if (driverDetails == null)
+        {
+            throw new InvalidOperationException("FileDataReplayDriver plugin was not found.");
+        }
+
+        var protocolDetails = protocolPlugins.FirstOrDefault(plugin =>
+            plugin.Name.Equals("DataLogReplayProtocol", StringComparison.OrdinalIgnoreCase));
+        if (protocolDetails == null)
+        {
+            throw new InvalidOperationException("DataLogReplayProtocol plugin was not found.");
+        }
+
+        var driver = pluginLoader.LoadPlugin<IDriverBase>(driverDetails.PathName)
+            ?? throw new InvalidOperationException("FileDataReplayDriver could not be loaded.");
+        var protocol = pluginLoader.LoadPlugin<IProtocolBase>(protocolDetails.PathName)
+            ?? throw new InvalidOperationException("DataLogReplayProtocol could not be loaded.");
+
+        driver.Label = $"Replay: {Path.GetFileName(logFilePath)}";
+        driver.IsEnabled = false;
+        driver.RawSettings = $"file={logFilePath};mode=realtime;speed=1;loop=false";
+        driver.SetConfiguration();
+
+        protocol.IsEnabled = false;
+        protocol.RawSettings = string.Empty;
+        foreach (var variable in realProjectData.Module.Variables)
+        {
+            var protocolVariable = protocol.CreateProtocolVariable(variable, string.Empty, true);
+            if (protocolVariable != null)
+            {
+                protocol.AddVariable(protocolVariable);
+            }
+        }
+
+        protocol.SetConfiguration();
+        driver.AddProtocol(protocol);
+
+        return driver;
+    }
+
+    private IDriverBase? FindReplayDriver()
+    {
+        return realProjectData.Module.Drivers.FirstOrDefault(driver =>
+            driver.Specification.Name.Equals("FileDataReplayDriver", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static IProtocolBase? FindReplayProtocol(IDriverBase replayDriver)
+    {
+        return replayDriver.Protocols.FirstOrDefault(protocol =>
+            protocol.Specification.Name.Equals("DataLogReplayProtocol", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void SaveReplayStates()
+    {
+        replayDriverStates = realProjectData.Module.Drivers
+            .Select(driver => (driver, driver.IsEnabled))
+            .ToList();
+        replayProtocolStates = realProjectData.Module.Drivers
+            .SelectMany(driver => driver.Protocols)
+            .Select(protocol => (protocol, protocol.IsEnabled))
+            .ToList();
+    }
+
+    private void ApplyReplayStates(IDriverBase replayDriver, IProtocolBase replayProtocol)
+    {
+        foreach (var driver in realProjectData.Module.Drivers)
+        {
+            driver.IsEnabled = ReferenceEquals(driver, replayDriver);
+        }
+
+        foreach (var protocol in realProjectData.Module.Drivers.SelectMany(driver => driver.Protocols))
+        {
+            protocol.IsEnabled = ReferenceEquals(protocol, replayProtocol);
+        }
+    }
+
+    private void RestoreReplayStates()
+    {
+        if (replayDriverStates != null)
+        {
+            foreach (var (driver, isEnabled) in replayDriverStates)
+            {
+                driver.IsEnabled = isEnabled;
+            }
+        }
+
+        if (replayProtocolStates != null)
+        {
+            foreach (var (protocol, isEnabled) in replayProtocolStates)
+            {
+                protocol.IsEnabled = isEnabled;
+            }
+        }
+
+        replayDriverStates = null;
+        replayProtocolStates = null;
+    }
+
+    private void RebindWorkspaceControlVariables(IEnumerable<IProtocolVariable> protocolVariables)
+    {
+        var protocolVariablesList = protocolVariables.ToList();
+        foreach (var workspaceViewModel in ViewModels.OfType<WorkspaceViewModel>())
+        {
+            workspaceViewModel.BindLoadedControlVariables(protocolVariablesList);
+        }
+    }
+
+    private void SubscribeReplayCompleted(IDriverBase replayDriver)
+    {
+        if (replayDriver is not IReplayDriver replayDriverWithEvents)
+        {
+            logger.Log(LogLevel.Warn,
+                $"Replay driver \"{replayDriver.Specification.Name}\" does not implement IReplayDriver — natural end-of-replay will not be detected.");
+            return;
+        }
+
+        activeReplayDriver = replayDriverWithEvents;
+        activeReplayDriver.ReplayCompleted += OnReplayCompleted;
+    }
+
+    private void UnsubscribeReplayCompleted()
+    {
+        if (activeReplayDriver == null)
+        {
+            return;
+        }
+
+        activeReplayDriver.ReplayCompleted -= OnReplayCompleted;
+        activeReplayDriver = null;
+    }
+
+    private async void OnReplayCompleted(object? sender, EventArgs e)
+    {
+        try
+        {
+            await Application.Current.Dispatcher.InvokeAsync(async () =>
+            {
+                logger.Log(LogLevel.Info, "Replay completed — stopping replay session.");
+                if (isReplayMode)
+                {
+                    await StopReplayAsync(shellRadDocking);
+                }
+            }).Task.Unwrap();
+        }
+        catch (Exception ex)
+        {
+            logger.Log(LogLevel.Error, $"Replay completion handling failed: {ex.Message}", ex);
+        }
     }
 
     private MemoryStream CreateWorkspaceLayoutStream(RadDocking radDocking)

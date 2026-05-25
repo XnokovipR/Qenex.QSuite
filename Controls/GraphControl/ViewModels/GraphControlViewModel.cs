@@ -213,16 +213,20 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         var chartVariable = ChartVariables.FirstOrDefault(v => v.Variable.Name == scalarVariable.Name);
         if (chartVariable == null) return Task.CompletedTask;
 
-        // Initialize baseTime and lastUpdateTime on the first update
+        var timestamp = variable.Timestamp == default
+            ? DateTime.UtcNow
+            : variable.Timestamp;
+
+        // Initialize from the incoming data timestamp. Replay data can be historical,
+        // so using DateTime.UtcNow here prevents refreshes from being triggered.
         if (baseTime == DateTime.MinValue)
         {
-            baseTime = DateTime.UtcNow;
-            lastUpdateTime = baseTime;
+            baseTime = timestamp;
+            lastUpdateTime = DateTime.MinValue;
         }
 
         var val = ConvertValueToDouble(scalarVariable);
 
-        var timestamp = variable.Timestamp;
         chartVariable.XDateTimeVal.Add(timestamp);
         var xVal = (timestamp - baseTime).TotalSeconds;
         chartVariable.XVal.Add(xVal);
@@ -246,7 +250,9 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 
         PlotControl.Plot.Axes.SetLimitsX(xVal - ChartTimeSpan - 1,xVal + 1);
 
-        if ((timestamp - lastUpdateTime).TotalMilliseconds > ChartBuffer)
+        if (lastUpdateTime == DateTime.MinValue
+            || timestamp < lastUpdateTime
+            || (timestamp - lastUpdateTime).TotalMilliseconds > ChartBuffer)
         {
             PlotControl.Refresh();
             lastUpdateTime = timestamp;

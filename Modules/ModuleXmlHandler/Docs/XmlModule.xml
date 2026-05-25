@@ -30,14 +30,72 @@
         </protocolReference>
       </protocolReferences>
     </driverReference>
+    <driverReference ref="FileDataLoggerDriver" label="File data logger">
+      <isEnabled>true</isEnabled>
+      <settings>file=DataLogs\values.msgpack;append=true;flushOnWrite=false</settings>
+      <encryptedSettings />
+      <protocolReferences>
+        <protocolReference ref="One2OneProtocol">
+          <isEnabled>true</isEnabled>
+          <settings />
+          <encryptedSettings />
+          <variableReferences>
+            <variableReference ref="1" isCommunicated="true">
+              <commParam />
+            </variableReference>
+            <variableReference ref="2" isCommunicated="true">
+              <commParam />
+            </variableReference>
+            <variableReference ref="3" isCommunicated="true">
+              <commParam />
+            </variableReference>
+          </variableReferences>
+        </protocolReference>
+      </protocolReferences>
+    </driverReference>
+    <driverReference ref="FileDataReplayDriver" label="File data replay">
+      <isEnabled>false</isEnabled>
+      <settings>file=DataLogs\values.msgpack;mode=realtime;speed=1;loop=false</settings>
+      <encryptedSettings />
+      <protocolReferences>
+        <protocolReference ref="DataLogReplayProtocol">
+          <isEnabled>false</isEnabled>
+          <settings />
+          <encryptedSettings />
+          <variableReferences>
+            <variableReference ref="1" isCommunicated="true">
+              <commParam />
+            </variableReference>
+            <variableReference ref="2" isCommunicated="true">
+              <commParam />
+            </variableReference>
+            <variableReference ref="3" isCommunicated="true">
+              <commParam />
+            </variableReference>
+          </variableReferences>
+        </protocolReference>
+      </protocolReferences>
+    </driverReference>
   </driverReferences>
   <drivers>
     <driver id="1" name="SimulDataDriver">
       <version>1.0.0.0</version>
     </driver>
+    <driver id="2" name="FileDataLoggerDriver">
+      <version>1.0.0.0</version>
+    </driver>
+    <driver id="3" name="FileDataReplayDriver">
+      <version>1.0.0.0</version>
+    </driver>
   </drivers>
   <protocols>
     <protocol id="1" name="SimpleO2OProtocol" label="Simple One to One Protocol">
+      <version>1.0.0.0</version>
+    </protocol>
+    <protocol id="2" name="One2OneProtocol" label="One2One Protocol">
+      <version>1.0.0.0</version>
+    </protocol>
+    <protocol id="3" name="DataLogReplayProtocol" label="Data Log Replay Protocol">
       <version>1.0.0.0</version>
     </protocol>
   </protocols>
