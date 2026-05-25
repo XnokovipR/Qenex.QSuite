@@ -135,6 +135,12 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     public ObservableCollection<ChartVariable> ChartVariables { get; set; }
 
     [DataMember]
+    public List<ChartVariableBinding> ChartVariableBindings { get; set; } = [];
+
+    [DataMember]
+    public List<VerticalAxisBinding> VerticalAxisBindings { get; set; } = [];
+
+    [DataMember]
     public string ChartTitle { get; set { field = value; OnPropertyChanged(); } } = string.Empty;
     
     [IgnoreDataMember]
@@ -161,12 +167,15 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     
     public override void BindVariable(IVariableBase variable)
     {
-        RememberVariableBinding(variable);
         var ev = Variables.FirstOrDefault(v => v.Equals(variable));
         if (ev != null) return;
+
+        RememberVariableBinding(variable);
         Variables.Add(variable);
-        
-        var c = GetNextChartColor();
+
+        var savedBinding = GetSavedChartVariableBinding(variable);
+        var c = GetSavedChartColor(savedBinding) ?? GetNextChartColor();
+        RestoreVerticalAxes();
         var chartVariable = new ChartVariable();
         ChartVariables.Add(chartVariable);
         
@@ -179,22 +188,20 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         chartVariable.Variable = variable;
         chartVariable.ChangeAxisAction += axisIndex =>
         {
-            var retIndex = axisIndex;
-            if (axisIndex < 0 || axisIndex >= VerticalAxes.Count)
+            var retIndex = GetValidVerticalAxisIndex(axisIndex);
+            if (retIndex >= 0)
             {
-                retIndex = 0;
-                signal.Axes.YAxis = VerticalAxes[retIndex];    
+                signal.Axes.YAxis = VerticalAxes[retIndex];
             }
-            else
-            {
-                signal.Axes.YAxis = VerticalAxes[axisIndex];    
-            }
-            
+
             PlotControl.Refresh();
             return retIndex;
         };
 
         PlotControl.Refresh();
+        chartVariable.LineWidth = GetSavedLineWidth(savedBinding);
+        chartVariable.AxisIndex = savedBinding?.AxisIndex ?? 0;
+        RememberChartVariableBinding(chartVariable);
 
         //PlotControl.Plot.Remove(signal);
     }
@@ -221,9 +228,20 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         chartVariable.XVal.Add(xVal);
         chartVariable.YVal.Add(val);
 
-        if (((VerticalAxis)VerticalAxes[chartVariable.AxisIndex]).IsAutoScale)
+        var axisIndex = GetValidVerticalAxisIndex(chartVariable.AxisIndex);
+        if (axisIndex < 0)
         {
-            RecalculateVerticalAxisLimits(xVal, val, chartVariable.AxisIndex);
+            return Task.CompletedTask;
+        }
+
+        if (axisIndex != chartVariable.AxisIndex)
+        {
+            chartVariable.AxisIndex = axisIndex;
+        }
+
+        if (((VerticalAxis)VerticalAxes[axisIndex]).IsAutoScale)
+        {
+            RecalculateVerticalAxisLimits(xVal, val, axisIndex);
         }
 
         PlotControl.Plot.Axes.SetLimitsX(xVal - ChartTimeSpan - 1,xVal + 1);
@@ -309,9 +327,8 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         PlotControl.Plot.Axes.Right.TickLabelStyle.ForeColor = foregroundColor;
         PlotControl.Plot.Axes.Right.TickLabelStyle.BackgroundColor = backgroundColor; 
         
-        // Add horizontal axes
-        AddAxis(Edge.Left, 0);
-        PlotControl.Plot.Axes.SetLimitsY(-10, 10);
+        RestoreVerticalAxes();
+        UpdateVerticalAxisTheme();
         
         // Grid
         var gridColor = new Color((foregroundColor.R + backgroundColor.R)/2, (foregroundColor.G + backgroundColor.G)/2, (foregroundColor.B + backgroundColor.B)/2, 0.2f);
@@ -337,6 +354,8 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     private void InitializeRuntimeState()
     {
         ChartVariables ??= [];
+        ChartVariableBindings ??= [];
+        VerticalAxisBindings ??= [];
         VerticalAxes ??= [];
         currentColorIndex = Math.Max(currentColorIndex, 0);
 
@@ -368,6 +387,13 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         InitializeRuntimeState();
     }
 
+    [OnSerializing]
+    private void OnSerializing(StreamingContext context)
+    {
+        SynchronizeVerticalAxisBindings();
+        SynchronizeChartVariableBindings();
+    }
+
     private System.Windows.Media.Color GetNextChartColor()
     {
         if (!ChartHelper.ChartColors.ContainsKey(currentColorIndex))
@@ -378,6 +404,134 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         var color = ChartHelper.ChartColors[currentColorIndex];
         currentColorIndex++;
         return color;
+    }
+
+    private ChartVariableBinding? GetSavedChartVariableBinding(IVariableBase variable)
+    {
+        return ChartVariableBindings.FirstOrDefault(b =>
+            ControlBase.IsVariableReferenceMatch(b.VariableReference, variable));
+    }
+
+    private static System.Windows.Media.Color? GetSavedChartColor(ChartVariableBinding? binding)
+    {
+        if (binding?.TryGetChartColor(out var chartColor) == true)
+        {
+            return chartColor;
+        }
+
+        return null;
+    }
+
+    private static float GetSavedLineWidth(ChartVariableBinding? binding)
+    {
+        return binding?.LineWidth ?? 1.0f;
+    }
+
+    private void RememberChartVariableBinding(ChartVariable chartVariable)
+    {
+        if (chartVariable.Variable == null)
+        {
+            return;
+        }
+
+        var variableReference = GetVariableReference(chartVariable.Variable);
+        var binding = ChartVariableBindings.FirstOrDefault(b => b.VariableReference == variableReference);
+        if (binding == null)
+        {
+            ChartVariableBindings.Add(new ChartVariableBinding(
+                variableReference,
+                chartVariable.ChartColor,
+                chartVariable.LineWidth,
+                chartVariable.AxisIndex));
+            return;
+        }
+
+        binding.SetChartColor(chartVariable.ChartColor);
+        binding.LineWidth = chartVariable.LineWidth;
+        binding.AxisIndex = chartVariable.AxisIndex;
+    }
+
+    private void SynchronizeChartVariableBindings()
+    {
+        if (ChartVariables.Count == 0)
+        {
+            return;
+        }
+
+        ChartVariableBindings = ChartVariables
+            .Where(chartVariable => chartVariable.Variable != null)
+            .Select(chartVariable => new ChartVariableBinding(
+                GetVariableReference(chartVariable.Variable),
+                chartVariable.ChartColor,
+                chartVariable.LineWidth,
+                chartVariable.AxisIndex))
+            .ToList();
+        LinkedVariables = ChartVariableBindings
+            .Select(binding => binding.VariableReference)
+            .ToList();
+    }
+
+    private void SynchronizeVerticalAxisBindings()
+    {
+        if (VerticalAxes.Count == 0)
+        {
+            return;
+        }
+
+        VerticalAxisBindings = VerticalAxes
+            .OfType<VerticalAxis>()
+            .Select(VerticalAxisBinding.FromAxis)
+            .ToList();
+    }
+
+    private void RestoreVerticalAxes()
+    {
+        if (VerticalAxes.Count > 0)
+        {
+            return;
+        }
+
+        if (VerticalAxisBindings.Count == 0)
+        {
+            AddAxis(Edge.Left, 0);
+            return;
+        }
+
+        for (var i = 0; i < VerticalAxisBindings.Count; i++)
+        {
+            AddAxis(VerticalAxisBindings[i], i);
+        }
+    }
+
+    private int GetValidVerticalAxisIndex(int axisIndex)
+    {
+        RestoreVerticalAxes();
+        if (VerticalAxes.Count == 0)
+        {
+            return -1;
+        }
+
+        return axisIndex >= 0 && axisIndex < VerticalAxes.Count
+            ? axisIndex
+            : 0;
+    }
+
+    private void UpdateVerticalAxisTheme()
+    {
+        foreach (var axis in VerticalAxes.OfType<VerticalAxis>())
+        {
+            axis.LabelBackgroundColor = backgroundColor;
+            axis.LabelFontColor = foregroundColor;
+            axis.LabelFontSize = plotFontSize;
+            axis.LabelBorderColor = foregroundColor;
+            axis.TickLabelStyle.ForeColor = foregroundColor;
+            axis.TickLabelStyle.BackgroundColor = backgroundColor;
+            axis.TickLabelStyle.FontSize = axesFontSize;
+            axis.TickLabelStyle.PointColor = foregroundColor;
+            axis.MajorTickStyle.Color = foregroundColor;
+            axis.MinorTickStyle.Color = foregroundColor;
+            axis.FrameLineStyle.Color = foregroundColor;
+        }
     }
 
     private void RecalculateVerticalAxisLimits(double xVal, double yVal, int axisIndex)
@@ -446,12 +600,20 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
             PlotControl.Plot.Remove(SelectedChartVariable.ChartSignal);
             ChartVariables.Remove(SelectedChartVariable);
             Variables.Remove(cVar);
+            RemoveChartVariableBinding(cVar);
             if (ChartVariables.Count > 0)
             {
                 SelectedChartVariable = ChartVariables[Math.Min(index, ChartVariables.Count - 1)];
             }
             PlotControl.Refresh();
         }
+    }
+
+    private void RemoveChartVariableBinding(IVariableBase variable)
+    {
+        var variableReference = GetVariableReference(variable);
+        LinkedVariables.RemoveAll(v => v == variableReference || ControlBase.IsVariableReferenceMatch(v, variable));
+        ChartVariableBindings.RemoveAll(v => v.VariableReference == variableReference || ControlBase.IsVariableReferenceMatch(v.VariableReference, variable));
     }
     
     private void ClearGraph(object parameter)
@@ -477,10 +639,21 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 
     private void AddAxis(Edge edge, int index)
     {
+        AddAxis(edge, index, null);
+    }
+
+    private void AddAxis(VerticalAxisBinding axisBinding, int index)
+    {
+        AddAxis(axisBinding.Edge, index, axisBinding);
+    }
+
+    private void AddAxis(Edge edge, int index, VerticalAxisBinding? axisBinding)
+    {
         var newAxis = new VerticalAxis(edge)
         {
-            Name = $"Y->{index}",
-            IsVisible = true,
+            Name = string.IsNullOrWhiteSpace(axisBinding?.Name) ? $"Y->{index}" : axisBinding.Name,
+            IsVisible = axisBinding?.IsVisible ?? true,
+            IsAutoScale = axisBinding?.IsAutoScale ?? true,
             LabelBackgroundColor = backgroundColor,
             LabelFontColor = foregroundColor,
             LabelFontSize = plotFontSize,
@@ -513,9 +686,11 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         };
 
         PlotControl.Plot.Axes.AddYAxis(newAxis);
-        PlotControl.Plot.Axes.SetLimitsY(bottom: -10, top: 10, yAxis: newAxis);
-        
         VerticalAxes.Add(newAxis);
+
+        newAxis.Minimum = axisBinding?.Minimum ?? -10.0;
+        newAxis.Maximum = axisBinding?.Maximum ?? 10.0;
+        PlotControl.Plot.Axes.SetLimitsY(bottom: newAxis.Minimum, top: newAxis.Maximum, yAxis: newAxis);
         PlotControl.Refresh();        
     }
     

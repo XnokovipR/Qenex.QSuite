@@ -42,16 +42,7 @@ public class ChartVariable : PropertyChangedBase
         get;
         set 
         {
-            var retIndex = ChangeAxisAction?.Invoke(value);
-            if (retIndex < value)
-            {
-                field = retIndex ?? value;
-                ChangeAxisAction?.Invoke(value);
-            }
-            else
-            {
-                field = value;
-            }
+            field = ChangeAxisAction?.Invoke(value) ?? value;
             OnPropertyChanged();
         } 
     }
