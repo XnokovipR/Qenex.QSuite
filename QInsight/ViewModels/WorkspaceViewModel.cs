@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Runtime.Serialization;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Qenex.QInsight.AppConfig;
@@ -17,9 +18,9 @@ using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.DragDrop;
 
-
 namespace Qenex.QInsight.ViewModels;
 
+[DataContract]
 public class WorkspaceViewModel : WorkspaceViewModelBase
 {
     #region  Fields
