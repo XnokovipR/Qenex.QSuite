@@ -544,7 +544,7 @@ public partial class ShellWindowModel
             workspaceViewModel.BindLoadedControlVariables(GetProjectProtocolVariables());
 
             ViewModels.Add(workspaceViewModel);
-            eventAggregator.Publish(new AddWorkspaceEaMsg() { WorkspaceViewModel = workspaceViewModel });
+            solutionExplorerViewModel.AddWorkspace(workspaceViewModel);
         }
     }
 

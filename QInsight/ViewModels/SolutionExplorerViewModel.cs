@@ -275,6 +275,17 @@ public class SolutionExplorerViewModel : ViewModelBase
         }
     }
     
+    public void AddWorkspace(IWorkspaceViewModel workspaceViewModel)
+    {
+        var projectChildren = ProjectModules.FirstOrDefault(p => p is ProjectSeWrapper)?.Children;
+        if (projectChildren == null)
+        {
+            return;
+        }
+
+        AddWorkspaceWrapper(projectChildren, workspaceViewModel);
+    }
+
     // Add workspace node
     private void AddWorkspaceWrapper(ObservableCollection<IViewableItem> children, IWorkspaceViewModel workspaceViewModel)
     {
