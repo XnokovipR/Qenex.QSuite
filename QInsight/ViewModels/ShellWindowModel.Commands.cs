@@ -529,6 +529,8 @@ public partial class ShellWindowModel
                 Name = workspace.Name,
                 WinTitle = workspace.WinTitle
             };
+            workspaceViewModel.SetControlProjectData(workspace.Controls);
+            workspaceViewModel.BindLoadedControlVariables(GetProjectProtocolVariables());
 
             ViewModels.Add(workspaceViewModel);
             eventAggregator.Publish(new AddWorkspaceEaMsg() { WorkspaceViewModel = workspaceViewModel });
@@ -576,6 +578,7 @@ public partial class ShellWindowModel
             {
                 if (arg.DialogResult != true) return;
                 
+                workspaceViewModel.Clean();
                 eventAggregator.Publish<RemoveWorkspaceFromMainMenuMsg>(new RemoveWorkspaceFromMainMenuMsg() { Name = workspaceViewModel.Name, Label = workspaceViewModel.WinTitle });
                 ViewModels.Remove(workspaceViewModel);
                 pane.RemoveFromParent();
@@ -722,6 +725,13 @@ public partial class ShellWindowModel
             .OfType<ScriptViewModel>()
             .Select(ScriptDocumentProjectData.FromScriptViewModel)
             .ToList();
+    }
+
+    private IEnumerable<IProtocolVariable> GetProjectProtocolVariables()
+    {
+        return realProjectData.Module.Drivers
+            .SelectMany(driver => driver.Protocols)
+            .SelectMany(protocol => protocol.Variables);
     }
 
     private MemoryStream CreateWorkspaceLayoutStream(RadDocking radDocking)

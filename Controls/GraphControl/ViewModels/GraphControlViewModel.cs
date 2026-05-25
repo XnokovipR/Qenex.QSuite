@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows;
+using System.Runtime.Serialization;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
@@ -17,6 +18,7 @@ using ScottPlot.WPF;
 
 namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
+[DataContract]
 public class GraphControlViewModel : ControlBase, IHasMousePosition
 {
     #region Const
@@ -29,9 +31,9 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 
     private DateTime baseTime;
     private DateTime lastUpdateTime;
-    private int currentColorIndex = 1;
-    private readonly Crosshair cross;
-    private readonly Annotation annotation;
+    private int currentColorIndex;
+    private Crosshair cross = null!;
+    private Annotation annotation = null!;
     private Color backgroundColor;
     private Color foregroundColor;
     private int axesFontSize;
@@ -56,18 +58,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         Width = 300;
         Height = 200;
 
-        PlotControl = new WpfPlot();
-        cross = PlotControl.Plot.Add.Crosshair(0, 0);
-        annotation = PlotControl.Plot.Add.Annotation("", Alignment.UpperLeft);
-        annotation.IsVisible = false;
-        cross.IsVisible = false;
-        
-        // Remove context menu
-        PlotControl.Menu?.Clear();
-        PlotControl.UserInputProcessor.UserActionResponses.RemoveAll(
-            x => x is ScottPlot.Interactivity.UserActionResponses.SingleClickContextMenu);
-        
-        PlotControl.Plot.Axes.Remove(Edge.Left);
+        InitializeRuntimeState();
         //PlotControl.Plot.Axes.Remove(Edge.Right);
     }
 
@@ -75,11 +66,15 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     
     #region Properties
     
+    [IgnoreDataMember]
     public ObservableCollection<IYAxis> VerticalAxes { get; set { field = value; OnPropertyChanged(); } }
+    [IgnoreDataMember]
     public IYAxis SelectedVerticalAxis { get; set { field = value; OnPropertyChanged(); } }
 
+    [IgnoreDataMember]
     public ChartVariable SelectedChartVariable { get; set { field = value; OnPropertyChanged(); } }
 
+    [DataMember]
     public bool IsLegendHorizontal 
     {
         get;
@@ -87,13 +82,18 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         {
             field = value; 
             OnPropertyChanged();
-            PlotControl.Plot.Legend.Orientation = value ? ScottPlot.Orientation.Horizontal : ScottPlot.Orientation.Vertical;
-            PlotControl.Refresh();
+            if (PlotControl != null)
+            {
+                PlotControl.Plot.Legend.Orientation = value ? ScottPlot.Orientation.Horizontal : ScottPlot.Orientation.Vertical;
+                PlotControl.Refresh();
+            }
         } 
     }
 
+    [IgnoreDataMember]
     public Point MousePosition { get; set; }
 
+    [DataMember]
     public bool IsCrossEnabled
     {
         get;
@@ -101,30 +101,49 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         {
             field = value;
             OnPropertyChanged();
-            cross.IsVisible = value;
-            annotation.IsVisible = value;
-            PlotControl.Refresh();
+            if (cross != null)
+            {
+                cross.IsVisible = value;
+            }
+
+            if (annotation != null)
+            {
+                annotation.IsVisible = value;
+            }
+
+            PlotControl?.Refresh();
         }
     } = false;
 
+    [IgnoreDataMember]
     public RelayCommand<MouseEventArgs> MouseMoveCommand { get; set; }
+    [IgnoreDataMember]
     public RelayCommand<object> ClearGraphCommand { get; set; }
+    [IgnoreDataMember]
     public RelayCommand<object> RemoveChartVariableCommand { get; set; }
+    [IgnoreDataMember]
     public RelayCommand<object> AddAxisCommand { get; set; }
+    [IgnoreDataMember]
     public RelayCommand<object> RemoveAxisCommand { get; set; }
     
+    [IgnoreDataMember]
     public RelayCommand<object> ZoomToFitCommand { get; set; }
     
     
     
+    [IgnoreDataMember]
     public ObservableCollection<ChartVariable> ChartVariables { get; set; }
 
+    [DataMember]
     public string ChartTitle { get; set { field = value; OnPropertyChanged(); } } = string.Empty;
     
-    public WpfPlot PlotControl { get; }
+    [IgnoreDataMember]
+    public WpfPlot PlotControl { get; private set; } = null!;
 
+    [DataMember]
     public int ChartTimeSpan { get; set { if (value < 1) value = 1; field = value; OnPropertyChanged(); } } = 10;
     
+    [DataMember]
     public int ChartBuffer { get; set { if (value < 50) value = 50; field = value; OnPropertyChanged(); } } = 80;
     
     #endregion
@@ -142,11 +161,12 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     
     public override void BindVariable(IVariableBase variable)
     {
+        RememberVariableBinding(variable);
         var ev = Variables.FirstOrDefault(v => v.Equals(variable));
         if (ev != null) return;
         Variables.Add(variable);
         
-        var c = ChartHelper.ChartColors[currentColorIndex++];
+        var c = GetNextChartColor();
         var chartVariable = new ChartVariable();
         ChartVariables.Add(chartVariable);
         
@@ -313,6 +333,52 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     #endregion
 
     #region Private Methods
+
+    private void InitializeRuntimeState()
+    {
+        ChartVariables ??= [];
+        VerticalAxes ??= [];
+        currentColorIndex = Math.Max(currentColorIndex, 0);
+
+        MouseMoveCommand = new RelayCommand<MouseEventArgs>(DisplayCursorBasedOnMouseMove);
+        RemoveChartVariableCommand = new RelayCommand<object>(RemoveChartVariable);
+        ClearGraphCommand = new RelayCommand<object>(ClearGraph);
+        AddAxisCommand = new RelayCommand<object>(AddAxis);
+        RemoveAxisCommand = new RelayCommand<object>(RemoveAxis);
+        ZoomToFitCommand = new RelayCommand<object>((i) => PlotControl?.Plot.Axes.AutoScale());
+
+        PlotControl = new WpfPlot();
+        cross = PlotControl.Plot.Add.Crosshair(0, 0);
+        annotation = PlotControl.Plot.Add.Annotation("", Alignment.UpperLeft);
+        annotation.IsVisible = IsCrossEnabled;
+        cross.IsVisible = IsCrossEnabled;
+        PlotControl.Plot.Legend.Orientation = IsLegendHorizontal ? ScottPlot.Orientation.Horizontal : ScottPlot.Orientation.Vertical;
+
+        // Remove context menu
+        PlotControl.Menu?.Clear();
+        PlotControl.UserInputProcessor.UserActionResponses.RemoveAll(
+            x => x is ScottPlot.Interactivity.UserActionResponses.SingleClickContextMenu);
+
+        PlotControl.Plot.Axes.Remove(Edge.Left);
+    }
+
+    [OnDeserialized]
+    private void OnDeserialized(StreamingContext context)
+    {
+        InitializeRuntimeState();
+    }
+
+    private System.Windows.Media.Color GetNextChartColor()
+    {
+        if (!ChartHelper.ChartColors.ContainsKey(currentColorIndex))
+        {
+            currentColorIndex = ChartHelper.ChartColors.Keys.Min();
+        }
+
+        var color = ChartHelper.ChartColors[currentColorIndex];
+        currentColorIndex++;
+        return color;
+    }
 
     private void RecalculateVerticalAxisLimits(double xVal, double yVal, int axisIndex)
     {

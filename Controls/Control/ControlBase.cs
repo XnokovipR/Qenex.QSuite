@@ -1,5 +1,6 @@
 
 using System.Collections.ObjectModel;
+using System.Runtime.Serialization;
 using Qenex.QLibs.QUI;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -9,6 +10,7 @@ using Telerik.Windows.Controls;
 
 namespace Qenex.QSuite.Controls.Control;
 
+[DataContract]
 public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlBase
 {
 	protected ControlBase()
@@ -17,32 +19,47 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 		Height = MinHeight;
 		AreConnectorsEnabled = false;
 		Variables = [];
+		LinkedVariables = [];
 	}
 
 	#region Properties
 	
+	[DataMember]
 	public int Id { get; set; }
 	
+	[IgnoreDataMember]
 	public RadDiagramShape? DiagramShape { get; set; }
 	
+	[IgnoreDataMember]
 	public abstract string ControlName { get; }
 
+	[IgnoreDataMember]
 	public abstract string Label { get; }
 
+	[IgnoreDataMember]
 	public abstract BitmapImage Icon { get; }
 
+	[IgnoreDataMember]
 	public abstract string Description { get; }
 
+	[IgnoreDataMember]
 	public int MinHeight => 50;
 
+	[IgnoreDataMember]
 	public int MinWidth => 100;
 
+	[DataMember]
 	public int X { get; set { field = value; OnPropertyChanged(); } }
+	[DataMember]
 	public int Y { get; set { field = value; OnPropertyChanged(); } }
+	[DataMember]
 	public int Width { get; set { field = value; OnPropertyChanged(); } }
+	[DataMember]
 	public int Height { get; set { field = value; OnPropertyChanged(); } }
+	[DataMember]
 	public bool AreConnectorsEnabled { get; set { field = value; OnPropertyChanged(); } }
 
+	[IgnoreDataMember]
 	public Color BackgroundColor
 	{
 		get;
@@ -54,21 +71,29 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 		}
 	} = Colors.White;//Color.FromRgb(90, 90, 90);
 
-	public Color ForegroundColor
+    [IgnoreDataMember]
+    public Color ForegroundColor
 	{
 		get;
 		set { field = value; OnPropertyChanged(); }
 	}
 	
-	public int FontSize
+    [IgnoreDataMember]
+    public int FontSize
 	{
 		get;
 		set { field = value; OnPropertyChanged(); }
 	}
 	
+	[DataMember]
 	public bool IsRun { get; set { field = value; OnPropertyChanged(); } }
+	[IgnoreDataMember]
 	public ObservableCollection<IVariableBase> Variables { get; set { field = value; OnPropertyChanged(); } }
 
+	[DataMember]
+	public List<string> LinkedVariables { get; set; }
+
+	[DataMember]
 	public bool IsLocked
 	{
 		get;
@@ -93,12 +118,49 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 
 	public abstract Task UpdateVariableValueAsync(IVariableBase variable);
 	public abstract void BindVariable(IVariableBase protVariable);
+
+	public void RememberVariableBinding(IVariableBase variable)
+	{
+		var variableReference = GetVariableReference(variable);
+		if (!LinkedVariables.Contains(variableReference))
+		{
+			LinkedVariables.Add(variableReference);
+		}
+	}
+
+	public static string GetVariableReference(IVariableBase variable)
+	{
+		return $"{variable.Id}|{variable.Namespace}|{variable.Name}";
+	}
+
+	public static bool IsVariableReferenceMatch(string variableReference, IVariableBase variable)
+	{
+		if (variableReference == GetVariableReference(variable))
+		{
+			return true;
+		}
+
+		var parts = variableReference.Split('|');
+		if (parts.Length == 3 && int.TryParse(parts[0], out var id))
+		{
+			return variable.Id == id || (variable.Namespace == parts[1] && variable.Name == parts[2]);
+		}
+
+		return variable.Name == variableReference;
+	}
 	
 	public virtual void UpdateThemeSettingsControl(Color backgroundColor, Color foregroundColor, int fontSize)
 	{
 		BackgroundColor = backgroundColor;
 		ForegroundColor = foregroundColor;
 		FontSize = fontSize;
+	}
+
+	[OnDeserializing]
+	private void OnDeserializing(StreamingContext context)
+	{
+		Variables = [];
+		LinkedVariables = [];
 	}
 
 	#endregion

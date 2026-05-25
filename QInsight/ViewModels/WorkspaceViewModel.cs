@@ -15,12 +15,12 @@ using Telerik.Windows.Controls.Diagrams;
 using Qenex.QSuite.Controls.SignalControl.ViewModels;
 using Qenex.QSuite.Controls.SignalControl.Views;
 using Qenex.QSuite.Controls.Control;
+using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.DragDrop;
 
 namespace Qenex.QInsight.ViewModels;
 
-[DataContract]
 public class WorkspaceViewModel : WorkspaceViewModelBase
 {
     #region  Fields
@@ -31,6 +31,8 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     private static readonly Brush LightBackgroundColor = new SolidColorBrush(Colors.White);
     
     private bool isViewLoaded;
+    private List<ControlBase> controlsToLoad = [];
+    private readonly List<(IProtocolVariable ProtocolVariable, Func<IProtocolVariable, Task> Handler)> loadedVariableSubscriptions = [];
 
     #endregion
     
@@ -80,13 +82,62 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 	#region Commands methods
 
 	private RadDiagram diagram;
-     private void OnWorkspaceViewLoaded(RadDiagram radDiagram)
-     {
+	 private void OnWorkspaceViewLoaded(RadDiagram radDiagram)
+	 {
         if (isViewLoaded) return;
          isViewLoaded = true;
          diagram = radDiagram;
          GridCellSize = Telerik.Windows.Controls.Diagrams.Primitives.BackgroundGrid.GetCellSize(diagram).Height;
+
+         foreach (var controlData in controlsToLoad)
+         {
+             AddControlToDiagram(controlData);
+         }
+
+         controlsToLoad.Clear();
 	}
+
+     public List<ControlBase> GetControlProjectData()
+     {
+	     if (!isViewLoaded)
+	     {
+		     foreach (var control in controlsToLoad)
+		     {
+			     SynchronizeSavedVariableBindings(control);
+		     }
+
+		     return controlsToLoad.ToList();
+	     }
+
+	     return GetDiagramControls()
+		     .Select(item =>
+		     {
+			     item.Control.X = (int)Math.Round(item.Shape.Position.X);
+			     item.Control.Y = (int)Math.Round(item.Shape.Position.Y);
+			     item.Control.Width = (int)Math.Round(item.Shape.Width);
+			     item.Control.Height = (int)Math.Round(item.Shape.Height);
+			     SynchronizeSavedVariableBindings(item.Control);
+			     return item.Control;
+		     })
+		     .ToList();
+     }
+
+     public void SetControlProjectData(IEnumerable<ControlBase> controls)
+     {
+	     controlsToLoad = controls.ToList();
+
+	     if (!isViewLoaded)
+	     {
+		     return;
+	     }
+
+	     foreach (var controlData in controlsToLoad)
+	     {
+		     AddControlToDiagram(controlData);
+	     }
+
+	     controlsToLoad.Clear();
+     }
 
      public void AddControlToDiagram(IControlBase iControl, double x, double y)
      {
@@ -119,6 +170,8 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 		controlVm.BackgroundColor = bgColor;
 		controlVm.ForegroundColor = fgColor;
 		controlVm.UpdateThemeSettingsControl(bgColor, fgColor, fontSize > 0 ? fontSize : 12);
+		controlVm.X = (int)Math.Round(x);
+		controlVm.Y = (int)Math.Round(y);
 		
 		userControl.Position = new Point(x, y);
 		userControl.Width = controlVm.Width;
@@ -174,6 +227,76 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
 		diagram.AddShape(userControl);
 	}
+
+    public void BindLoadedControlVariables(IEnumerable<IProtocolVariable> protocolVariables)
+    {
+	    UnsubscribeLoadedControlVariables();
+	    var projectProtocolVariables = protocolVariables.ToList();
+	    var controls = isViewLoaded
+		    ? controlsToLoad.Concat(GetDiagramControls().Select(item => item.Control)).Distinct()
+		    : controlsToLoad;
+
+	    foreach (var control in controls)
+	    {
+		    foreach (var variableReference in control.LinkedVariables.ToList())
+		    {
+			    var protocolVariable = projectProtocolVariables.FirstOrDefault(v =>
+				    ControlBase.IsVariableReferenceMatch(variableReference, v.Variable));
+			    if (protocolVariable != null)
+			    {
+				    control.BindVariable(protocolVariable.Variable);
+				    Func<IProtocolVariable, Task> handler = changedProtocolVariable =>
+					    control.UpdateVariableValueAsync(changedProtocolVariable.Variable);
+
+				    protocolVariable.SubscribeAsyncValueChanged(handler);
+				    loadedVariableSubscriptions.Add((protocolVariable, handler));
+			    }
+		    }
+	    }
+    }
+
+    public override void Clean()
+    {
+	    UnsubscribeLoadedControlVariables();
+    }
+
+    public override Task CleanAsync(CancellationToken ct = default)
+    {
+	    UnsubscribeLoadedControlVariables();
+	    return Task.CompletedTask;
+    }
+
+    private void AddControlToDiagram(ControlBase control)
+    {
+	    AddControlToDiagram(control, control.X, control.Y);
+    }
+
+    private IEnumerable<(RadDiagramShape Shape, ControlBase Control)> GetDiagramControls()
+    {
+	    return diagram
+		    .Shapes
+		    .OfType<RadDiagramShape>()
+		    .Select(shape => (Shape: shape, Control: (shape.Content as UserControl)?.DataContext as ControlBase))
+		    .Where(item => item.Control != null)!;
+    }
+
+    private static void SynchronizeSavedVariableBindings(ControlBase control)
+    {
+	    foreach (var variable in control.Variables)
+	    {
+		    control.RememberVariableBinding(variable);
+	    }
+    }
+
+    private void UnsubscribeLoadedControlVariables()
+    {
+	    foreach (var subscription in loadedVariableSubscriptions)
+	    {
+		    subscription.ProtocolVariable.UnsubscribeAsyncValueChanged(subscription.Handler);
+	    }
+
+	    loadedVariableSubscriptions.Clear();
+    }
     
     private void OnVariableDragOver(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
     {

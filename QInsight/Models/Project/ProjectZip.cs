@@ -1,7 +1,10 @@
 using System.IO;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Xml.Serialization;
 using Qenex.QLibs.XmlInOut;
+using Qenex.QSuite.Controls.GraphControl.ViewModels;
+using Qenex.QSuite.Controls.SignalControl.ViewModels;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.ModuleXmlHandler;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
@@ -169,8 +172,8 @@ public class ProjectZip
     private static Stream CreateWorkspaceStream(WorkspaceProjectData workspace)
     {
         var stream = new MemoryStream();
-        var serializer = new XmlSerializer(typeof(WorkspaceProjectData));
-        serializer.Serialize(stream, workspace);
+        var serializer = new DataContractSerializer(typeof(WorkspaceProjectData), GetKnownControlTypes());
+        serializer.WriteObject(stream, workspace);
         stream.Position = 0;
         return stream;
     }
@@ -193,8 +196,8 @@ public class ProjectZip
     {
         try
         {
-            var serializer = new XmlSerializer(typeof(WorkspaceProjectData));
-            return serializer.Deserialize(stream) as WorkspaceProjectData;
+            var serializer = new DataContractSerializer(typeof(WorkspaceProjectData), GetKnownControlTypes());
+            return serializer.ReadObject(stream) as WorkspaceProjectData;
         }
         catch (Exception e)
         {
@@ -217,4 +220,14 @@ public class ProjectZip
             return [];
         }
     }
+
+    private static IEnumerable<Type> GetKnownControlTypes()
+    {
+        return
+        [
+            typeof(GraphControlViewModel),
+            typeof(SignalControlViewModel)
+        ];
+    }
+
 }

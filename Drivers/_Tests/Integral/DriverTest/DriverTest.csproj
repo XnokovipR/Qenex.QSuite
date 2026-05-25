@@ -10,7 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="NetMQ" Version="4.0.4.1" />
+      <PackageReference Include="NetMQ" Version="4.0.4.2" />
     </ItemGroup>
 
 </Project>

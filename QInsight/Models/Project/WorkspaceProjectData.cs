@@ -1,23 +1,28 @@
-using System.Xml.Serialization;
+using System.Runtime.Serialization;
 using Qenex.QInsight.ViewModels;
+using Qenex.QSuite.Controls.Control;
 
 namespace Qenex.QInsight.Models.Project;
 
-[XmlRoot("workspace")]
+[DataContract]
 public class WorkspaceProjectData
 {
-    [XmlAttribute("name")]
+    [DataMember]
     public string Name { get; set; } = string.Empty;
 
-    [XmlAttribute("winTitle")]
+    [DataMember]
     public string WinTitle { get; set; } = string.Empty;
+
+    [DataMember]
+    public List<ControlBase> Controls { get; set; } = [];
 
     public static WorkspaceProjectData FromWorkspace(WorkspaceViewModel workspace)
     {
         return new WorkspaceProjectData
         {
             Name = workspace.Name,
-            WinTitle = workspace.WinTitle
+            WinTitle = workspace.WinTitle,
+            Controls = workspace.GetControlProjectData()
         };
     }
 }

@@ -1,13 +1,13 @@
-﻿using System.Windows;
+using System.Runtime.Serialization;
+using System.Windows;
 using Qenex.QSuite.Common.WpfComm;
 using Qenex.QSuite.Controls.Control;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QSuite.Controls.SignalControl.ViewModels;
 
+[DataContract]
 public class SignalControlViewModel : ControlBase
 {
 	private DateTime previousUpdateTime = DateTime.MinValue;
@@ -25,12 +25,16 @@ public class SignalControlViewModel : ControlBase
 
     #region Properties
 
+    [IgnoreDataMember]
     public string VariableLabel { get; set { field = value; OnPropertyChanged(); } }
 
+    [IgnoreDataMember]
     public string VariableValue { get; set { field = value; OnPropertyChanged(); } }
 
+    [IgnoreDataMember]
     public string VariableUnit { get; set { field = value; OnPropertyChanged(); } }
     
+    [DataMember]
     public int RefreshTime
     { 
 	    get;
@@ -41,6 +45,7 @@ public class SignalControlViewModel : ControlBase
 	    } 
     } = 250;
     
+    [DataMember]
     public int DeathBendPercentage
     { 
 	    get;
@@ -91,10 +96,27 @@ public class SignalControlViewModel : ControlBase
 
     public override void BindVariable(IVariableBase protVariable)
     {
+	    RememberVariableBinding(protVariable);
+	    var existingVariable = Variables.FirstOrDefault(v => v.Equals(protVariable));
+	    if (existingVariable != null)
+	    {
+		    return;
+	    }
+
 	    Variables.Add(protVariable);
 	    VariableLabel = protVariable.Label;
 	    VariableUnit = protVariable is ScalarVariable variable ? variable.Values.ValPresentation.Unit : string.Empty;
 	    VariableValue = string.Empty;
+    }
+
+    [OnDeserialized]
+    private void OnDeserialized(StreamingContext context)
+    {
+	    VariableLabel ??= "----------";
+	    VariableValue ??= "----------";
+	    VariableUnit ??= string.Empty;
+	    Variables ??= [];
+	    LinkedVariables ??= [];
     }
 
     #endregion
