@@ -9,6 +9,7 @@ public interface IScriptBase
     string AdditionalInfo { get; set; }
 
     bool IsEnabled { get; set; }
+    bool IsReplayEnabled { get; set; }
     ScriptRunState RunState { get; set; }
 	double LastExecutionDurationMs { get; set; }
     double AverageExecutionDurationMs { get; set; }

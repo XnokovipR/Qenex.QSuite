@@ -31,6 +31,7 @@ public partial class ShellWindowModel
     private IReplayDriver? activeReplayDriver;
     private List<(IDriverBase Driver, bool IsEnabled)>? replayDriverStates;
     private List<(IProtocolBase Protocol, bool IsEnabled)>? replayProtocolStates;
+    private List<(IScriptBase Script, bool IsEnabled)>? replayScriptStates;
     
     #endregion
     
@@ -963,6 +964,9 @@ public partial class ShellWindowModel
             .SelectMany(driver => driver.Protocols)
             .Select(protocol => (protocol, protocol.IsEnabled))
             .ToList();
+        replayScriptStates = realProjectData.Module.Scripting.Scripts
+            .Select(script => (script, script.IsEnabled))
+            .ToList();
     }
 
     private void ApplyReplayStates(IDriverBase replayDriver, IProtocolBase replayProtocol)
@@ -975,6 +979,14 @@ public partial class ShellWindowModel
         foreach (var protocol in realProjectData.Module.Drivers.SelectMany(driver => driver.Protocols))
         {
             protocol.IsEnabled = ReferenceEquals(protocol, replayProtocol);
+        }
+
+        foreach (var script in realProjectData.Module.Scripting.Scripts)
+        {
+            if (!script.IsReplayEnabled)
+            {
+                script.IsEnabled = false;
+            }
         }
     }
 
@@ -996,8 +1008,17 @@ public partial class ShellWindowModel
             }
         }
 
+        if (replayScriptStates != null)
+        {
+            foreach (var (script, isEnabled) in replayScriptStates)
+            {
+                script.IsEnabled = isEnabled;
+            }
+        }
+
         replayDriverStates = null;
         replayProtocolStates = null;
+        replayScriptStates = null;
     }
 
     private void RebindWorkspaceControlVariables(IEnumerable<IProtocolVariable> protocolVariables)

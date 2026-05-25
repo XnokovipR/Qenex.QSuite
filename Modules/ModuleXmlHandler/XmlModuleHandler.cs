@@ -334,7 +334,9 @@ public class XmlModuleHandler
                 FileName = script.FileName,
                 Content = script.Content,
                 ExecutionMode = executionMode,
-                AdditionalInfo = script.AdditionalInfo
+                AdditionalInfo = script.AdditionalInfo,
+                IsEnabled = script.IsEnabled,
+                IsReplayEnabled = script.IsReplayEnabled
             });
         }
 
@@ -552,7 +554,8 @@ public class XmlModuleHandler
                 Content = xmlPythonScript.Content,
 				ExecutionMode = Enum.Parse<ScriptExecutionMode>(xmlPythonScript.ExecutionMode.ToString()),
                 AdditionalInfo = xmlPythonScript.AdditionalInfo,
-                
+                IsEnabled = xmlPythonScript.IsEnabled,
+                IsReplayEnabled = xmlPythonScript.IsReplayEnabled
 			};
 
             scripts.Add(script);

@@ -12,6 +12,7 @@ public class PyScript : IScriptBase
 
     public string AdditionalInfo { get; set; } = string.Empty;
     public bool IsEnabled { get; set; }
+    public bool IsReplayEnabled { get; set; }
     public ScriptExecutionMode ExecutionMode { get; set; } = ScriptExecutionMode.Manual;
     public ScriptRunState RunState { get; set; }
 

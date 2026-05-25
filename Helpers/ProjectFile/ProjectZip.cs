@@ -107,7 +107,9 @@ public class ProjectZip(ILogger? logger = null)
             {
                 FileName = script.FileName,
                 ExecutionMode = script.ExecutionMode,
-                AdditionalInfo = script.AdditionalInfo
+                AdditionalInfo = script.AdditionalInfo,
+                IsEnabled = script.IsEnabled,
+                IsReplayEnabled = script.IsReplayEnabled
             }).ToList()
         };
 

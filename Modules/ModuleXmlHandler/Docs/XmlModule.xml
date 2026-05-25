@@ -18,13 +18,19 @@
           <variableReferences>
             <variableReference ref="1" isCommunicated="true">
               <commParam>direction="read";eventRef="Event20ms";multiplier="1";id="OilTemp"</commParam>
-			  <script ref="valuechanged_oiltemp.py" additionalInfo="threshold=1700.0"/>
+              <script ref="valuechanged_oiltemp.py" additionalInfo="threshold=700.0" />
             </variableReference>
             <variableReference ref="2" isCommunicated="true">
               <commParam>direction="read";eventRef="Event20ms";multiplier="1";id="OilPressure"</commParam>
             </variableReference>
             <variableReference ref="3" isCommunicated="true">
               <commParam>direction="read";eventRef="Event20ms";multiplier="1";id="MachineState"</commParam>
+            </variableReference>
+            <variableReference ref="5" isCommunicated="true">
+              <commParam>direction="read";eventRef="Event20ms";multiplier="1";id="AirPressure"</commParam>
+            </variableReference>
+            <variableReference ref="4" isCommunicated="true">
+              <commParam>direction="read";eventRef="Event20ms";multiplier="1";id="AlertMsg"</commParam>
             </variableReference>
           </variableReferences>
         </protocolReference>
@@ -41,21 +47,28 @@
           <encryptedSettings />
           <variableReferences>
             <variableReference ref="1" isCommunicated="true">
-              <commParam />
+              <commParam>commParams="commParams="""</commParam>
+              <script ref="valuechanged_oiltemp.py" additionalInfo="threshold=700.0" />
             </variableReference>
             <variableReference ref="2" isCommunicated="true">
-              <commParam />
+              <commParam>commParams="commParams="""</commParam>
             </variableReference>
             <variableReference ref="3" isCommunicated="true">
-              <commParam />
+              <commParam>commParams="commParams="""</commParam>
+            </variableReference>
+            <variableReference ref="5" isCommunicated="true">
+              <commParam>commParams="commParams="""</commParam>
+            </variableReference>
+            <variableReference ref="4" isCommunicated="true">
+              <commParam>commParams="commParams="""</commParam>
             </variableReference>
           </variableReferences>
         </protocolReference>
       </protocolReferences>
     </driverReference>
-    <driverReference ref="FileDataReplayDriver" label="File data replay">
+    <driverReference ref="FileDataReplayDriver" label="Replay: values.msgpack">
       <isEnabled>false</isEnabled>
-      <settings>file=DataLogs\values.msgpack;mode=realtime;speed=1;loop=false</settings>
+      <settings>file=D:\Projects\Qenex\Source\Qenex.QSuite\QInsight\bin\Debug\net10.0-windows\DataLogs\values.msgpack;mode=realtime;speed=1;loop=false</settings>
       <encryptedSettings />
       <protocolReferences>
         <protocolReference ref="DataLogReplayProtocol">
@@ -64,13 +77,20 @@
           <encryptedSettings />
           <variableReferences>
             <variableReference ref="1" isCommunicated="true">
-              <commParam />
+              <commParam>commParams=""</commParam>
+              <script ref="valuechanged_oiltemp.py" additionalInfo="threshold=700.0" />
             </variableReference>
             <variableReference ref="2" isCommunicated="true">
-              <commParam />
+              <commParam>commParams=""</commParam>
             </variableReference>
             <variableReference ref="3" isCommunicated="true">
-              <commParam />
+              <commParam>commParams=""</commParam>
+            </variableReference>
+            <variableReference ref="4" isCommunicated="true">
+              <commParam>commParams=""</commParam>
+            </variableReference>
+            <variableReference ref="5" isCommunicated="true">
+              <commParam>commParams=""</commParam>
             </variableReference>
           </variableReferences>
         </protocolReference>
@@ -92,10 +112,10 @@
     <protocol id="1" name="SimpleO2OProtocol" label="Simple One to One Protocol">
       <version>1.0.0.0</version>
     </protocol>
-    <protocol id="2" name="One2OneProtocol" label="One2One Protocol">
+    <protocol id="1" name="One2OneProtocol" label="One2One Protocol">
       <version>1.0.0.0</version>
     </protocol>
-    <protocol id="3" name="DataLogReplayProtocol" label="Data Log Replay Protocol">
+    <protocol id="1" name="DataLogReplayProtocol" label="Data Log Replay Protocol">
       <version>1.0.0.0</version>
     </protocol>
   </protocols>
@@ -159,9 +179,9 @@
     </scalarVariable>
   </variables>
   <scripts>
-    <script fileName="startup.py" content="" executionMode="Startup" additionalInfo="" />
-    <script fileName="shutdown.py" content="" executionMode="Shutdown" additionalInfo="" />
-    <script fileName="periodic.py" content="" executionMode="Periodic" additionalInfo="period=2;unit=s" />
-	<script fileName="valuechanged_oiltemp.py" executionMode="OnValueChanged" />
+    <script fileName="startup.py" content="" executionMode="Startup" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
+    <script fileName="shutdown.py" content="" executionMode="Shutdown" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
+    <script fileName="periodic.py" content="" executionMode="Periodic" additionalInfo="period=2;unit=s" isEnabled="true" isReplayEnabled="false" />
+    <script fileName="valuechanged_oiltemp.py" content="" executionMode="OnValueChanged" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
   </scripts>
 </module>

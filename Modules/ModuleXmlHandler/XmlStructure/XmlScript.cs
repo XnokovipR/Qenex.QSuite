@@ -9,6 +9,8 @@ public class XmlScript
     [XmlAttribute("content")] public string Content { get; set; } = string.Empty;
 	[XmlAttribute("executionMode")] public XmlScriptExecutionMode ExecutionMode { get; set; } = XmlScriptExecutionMode.Manual;
 	[XmlAttribute("additionalInfo")] public string AdditionalInfo { get; set; } = string.Empty;
+	[XmlAttribute("isEnabled")] public bool IsEnabled { get; set; }
+	[XmlAttribute("isReplayEnabled")] public bool IsReplayEnabled { get; set; }
 
 }
 

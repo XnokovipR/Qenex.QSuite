@@ -220,6 +220,11 @@ public class ScriptingContext
 
     private void ExecuteScript(IScriptBase script, Action? beforeExecute = null)
     {
+        if (!script.IsEnabled)
+        {
+            return;
+        }
+
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         script.RunState = ScriptRunState.Running;
 

@@ -69,6 +69,28 @@ public class ScriptWrapper : PropertyChangedBase
             OnPropertyChanged();
         }
     }
+
+    public bool IsEnabled
+    {
+        get => script.IsEnabled;
+        set
+        {
+            if (script.IsEnabled == value) return;
+            script.IsEnabled = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsReplayEnabled
+    {
+        get => script.IsReplayEnabled;
+        set
+        {
+            if (script.IsReplayEnabled == value) return;
+            script.IsReplayEnabled = value;
+            OnPropertyChanged();
+        }
+    }
  
     public double LastExecutionInterval
     {
