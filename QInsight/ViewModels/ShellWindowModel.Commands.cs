@@ -14,6 +14,7 @@ using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Scripting.Script;
+using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
 using Telerik.Windows.Controls.Docking;
@@ -82,6 +83,7 @@ public partial class ShellWindowModel
     public RelayCommand<RadDocking> RibbonSaveWorkspaceLayoutCommand { get; set; }
     
     
+    public RelayCommand<RadDocking> RibbonPythonInterpreterCommand { get; set; }
     public RelayCommand<object> RibbonAboutAppCommand { get; set; }
 
     #endregion
@@ -125,6 +127,8 @@ public partial class ShellWindowModel
             SaveLayout(r,"ws");
             requireSerializationTag = false;
         });
+
+        RibbonPythonInterpreterCommand = new RelayCommand<RadDocking>(OpenPythonInterpreter);
         
         RibbonAboutAppCommand = new RelayCommand<object>((o) =>
         {
@@ -213,6 +217,7 @@ public partial class ShellWindowModel
     {
         try
         {
+            pythonInterpreterStandaloneContext?.DisposeSharedScopeAsync().GetAwaiter().GetResult();
             AppSettings.SaveAppSettingsToFile("QInsightAppSettings.xml", ShellWindow.MainAppSettings);
         }
         catch (Exception e)
@@ -641,6 +646,38 @@ public partial class ShellWindowModel
     private void RemoveScriptVariablesOptions(RadDocking docking)
     {
         
+    }
+
+    private void OpenPythonInterpreter(RadDocking docking)
+    {
+        var foundPythonInterpreterViewModel = ViewModels.OfType<PythonInterpreterViewModel>().FirstOrDefault();
+        if (foundPythonInterpreterViewModel != null)
+        {
+            foundPythonInterpreterViewModel.IsHidden = false;
+            return;
+        }
+
+        var pythonInterpreterViewModel = new PythonInterpreterViewModel(
+            eventAggregator,
+            GetPythonInterpreterScriptingContextAsync);
+        ViewModels.Add(pythonInterpreterViewModel);
+    }
+
+    private async Task<ScriptingContext?> GetPythonInterpreterScriptingContextAsync()
+    {
+        if (IsRuntimeStarted && realProjectData?.Module.Scripting.SharedScope != null)
+        {
+            return realProjectData.Module.Scripting;
+        }
+
+        if (pythonInterpreterStandaloneContext?.SharedScope != null)
+        {
+            return pythonInterpreterStandaloneContext;
+        }
+
+        pythonInterpreterStandaloneContext = new ScriptingContext(ShellWindow.MainAppSettings.ScriptEngine, logger);
+        await pythonInterpreterStandaloneContext.InitializeSharedScopeAsync([]);
+        return pythonInterpreterStandaloneContext;
     }
 
     #endregion

@@ -203,6 +203,13 @@
 					
 					<!-- Tools-->
 					<telerik:RadRibbonTab Header="Tools" x:Name="ToolsTab">
+						<telerik:RadRibbonGroup Header="Python">
+							<telerik:RadRibbonButton
+								Text="Python"
+								Size="Large"
+								SmallImage="../Icons/Menu/ScriptSettings.png"
+								Command="{Binding RibbonPythonInterpreterCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+						</telerik:RadRibbonGroup>
 						<telerik:RadRibbonGroup Header="Documentation">
 							<telerik:RadRibbonButton
 								Text="About" 

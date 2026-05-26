@@ -95,6 +95,61 @@ public class ScriptingContext
         
     }
 
+    public Task<InteractivePythonExecutionResult> ExecuteInteractiveAsync(string input, CancellationToken ct = default)
+    {
+        return pythonFactory.StartNew(() => ExecuteInteractive(input), ct);
+    }
+
+    private InteractivePythonExecutionResult ExecuteInteractive(string input)
+    {
+        if (SharedScope == null)
+        {
+            throw new InvalidOperationException("Python shared scope is not initialized.");
+        }
+
+        using (Py.GIL())
+        {
+            EnsureInteractiveConsole();
+
+            var stdoutWriter = new PythonOutputBufferWriter();
+            var stderrWriter = new PythonOutputBufferWriter();
+
+            using var sys = Py.Import("sys");
+            using var previousStdout = sys.GetAttr("stdout");
+            using var previousStderr = sys.GetAttr("stderr");
+
+            try
+            {
+                sys.SetAttr("stdout", stdoutWriter.ToPython());
+                sys.SetAttr("stderr", stderrWriter.ToPython());
+
+                using var console = SharedScope.Get("__qenex_interactive_console");
+                using var result = console.InvokeMethod("push", input.ToPython());
+
+                return new InteractivePythonExecutionResult
+                {
+                    Output = stdoutWriter.Text,
+                    Error = stderrWriter.Text,
+                    IsIncomplete = result.As<bool>()
+                };
+            }
+            finally
+            {
+                sys.SetAttr("stdout", previousStdout);
+                sys.SetAttr("stderr", previousStderr);
+            }
+        }
+    }
+
+    private void EnsureInteractiveConsole()
+    {
+        SharedScope!.Exec("""
+import code as __qenex_code
+if "__qenex_interactive_console" not in globals():
+    __qenex_interactive_console = __qenex_code.InteractiveConsole(locals())
+""");
+    }
+
     private void EnsurePythonRuntimeInitialized()
     {
         if (pythonRuntimeInitialized) return;

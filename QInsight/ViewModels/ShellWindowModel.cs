@@ -12,6 +12,7 @@ using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.Views;
 using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Scripting.ScriptingEngine;
 using Telerik.Windows.Controls;
 
 namespace Qenex.QInsight.ViewModels;
@@ -37,6 +38,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	private RealProjectData realProjectData;
 	private bool isProjectMade;
 	private string? currentProjectFilePath;
+	private ScriptingContext? pythonInterpreterStandaloneContext;
 
 	// ViewModels
 	private RadDocking shellRadDocking;
