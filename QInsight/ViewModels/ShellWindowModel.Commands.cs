@@ -32,6 +32,12 @@ public partial class ShellWindowModel
     private List<(IDriverBase Driver, bool IsEnabled)>? replayDriverStates;
     private List<(IProtocolBase Protocol, bool IsEnabled)>? replayProtocolStates;
     private List<(IScriptBase Script, bool IsEnabled)>? replayScriptStates;
+    private bool canUseHomeRibbon = true;
+    private bool canConnectRuntime = true;
+    private bool canDisconnectRuntime;
+    private bool canImportDataLog = true;
+    private bool canReplay = true;
+    private bool canStopReplay = true;
     
     #endregion
     
@@ -85,21 +91,21 @@ public partial class ShellWindowModel
         ShellWindowLocationChangedCommand = new RelayCommand<object>(OnShellWindowLocationChanged);
         ShellWindowSizeChangedCommand = new RelayCommand<object>(OnShellWindowSizeChanged);
         
-        RibbonOpenProjectCommand = new RelayCommandAsync<RadDocking>(OpenProjectAsync);
-        RibbonSaveProjectCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsync);
-        RibbonSaveProjectAsCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsAsync);
-         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(CloseProjectAsync);
-        RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync);
-        RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace);
+        RibbonOpenProjectCommand = new RelayCommandAsync<RadDocking>(OpenProjectAsync, _ => canUseHomeRibbon);
+        RibbonSaveProjectCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsync, _ => canUseHomeRibbon);
+        RibbonSaveProjectAsCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsAsync, _ => canUseHomeRibbon);
+        RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(CloseProjectAsync, _ => canUseHomeRibbon);
+        RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync, _ => canUseHomeRibbon);
+        RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace, _ => canUseHomeRibbon);
 
-        RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync);
-        RibbonDisconnectCommand = new RelayCommandAsync<RadDocking>(DisconnectAsync);
-        RibbonImportDataLogCommand = new RelayCommandAsync<RadDocking>(ImportDataLogAsync);
-        RibbonReplayCommand = new RelayCommandAsync<RadDocking>(ReplayAsync);
-        RibbonStopReplayCommand = new RelayCommandAsync<RadDocking>(StopReplayAsync);
+        RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync, _ => canConnectRuntime);
+        RibbonDisconnectCommand = new RelayCommandAsync<RadDocking>(DisconnectAsync, _ => canDisconnectRuntime);
+        RibbonImportDataLogCommand = new RelayCommandAsync<RadDocking>(ImportDataLogAsync, _ => canImportDataLog);
+        RibbonReplayCommand = new RelayCommandAsync<RadDocking>(ReplayAsync, _ => canReplay);
+        RibbonStopReplayCommand = new RelayCommandAsync<RadDocking>(StopReplayAsync, _ => canStopReplay);
         
-        RibbonScriptVariablesSettingsCommand = new RelayCommand<RadDocking>(OpenScriptVariablesOptions);
-        RibbonScriptsSettingsCommand = new RelayCommand<RadDocking>(RemoveScriptVariablesOptions);
+        RibbonScriptVariablesSettingsCommand = new RelayCommand<RadDocking>(OpenScriptVariablesOptions, _ => canUseHomeRibbon);
+        RibbonScriptsSettingsCommand = new RelayCommand<RadDocking>(RemoveScriptVariablesOptions, _ => canUseHomeRibbon);
 
         RibbonSaveLayoutCommand = new RelayCommand<RadDocking>(r =>
         {
@@ -466,6 +472,7 @@ public partial class ShellWindowModel
             {
                 await realProjectData.Module.StopAsync();
                 IsRuntimeStarted = false;
+                SetRuntimeCommandStates(false);
             }
             
             await CloseProjectWorkspacesAsync();
@@ -635,10 +642,12 @@ public partial class ShellWindowModel
         {
             await realProjectData.Module.StartAsync();
             IsRuntimeStarted = true;
+            SetRuntimeCommandStates(true);
         }
         catch (Exception e)
         {
             IsRuntimeStarted = false;
+            SetRuntimeCommandStates(false);
             logger.Log(LogLevel.Error, e.Message);
         }
     }
@@ -656,6 +665,7 @@ public partial class ShellWindowModel
         {
             await realProjectData.Module.StopAsync();
             IsRuntimeStarted = false;
+            SetRuntimeCommandStates(false);
         }
         catch (Exception e)
         {
@@ -743,6 +753,7 @@ public partial class ShellWindowModel
             RebindWorkspaceControlVariables(replayProtocol.Variables);
             IsRuntimeStarted = true;
             isReplayMode = true;
+            SetRuntimeCommandStates(true);
             await realProjectData.Module.StartAsync();
 
             if (!isReplayMode)
@@ -761,6 +772,7 @@ public partial class ShellWindowModel
             RebindWorkspaceControlVariables(GetProjectProtocolVariables());
             IsRuntimeStarted = false;
             isReplayMode = false;
+            SetRuntimeCommandStates(false);
             logger.Log(LogLevel.Error, $"Replay start failed: {e.Message}");
         }
     }
@@ -791,6 +803,7 @@ public partial class ShellWindowModel
         {
             IsRuntimeStarted = false;
             isReplayMode = false;
+            SetRuntimeCommandStates(false);
             UnsubscribeReplayCompleted();
             RestoreReplayStates();
             LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
@@ -1102,6 +1115,30 @@ public partial class ShellWindowModel
         isProjectMade = isMade;
         //OnCloseProjectCommand?.OnCanExecuteChanged();
         //OnAddWorkspaceCommand?.OnCanExecuteChanged();
+    }
+
+    private void SetRuntimeCommandStates(bool runtimeStarted)
+    {
+        canUseHomeRibbon = !runtimeStarted;
+        canConnectRuntime = !runtimeStarted;
+        canDisconnectRuntime = runtimeStarted;
+        canImportDataLog = !runtimeStarted;
+        canReplay = !runtimeStarted;
+        canStopReplay = !runtimeStarted;
+
+        RibbonOpenProjectCommand.OnCanExecuteChanged();
+        RibbonSaveProjectCommand.OnCanExecuteChanged();
+        RibbonSaveProjectAsCommand.OnCanExecuteChanged();
+        RibbonCloseProjectCommand.OnCanExecuteChanged();
+        RibbonAddWorkspaceCommand.OnCanExecuteChanged();
+        RibbonRemoveWorkspaceCommand.OnCanExecuteChanged();
+        RibbonScriptVariablesSettingsCommand.OnCanExecuteChanged();
+        RibbonScriptsSettingsCommand.OnCanExecuteChanged();
+        RibbonConnectCommand.OnCanExecuteChanged();
+        RibbonDisconnectCommand.OnCanExecuteChanged();
+        RibbonImportDataLogCommand.OnCanExecuteChanged();
+        RibbonReplayCommand.OnCanExecuteChanged();
+        RibbonStopReplayCommand.OnCanExecuteChanged();
     }
 
     #endregion
