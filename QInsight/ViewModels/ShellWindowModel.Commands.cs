@@ -100,11 +100,11 @@ public partial class ShellWindowModel
         ShellWindowSizeChangedCommand = new RelayCommand<object>(OnShellWindowSizeChanged);
         
         RibbonOpenProjectCommand = new RelayCommandAsync<RadDocking>(OpenProjectAsync, _ => canUseHomeRibbon);
-        RibbonSaveProjectCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsync, _ => canUseHomeRibbon);
-        RibbonSaveProjectAsCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsAsync, _ => canUseHomeRibbon);
-        RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(CloseProjectAsync, _ => canUseHomeRibbon);
-        RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync, _ => canUseHomeRibbon);
-        RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace, _ => canUseHomeRibbon);
+        RibbonSaveProjectCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsync, _ => CanUseProjectCommand());
+        RibbonSaveProjectAsCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsAsync, _ => CanUseProjectCommand());
+        RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(CloseProjectAsync, _ => CanUseProjectCommand());
+        RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync, _ => CanUseProjectCommand());
+        RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace, _ => CanUseProjectCommand());
 
         RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync, _ => CanConnectRuntime());
         RibbonDisconnectCommand = new RelayCommandAsync<RadDocking>(DisconnectAsync, _ => canDisconnectRuntime);
@@ -113,8 +113,8 @@ public partial class ShellWindowModel
         RibbonStopReplayCommand = new RelayCommandAsync<RadDocking>(StopReplayAsync, _ => canStopReplay);
         RibbonReplayPauseResumeCommand = new RelayCommand<object>(_ => ToggleReplayPause(), _ => IsReplayControlEnabled);
         
-        RibbonScriptVariablesSettingsCommand = new RelayCommand<RadDocking>(OpenScriptVariablesOptions, _ => canUseHomeRibbon);
-        RibbonScriptsSettingsCommand = new RelayCommand<RadDocking>(RemoveScriptVariablesOptions, _ => canUseHomeRibbon);
+        RibbonScriptVariablesSettingsCommand = new RelayCommand<RadDocking>(OpenScriptVariablesOptions, _ => CanUseProjectCommand());
+        RibbonScriptsSettingsCommand = new RelayCommand<RadDocking>(RemoveScriptVariablesOptions, _ => CanUseProjectCommand());
 
         RibbonSaveLayoutCommand = new RelayCommand<RadDocking>(r =>
         {
@@ -1316,8 +1316,8 @@ public partial class ShellWindowModel
     private void ChangeIsProjectMade(bool isMade)
     {
         isProjectMade = isMade;
-        //OnCloseProjectCommand?.OnCanExecuteChanged();
-        //OnAddWorkspaceCommand?.OnCanExecuteChanged();
+        NotifyProjectCommandsCanExecuteChanged();
+        NotifyRuntimeCommandsCanExecuteChanged();
     }
 
     private void SetRuntimeCommandStates(bool runtimeStarted, bool replayStarted = false)
@@ -1350,6 +1350,22 @@ public partial class ShellWindowModel
         RibbonConnectCommand.OnCanExecuteChanged();
         RibbonImportDataLogCommand.OnCanExecuteChanged();
         RibbonReplayCommand.OnCanExecuteChanged();
+    }
+
+    private void NotifyProjectCommandsCanExecuteChanged()
+    {
+        RibbonSaveProjectCommand.OnCanExecuteChanged();
+        RibbonSaveProjectAsCommand.OnCanExecuteChanged();
+        RibbonCloseProjectCommand.OnCanExecuteChanged();
+        RibbonAddWorkspaceCommand.OnCanExecuteChanged();
+        RibbonRemoveWorkspaceCommand.OnCanExecuteChanged();
+        RibbonScriptVariablesSettingsCommand.OnCanExecuteChanged();
+        RibbonScriptsSettingsCommand.OnCanExecuteChanged();
+    }
+
+    private bool CanUseProjectCommand()
+    {
+        return canUseHomeRibbon && isProjectMade && realProjectData?.Module != null;
     }
 
     private bool CanConnectRuntime()
