@@ -6,6 +6,8 @@ public interface IScriptBase
     string Content { get; set; }
 
     ScriptExecutionMode ExecutionMode { get; set; }
+    bool Blocking { get; set; }
+    double TimeoutMs { get; set; }
     string AdditionalInfo { get; set; }
 
     bool IsEnabled { get; set; }

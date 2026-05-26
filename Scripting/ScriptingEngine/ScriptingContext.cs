@@ -508,51 +508,17 @@ public class ScriptingContext
 
     private ScriptExecutionOptions GetScriptExecutionOptions(IScriptBase script)
     {
-        var settings = ParseAdditionalInfo(script.AdditionalInfo);
-        var blocking = true;
         TimeSpan? timeout = null;
-
-        if (settings.TryGetValue("blocking", out var blockingText) && !TryParseBoolean(blockingText, out blocking))
+        if (script.TimeoutMs > 0)
         {
-            logger?.Log(LogLevel.Warn, $"Script \"{script.FileName}\" has invalid blocking setting \"{blockingText}\".");
-            blocking = true;
+            timeout = TimeSpan.FromMilliseconds(script.TimeoutMs);
+        }
+        else if (script.TimeoutMs < 0)
+        {
+            logger?.Log(LogLevel.Warn, $"Script \"{script.FileName}\" has invalid timeout setting \"{script.TimeoutMs}\".");
         }
 
-        if (settings.TryGetValue("timeout", out var timeoutText))
-        {
-            if (double.TryParse(timeoutText, NumberStyles.Float, CultureInfo.InvariantCulture, out var timeoutMs) && timeoutMs > 0)
-            {
-                timeout = TimeSpan.FromMilliseconds(timeoutMs);
-            }
-            else
-            {
-                logger?.Log(LogLevel.Warn, $"Script \"{script.FileName}\" has invalid timeout setting \"{timeoutText}\".");
-            }
-        }
-
-        return new ScriptExecutionOptions(blocking, timeout);
-    }
-
-    private static bool TryParseBoolean(string value, out bool result)
-    {
-        switch (value.Trim().ToLowerInvariant())
-        {
-            case "true":
-            case "1":
-            case "yes":
-            case "y":
-                result = true;
-                return true;
-            case "false":
-            case "0":
-            case "no":
-            case "n":
-                result = false;
-                return true;
-            default:
-                result = false;
-                return false;
-        }
+        return new ScriptExecutionOptions(script.Blocking, timeout);
     }
     
     #endregion

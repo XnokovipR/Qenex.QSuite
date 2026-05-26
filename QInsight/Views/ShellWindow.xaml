@@ -117,9 +117,9 @@
 	                            SmallImage="../Icons/Menu/Disconnect.png"
 	                            Command="{Binding RibbonDisconnectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
-						<telerik:RadRibbonGroup Header="Data">
+						<telerik:RadRibbonGroup Header="Replay data">
 							<telerik:RadRibbonButton
-								Text="Import log"
+								Text="Import"
 								Size="Large"
 								SmallImage="../Icons/Menu/OpenProject.png"
 								Command="{Binding RibbonImportDataLogCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
@@ -129,7 +129,7 @@
 								SmallImage="../Icons/Menu/Connect.png"
 								Command="{Binding RibbonReplayCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 							<telerik:RadRibbonButton
-								Text="Stop replay"
+								Text="Stop"
 								Size="Large"
 								SmallImage="../Icons/Menu/Disconnect.png"
 								Command="{Binding RibbonStopReplayCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>

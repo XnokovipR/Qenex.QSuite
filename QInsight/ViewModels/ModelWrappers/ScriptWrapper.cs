@@ -59,6 +59,28 @@ public class ScriptWrapper : PropertyChangedBase
         }
     }
 
+    public bool Blocking
+    {
+        get => script.Blocking;
+        set
+        {
+            if (script.Blocking == value) return;
+            script.Blocking = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public double TimeoutMs
+    {
+        get => script.TimeoutMs;
+        set
+        {
+            if (Math.Abs(script.TimeoutMs - value) < 1e-9) return;
+            script.TimeoutMs = value;
+            OnPropertyChanged();
+        }
+    }
+
     public string AdditionalInfo
     {
         get => script.AdditionalInfo;

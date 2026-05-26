@@ -14,6 +14,8 @@ public class PyScript : IScriptBase
     public bool IsEnabled { get; set; }
     public bool IsReplayEnabled { get; set; }
     public ScriptExecutionMode ExecutionMode { get; set; } = ScriptExecutionMode.Manual;
+    public bool Blocking { get; set; } = true;
+    public double TimeoutMs { get; set; }
     public ScriptRunState RunState { get; set; }
 
     public double LastExecutionDurationMs

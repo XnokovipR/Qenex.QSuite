@@ -37,7 +37,7 @@ public partial class ShellWindowModel
     private bool canDisconnectRuntime;
     private bool canImportDataLog = true;
     private bool canReplay = true;
-    private bool canStopReplay = true;
+    private bool canStopReplay;
     
     #endregion
     
@@ -753,7 +753,7 @@ public partial class ShellWindowModel
             RebindWorkspaceControlVariables(replayProtocol.Variables);
             IsRuntimeStarted = true;
             isReplayMode = true;
-            SetRuntimeCommandStates(true);
+            SetRuntimeCommandStates(true, true);
             await realProjectData.Module.StartAsync();
 
             if (!isReplayMode)
@@ -1117,14 +1117,14 @@ public partial class ShellWindowModel
         //OnAddWorkspaceCommand?.OnCanExecuteChanged();
     }
 
-    private void SetRuntimeCommandStates(bool runtimeStarted)
+    private void SetRuntimeCommandStates(bool runtimeStarted, bool replayStarted = false)
     {
         canUseHomeRibbon = !runtimeStarted;
         canConnectRuntime = !runtimeStarted;
-        canDisconnectRuntime = runtimeStarted;
+        canDisconnectRuntime = runtimeStarted && !replayStarted;
         canImportDataLog = !runtimeStarted;
         canReplay = !runtimeStarted;
-        canStopReplay = !runtimeStarted;
+        canStopReplay = replayStarted;
 
         RibbonOpenProjectCommand.OnCanExecuteChanged();
         RibbonSaveProjectCommand.OnCanExecuteChanged();

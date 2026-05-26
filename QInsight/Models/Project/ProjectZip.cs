@@ -159,6 +159,8 @@ public class ProjectZip
             {
                 FileName = script.FileName,
                 ExecutionMode = script.ExecutionMode,
+                Blocking = script.Blocking,
+                TimeoutMs = script.TimeoutMs,
                 AdditionalInfo = script.AdditionalInfo,
                 IsEnabled = script.IsEnabled,
                 IsReplayEnabled = script.IsReplayEnabled

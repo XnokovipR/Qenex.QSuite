@@ -23,6 +23,7 @@ class Program
         {
             await VerifyOnValueChangedScriptTriggerAsync();
             VerifyVariableScriptReferenceXmlRoundTrip();
+            VerifyScriptExecutionPropertiesXmlRoundTrip();
             
             // Deserialize settings from file
             var xmlModule = XmlInOut<XmlModule>.LoadFromFile(FromOutputDir(@"..\..\..\..\..\..\ModuleXmlHandler\Docs\XmlModule.xml"));
@@ -64,7 +65,8 @@ class Program
         var script = new Qenex.QSuite.Scripting.PythonScript.PyScript
         {
             FileName = "oiltemp_valuechanged.py",
-            ExecutionMode = ScriptExecutionMode.OnValueChanged
+            ExecutionMode = ScriptExecutionMode.OnValueChanged,
+            IsEnabled = true
         };
 
         var executedCount = 0;
@@ -137,6 +139,33 @@ class Program
         Assert(deserialized.Scripts.Count == 1, "Nested script reference was not deserialized.");
         Assert(deserialized.Scripts[0].Ref == "oiltemp_valuechanged.py", "Nested script reference ref did not round-trip.");
         Assert(deserialized.Scripts[0].AdditionalInfo == "threshold=5.2", "Nested script reference additionalInfo did not round-trip.");
+    }
+
+    private static void VerifyScriptExecutionPropertiesXmlRoundTrip()
+    {
+        var script = new XmlScript
+        {
+            FileName = "startup.py",
+            ExecutionMode = XmlScriptExecutionMode.Startup,
+            Blocking = false,
+            TimeoutMs = 5000,
+            AdditionalInfo = string.Empty,
+            IsEnabled = true,
+            IsReplayEnabled = false
+        };
+
+        var serializer = new XmlSerializer(typeof(XmlScript));
+        using var writer = new StringWriter();
+        serializer.Serialize(writer, script);
+
+        var xml = writer.ToString();
+        Assert(xml.Contains("blocking=\"false\""), "Script blocking was not serialized as an independent attribute.");
+        Assert(xml.Contains("timeout=\"5000\""), "Script timeout was not serialized as an independent attribute.");
+
+        using var reader = new StringReader(xml);
+        var deserialized = (XmlScript)serializer.Deserialize(reader)!;
+        Assert(!deserialized.Blocking, "Script blocking did not round-trip.");
+        Assert(Math.Abs(deserialized.TimeoutMs - 5000) < 1e-9, "Script timeout did not round-trip.");
     }
 
     private static void Assert(bool condition, string message)

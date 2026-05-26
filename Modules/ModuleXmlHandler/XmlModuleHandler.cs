@@ -334,7 +334,9 @@ public class XmlModuleHandler
                 FileName = script.FileName,
                 Content = script.Content,
                 ExecutionMode = executionMode,
-                AdditionalInfo = script.AdditionalInfo,
+                Blocking = script.Blocking,
+                TimeoutMs = script.TimeoutMs,
+                AdditionalInfo = RemoveScriptExecutionOptions(script.AdditionalInfo),
                 IsEnabled = script.IsEnabled,
                 IsReplayEnabled = script.IsReplayEnabled
             });
@@ -548,12 +550,19 @@ public class XmlModuleHandler
         
         foreach (var xmlPythonScript in xmlPythonScripts)
         {
+            var additionalInfo = ExtractScriptExecutionOptions(
+                xmlPythonScript.AdditionalInfo,
+                out var legacyBlocking,
+                out var legacyTimeoutMs);
+
             var script = new PyScript
             {
                 FileName = xmlPythonScript.FileName,
                 Content = xmlPythonScript.Content,
 				ExecutionMode = Enum.Parse<ScriptExecutionMode>(xmlPythonScript.ExecutionMode.ToString()),
-                AdditionalInfo = xmlPythonScript.AdditionalInfo,
+                Blocking = legacyBlocking ?? xmlPythonScript.Blocking,
+                TimeoutMs = legacyTimeoutMs ?? xmlPythonScript.TimeoutMs,
+                AdditionalInfo = additionalInfo,
                 IsEnabled = xmlPythonScript.IsEnabled,
                 IsReplayEnabled = xmlPythonScript.IsReplayEnabled
 			};
@@ -562,6 +571,82 @@ public class XmlModuleHandler
         }
         
         return scripts;
+    }
+
+    private static string RemoveScriptExecutionOptions(string additionalInfo)
+    {
+        return ExtractScriptExecutionOptions(additionalInfo, out _, out _);
+    }
+
+    private static string ExtractScriptExecutionOptions(string additionalInfo, out bool? blocking, out double? timeoutMs)
+    {
+        blocking = null;
+        timeoutMs = null;
+
+        if (string.IsNullOrWhiteSpace(additionalInfo))
+        {
+            return string.Empty;
+        }
+
+        var parameters = new List<string>();
+        var parts = additionalInfo.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var part in parts)
+        {
+            var keyValue = part.Split('=', 2, StringSplitOptions.TrimEntries);
+            if (keyValue.Length != 2)
+            {
+                parameters.Add(part);
+                continue;
+            }
+
+            if (keyValue[0].Equals("blocking", StringComparison.OrdinalIgnoreCase))
+            {
+                if (TryParseBoolean(keyValue[1], out var parsedBlocking))
+                {
+                    blocking = parsedBlocking;
+                }
+
+                continue;
+            }
+
+            if (keyValue[0].Equals("timeout", StringComparison.OrdinalIgnoreCase))
+            {
+                if (double.TryParse(keyValue[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedTimeoutMs) &&
+                    parsedTimeoutMs >= 0)
+                {
+                    timeoutMs = parsedTimeoutMs;
+                }
+
+                continue;
+            }
+
+            parameters.Add(part);
+        }
+
+        return string.Join(";", parameters);
+    }
+
+    private static bool TryParseBoolean(string value, out bool result)
+    {
+        switch (value.Trim().ToLowerInvariant())
+        {
+            case "true":
+            case "1":
+            case "yes":
+            case "y":
+                result = true;
+                return true;
+            case "false":
+            case "0":
+            case "no":
+            case "n":
+                result = false;
+                return true;
+            default:
+                result = false;
+                return false;
+        }
     }
 
     private IValuesBase CreateScalarValues(IEnumerable<IPresentation> presentations, XmlValues xmlValues)
