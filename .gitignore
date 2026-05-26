@@ -5,6 +5,7 @@ riderModule.iml
 /_ReSharper.Caches/
 .idea/
 .vs/
+.codex-build/
 .vscode
 *.DotSettings.user
 /QInsight/_TestProject/QSuite-Project.zip
