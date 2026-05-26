@@ -251,6 +251,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     {
         // Add protocols node
         var protocolsNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Protocols, "Communicated");
+        protocolsNode.CustomTags!["Protocols"] = protocols;
         children.Add(protocolsNode);
         
         // Add protocols

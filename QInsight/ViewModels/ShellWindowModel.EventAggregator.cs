@@ -52,6 +52,13 @@ public partial class ShellWindowModel
                 propVm.SelectedViewModel = new CommunicatedDriversPropertiesViewModel(eventAggregator, communicatedDrivers);
                 break;
             }
+            case NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Protocols } nodeWrapper
+                when nodeWrapper.CustomTags?.TryGetValue("Protocols", out var protocols) == true
+                     && protocols is IEnumerable<IProtocolBase> communicatedProtocols:
+            {
+                propVm.SelectedViewModel = new CommunicatedProtocolsPropertiesViewModel(eventAggregator, communicatedProtocols);
+                break;
+            }
             default:
             {
                 propVm.SelectedViewModel = new EmptyPropertiesViewModel(eventAggregator);

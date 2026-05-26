@@ -1161,6 +1161,11 @@ public partial class ShellWindowModel
         {
             driversPropertiesViewModel.RefreshDrivers();
         }
+
+        if (propertiesViewModel.SelectedViewModel is CommunicatedProtocolsPropertiesViewModel protocolsPropertiesViewModel)
+        {
+            protocolsPropertiesViewModel.RefreshProtocols();
+        }
     }
 
     private void RebindWorkspaceControlVariables(IEnumerable<IProtocolVariable> protocolVariables)
