@@ -21,15 +21,16 @@
                  HorizontalScrollBarVisibility="Auto"
                  VerticalScrollBarVisibility="Auto"
                  local:TextBoxAutoScrollBehavior.AutoScroll="True"
+                 ContextMenu="{x:Null}"
                  Background="{telerik:Windows11Resource ResourceKey=PrimaryBackgroundBrush}"
                  Foreground="{telerik:Windows11Resource ResourceKey=PrimaryForegroundBrush}">
-    
-            <TextBox.ContextMenu>
-                <ContextMenu>
-                    <MenuItem Header="Clear All"
-                              Command="{Binding ClearLogCommand}" />
-                </ContextMenu>
-            </TextBox.ContextMenu>
+
+            <telerik:RadContextMenu.ContextMenu>
+                <telerik:RadContextMenu>
+                    <telerik:RadMenuItem Header="Clear All"
+                                         Command="{Binding ClearLogCommand}" />
+                </telerik:RadContextMenu>
+            </telerik:RadContextMenu.ContextMenu>
         </q:QTextBox>
     </Grid>
 </UserControl>

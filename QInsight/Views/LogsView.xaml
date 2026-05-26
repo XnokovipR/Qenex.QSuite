@@ -56,7 +56,7 @@
 		<telerik:RadGridView
 			AllowDrop="False"
 			ItemsSource="{Binding LogMessages}"
-			ShowGroupPanel="False" 
+			ShowGroupPanel="False"
 			AutoGenerateColumns="False"
 			RowStyleSelector="{StaticResource LogLevelStyleSelector}"
 			RowIndicatorVisibility="Collapsed">
@@ -65,11 +65,11 @@
 				<telerik:SortDescriptor Member="Timestamp" SortDirection="Descending"/>
 			</telerik:RadGridView.SortDescriptors>
 
-			<telerik:RadGridView.ContextMenu>
-				<ContextMenu>
-					<MenuItem Header="Clear All" Command="{Binding ClearLogCommand}"/>
-				</ContextMenu>
-			</telerik:RadGridView.ContextMenu>
+			<telerik:RadContextMenu.ContextMenu>
+				<telerik:RadContextMenu>
+					<telerik:RadMenuItem Header="Clear All" Command="{Binding ClearLogCommand}"/>
+				</telerik:RadContextMenu>
+			</telerik:RadContextMenu.ContextMenu>
 
 			<telerik:RadGridView.Columns>
 				<telerik:GridViewDataColumn Width="160" Header="Timestamp" DataMemberBinding="{Binding Path=Timestamp, StringFormat=yyyy/MM/dd HH:mm:ss.fff}" IsReadOnly="True"/>
