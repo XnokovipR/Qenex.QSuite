@@ -658,7 +658,9 @@ public partial class ShellWindowModel
 
     private void OpenPythonInterpreter(RadDocking docking)
     {
-        var foundPythonInterpreterViewModel = ViewModels.OfType<PythonInterpreterViewModel>().FirstOrDefault();
+        var foundPythonInterpreterViewModel = ViewModels
+            .OfType<PythonInterpreterViewModel>()
+            .FirstOrDefault(viewModel => FindDockingPaneForViewModel(docking, viewModel) != null);
         if (foundPythonInterpreterViewModel != null)
         {
             foundPythonInterpreterViewModel.IsHidden = false;
@@ -669,6 +671,13 @@ public partial class ShellWindowModel
             eventAggregator,
             GetPythonInterpreterScriptingContextAsync);
         ViewModels.Add(pythonInterpreterViewModel);
+    }
+
+    private static RadPane? FindDockingPaneForViewModel(RadDocking docking, object viewModel)
+    {
+        return docking
+            .Panes
+            .FirstOrDefault(pane => ReferenceEquals(pane.DataContext, viewModel));
     }
 
     private async Task<ScriptingContext?> GetPythonInterpreterScriptingContextAsync()
