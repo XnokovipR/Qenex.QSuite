@@ -42,6 +42,7 @@ public class OnRequestVariableEventSeSeWrapper : PropertyChangedBase, IVariableE
     }
 
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/RequestEvent.png");
+    public bool IsExpanded { get; set; }
     public ObservableCollection<IViewableItem> Children { get; set; } = new();
 
     public Dictionary<string, object>? CustomTags { get; set; } = new();

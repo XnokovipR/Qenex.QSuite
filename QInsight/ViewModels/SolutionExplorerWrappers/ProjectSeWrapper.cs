@@ -53,6 +53,7 @@ public class ProjectSeWrapper : PropertyChangedBase, IViewableItem
     }
     
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Project.png");
+    public bool IsExpanded { get; set; }
     public ObservableCollection<IViewableItem> Children { get; set; } = [];
 
     public Dictionary<string, object>? CustomTags { get; set; } = [];

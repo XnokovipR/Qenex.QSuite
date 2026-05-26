@@ -12,6 +12,7 @@ public interface IViewableItem
     string ToolTip { get; }
     Visibility ToolTipVisibility { get; }
     BitmapImage Icon { get; }
+    bool IsExpanded { get; set; }
     ObservableCollection<IViewableItem> Children { get; set; }
     
     Dictionary<string, object>? CustomTags { get; set; }

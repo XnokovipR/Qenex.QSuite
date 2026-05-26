@@ -44,6 +44,7 @@ public class PeriodicVariableEventSeSeWrapper : PropertyChangedBase, IVariableEv
     }
 
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/PeriodicEvent.png");
+    public bool IsExpanded { get; set; }
     public ObservableCollection<IViewableItem> Children { get; set; } = new();
 
     public Dictionary<string, object>? CustomTags { get; set; } = new();

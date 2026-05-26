@@ -39,6 +39,7 @@ public class NodeSeWrapper : IViewableItem
     public NodeType TypeOfNode { get; }
     
     public BitmapImage Icon => ImageGetter.GetBitmapImage($"Icons/SolutionExplorer/{GetBitmapImageName(TypeOfNode)}");
+    public bool IsExpanded { get; set; }
     public ObservableCollection<IViewableItem> Children { get; set; }
     
     public Dictionary<string, object>? CustomTags { get; set; }

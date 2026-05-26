@@ -18,6 +18,7 @@
     <UserControl.Resources> 
         <Style x:Key="RadTreeViewItemStyle" TargetType="telerik:RadTreeViewItem" BasedOn="{StaticResource RadTreeViewItemStyle}">
             <Setter Property="ExpanderButtonMinWidth" Value="18"/> 
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
             <Setter Property="telerik:DragDropManager.AllowDrag" Value="True"></Setter>
             <Setter Property="telerik:DragDropManager.AllowCapturedDrag" Value="True"></Setter>
         </Style>         

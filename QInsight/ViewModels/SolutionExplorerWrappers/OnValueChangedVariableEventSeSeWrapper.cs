@@ -45,6 +45,7 @@ public class OnValueChangedVariableEventSeSeWrapper : PropertyChangedBase, IVari
     }
 
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/ValueChangedEvent.png");
+    public bool IsExpanded { get; set; }
     public ObservableCollection<IViewableItem> Children { get; set; } = new();
 
     public Dictionary<string, object>? CustomTags { get; set; } = new();

@@ -33,6 +33,7 @@ public class VariableSeWrapper : PropertyChangedBase, IViewableItem
     public string ToolTip => GetToolTip();
     
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Variable.png");
+    public bool IsExpanded { get; set; }
     public ObservableCollection<IViewableItem> Children { get; set; } = [];
 
     public Dictionary<string, object>? CustomTags { get; set; } = [];

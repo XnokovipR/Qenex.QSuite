@@ -50,6 +50,7 @@ public class DriverSeWrapper : PropertyChangedBase, IViewableItem
     }
 
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Driver.png");
+    public bool IsExpanded { get; set; }
     public ObservableCollection<IViewableItem> Children { get; set; } = [];
 
     public Dictionary<string, object>? CustomTags { get; set; } = [];

@@ -43,6 +43,7 @@ public class WorkspaceSeWrapper : PropertyChangedBase, IViewableItem
     public string ToolTip => GetToolTip();
     
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Presentation.png");
+    public bool IsExpanded { get; set; }
     public ObservableCollection<IViewableItem> Children { get; set; } = [];
 
     public Dictionary<string, object>? CustomTags { get; set; } = new();

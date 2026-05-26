@@ -51,6 +51,7 @@ public class ProtocolSeWrapper : PropertyChangedBase, IViewableItem
     }
     
     public BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/SolutionExplorer/Protocol.png");
+    public bool IsExpanded { get; set; }
     public ObservableCollection<IViewableItem> Children { get; set; } = [];
 
     public Dictionary<string, object>? CustomTags { get; set; } = [];

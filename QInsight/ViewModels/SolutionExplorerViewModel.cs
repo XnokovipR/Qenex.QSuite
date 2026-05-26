@@ -128,6 +128,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     private IViewableItem CreateProjectWrapper(RealProjectData realPrjData)
     {
         var projectWrapper = new ProjectSeWrapper(realPrjData.Module);
+        projectWrapper.IsExpanded = true;
         
         CreateDriverWrappers(projectWrapper.Children, realPrjData.Module.Drivers);
         
