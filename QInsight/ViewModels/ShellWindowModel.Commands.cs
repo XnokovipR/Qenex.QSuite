@@ -32,6 +32,8 @@ public partial class ShellWindowModel
     private List<(IDriverBase Driver, bool IsEnabled)>? replayDriverStates;
     private List<(IProtocolBase Protocol, bool IsEnabled)>? replayProtocolStates;
     private List<(IScriptBase Script, bool IsEnabled)>? replayScriptStates;
+    private bool isReplayDataLogImported;
+    private string? replayDataLogFilePath;
     private bool canUseHomeRibbon = true;
     private bool canConnectRuntime = true;
     private bool canDisconnectRuntime;
@@ -98,10 +100,10 @@ public partial class ShellWindowModel
         RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync, _ => canUseHomeRibbon);
         RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace, _ => canUseHomeRibbon);
 
-        RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync, _ => canConnectRuntime);
+        RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync, _ => CanConnectRuntime());
         RibbonDisconnectCommand = new RelayCommandAsync<RadDocking>(DisconnectAsync, _ => canDisconnectRuntime);
-        RibbonImportDataLogCommand = new RelayCommandAsync<RadDocking>(ImportDataLogAsync, _ => canImportDataLog);
-        RibbonReplayCommand = new RelayCommandAsync<RadDocking>(ReplayAsync, _ => canReplay);
+        RibbonImportDataLogCommand = new RelayCommandAsync<RadDocking>(ImportDataLogAsync, _ => CanImportDataLog());
+        RibbonReplayCommand = new RelayCommandAsync<RadDocking>(ReplayAsync, _ => CanStartReplay());
         RibbonStopReplayCommand = new RelayCommandAsync<RadDocking>(StopReplayAsync, _ => canStopReplay);
         
         RibbonScriptVariablesSettingsCommand = new RelayCommand<RadDocking>(OpenScriptVariablesOptions, _ => canUseHomeRibbon);
@@ -323,6 +325,9 @@ public partial class ShellWindowModel
             currentProjectFilePath = Path.GetFullPath(filePath);
             SetProjectWindowTitle(currentProjectFilePath);
             ChangeIsProjectMade(true);
+            ClearReplayDataLogImportState();
+            NotifyRuntimeCommandsCanExecuteChanged();
+            RibbonReplayCommand.OnCanExecuteChanged();
             logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\" opened.");
                 
         }
@@ -482,6 +487,9 @@ public partial class ShellWindowModel
             currentProjectFilePath = null;
             SetProjectWindowTitle(currentProjectFilePath);
             ChangeIsProjectMade(false);
+            ClearReplayDataLogImportState();
+            NotifyRuntimeCommandsCanExecuteChanged();
+            RibbonReplayCommand.OnCanExecuteChanged();
             
             ScriptLogsViewModel.ClearLog();
             LogsViewModel.ClearLog();
@@ -637,6 +645,12 @@ public partial class ShellWindowModel
 
     private async Task ConnectAsync(object obj)
     {
+        if (!isProjectMade || realProjectData?.Module == null)
+        {
+            logger.Log(LogLevel.Warn, "No project opened for runtime.");
+            return;
+        }
+
         LoadSettingsFromFile(shellRadDocking, runtimeSettingLayoutFile);
         try
         {
@@ -727,6 +741,12 @@ public partial class ShellWindowModel
         if (IsRuntimeStarted)
         {
             logger.Log(LogLevel.Warn, "Stop runtime before starting replay.");
+            return;
+        }
+
+        if (!isReplayDataLogImported || string.IsNullOrWhiteSpace(replayDataLogFilePath) || !File.Exists(replayDataLogFilePath))
+        {
+            logger.Log(LogLevel.Warn, "Import a data log before starting replay.");
             return;
         }
 
@@ -858,6 +878,8 @@ public partial class ShellWindowModel
 
             realProjectData.Module.AddDriver(replayDriver);
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
+            SetReplayDataLogImportState(dlg.FileName);
+            RibbonReplayCommand.OnCanExecuteChanged();
             logger.Log(LogLevel.Info, $"Data log \"{Path.GetFileName(dlg.FileName)}\" imported for replay.");
         }
         catch (Exception e)
@@ -1139,6 +1161,51 @@ public partial class ShellWindowModel
         RibbonImportDataLogCommand.OnCanExecuteChanged();
         RibbonReplayCommand.OnCanExecuteChanged();
         RibbonStopReplayCommand.OnCanExecuteChanged();
+    }
+
+    private void NotifyRuntimeCommandsCanExecuteChanged()
+    {
+        RibbonConnectCommand.OnCanExecuteChanged();
+        RibbonImportDataLogCommand.OnCanExecuteChanged();
+        RibbonReplayCommand.OnCanExecuteChanged();
+    }
+
+    private bool CanConnectRuntime()
+    {
+        return canConnectRuntime && isProjectMade && realProjectData?.Module != null;
+    }
+
+    private bool CanImportDataLog()
+    {
+        return canImportDataLog && isProjectMade && realProjectData?.Module != null;
+    }
+
+    private bool CanStartReplay()
+    {
+        if (!canReplay ||
+            !isProjectMade ||
+            !isReplayDataLogImported ||
+            string.IsNullOrWhiteSpace(replayDataLogFilePath) ||
+            !File.Exists(replayDataLogFilePath) ||
+            realProjectData?.Module == null)
+        {
+            return false;
+        }
+
+        var replayDriver = FindReplayDriver();
+        return replayDriver != null && FindReplayProtocol(replayDriver) != null;
+    }
+
+    private void SetReplayDataLogImportState(string filePath)
+    {
+        replayDataLogFilePath = Path.GetFullPath(filePath);
+        isReplayDataLogImported = true;
+    }
+
+    private void ClearReplayDataLogImportState()
+    {
+        replayDataLogFilePath = null;
+        isReplayDataLogImported = false;
     }
 
     #endregion
