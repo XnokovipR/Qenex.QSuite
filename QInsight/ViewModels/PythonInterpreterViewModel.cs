@@ -58,7 +58,7 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
 
     public override string Header { get; set; } = "";
     public override string Name { get; set; } = $"WorkspaceViewModel_PythonInterpreter_{Guid.NewGuid().ToString().Replace("-", "_")}";
-    public override string WinTitle { get => field; set { field = value; OnPropertyChanged(); } } = "Python";
+    public override string WinTitle { get => field; set { field = value; OnPropertyChanged(); } } = "Python Interpreter";
     public override DockingPosition DockPosition { get; set; } = DockingPosition.Workspace;
     public override bool IsDocument => true;
 
