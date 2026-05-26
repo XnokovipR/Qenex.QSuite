@@ -34,8 +34,8 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
         Document = new TextDocument();
         LoadInputHistory();
 
-        AppendSystemLine("QInsight Python");
-        AppendPrompt();
+        ClearWindowCommand = new RelayCommand<object>(_ => ClearWindow());
+        ResetWindow();
     }
 
     public IHighlightingDefinition PyHighlighting { get; }
@@ -43,6 +43,7 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
     public Color BackgroundColor { get; }
     public int FontSize { get; }
     public TextDocument Document { get; }
+    public RelayCommand<object> ClearWindowCommand { get; }
 
     public int InputStartOffset
     {
@@ -253,6 +254,20 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
     {
         AppendPythonText(result.Output);
         AppendPythonText(result.Error);
+    }
+
+    public void ClearWindow()
+    {
+        currentPrompt = PrimaryPrompt;
+        ResetWindow();
+    }
+
+    private void ResetWindow()
+    {
+        InputStartOffset = 0;
+        Document.Remove(0, Document.TextLength);
+        AppendSystemLine("QInsight Python");
+        AppendPrompt();
     }
 
     private void AppendPythonText(string text)

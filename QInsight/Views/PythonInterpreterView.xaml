@@ -7,6 +7,7 @@
              xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:behaviors="clr-namespace:Qenex.QInsight.Behaviors"
              xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="500"
              d:DataContext="{d:DesignInstance vm:PythonInterpreterViewModel, IsDesignTimeCreatable=False}">
@@ -22,6 +23,12 @@
             WordWrap="False"
             HorizontalScrollBarVisibility="Auto"
             VerticalScrollBarVisibility="Auto">
+            <telerik:RadContextMenu.ContextMenu>
+                <telerik:RadContextMenu>
+                    <telerik:RadMenuItem Header="Clear All"
+                                         Command="{Binding ClearWindowCommand}" />
+                </telerik:RadContextMenu>
+            </telerik:RadContextMenu.ContextMenu>
             <i:Interaction.Behaviors>
                 <behaviors:PythonInterpreterTextEditorBehavior />
             </i:Interaction.Behaviors>

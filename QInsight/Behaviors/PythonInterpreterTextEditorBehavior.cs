@@ -74,9 +74,10 @@ public class PythonInterpreterTextEditorBehavior : Behavior<TextEditor>
             return;
         }
 
-        if (AssociatedObject.CaretOffset < viewModel.InputStartOffset)
+        var inputStartOffset = Math.Min(viewModel.InputStartOffset, AssociatedObject.Document.TextLength);
+        if (AssociatedObject.CaretOffset < inputStartOffset)
         {
-            AssociatedObject.CaretOffset = viewModel.InputStartOffset;
+            AssociatedObject.CaretOffset = inputStartOffset;
         }
     }
 }
