@@ -147,6 +147,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     {
         // Add drivers node
         var driversNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Drivers, "Communicated");
+        driversNode.CustomTags!["Drivers"] = drivers;
         children.Add(driversNode);
         
         // Add drivers

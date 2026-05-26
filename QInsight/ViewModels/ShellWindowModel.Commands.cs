@@ -862,6 +862,7 @@ public partial class ShellWindowModel
         {
             SaveReplayStates();
             ApplyReplayStates(replayDriver, replayProtocol);
+            RefreshCommunicatedDriversProperties();
             SubscribeReplayCompleted(replayDriver);
             LoadSettingsFromFile(shellRadDocking, runtimeSettingLayoutFile);
             RebindWorkspaceControlVariables(replayProtocol.Variables);
@@ -923,6 +924,7 @@ public partial class ShellWindowModel
             UnsubscribeReplayCompleted();
             SetReplayControlEnabled(false);
             RestoreReplayStates();
+            RefreshCommunicatedDriversProperties();
             LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
             RebindWorkspaceControlVariables(GetProjectProtocolVariables());
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
@@ -1151,6 +1153,14 @@ public partial class ShellWindowModel
         replayDriverStates = null;
         replayProtocolStates = null;
         replayScriptStates = null;
+    }
+
+    private void RefreshCommunicatedDriversProperties()
+    {
+        if (propertiesViewModel.SelectedViewModel is CommunicatedDriversPropertiesViewModel driversPropertiesViewModel)
+        {
+            driversPropertiesViewModel.RefreshDrivers();
+        }
     }
 
     private void RebindWorkspaceControlVariables(IEnumerable<IProtocolVariable> protocolVariables)
