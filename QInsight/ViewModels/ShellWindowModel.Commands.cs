@@ -954,7 +954,7 @@ public partial class ShellWindowModel
         {
             Owner = App.Current.MainWindow,
             Multiselect = false,
-            Filter = "QSuite data log files (*.msgpack)|*.msgpack|All files (*.*)|*.*",
+            Filter = "QSuite data log files (*.qilog)|*.qilog|Legacy MessagePack logs (*.msgpack)|*.msgpack|All files (*.*)|*.*",
             InitialDirectory = Environment.CurrentDirectory
         };
 

@@ -9,7 +9,7 @@ namespace Qenex.QSuite.Drivers.FileDataReplayDriver;
 
 public class FileDataReplayDriver : DriverBase, IReplayDriver
 {
-    private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs", "values.msgpack");
+    private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs", "values.qilog");
     private bool loop;
     private double speed = 1.0;
     private ReplayMode replayMode = ReplayMode.Realtime;

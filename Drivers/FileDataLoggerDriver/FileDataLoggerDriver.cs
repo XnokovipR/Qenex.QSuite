@@ -9,8 +9,10 @@ namespace Qenex.QSuite.Drivers.FileDataLoggerDriver;
 
 public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver
 {
+    private const string DataLogExtension = ".qilog";
+    private const string TimestampFormat = "yyyyMMdd'_'HH'h'mm";
     private readonly SemaphoreSlim fileLock = new(1, 1);
-    private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs", "values.msgpack");
+    private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs", "values.qilog");
     private bool append = true;
     private bool flushOnWrite;
     private FileStream? logStream;
@@ -99,14 +101,15 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver
     {
         if (!IsEnabled) return Task.CompletedTask;
 
-        var directory = Path.GetDirectoryName(logFilePath);
+        var timestampedLogFilePath = CreateTimestampedLogFilePath(logFilePath, DateTime.Now);
+        var directory = Path.GetDirectoryName(timestampedLogFilePath);
         if (!string.IsNullOrWhiteSpace(directory))
         {
             Directory.CreateDirectory(directory);
         }
 
         logStream = new FileStream(
-            logFilePath,
+            timestampedLogFilePath,
             append ? FileMode.Append : FileMode.Create,
             FileAccess.Write,
             FileShare.Read,
@@ -203,5 +206,21 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver
                 parts => parts[0],
                 parts => parts[1].Trim('"'),
                 StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string CreateTimestampedLogFilePath(string configuredFilePath, DateTime timestamp)
+    {
+        var directory = Path.GetDirectoryName(configuredFilePath);
+        var fileName = Path.GetFileNameWithoutExtension(configuredFilePath);
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            fileName = "values";
+        }
+
+        var timestampText = timestamp.ToString(TimestampFormat, CultureInfo.InvariantCulture);
+        var timestampedFileName = $"{fileName}_{timestampText}{DataLogExtension}";
+        return string.IsNullOrWhiteSpace(directory)
+            ? timestampedFileName
+            : Path.Combine(directory, timestampedFileName);
     }
 }

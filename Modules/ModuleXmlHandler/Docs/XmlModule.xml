@@ -38,7 +38,7 @@
     </driverReference>
     <driverReference ref="FileDataLoggerDriver" label="File data logger">
       <isEnabled>true</isEnabled>
-      <settings>file=DataLogs\values.msgpack;append=false;flushOnWrite=false</settings>
+      <settings>file=DataLogs\values.qilog;append=false;flushOnWrite=false</settings>
       <encryptedSettings />
       <protocolReferences>
         <protocolReference ref="One2OneProtocol">
@@ -66,9 +66,9 @@
         </protocolReference>
       </protocolReferences>
     </driverReference>
-    <driverReference ref="FileDataReplayDriver" label="Replay: values.msgpack">
+    <driverReference ref="FileDataReplayDriver" label="Replay: values.qilog">
       <isEnabled>false</isEnabled>
-      <settings>file=D:\Projects\Qenex\Source\Qenex.QSuite\QInsight\bin\Debug\net10.0-windows\DataLogs\values.msgpack;mode=realtime;speed=1;loop=false</settings>
+      <settings>file=D:\Projects\Qenex\Source\Qenex.QSuite\QInsight\bin\Debug\net10.0-windows\DataLogs\values.qilog;mode=realtime;speed=1;loop=false</settings>
       <encryptedSettings />
       <protocolReferences>
         <protocolReference ref="DataLogReplayProtocol">
