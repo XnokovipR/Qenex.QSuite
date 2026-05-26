@@ -23,6 +23,12 @@
             <DataTemplate DataType="{x:Type vm:CommunicatedProtocolsPropertiesViewModel}">
                 <local:CommunicatedProtocolsPropertiesView />
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:DriverPropertiesViewModel}">
+                <local:DriverPropertiesView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ProtocolPropertiesViewModel}">
+                <local:ProtocolPropertiesView />
+            </DataTemplate>
             <DataTemplate DataType="{x:Type vm:EmptyPropertiesViewModel}">
                 <local:EmptyPropertiesView />
             </DataTemplate>

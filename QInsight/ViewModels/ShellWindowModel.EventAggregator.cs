@@ -45,6 +45,16 @@ public partial class ShellWindowModel
                 propVm.SelectedViewModel = new ScriptPropertiesViewModel(eventAggregator, scriptSeWrapper.ScriptWrapper);
                 break;
             }
+            case DriverSeWrapper driverSeWrapper:
+            {
+                propVm.SelectedViewModel = new DriverPropertiesViewModel(eventAggregator, driverSeWrapper.Driver);
+                break;
+            }
+            case ProtocolSeWrapper protocolSeWrapper:
+            {
+                propVm.SelectedViewModel = new ProtocolPropertiesViewModel(eventAggregator, protocolSeWrapper.Protocol);
+                break;
+            }
             case NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Drivers } nodeWrapper
                 when nodeWrapper.CustomTags?.TryGetValue("Drivers", out var drivers) == true
                      && drivers is IEnumerable<IDriverBase> communicatedDrivers:
