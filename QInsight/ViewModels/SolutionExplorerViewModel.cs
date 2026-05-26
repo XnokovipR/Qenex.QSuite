@@ -76,6 +76,11 @@ public class SolutionExplorerViewModel : ViewModelBase
         });
         
         ProjectModules = [];
+        EventAggregator.SubscribeAction<VariablePropertiesChangedMsg>(msg =>
+        {
+            RefreshVariableWrappers(ProjectModules, msg.Variable);
+        });
+
         EventAggregator.SubscribeAction<AddWorkspaceEaMsg>(msg =>
         {
             var childrens = ProjectModules.FirstOrDefault(p => p is ProjectSeWrapper)?.Children;
@@ -275,6 +280,24 @@ public class SolutionExplorerViewModel : ViewModelBase
         {
             var variableWrapper = new ProtocolVariableWrapper(variable);
             variablesNode.Children.Add(variableWrapper);
+        }
+    }
+
+    private static void RefreshVariableWrappers(IEnumerable<IViewableItem> items, IVariableBase variable)
+    {
+        foreach (var item in items)
+        {
+            switch (item)
+            {
+                case VariableSeWrapper variableWrapper when ReferenceEquals(variableWrapper.Variable, variable):
+                    variableWrapper.Refresh();
+                    break;
+                case ProtocolVariableWrapper protocolVariableWrapper when ReferenceEquals(protocolVariableWrapper.ProtocolVariable.Variable, variable):
+                    protocolVariableWrapper.Refresh();
+                    break;
+            }
+
+            RefreshVariableWrappers(item.Children, variable);
         }
     }
     

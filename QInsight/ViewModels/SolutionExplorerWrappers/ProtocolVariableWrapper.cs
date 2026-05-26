@@ -59,4 +59,10 @@ public class ProtocolVariableWrapper : PropertyChangedBase, IViewableItem
         
         return sb.ToString();
     }
+
+    public void Refresh()
+    {
+        OnPropertyChanged(nameof(Label));
+        OnPropertyChanged(nameof(ToolTip));
+    }
 }

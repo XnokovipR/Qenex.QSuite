@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
              xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300"
@@ -39,7 +40,7 @@
                     IsReadOnly="True">
                     <telerik:GridViewDataColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock
+                            <q:QTextBlock
                                 VerticalAlignment="Center"
                                 Text="{Binding Label}"
                                 ToolTip="{Binding ToolTip}" />

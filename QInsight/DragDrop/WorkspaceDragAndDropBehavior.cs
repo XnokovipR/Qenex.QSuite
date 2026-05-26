@@ -26,8 +26,7 @@ public class WorkspaceDragAndDropBehavior : Behavior<RadDiagram>
     private void OnDrop(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
     {
         e.Handled = false;
-        var variable = DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
-        if (variable is IVariableBase)
+        if (TryGetPayload<IVariableBase>(e.Data, "DraggedVariable", out _))
         {
             return; 
         }
@@ -35,11 +34,10 @@ public class WorkspaceDragAndDropBehavior : Behavior<RadDiagram>
         if (sender is not RadDiagram radDiagram) return;
         if (radDiagram.DataContext is not WorkspaceViewModel vm) return;
         
-        var controlId = (int)DragDropPayloadManager.GetDataFromObject(e.Data, "ControlId"); 
-        var control = DragDropPayloadManager.GetDataFromObject(e.Data, "NewDraggedControl");
-        if (control is not IControlBase) return;
+        if (!TryGetPayload<int>(e.Data, "ControlId", out var controlId)) return;
+        if (!TryGetPayload<IControlBase>(e.Data, "NewDraggedControl", out var control)) return;
         
-        var newControl = (IControlBase)Activator.CreateInstance(control.GetType())!;
+        if (Activator.CreateInstance(control.GetType()) is not IControlBase newControl) return;
         newControl.Id = controlId;
         
         var position = e.GetPosition(radDiagram);
@@ -60,5 +58,28 @@ public class WorkspaceDragAndDropBehavior : Behavior<RadDiagram>
         e.Handled = true;
     }
 
+    private static bool TryGetPayload<T>(object data, string key, out T value)
+    {
+        value = default!;
+
+        try
+        {
+            if (DragDropPayloadManager.GetDataFromObject(data, key) is T typedValue)
+            {
+                value = typedValue;
+                return true;
+            }
+        }
+        catch (NullReferenceException)
+        {
+            return false;
+        }
+        catch (InvalidCastException)
+        {
+            return false;
+        }
+
+        return false;
+    }
 
 }

@@ -55,6 +55,22 @@ public partial class ShellWindowModel
                 propVm.SelectedViewModel = new ProtocolPropertiesViewModel(eventAggregator, protocolSeWrapper.Protocol);
                 break;
             }
+            case VariableSeWrapper variableSeWrapper:
+            {
+                propVm.SelectedViewModel = new VariablePropertiesViewModel(
+                    eventAggregator,
+                    variableSeWrapper,
+                    realProjectData.Module.Presentations,
+                    realProjectData.Module.VarEvents);
+                break;
+            }
+            case ProtocolVariableWrapper protocolVariableWrapper:
+            {
+                propVm.SelectedViewModel = new ReadOnlyVariablePropertiesViewModel(
+                    eventAggregator,
+                    protocolVariableWrapper.ProtocolVariable);
+                break;
+            }
             case NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Drivers } nodeWrapper
                 when nodeWrapper.CustomTags?.TryGetValue("Drivers", out var drivers) == true
                      && drivers is IEnumerable<IDriverBase> communicatedDrivers:

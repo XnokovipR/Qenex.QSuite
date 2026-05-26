@@ -29,6 +29,12 @@
             <DataTemplate DataType="{x:Type vm:ProtocolPropertiesViewModel}">
                 <local:ProtocolPropertiesView />
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:VariablePropertiesViewModel}">
+                <local:VariablePropertiesView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ReadOnlyVariablePropertiesViewModel}">
+                <local:ReadOnlyVariablePropertiesView />
+            </DataTemplate>
             <DataTemplate DataType="{x:Type vm:EmptyPropertiesViewModel}">
                 <local:EmptyPropertiesView />
             </DataTemplate>
