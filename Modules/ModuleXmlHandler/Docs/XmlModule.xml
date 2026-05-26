@@ -179,9 +179,9 @@
     </scalarVariable>
   </variables>
   <scripts>
-    <script fileName="startup.py" content="" executionMode="Startup" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
-    <script fileName="shutdown.py" content="" executionMode="Shutdown" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
-    <script fileName="periodic.py" content="" executionMode="Periodic" additionalInfo="period=2;unit=s" isEnabled="true" isReplayEnabled="false" />
-    <script fileName="valuechanged_oiltemp.py" content="" executionMode="OnValueChanged" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
+    <script fileName="startup.py" content="" executionMode="Startup" additionalInfo="blocking=false;timeout=5000" isEnabled="true" isReplayEnabled="false" />
+    <script fileName="shutdown.py" content="" executionMode="Shutdown" additionalInfo="blocking=true" isEnabled="true" isReplayEnabled="false" />
+    <script fileName="periodic.py" content="" executionMode="Periodic" additionalInfo="period=2;unit=s;blocking=true;timeout=5000" isEnabled="true" isReplayEnabled="false" />
+    <script fileName="valuechanged_oiltemp.py" content="" executionMode="OnValueChanged" additionalInfo="blocking=true" isEnabled="true" isReplayEnabled="false" />
   </scripts>
 </module>

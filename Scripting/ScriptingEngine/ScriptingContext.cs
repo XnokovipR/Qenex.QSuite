@@ -46,8 +46,12 @@ public class ScriptingContext
     #region Scope
     
 
-    public Task InitializeSharedScopeAsync(IList<IVariableBase> variables) =>
-        pythonFactory.StartNew(() => InitializeSharedScope(variables));
+    public async Task InitializeSharedScopeAsync(IList<IVariableBase> variables)
+    {
+        await pythonFactory.StartNew(() => InitializeSharedScope(variables));
+        await ExecuteScriptsAsync(ScriptExecutionMode.Startup, allowNonBlocking: true);
+        StartPeriodicScripts();
+    }
     
     private void InitializeSharedScope(IList<IVariableBase> variables)
     {
@@ -89,9 +93,6 @@ public class ScriptingContext
             //SharedScope.Exec("print(\"Ahoj - toto je test\")");
         }
         
-        // Execute startup scripts - executed only once.
-        ExecuteScripts(ScriptExecutionMode.Startup);
-        StartPeriodicScripts();
     }
 
     private void EnsurePythonRuntimeInitialized()
@@ -124,14 +125,12 @@ public class ScriptingContext
     public async Task DisposeSharedScopeAsync()
     {
         await StopPeriodicScriptsAsync();
+        await ExecuteScriptsAsync(ScriptExecutionMode.Shutdown, allowNonBlocking: false);
         await pythonFactory.StartNew(DisposeSharedScope);
     }
 
     private void DisposeSharedScope()
     {
-        // Execute script at the end - log, etc.
-        ExecuteScripts(ScriptExecutionMode.Shutdown);
-        
         using (Py.GIL())
         {
             using (var sys = Py.Import("sys"))
@@ -209,13 +208,58 @@ public class ScriptingContext
         return pythonFactory.StartNew(() => HandleVariableValueChanged(variable.Id, variable.Name, value));
     }
 
-    private void ExecuteScripts(ScriptExecutionMode scriptMode)
+    private async Task ExecuteScriptsAsync(ScriptExecutionMode scriptMode, bool allowNonBlocking)
     {
         var scripts = Scripts.Where(s => s.ExecutionMode == scriptMode);
         foreach (var script in scripts)
         {
-            ExecuteScript(script);
+            var options = GetScriptExecutionOptions(script);
+            if (allowNonBlocking && !options.Blocking)
+            {
+                _ = RunNonBlockingScriptAsync(script, options);
+                continue;
+            }
+
+            await ExecuteScriptAsync(script, options);
         }
+    }
+
+    private async Task RunNonBlockingScriptAsync(IScriptBase script, ScriptExecutionOptions options)
+    {
+        try
+        {
+            await ExecuteScriptAsync(script, options);
+        }
+        catch (Exception e)
+        {
+            logger?.Log(LogLevel.Error, $"script \"{script.FileName}\" background execution failed: {e.Message}");
+        }
+    }
+
+    private async Task ExecuteScriptAsync(IScriptBase script, ScriptExecutionOptions options, CancellationToken ct = default)
+    {
+        if (!script.IsEnabled)
+        {
+            return;
+        }
+
+        var executionTask = pythonFactory.StartNew(() => ExecuteScript(script), ct);
+        if (options.Timeout == null)
+        {
+            await executionTask;
+            return;
+        }
+
+        var timeoutTask = Task.Delay(options.Timeout.Value, ct);
+        if (await Task.WhenAny(executionTask, timeoutTask) == executionTask)
+        {
+            await executionTask;
+            return;
+        }
+
+        script.RunState = ScriptRunState.Faulted;
+        logger?.Log(LogLevel.Warn, $"script \"{script.FileName}\" timed out after {options.Timeout.Value.TotalMilliseconds:0} ms.");
+        OnScriptExecuted(script);
     }
 
     private void ExecuteScript(IScriptBase script, Action? beforeExecute = null)
@@ -400,7 +444,7 @@ public class ScriptingContext
         {
             while (await timer.WaitForNextTickAsync(ct))
             {
-                await pythonFactory.StartNew(() => ExecuteScript(script), ct);
+                await ExecuteScriptAsync(script, GetScriptExecutionOptions(script), ct);
             }
         }
         catch (OperationCanceledException)
@@ -461,6 +505,55 @@ public class ScriptingContext
 
         return settings;
     }
+
+    private ScriptExecutionOptions GetScriptExecutionOptions(IScriptBase script)
+    {
+        var settings = ParseAdditionalInfo(script.AdditionalInfo);
+        var blocking = true;
+        TimeSpan? timeout = null;
+
+        if (settings.TryGetValue("blocking", out var blockingText) && !TryParseBoolean(blockingText, out blocking))
+        {
+            logger?.Log(LogLevel.Warn, $"Script \"{script.FileName}\" has invalid blocking setting \"{blockingText}\".");
+            blocking = true;
+        }
+
+        if (settings.TryGetValue("timeout", out var timeoutText))
+        {
+            if (double.TryParse(timeoutText, NumberStyles.Float, CultureInfo.InvariantCulture, out var timeoutMs) && timeoutMs > 0)
+            {
+                timeout = TimeSpan.FromMilliseconds(timeoutMs);
+            }
+            else
+            {
+                logger?.Log(LogLevel.Warn, $"Script \"{script.FileName}\" has invalid timeout setting \"{timeoutText}\".");
+            }
+        }
+
+        return new ScriptExecutionOptions(blocking, timeout);
+    }
+
+    private static bool TryParseBoolean(string value, out bool result)
+    {
+        switch (value.Trim().ToLowerInvariant())
+        {
+            case "true":
+            case "1":
+            case "yes":
+            case "y":
+                result = true;
+                return true;
+            case "false":
+            case "0":
+            case "no":
+            case "n":
+                result = false;
+                return true;
+            default:
+                result = false;
+                return false;
+        }
+    }
     
     #endregion
 
@@ -469,6 +562,8 @@ public class ScriptingContext
         ScriptExecuted?.Invoke(this, new ScriptExecutedEventArgs(script));
     }
 }
+
+internal readonly record struct ScriptExecutionOptions(bool Blocking, TimeSpan? Timeout);
 
 public class ScriptExecutedEventArgs(IScriptBase script) : EventArgs
 {
