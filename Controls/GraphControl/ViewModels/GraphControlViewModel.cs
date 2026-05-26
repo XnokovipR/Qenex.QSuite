@@ -253,6 +253,22 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         return Task.CompletedTask;
     }
 
+    public override void RefreshVariableBinding(IVariableBase variable)
+    {
+        base.RefreshVariableBinding(variable);
+
+        foreach (var chartVariable in ChartVariables.Where(v =>
+	                 v.Variable != null
+	                 && (ReferenceEquals(v.Variable, variable)
+	                     || ControlBase.IsVariableReferenceMatch(ControlBase.GetVariableReference(v.Variable), variable))))
+        {
+            chartVariable.Variable = variable;
+            chartVariable.RefreshVariableLabel();
+        }
+
+        PlotControl?.Refresh();
+    }
+
     private void ClearChartData(DateTime newBaseTime)
     {
         foreach (var chartVariable in ChartVariables)

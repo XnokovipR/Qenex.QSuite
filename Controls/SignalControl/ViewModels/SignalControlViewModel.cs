@@ -117,6 +117,21 @@ public class SignalControlViewModel : ControlBase
 	    prevValue = 0;
     }
 
+    public override void RefreshVariableBinding(IVariableBase variable)
+    {
+	    base.RefreshVariableBinding(variable);
+
+	    if (!IsVariableBound(variable))
+	    {
+		    return;
+	    }
+
+	    VariableLabel = variable.Label;
+	    VariableUnit = variable is ScalarVariable scalarVariable
+		    ? scalarVariable.Values.ValPresentation.Unit
+		    : string.Empty;
+    }
+
     [OnDeserialized]
     private void OnDeserialized(StreamingContext context)
     {

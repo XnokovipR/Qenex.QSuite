@@ -27,7 +27,7 @@ public class ChartVariable : PropertyChangedBase
     
     public Func<int, int>? ChangeAxisAction { get; set; }
 
-    public IVariableBase Variable { get; set; } = null!;
+    public IVariableBase Variable { get; set { field = value; OnPropertyChanged(); } } = null!;
     
     public Color ChartColor { get; set { field = value; OnPropertyChanged(); ChartSignal?.Color = ToScottPlotColor(value); } }
     
@@ -50,6 +50,16 @@ public class ChartVariable : PropertyChangedBase
     public List<DateTime> XDateTimeVal { get; set; }
     public List<double> XVal { get; set; }
     public List<double> YVal { get; set; } 
+
+    public void RefreshVariableLabel()
+    {
+        if (Variable != null && ChartSignal != null)
+        {
+            ChartSignal.LegendText = $"{Variable.Label} ({Variable.Id})";
+        }
+
+        OnPropertyChanged(nameof(Variable));
+    }
 
     #endregion
 

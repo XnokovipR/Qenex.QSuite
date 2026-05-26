@@ -119,6 +119,27 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 	public abstract Task UpdateVariableValueAsync(IVariableBase variable);
 	public abstract void BindVariable(IVariableBase protVariable);
 
+	public virtual void RefreshVariableBinding(IVariableBase variable)
+	{
+		if (IsVariableBound(variable))
+		{
+			OnPropertyChanged(nameof(Variables));
+		}
+	}
+
+	protected bool IsVariableBound(IVariableBase variable)
+	{
+		return FindBoundVariable(variable) != null
+		       || LinkedVariables.Any(reference => IsVariableReferenceMatch(reference, variable));
+	}
+
+	protected IVariableBase? FindBoundVariable(IVariableBase variable)
+	{
+		return Variables.FirstOrDefault(v =>
+			ReferenceEquals(v, variable)
+			|| IsVariableReferenceMatch(GetVariableReference(v), variable));
+	}
+
 	public void RememberVariableBinding(IVariableBase variable)
 	{
 		var variableReference = GetVariableReference(variable);

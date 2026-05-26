@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.DragDrop;
+using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Views;
 using Telerik.Windows.Diagrams.Core;
 using Qenex.QLibs.QUI;
@@ -45,6 +46,10 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
         BackgroundColor = ShellWindow.IsDarkTheme ? DarkBackgroundColor : LightBackgroundColor;
         //WorkspaceViewLoadedCommand = new RelayCommand<UserControl>(OnWorkspaceViewLoaded);
         WorkspaceViewLoadedCommand = new RelayCommand<RadDiagram>(OnWorkspaceViewLoaded);
+        EventAggregator.SubscribeAction<VariablePropertiesChangedMsg>(msg =>
+        {
+	        RefreshControlVariableBindings(msg.Variable);
+        });
     }
 
     #endregion
@@ -282,6 +287,15 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     {
 	    UnsubscribeLoadedControlVariables();
 	    activeProtocolVariables.Clear();
+    }
+
+    private void RefreshControlVariableBindings(IVariableBase variable)
+    {
+	    foreach (var control in GetWorkspaceControls())
+	    {
+		    control.RefreshVariableBinding(variable);
+		    SynchronizeSavedVariableBindings(control);
+	    }
     }
 
     public override Task CleanAsync(CancellationToken ct = default)
