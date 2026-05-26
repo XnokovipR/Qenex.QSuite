@@ -65,6 +65,60 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 
 	public bool IsRuntimeStarted { get; set; } = false;
 
+	public bool IsReplayControlEnabled
+	{
+		get;
+		set { field = value; OnPropertyChanged(); }
+	}
+
+	public double ReplayPositionSeconds
+	{
+		get;
+		set
+		{
+			if (Math.Abs(field - value) < 0.001)
+			{
+				return;
+			}
+
+			field = value;
+			OnPropertyChanged();
+			OnPropertyChanged(nameof(ReplayCurrentTimeText));
+
+			if (!isUpdatingReplayPositionFromDriver && IsReplayControlEnabled)
+			{
+				var seekRequestVersion = ++replaySeekRequestVersion;
+				_ = SeekReplayPositionAsync(value, seekRequestVersion);
+			}
+		}
+	}
+
+	public double ReplayDurationSeconds
+	{
+		get;
+		set
+		{
+			if (Math.Abs(field - value) < 0.001)
+			{
+				return;
+			}
+
+			field = value;
+			OnPropertyChanged();
+			OnPropertyChanged(nameof(ReplayDurationText));
+		}
+	}
+
+	public string ReplayCurrentTimeText => FormatReplayTime(TimeSpan.FromSeconds(ReplayPositionSeconds));
+
+	public string ReplayDurationText => FormatReplayTime(TimeSpan.FromSeconds(ReplayDurationSeconds));
+
+	public string ReplayPauseResumeText
+	{
+		get;
+		set { field = value; OnPropertyChanged(); }
+	} = "Pause";
+
 	public string WindowTitle
 	{
 		get;

@@ -78,6 +78,12 @@ public class SignalControlViewModel : ControlBase
 	    };
 	    
 	    if (dataValue == null ) return;
+	    if (protVariable.Timestamp < previousUpdateTime)
+	    {
+		    previousUpdateTime = DateTime.MinValue;
+		    prevValue = 0;
+	    }
+
 	    if ((protVariable.Timestamp - previousUpdateTime).TotalMilliseconds < RefreshTime) return;
 	    previousUpdateTime = protVariable.Timestamp;
 
@@ -107,6 +113,8 @@ public class SignalControlViewModel : ControlBase
 	    VariableLabel = protVariable.Label;
 	    VariableUnit = protVariable is ScalarVariable variable ? variable.Values.ValPresentation.Unit : string.Empty;
 	    VariableValue = string.Empty;
+	    previousUpdateTime = DateTime.MinValue;
+	    prevValue = 0;
     }
 
     [OnDeserialized]

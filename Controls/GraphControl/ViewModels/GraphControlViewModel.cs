@@ -226,16 +226,52 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         }
 
         var val = ConvertValueToDouble(scalarVariable);
+        var xVal = (timestamp - baseTime).TotalSeconds;
+
+        if (chartVariable.XDateTimeVal.Count > 0)
+        {
+            var lastChartVariableTimestamp = chartVariable.XDateTimeVal[^1];
+            if (timestamp < lastChartVariableTimestamp)
+            {
+                ClearChartData(timestamp);
+                xVal = 0;
+            }
+            else if (timestamp == lastChartVariableTimestamp)
+            {
+                chartVariable.YVal[^1] = val;
+                RefreshPlotForValue(timestamp, xVal, val, chartVariable);
+                return Task.CompletedTask;
+            }
+        }
 
         chartVariable.XDateTimeVal.Add(timestamp);
-        var xVal = (timestamp - baseTime).TotalSeconds;
         chartVariable.XVal.Add(xVal);
         chartVariable.YVal.Add(val);
 
+        RefreshPlotForValue(timestamp, xVal, val, chartVariable);
+
+        return Task.CompletedTask;
+    }
+
+    private void ClearChartData(DateTime newBaseTime)
+    {
+        foreach (var chartVariable in ChartVariables)
+        {
+            chartVariable.XDateTimeVal.Clear();
+            chartVariable.XVal.Clear();
+            chartVariable.YVal.Clear();
+        }
+
+        baseTime = newBaseTime;
+        lastUpdateTime = DateTime.MinValue;
+    }
+
+    private void RefreshPlotForValue(DateTime timestamp, double xVal, double val, ChartVariable chartVariable)
+    {
         var axisIndex = GetValidVerticalAxisIndex(chartVariable.AxisIndex);
         if (axisIndex < 0)
         {
-            return Task.CompletedTask;
+            return;
         }
 
         if (axisIndex != chartVariable.AxisIndex)
@@ -262,10 +298,6 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         {
             ActualizeCrosshairAndAnnotation(MousePosition);
         }
-
-
-
-        return Task.CompletedTask;
     }
     
     public override void UpdateThemeSettingsControl(System.Windows.Media.Color bgColor, System.Windows.Media.Color fgColor, int fontSize)

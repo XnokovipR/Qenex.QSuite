@@ -40,6 +40,8 @@ public partial class ShellWindowModel
     private bool canImportDataLog = true;
     private bool canReplay = true;
     private bool canStopReplay;
+    private bool isUpdatingReplayPositionFromDriver;
+    private int replaySeekRequestVersion;
     
     #endregion
     
@@ -71,6 +73,7 @@ public partial class ShellWindowModel
     public RelayCommandAsync<RadDocking> RibbonImportDataLogCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonReplayCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonStopReplayCommand { get; set; }
+    public RelayCommand<object> RibbonReplayPauseResumeCommand { get; set; }
     
     public RelayCommand<RadDocking> RibbonScriptVariablesSettingsCommand { get; set; }
     public RelayCommand<RadDocking> RibbonScriptsSettingsCommand { get; set; }
@@ -105,6 +108,7 @@ public partial class ShellWindowModel
         RibbonImportDataLogCommand = new RelayCommandAsync<RadDocking>(ImportDataLogAsync, _ => CanImportDataLog());
         RibbonReplayCommand = new RelayCommandAsync<RadDocking>(ReplayAsync, _ => CanStartReplay());
         RibbonStopReplayCommand = new RelayCommandAsync<RadDocking>(StopReplayAsync, _ => canStopReplay);
+        RibbonReplayPauseResumeCommand = new RelayCommand<object>(_ => ToggleReplayPause(), _ => IsReplayControlEnabled);
         
         RibbonScriptVariablesSettingsCommand = new RelayCommand<RadDocking>(OpenScriptVariablesOptions, _ => canUseHomeRibbon);
         RibbonScriptsSettingsCommand = new RelayCommand<RadDocking>(RemoveScriptVariablesOptions, _ => canUseHomeRibbon);
@@ -774,6 +778,7 @@ public partial class ShellWindowModel
             IsRuntimeStarted = true;
             isReplayMode = true;
             SetRuntimeCommandStates(true, true);
+            SetReplayControlEnabled(true);
             await realProjectData.Module.StartAsync();
 
             if (!isReplayMode)
@@ -793,6 +798,7 @@ public partial class ShellWindowModel
             IsRuntimeStarted = false;
             isReplayMode = false;
             SetRuntimeCommandStates(false);
+            SetReplayControlEnabled(false);
             logger.Log(LogLevel.Error, $"Replay start failed: {e.Message}");
         }
     }
@@ -825,6 +831,7 @@ public partial class ShellWindowModel
             isReplayMode = false;
             SetRuntimeCommandStates(false);
             UnsubscribeReplayCompleted();
+            SetReplayControlEnabled(false);
             RestoreReplayStates();
             LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
             RebindWorkspaceControlVariables(GetProjectProtocolVariables());
@@ -1076,6 +1083,8 @@ public partial class ShellWindowModel
 
         activeReplayDriver = replayDriverWithEvents;
         activeReplayDriver.ReplayCompleted += OnReplayCompleted;
+        activeReplayDriver.ReplayProgressChanged += OnReplayProgressChanged;
+        UpdateReplayProgress(activeReplayDriver.CurrentTime, activeReplayDriver.Duration, activeReplayDriver.IsPaused);
     }
 
     private void UnsubscribeReplayCompleted()
@@ -1086,6 +1095,7 @@ public partial class ShellWindowModel
         }
 
         activeReplayDriver.ReplayCompleted -= OnReplayCompleted;
+        activeReplayDriver.ReplayProgressChanged -= OnReplayProgressChanged;
         activeReplayDriver = null;
     }
 
@@ -1106,6 +1116,87 @@ public partial class ShellWindowModel
         {
             logger.Log(LogLevel.Error, $"Replay completion handling failed: {ex.Message}", ex);
         }
+    }
+
+    private async void OnReplayProgressChanged(object? sender, ReplayProgressChangedEventArgs e)
+    {
+        try
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+                UpdateReplayProgress(e.CurrentTime, e.Duration, e.IsPaused));
+        }
+        catch (Exception ex)
+        {
+            logger.Log(LogLevel.Error, $"Replay progress update failed: {ex.Message}", ex);
+        }
+    }
+
+    private void ToggleReplayPause()
+    {
+        if (activeReplayDriver == null)
+        {
+            return;
+        }
+
+        if (activeReplayDriver.IsPaused)
+        {
+            activeReplayDriver.Resume();
+        }
+        else
+        {
+            activeReplayDriver.Pause();
+        }
+    }
+
+    private async Task SeekReplayPositionAsync(double seconds, int requestVersion)
+    {
+        await Task.Delay(150);
+        if (requestVersion != replaySeekRequestVersion || activeReplayDriver == null || !isReplayMode)
+        {
+            return;
+        }
+
+        try
+        {
+            await activeReplayDriver.SeekAsync(TimeSpan.FromSeconds(seconds));
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, $"Replay seek failed: {e.Message}", e);
+        }
+    }
+
+    private void SetReplayControlEnabled(bool isEnabled)
+    {
+        IsReplayControlEnabled = isEnabled;
+        if (!isEnabled)
+        {
+            UpdateReplayProgress(TimeSpan.Zero, TimeSpan.Zero, false);
+        }
+
+        RibbonReplayPauseResumeCommand.OnCanExecuteChanged();
+    }
+
+    private void UpdateReplayProgress(TimeSpan currentTime, TimeSpan duration, bool isPaused)
+    {
+        isUpdatingReplayPositionFromDriver = true;
+        try
+        {
+            ReplayDurationSeconds = duration.TotalSeconds;
+            ReplayPositionSeconds = currentTime.TotalSeconds;
+            ReplayPauseResumeText = isPaused ? "Resume" : "Pause";
+        }
+        finally
+        {
+            isUpdatingReplayPositionFromDriver = false;
+        }
+    }
+
+    private static string FormatReplayTime(TimeSpan time)
+    {
+        return time.TotalHours >= 1
+            ? time.ToString(@"h\:mm\:ss")
+            : time.ToString(@"mm\:ss");
     }
 
     private MemoryStream CreateWorkspaceLayoutStream(RadDocking radDocking)
@@ -1161,6 +1252,7 @@ public partial class ShellWindowModel
         RibbonImportDataLogCommand.OnCanExecuteChanged();
         RibbonReplayCommand.OnCanExecuteChanged();
         RibbonStopReplayCommand.OnCanExecuteChanged();
+        RibbonReplayPauseResumeCommand.OnCanExecuteChanged();
     }
 
     private void NotifyRuntimeCommandsCanExecuteChanged()
