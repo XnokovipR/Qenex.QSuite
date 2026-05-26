@@ -11,53 +11,55 @@
              d:DesignHeight="300" d:DesignWidth="300"
              d:DataContext="{d:DesignInstance vm:VariablePropertiesViewModel, IsDesignTimeCreatable=False}">
 
-    <Grid Margin="5">
-        <telerik:RadGridView
-            ItemsSource="{Binding Properties}"
-            AutoGenerateColumns="False"
-            CanUserDeleteRows="False"
-            CanUserInsertRows="False"
-            GroupRenderMode="Flat"
-            RowIndicatorVisibility="Collapsed"
-            ShowGroupPanel="False">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding Properties}" Margin="5">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type wrappers:EditablePropertyWrapper}">
+                    <Grid Margin="0,0,0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
 
-            <telerik:RadGridView.Columns>
-                <telerik:GridViewDataColumn Width="150" Header="Property" DataMemberBinding="{Binding Name}" IsReadOnly="True" />
-                <telerik:GridViewDataColumn Width="*" Header="Value">
-                    <telerik:GridViewDataColumn.CellTemplate>
-                        <DataTemplate DataType="{x:Type wrappers:EditablePropertyWrapper}">
-                            <Grid>
-                                <q:QTextBlock x:Name="ValueTextBlock"
-                                              Visibility="Collapsed"
-                                              VerticalAlignment="Center"
-                                              Text="{Binding ValueText}"
-                                              ToolTip="{Binding Error}" />
-                                <q:QTextBox x:Name="ValueTextBox"
-                                            Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                            ToolTip="{Binding Error}">
-                                </q:QTextBox>
-                                <telerik:RadComboBox x:Name="ValueComboBox"
-                                                     Visibility="Collapsed"
-                                                     ItemsSource="{Binding Options}"
-                                                     SelectedItem="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                     ToolTip="{Binding Error}">
-                                </telerik:RadComboBox>
-                            </Grid>
-                            <DataTemplate.Triggers>
-                                <DataTrigger Binding="{Binding HasOptions}" Value="True">
-                                    <Setter TargetName="ValueTextBox" Property="Visibility" Value="Collapsed" />
-                                    <Setter TargetName="ValueComboBox" Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding IsReadOnly}" Value="True">
-                                    <Setter TargetName="ValueTextBlock" Property="Visibility" Value="Visible" />
-                                    <Setter TargetName="ValueTextBox" Property="Visibility" Value="Collapsed" />
-                                    <Setter TargetName="ValueComboBox" Property="Visibility" Value="Collapsed" />
-                                </DataTrigger>
-                            </DataTemplate.Triggers>
-                        </DataTemplate>
-                    </telerik:GridViewDataColumn.CellTemplate>
-                </telerik:GridViewDataColumn>
-            </telerik:RadGridView.Columns>
-        </telerik:RadGridView>
-    </Grid>
+                        <q:QTextBlock Grid.Column="0"
+                                      Margin="0,0,10,0"
+                                      VerticalAlignment="Center"
+                                      Text="{Binding Name}" />
+
+                        <Grid Grid.Column="1">
+                            <q:QTextBlock x:Name="ValueTextBlock"
+                                          Visibility="Collapsed"
+                                          VerticalAlignment="Center"
+                                          Text="{Binding ValueText}"
+                                          ToolTip="{Binding Error}" />
+                            <q:QTextBox x:Name="ValueTextBox"
+                                        Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                        IsReadOnly="{Binding IsReadOnly}"
+                                        ToolTip="{Binding Error}" />
+                            <telerik:RadComboBox x:Name="ValueComboBox"
+                                                 Visibility="Collapsed"
+                                                 ItemsSource="{Binding Options}"
+                                                 IsEnabled="{Binding IsEditable}"
+                                                 SelectedItem="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 ToolTip="{Binding Error}" />
+                        </Grid>
+                    </Grid>
+                    <DataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding HasOptions}" Value="True">
+                            <Setter TargetName="ValueTextBox" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="ValueComboBox" Property="Visibility" Value="Visible" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsReadOnly}" Value="True">
+                            <Setter TargetName="ValueTextBlock" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="ValueTextBox" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="ValueTextBox" Property="Focusable" Value="False" />
+                            <Setter TargetName="ValueTextBox" Property="IsEnabled" Value="False" />
+                            <Setter TargetName="ValueComboBox" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="ValueComboBox" Property="Focusable" Value="False" />
+                        </DataTrigger>
+                    </DataTemplate.Triggers>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
 </UserControl>

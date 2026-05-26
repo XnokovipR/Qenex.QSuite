@@ -19,14 +19,16 @@ public class VariablePropertiesViewModel : PropertyChangedBaseWithValidation, IP
     private readonly Action refreshSource;
     private readonly IEnumerable<IPresentation> presentations;
     private readonly bool isReadOnly;
+    private readonly Func<bool> getIsEditVariableEnabled;
     private readonly EventAggregator eventAggregator;
 
     public VariablePropertiesViewModel(
         EventAggregator ea,
         VariableSeWrapper variableWrapper,
         IEnumerable<IPresentation> presentations,
-        IEnumerable<IVarEvent> varEvents)
-        : this(ea, variableWrapper.Variable, null, variableWrapper.Refresh, presentations, false)
+        IEnumerable<IVarEvent> varEvents,
+        Func<bool> getIsEditVariableEnabled)
+        : this(ea, variableWrapper.Variable, null, variableWrapper.Refresh, presentations, false, getIsEditVariableEnabled)
     {
         _ = varEvents;
     }
@@ -42,7 +44,8 @@ public class VariablePropertiesViewModel : PropertyChangedBaseWithValidation, IP
             protocolVariableWrapper.ProtocolVariable,
             protocolVariableWrapper.Refresh,
             presentations,
-            true)
+            true,
+            () => false)
     {
         _ = varEvents;
     }
@@ -53,7 +56,8 @@ public class VariablePropertiesViewModel : PropertyChangedBaseWithValidation, IP
         IProtocolVariable? protocolVariable,
         Action refreshSource,
         IEnumerable<IPresentation> presentations,
-        bool isReadOnly)
+        bool isReadOnly,
+        Func<bool> getIsEditVariableEnabled)
     {
         eventAggregator = ea;
         this.variable = variable;
@@ -61,6 +65,7 @@ public class VariablePropertiesViewModel : PropertyChangedBaseWithValidation, IP
         this.refreshSource = refreshSource;
         this.presentations = presentations;
         this.isReadOnly = isReadOnly;
+        this.getIsEditVariableEnabled = getIsEditVariableEnabled;
         Properties = CreateProperties();
     }
 
@@ -105,13 +110,26 @@ public class VariablePropertiesViewModel : PropertyChangedBaseWithValidation, IP
         Action<string> setValue,
         IEnumerable<string>? options = null)
     {
-        return new EditablePropertyWrapper(group, name, getValue, setValue, RefreshVariableProperties, options, isReadOnly);
+        return new EditablePropertyWrapper(group, name, getValue, setValue, RefreshVariableProperties, options, IsPropertyReadOnly);
+    }
+
+    private bool IsPropertyReadOnly()
+    {
+        return isReadOnly || !getIsEditVariableEnabled();
     }
 
     private void RefreshVariableProperties()
     {
         refreshSource();
         eventAggregator.Publish(new VariablePropertiesChangedMsg { Variable = variable });
+    }
+
+    public void RefreshReadOnly()
+    {
+        foreach (var property in Properties)
+        {
+            property.RefreshReadOnly();
+        }
     }
 
     private void SetVariableValue(string value)

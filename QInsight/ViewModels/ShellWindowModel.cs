@@ -37,6 +37,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	// Project
 	private RealProjectData realProjectData;
 	private bool isProjectMade;
+	private bool isEditVariableEnabled;
 	private string? currentProjectFilePath;
 	private ScriptingContext? pythonInterpreterStandaloneContext;
 

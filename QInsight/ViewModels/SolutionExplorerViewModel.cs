@@ -169,6 +169,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     {
         // Add variables node
         var variablesNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Variables);
+        variablesNode.CustomTags!["Variables"] = variables;
         children.Add(variablesNode);
         
         // Add variables

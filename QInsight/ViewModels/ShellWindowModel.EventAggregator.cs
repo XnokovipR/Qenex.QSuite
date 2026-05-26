@@ -13,6 +13,7 @@ using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
 
 namespace Qenex.QInsight.ViewModels;
@@ -61,7 +62,8 @@ public partial class ShellWindowModel
                     eventAggregator,
                     variableSeWrapper,
                     realProjectData.Module.Presentations,
-                    realProjectData.Module.VarEvents);
+                    realProjectData.Module.VarEvents,
+                    () => isEditVariableEnabled);
                 break;
             }
             case ProtocolVariableWrapper protocolVariableWrapper:
@@ -83,6 +85,24 @@ public partial class ShellWindowModel
                      && protocols is IEnumerable<IProtocolBase> communicatedProtocols:
             {
                 propVm.SelectedViewModel = new CommunicatedProtocolsPropertiesViewModel(eventAggregator, communicatedProtocols);
+                break;
+            }
+            case NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Variables } nodeWrapper
+                when nodeWrapper.CustomTags?.TryGetValue("Variables", out var variables) == true
+                     && variables is IList<IVariableBase> moduleVariables:
+            {
+                propVm.SelectedViewModel = new VariablesPropertiesViewModel(
+                    eventAggregator,
+                    moduleVariables,
+                    () => isEditVariableEnabled,
+                    value =>
+                    {
+                        isEditVariableEnabled = value;
+                        if (propertiesViewModel.SelectedViewModel is VariablePropertiesViewModel variablePropertiesViewModel)
+                        {
+                            variablePropertiesViewModel.RefreshReadOnly();
+                        }
+                    });
                 break;
             }
             default:
