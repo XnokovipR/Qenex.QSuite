@@ -38,6 +38,22 @@ public class PythonInterpreterTextEditorBehavior : Behavior<TextEditor>
             return;
         }
 
+        if (e.Key == Key.Up)
+        {
+            e.Handled = true;
+            viewModel.ShowPreviousHistoryInput();
+            AssociatedObject.CaretOffset = AssociatedObject.Document.TextLength;
+            return;
+        }
+
+        if (e.Key == Key.Down)
+        {
+            e.Handled = true;
+            viewModel.ShowNextHistoryInput();
+            AssociatedObject.CaretOffset = AssociatedObject.Document.TextLength;
+            return;
+        }
+
         if ((e.Key == Key.Back || e.Key == Key.Left) && AssociatedObject.CaretOffset <= viewModel.InputStartOffset)
         {
             e.Handled = true;

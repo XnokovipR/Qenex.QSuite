@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text;
 using System.Windows.Media;
 using ICSharpCode.AvalonEdit.Document;
@@ -13,8 +14,12 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
 {
     private const string PrimaryPrompt = ">>> ";
     private const string ContinuationPrompt = "... ";
+    private const int MaxHistoryCount = 50;
+    private const string HistoryFileName = "QInsightPythonHistory.csv";
     private readonly Func<Task<ScriptingContext?>> scriptingContextProvider;
+    private readonly List<string> inputHistory = [];
     private string currentPrompt = PrimaryPrompt;
+    private int historyIndex = -1;
 
     public PythonInterpreterViewModel(
         EventAggregator ea,
@@ -27,6 +32,7 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
         FontSize = ShellWindow.MainAppSettings.Design.FontSize + 1;
         PyHighlighting = SyntaxHighlighting.LoadPythonHighlighting(ShellWindow.IsDarkTheme);
         Document = new TextDocument();
+        LoadInputHistory();
 
         AppendSystemLine("QInsight Python");
         AppendPrompt();
@@ -64,6 +70,7 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
         }
 
         var input = GetCurrentInput();
+        AddToHistory(input);
         AppendText(Environment.NewLine);
 
         var scriptingContext = await scriptingContextProvider();
@@ -100,6 +107,146 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
         return inputLength <= 0
             ? string.Empty
             : Document.GetText(InputStartOffset, inputLength);
+    }
+
+    public void ShowPreviousHistoryInput()
+    {
+        if (inputHistory.Count == 0)
+        {
+            return;
+        }
+
+        historyIndex = historyIndex < 0
+            ? inputHistory.Count - 1
+            : Math.Max(0, historyIndex - 1);
+        ReplaceCurrentInput(inputHistory[historyIndex]);
+    }
+
+    public void ShowNextHistoryInput()
+    {
+        if (inputHistory.Count == 0 || historyIndex < 0)
+        {
+            return;
+        }
+
+        historyIndex++;
+        if (historyIndex >= inputHistory.Count)
+        {
+            historyIndex = -1;
+            ReplaceCurrentInput(string.Empty);
+            return;
+        }
+
+        ReplaceCurrentInput(inputHistory[historyIndex]);
+    }
+
+    private void AddToHistory(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            historyIndex = -1;
+            return;
+        }
+
+        if (inputHistory.Count == 0 || inputHistory[^1] != input)
+        {
+            inputHistory.Add(input);
+            TrimHistory();
+            SaveInputHistory();
+        }
+
+        historyIndex = -1;
+    }
+
+    private void ReplaceCurrentInput(string input)
+    {
+        var inputLength = Document.TextLength - InputStartOffset;
+        if (inputLength > 0)
+        {
+            Document.Remove(InputStartOffset, inputLength);
+        }
+
+        Document.Insert(InputStartOffset, input);
+    }
+
+    private void LoadInputHistory()
+    {
+        if (!File.Exists(HistoryFileName))
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var line in File.ReadLines(HistoryFileName))
+            {
+                var input = UnescapeHistoryLine(line);
+                if (!string.IsNullOrWhiteSpace(input))
+                {
+                    inputHistory.Add(input);
+                }
+            }
+
+            TrimHistory();
+        }
+        catch
+        {
+            inputHistory.Clear();
+        }
+    }
+
+    private void SaveInputHistory()
+    {
+        try
+        {
+            File.WriteAllLines(HistoryFileName, inputHistory.Select(EscapeHistoryLine));
+        }
+        catch
+        {
+            // History is a convenience feature; command execution must not depend on it.
+        }
+    }
+
+    private void TrimHistory()
+    {
+        if (inputHistory.Count <= MaxHistoryCount)
+        {
+            return;
+        }
+
+        inputHistory.RemoveRange(0, inputHistory.Count - MaxHistoryCount);
+    }
+
+    private static string EscapeHistoryLine(string input)
+    {
+        return input
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\r", "\\r", StringComparison.Ordinal)
+            .Replace("\n", "\\n", StringComparison.Ordinal);
+    }
+
+    private static string UnescapeHistoryLine(string input)
+    {
+        var builder = new StringBuilder(input.Length);
+        for (var i = 0; i < input.Length; i++)
+        {
+            if (input[i] != '\\' || i == input.Length - 1)
+            {
+                builder.Append(input[i]);
+                continue;
+            }
+
+            i++;
+            builder.Append(input[i] switch
+            {
+                'r' => '\r',
+                'n' => '\n',
+                '\\' => '\\',
+                _ => input[i]
+            });
+        }
+
+        return builder.ToString();
     }
 
     private void AppendResult(InteractivePythonExecutionResult result)

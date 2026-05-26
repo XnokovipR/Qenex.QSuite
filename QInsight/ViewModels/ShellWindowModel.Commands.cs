@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using System.Xml.Linq;
 using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Models.Project;
@@ -217,7 +218,6 @@ public partial class ShellWindowModel
     {
         try
         {
-            pythonInterpreterStandaloneContext?.DisposeSharedScopeAsync().GetAwaiter().GetResult();
             AppSettings.SaveAppSettingsToFile("QInsightAppSettings.xml", ShellWindow.MainAppSettings);
         }
         catch (Exception e)
@@ -249,7 +249,7 @@ public partial class ShellWindowModel
     
     private void DockingElementLayoutSaving(LayoutSerializationSavingEventArgs e)
     {
-        CancelLayoutSavingByTagCondition(e, "WorkspaceViewModel", requireSerializationTag);
+        CancelLayoutSavingByTagCondition(e, requireSerializationTag);
         // var tag = e.AffectedElementSerializationTag;
         // if (!tag.Contains("WorkspaceViewModel"))
         // {
@@ -257,10 +257,10 @@ public partial class ShellWindowModel
         // }
     }
     
-    private void CancelLayoutSavingByTagCondition(LayoutSerializationSavingEventArgs eventArgs, string conditionString, bool reqSerializationTag)
+    private void CancelLayoutSavingByTagCondition(LayoutSerializationSavingEventArgs eventArgs, bool reqSerializationTag)
     {
-        var hasConditionString = eventArgs.AffectedElementSerializationTag.Contains(conditionString);
-        if (hasConditionString != reqSerializationTag)
+        var isWorkspaceLayoutElement = IsProjectWorkspaceLayoutElement(eventArgs.AffectedElementSerializationTag);
+        if (isWorkspaceLayoutElement != reqSerializationTag)
         {
             eventArgs.Cancel = true;
         }
@@ -268,7 +268,7 @@ public partial class ShellWindowModel
     
     private void DockingElementLayoutCleaning(LayoutSerializationCleaningEventArgs e)
     {
-        CancelLayoutSCleaningByTagCondition(e, "WorkspaceViewModel", requireSerializationTag);
+        CancelLayoutSCleaningByTagCondition(e, requireSerializationTag);
         // var tag = e.AffectedElementSerializationTag;
         // if (!tag.Contains("WorkspaceViewModel"))
         // {
@@ -276,13 +276,19 @@ public partial class ShellWindowModel
         // }
     }
 
-    private void CancelLayoutSCleaningByTagCondition(LayoutSerializationCleaningEventArgs eventArgs, string conditionString, bool reqSerializationTag)
+    private void CancelLayoutSCleaningByTagCondition(LayoutSerializationCleaningEventArgs eventArgs, bool reqSerializationTag)
     {
-        var hasConditionString = eventArgs.AffectedElementSerializationTag.Contains(conditionString);
-        if (hasConditionString != reqSerializationTag)
+        var isWorkspaceLayoutElement = IsProjectWorkspaceLayoutElement(eventArgs.AffectedElementSerializationTag);
+        if (isWorkspaceLayoutElement != reqSerializationTag)
         {
             eventArgs.Cancel = true;
         }
+    }
+
+    private static bool IsProjectWorkspaceLayoutElement(string serializationTag)
+    {
+        return serializationTag.Contains("WorkspaceViewModel", StringComparison.Ordinal)
+               && !serializationTag.Contains("PythonInterpreter", StringComparison.Ordinal);
     }
 
 	#endregion
@@ -527,7 +533,9 @@ public partial class ShellWindowModel
 
     private async Task CloseProjectWorkspacesAsync()
     {
-        var workspaceViewModels = ViewModels.Where(vm => vm is IWorkspaceViewModel).ToList();
+        var workspaceViewModels = ViewModels
+            .Where(vm => vm is WorkspaceViewModel or ScriptViewModel)
+            .ToList();
         foreach (var workspaceViewModelBase in workspaceViewModels)
         {
             if (workspaceViewModelBase is IWorkspaceViewModel workspaceViewModel)
@@ -758,7 +766,7 @@ public partial class ShellWindowModel
         try
         {
             requireSerializationTag = true;
-            using var stream = new MemoryStream(workspaceLayoutData);
+            using var stream = CreateSanitizedWorkspaceLayoutStream(workspaceLayoutData);
             shellRadDocking.LoadLayout(stream);
         }
         catch (Exception e)
@@ -769,6 +777,42 @@ public partial class ShellWindowModel
         {
             requireSerializationTag = previousRequireSerializationTag;
         }
+    }
+
+    private static MemoryStream CreateSanitizedWorkspaceLayoutStream(byte[] workspaceLayoutData)
+    {
+        using var source = new MemoryStream(workspaceLayoutData);
+        var document = XDocument.Load(source);
+
+        var panesToRemove = document
+            .Descendants()
+            .Where(element =>
+                element.Name.LocalName.Contains("Pane", StringComparison.Ordinal) &&
+                ShouldRemoveWorkspaceLayoutPane(element))
+            .ToList();
+
+        foreach (var pane in panesToRemove)
+        {
+            pane.Remove();
+        }
+
+        var sanitizedStream = new MemoryStream();
+        document.Save(sanitizedStream);
+        sanitizedStream.Position = 0;
+        return sanitizedStream;
+    }
+
+    private static bool ShouldRemoveWorkspaceLayoutPane(XElement pane)
+    {
+        var serializationTag = pane.Attribute("SerializationTag")?.Value ?? string.Empty;
+        if (serializationTag.Contains("PythonInterpreter", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        var header = pane.Attribute("Header")?.Value ?? string.Empty;
+        return pane.Name.LocalName.Equals("QRadDocumentPane", StringComparison.Ordinal)
+               && header.Equals("Python", StringComparison.Ordinal);
     }
 
     private async Task ReplayAsync(object obj)
