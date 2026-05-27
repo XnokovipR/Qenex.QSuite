@@ -161,6 +161,8 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
             }
         }
 
+        ResetReplayPosition();
+
         foreach (var protocol in Protocols)
         {
             await protocol.StopAsync(ct);
