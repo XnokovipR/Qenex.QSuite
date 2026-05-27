@@ -24,11 +24,8 @@ public abstract class WorkspaceViewModelBase : PropertyChangedBaseWithValidation
 		get => isHidden;
 		set 
 		{
-			if (isHidden != value)
-			{
-				isHidden = value;
-				ChangedIsHidden?.Invoke(this, isHidden);
-			}; 
+			isHidden = value;
+			ChangedIsHidden?.Invoke(this, isHidden);
 		}
 	}
 	public EventHandler<bool>? ChangedIsHidden { get; set; }

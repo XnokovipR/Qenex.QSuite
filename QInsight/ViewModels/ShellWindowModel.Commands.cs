@@ -241,23 +241,16 @@ public partial class ShellWindowModel
     
     private async Task ClosePanelAsync(StateChangeEventArgs arg)
     {
-        // if you want to remove workspace view models when closing panes
-        
-        // var rd = arg.OriginalSource as RadDocking;
-        // foreach (var pane in arg.Panes)
-        // {
-        //     if (rd?.DataContext is ShellWindowModel dataContext)
-        //     {
-        //         if (pane.DataContext is WorkspaceViewModel vm)
-        //         {
-        //             pane.RemoveFromParent();
-        //             //await vm.CleanAsync();
-        //             //ViewModels.Remove(vm);
-        //         }
-        //     }
-        // }
-        
-        await Task.CompletedTask;
+        foreach (var pane in arg.Panes.ToList())
+        {
+            if (pane.DataContext is not PythonInterpreterViewModel pythonInterpreterViewModel)
+            {
+                continue;
+            }
+
+            await pythonInterpreterViewModel.CleanAsync();
+            ViewModels.Remove(pythonInterpreterViewModel);
+        }
     }
     
     private void DockingElementLayoutSaving(LayoutSerializationSavingEventArgs e)
@@ -666,13 +659,15 @@ public partial class ShellWindowModel
 
     private void OpenPythonInterpreter(RadDocking docking)
     {
-        var foundPythonInterpreterViewModel = ViewModels
-            .OfType<PythonInterpreterViewModel>()
-            .FirstOrDefault(viewModel => FindDockingPaneForViewModel(docking, viewModel) != null);
-        if (foundPythonInterpreterViewModel != null)
+        foreach (var pythonInterpreterViewModel in ViewModels.OfType<PythonInterpreterViewModel>().ToList())
         {
-            foundPythonInterpreterViewModel.IsHidden = false;
-            return;
+            if (FindDockingPaneForViewModel(docking, pythonInterpreterViewModel) != null)
+            {
+                pythonInterpreterViewModel.IsHidden = false;
+                return;
+            }
+
+            ViewModels.Remove(pythonInterpreterViewModel);
         }
 
         ViewModels.Add(CreatePythonInterpreterViewModel());
