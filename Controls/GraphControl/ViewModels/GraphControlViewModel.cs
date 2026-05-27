@@ -23,7 +23,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 {
     #region Const
 
-    private const double PlotFontSizeMultiplier = 1.1;
+    private const double PlotFontSizeMultiplier = 0.9;
 
     #endregion
     
@@ -320,8 +320,9 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     {
         base.UpdateThemeSettingsControl(bgColor, fgColor, fontSize);
 
-        plotFontSize = (int)Math.Round(PlotFontSizeMultiplier * fontSize);
-        axesFontSize = (int)Math.Round(PlotFontSizeMultiplier * fontSize);
+        var scale = PlotControl.DisplayScale;
+        plotFontSize = (int)Math.Round(PlotFontSizeMultiplier * fontSize * scale);
+        axesFontSize = (int)Math.Round(PlotFontSizeMultiplier * fontSize * scale);
         backgroundColor = bgColor.ToScottPlotColor();
         foregroundColor = fgColor.ToScottPlotColor();
         
