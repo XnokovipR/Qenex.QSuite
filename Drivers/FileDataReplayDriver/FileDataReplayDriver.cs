@@ -14,15 +14,20 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
     private double speed = 1.0;
     private ReplayMode replayMode = ReplayMode.Realtime;
     private CancellationTokenSource? replayCancellation;
+    private CancellationTokenSource? dataLoadCancellation;
+    private Task? dataLoadTask;
     private Task? replayTask;
     private readonly object replayStateLock = new();
     private readonly SemaphoreSlim replayRecordGate = new(1, 1);
+    private readonly SemaphoreSlim replayRecordsAvailable = new(0);
     private List<DataLogRecord> replayRecords = [];
     private int replayRecordIndex;
     private long replayFirstTimestampUtcTicks;
     private long replayCurrentTimestampUtcTicks;
     private int replaySeekVersion;
     private bool isPaused;
+    private bool isDataLoaded;
+    private bool isDataLoading;
 
     public FileDataReplayDriver()
     {
@@ -43,6 +48,17 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
 
     public TimeSpan CurrentTime { get; private set; }
     public TimeSpan Duration { get; private set; }
+
+    public bool IsDataLoaded
+    {
+        get
+        {
+            lock (replayStateLock)
+            {
+                return isDataLoaded;
+            }
+        }
+    }
 
     public bool IsPaused
     {
@@ -93,6 +109,23 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
         }
     }
 
+    public void StartLoadingData(CancellationToken ct = default)
+    {
+        lock (replayStateLock)
+        {
+            if (isDataLoaded || isDataLoading || dataLoadTask is { IsCompleted: false })
+            {
+                return;
+            }
+
+            isDataLoading = true;
+        }
+
+        dataLoadCancellation?.Dispose();
+        dataLoadCancellation = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        dataLoadTask = LoadReplayRecordsSafeAsync(dataLoadCancellation.Token);
+    }
+
     public override Task StartAsync(CancellationToken ct = default)
     {
         if (!IsEnabled)
@@ -105,6 +138,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
             _ = protocol.StartAsync(ct);
         }
 
+        StartLoadingData(ct);
         replayCancellation = CancellationTokenSource.CreateLinkedTokenSource(ct);
         replayTask = RunReplayAsync(replayCancellation.Token);
         return Task.CompletedTask;
@@ -139,7 +173,10 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
     {
         replayCancellation?.Cancel();
         replayCancellation?.Dispose();
+        dataLoadCancellation?.Cancel();
+        dataLoadCancellation?.Dispose();
         replayRecordGate.Dispose();
+        replayRecordsAvailable.Dispose();
     }
 
     public override void Send<T>(T data)
@@ -184,6 +221,12 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
 
     public async Task SeekAsync(TimeSpan position, CancellationToken ct = default)
     {
+        if (!IsDataLoaded)
+        {
+            Logger?.Log(LogLevel.Warn, "Replay seek is available after the data log is fully loaded.");
+            return;
+        }
+
         if (position < TimeSpan.Zero)
         {
             position = TimeSpan.Zero;
@@ -225,7 +268,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
         try
         {
             await Task.Yield();
-            await LoadReplayRecordsAsync(ct);
+            StartLoadingData(ct);
 
             do
             {
@@ -267,13 +310,32 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
         }
     }
 
+    private async Task LoadReplayRecordsSafeAsync(CancellationToken ct)
+    {
+        try
+        {
+            await LoadReplayRecordsAsync(ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+        }
+        catch (Exception e)
+        {
+            Logger?.Log(LogLevel.Error, $"Replay data load failed: {e.Message}", e);
+            CompleteReplayDataLoad();
+        }
+    }
+
     private async Task LoadReplayRecordsAsync(CancellationToken ct)
     {
         if (!File.Exists(logFilePath))
         {
             Logger?.Log(LogLevel.Error, $"Replay log file \"{logFilePath}\" not found.");
+            CompleteReplayDataLoad();
             return;
         }
+
+        ResetReplayDataLoadState();
 
         await using var stream = new FileStream(
             logFilePath,
@@ -283,42 +345,87 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
             bufferSize: 4096,
             useAsync: true);
 
-        var records = new List<DataLogRecord>();
         while (stream.Position < stream.Length)
         {
             ct.ThrowIfCancellationRequested();
             var serializedRecord = await MessagePackSerializer.DeserializeAsync<SerializedVariableLogRecord>(
                 stream,
                 cancellationToken: ct);
-            records.Add(serializedRecord.ToDataLogRecord());
+            AddLoadedRecord(serializedRecord.ToDataLogRecord());
         }
 
+        CompleteReplayDataLoad();
+    }
+
+    private void ResetReplayDataLoadState()
+    {
         lock (replayStateLock)
         {
-            replayRecords = records
-                .OrderBy(GetRecordTimestampUtcTicks)
-                .ToList();
+            replayRecords = [];
             replayRecordIndex = 0;
             replaySeekVersion++;
-
-            if (replayRecords.Count == 0)
-            {
-                replayFirstTimestampUtcTicks = 0;
-                replayCurrentTimestampUtcTicks = 0;
-                CurrentTime = TimeSpan.Zero;
-                Duration = TimeSpan.Zero;
-                return;
-            }
-
-            replayFirstTimestampUtcTicks = GetRecordTimestampUtcTicks(replayRecords[0]);
-            replayCurrentTimestampUtcTicks = replayFirstTimestampUtcTicks;
-            var lastTimestampUtcTicks = GetRecordTimestampUtcTicks(replayRecords[^1]);
+            replayFirstTimestampUtcTicks = 0;
+            replayCurrentTimestampUtcTicks = 0;
             CurrentTime = TimeSpan.Zero;
-            Duration = lastTimestampUtcTicks > replayFirstTimestampUtcTicks
-                ? TimeSpan.FromTicks(lastTimestampUtcTicks - replayFirstTimestampUtcTicks)
-                : TimeSpan.Zero;
+            Duration = TimeSpan.Zero;
+            isDataLoaded = false;
+            isDataLoading = true;
         }
 
+        RaiseReplayProgressChanged();
+    }
+
+    private void AddLoadedRecord(DataLogRecord record)
+    {
+        lock (replayStateLock)
+        {
+            if (replayRecords.Count == 0)
+            {
+                replayFirstTimestampUtcTicks = GetRecordTimestampUtcTicks(record);
+                replayCurrentTimestampUtcTicks = replayFirstTimestampUtcTicks;
+            }
+
+            replayRecords.Add(record);
+            var recordTimestampUtcTicks = GetRecordTimestampUtcTicks(record);
+            Duration = recordTimestampUtcTicks > replayFirstTimestampUtcTicks
+                ? TimeSpan.FromTicks(recordTimestampUtcTicks - replayFirstTimestampUtcTicks)
+                : Duration;
+        }
+
+        replayRecordsAvailable.Release();
+    }
+
+    private void CompleteReplayDataLoad()
+    {
+        lock (replayStateLock)
+        {
+            if (!IsStarted && replayRecordIndex == 0)
+            {
+                replayRecords = replayRecords
+                    .OrderBy(GetRecordTimestampUtcTicks)
+                    .ToList();
+            }
+
+            if (replayRecords.Count > 0)
+            {
+                replayFirstTimestampUtcTicks = GetRecordTimestampUtcTicks(replayRecords[0]);
+                if (!IsStarted && replayRecordIndex == 0)
+                {
+                    replayCurrentTimestampUtcTicks = replayFirstTimestampUtcTicks;
+                    CurrentTime = TimeSpan.Zero;
+                }
+
+                var lastTimestampUtcTicks = GetRecordTimestampUtcTicks(replayRecords[^1]);
+                Duration = lastTimestampUtcTicks > replayFirstTimestampUtcTicks
+                    ? TimeSpan.FromTicks(lastTimestampUtcTicks - replayFirstTimestampUtcTicks)
+                    : TimeSpan.Zero;
+            }
+
+            isDataLoaded = true;
+            isDataLoading = false;
+        }
+
+        replayRecordsAvailable.Release();
         RaiseReplayProgressChanged();
     }
 
@@ -326,9 +433,12 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
     {
         while (true)
         {
-            ct.ThrowIfCancellationRequested();
+            if (ct.IsCancellationRequested)
+            {
+                break;
+            }
 
-            DataLogRecord record;
+            DataLogRecord? record;
             long currentTimestampUtcTicks;
             long recordTimestampUtcTicks;
             int seekVersion;
@@ -336,13 +446,33 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
             {
                 if (replayRecordIndex >= replayRecords.Count)
                 {
+                    if (isDataLoaded)
+                    {
+                        break;
+                    }
+
+                    record = null!;
+                    currentTimestampUtcTicks = 0;
+                    recordTimestampUtcTicks = 0;
+                    seekVersion = replaySeekVersion;
+                }
+                else
+                {
+                    record = replayRecords[replayRecordIndex];
+                    currentTimestampUtcTicks = replayCurrentTimestampUtcTicks;
+                    recordTimestampUtcTicks = GetRecordTimestampUtcTicks(record);
+                    seekVersion = replaySeekVersion;
+                }
+            }
+
+            if (record == null)
+            {
+                if (!await WaitForReplayRecordsAvailableAsync(ct))
+                {
                     break;
                 }
 
-                record = replayRecords[replayRecordIndex];
-                currentTimestampUtcTicks = replayCurrentTimestampUtcTicks;
-                recordTimestampUtcTicks = GetRecordTimestampUtcTicks(record);
-                seekVersion = replaySeekVersion;
+                continue;
             }
 
             var canContinue = await DelayBeforeReplayAsync(currentTimestampUtcTicks, recordTimestampUtcTicks, seekVersion, ct);
@@ -351,7 +481,11 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
                 continue;
             }
 
-            await replayRecordGate.WaitAsync(ct);
+            if (!await WaitForReplayRecordGateAsync(ct))
+            {
+                break;
+            }
+
             try
             {
                 if (!IsCurrentSeekVersion(seekVersion))
@@ -414,18 +548,22 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
             var delay = remainingDelay > TimeSpan.FromMilliseconds(50)
                 ? TimeSpan.FromMilliseconds(50)
                 : remainingDelay;
-            await Task.Delay(delay, ct);
+            await Task.Delay(delay);
             remainingDelay -= delay;
         }
 
-        return IsCurrentSeekVersion(seekVersion);
+        return !ct.IsCancellationRequested && IsCurrentSeekVersion(seekVersion);
     }
 
     private async Task<bool> WaitWhilePausedAsync(int seekVersion, CancellationToken ct)
     {
         while (true)
         {
-            ct.ThrowIfCancellationRequested();
+            if (ct.IsCancellationRequested)
+            {
+                return false;
+            }
+
             if (!IsCurrentSeekVersion(seekVersion))
             {
                 return false;
@@ -436,8 +574,34 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
                 return true;
             }
 
-            await Task.Delay(50, ct);
+            await Task.Delay(50);
         }
+    }
+
+    private async Task<bool> WaitForReplayRecordsAvailableAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            if (await replayRecordsAvailable.WaitAsync(TimeSpan.FromMilliseconds(50)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private async Task<bool> WaitForReplayRecordGateAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            if (await replayRecordGate.WaitAsync(TimeSpan.FromMilliseconds(50)))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private async Task PublishRecordAsync(DataLogRecord record, CancellationToken ct)
@@ -529,7 +693,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
     {
         ReplayProgressChanged?.Invoke(
             this,
-            new ReplayProgressChangedEventArgs(CurrentTime, Duration, IsPaused));
+            new ReplayProgressChangedEventArgs(CurrentTime, Duration, IsPaused, IsDataLoaded));
     }
 
     private static long GetRecordTimestampUtcTicks(DataLogRecord record)

@@ -74,6 +74,12 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		set { field = value; OnPropertyChanged(); }
 	}
 
+	public bool IsReplaySeekEnabled
+	{
+		get;
+		set { field = value; OnPropertyChanged(); }
+	}
+
 	public double ReplayPositionSeconds
 	{
 		get;

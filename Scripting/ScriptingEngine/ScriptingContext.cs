@@ -494,15 +494,16 @@ if "__qenex_interactive_console" not in globals():
     private async Task RunPeriodicScriptAsync(IScriptBase script, TimeSpan interval, CancellationToken ct)
     {
         using var timer = new PeriodicTimer(interval);
+        using var cancellationRegistration = ct.Register(static state => ((PeriodicTimer)state!).Dispose(), timer);
 
         try
         {
-            while (await timer.WaitForNextTickAsync(ct))
+            while (!ct.IsCancellationRequested && await timer.WaitForNextTickAsync())
             {
                 await ExecuteScriptAsync(script, GetScriptExecutionOptions(script), ct);
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
         }
     }

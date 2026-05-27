@@ -1004,6 +1004,7 @@ public partial class ShellWindowModel
             }
 
             realProjectData.Module.AddDriver(replayDriver);
+            StartReplayDataLoad(replayDriver);
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
             SetReplayDataLogImportState(dlg.FileName);
             RibbonReplayCommand.OnCanExecuteChanged();
@@ -1015,6 +1016,17 @@ public partial class ShellWindowModel
         }
 
         await Task.CompletedTask;
+    }
+
+    private void StartReplayDataLoad(IDriverBase replayDriver)
+    {
+        if (replayDriver is not IReplayDriver replayDriverWithDataLoad)
+        {
+            return;
+        }
+
+        replayDriverWithDataLoad.StartLoadingData();
+        logger.Log(LogLevel.Info, "Replay data loading started.");
     }
 
     private void SaveLayout(RadDocking radDocking, string? filePrep = null)
@@ -1217,7 +1229,11 @@ public partial class ShellWindowModel
         activeReplayDriver = replayDriverWithEvents;
         activeReplayDriver.ReplayCompleted += OnReplayCompleted;
         activeReplayDriver.ReplayProgressChanged += OnReplayProgressChanged;
-        UpdateReplayProgress(activeReplayDriver.CurrentTime, activeReplayDriver.Duration, activeReplayDriver.IsPaused);
+        UpdateReplayProgress(
+            activeReplayDriver.CurrentTime,
+            activeReplayDriver.Duration,
+            activeReplayDriver.IsPaused,
+            activeReplayDriver.IsDataLoaded);
     }
 
     private void UnsubscribeReplayCompleted()
@@ -1256,7 +1272,7 @@ public partial class ShellWindowModel
         try
         {
             await Application.Current.Dispatcher.InvokeAsync(() =>
-                UpdateReplayProgress(e.CurrentTime, e.Duration, e.IsPaused));
+                UpdateReplayProgress(e.CurrentTime, e.Duration, e.IsPaused, e.IsDataLoaded));
         }
         catch (Exception ex)
         {
@@ -1284,7 +1300,10 @@ public partial class ShellWindowModel
     private async Task SeekReplayPositionAsync(double seconds, int requestVersion)
     {
         await Task.Delay(150);
-        if (requestVersion != replaySeekRequestVersion || activeReplayDriver == null || !isReplayMode)
+        if (requestVersion != replaySeekRequestVersion
+            || activeReplayDriver == null
+            || !isReplayMode
+            || !activeReplayDriver.IsDataLoaded)
         {
             return;
         }
@@ -1304,13 +1323,13 @@ public partial class ShellWindowModel
         IsReplayControlEnabled = isEnabled;
         if (!isEnabled)
         {
-            UpdateReplayProgress(TimeSpan.Zero, TimeSpan.Zero, false);
+            UpdateReplayProgress(TimeSpan.Zero, TimeSpan.Zero, false, false);
         }
 
         RibbonReplayPauseResumeCommand.OnCanExecuteChanged();
     }
 
-    private void UpdateReplayProgress(TimeSpan currentTime, TimeSpan duration, bool isPaused)
+    private void UpdateReplayProgress(TimeSpan currentTime, TimeSpan duration, bool isPaused, bool isDataLoaded)
     {
         isUpdatingReplayPositionFromDriver = true;
         try
@@ -1318,6 +1337,7 @@ public partial class ShellWindowModel
             ReplayDurationSeconds = duration.TotalSeconds;
             ReplayPositionSeconds = currentTime.TotalSeconds;
             ReplayPauseResumeText = isPaused ? "Resume" : "Pause";
+            IsReplaySeekEnabled = IsReplayControlEnabled && isDataLoaded;
         }
         finally
         {

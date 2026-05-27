@@ -194,7 +194,7 @@
 									                   Maximum="{Binding ReplayDurationSeconds}"
 									                   SmallChange="1"
 									                   LargeChange="10"
-									                   IsEnabled="{Binding IsReplayControlEnabled}"
+									                   IsEnabled="{Binding IsReplaySeekEnabled}"
 									                   Value="{Binding ReplayPositionSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=150}"/>
 								</Grid>
 							</Grid>
