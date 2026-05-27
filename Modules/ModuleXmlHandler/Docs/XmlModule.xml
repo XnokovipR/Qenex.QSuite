@@ -38,7 +38,7 @@
     </driverReference>
     <driverReference ref="FileDataLoggerDriver" label="File data logger">
       <isEnabled>true</isEnabled>
-      <settings>file=DataLogs\values.qilog;append=false;flushOnWrite=false</settings>
+      <settings>file=DataLogs;append=false;flushOnWrite=false</settings>
       <encryptedSettings />
       <protocolReferences>
         <protocolReference ref="One2OneProtocol">

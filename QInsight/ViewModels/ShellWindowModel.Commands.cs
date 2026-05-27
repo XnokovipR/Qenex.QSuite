@@ -776,6 +776,7 @@ public partial class ShellWindowModel
         LoadSettingsFromFile(shellRadDocking, runtimeSettingLayoutFile);
         try
         {
+            ConfigureDataLoggerFileNames();
             await realProjectData.Module.StartAsync();
             IsRuntimeStarted = true;
             SetRuntimeCommandStates(true);
@@ -807,6 +808,39 @@ public partial class ShellWindowModel
         {
             logger.Log(LogLevel.Error, e.Message);
         }
+    }
+
+    private void ConfigureDataLoggerFileNames()
+    {
+        var projectFileName = GetProjectDataLogFileName();
+        foreach (var driver in realProjectData.Module.Drivers.OfType<IDataLogFileNameDriver>())
+        {
+            driver.DataLogFileName = projectFileName;
+        }
+    }
+
+    private string GetProjectDataLogFileName()
+    {
+        var projectName = !string.IsNullOrWhiteSpace(currentProjectFilePath)
+            ? Path.GetFileNameWithoutExtension(currentProjectFilePath)
+            : realProjectData.Module.Specification.Name;
+
+        projectName = SanitizeFileName(projectName);
+        return string.IsNullOrWhiteSpace(projectName) ? "values" : projectName;
+    }
+
+    private static string SanitizeFileName(string? fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return string.Empty;
+        }
+
+        var invalidCharacters = Path.GetInvalidFileNameChars();
+        return new string(fileName
+            .Trim()
+            .Select(character => invalidCharacters.Contains(character) ? '_' : character)
+            .ToArray());
     }
     
     #endregion

@@ -7,12 +7,12 @@ using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.FileDataLoggerDriver;
 
-public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver
+public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDataLogFileNameDriver
 {
     private const string DataLogExtension = ".qilog";
     private const string TimestampFormat = "yyyyMMdd'_'HH'h'mm";
     private readonly SemaphoreSlim fileLock = new(1, 1);
-    private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs", "values.qilog");
+    private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs");
     private bool append = true;
     private bool flushOnWrite;
     private FileStream? logStream;
@@ -31,8 +31,14 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver
         };
     }
 
+    public string? DataLogFileName { get; set; }
+
     public override void SetConfiguration()
     {
+        logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs");
+        append = true;
+        flushOnWrite = false;
+
         var settings = ParseSettings(RawSettings);
         if (settings.TryGetValue("file", out var configuredFile) && !string.IsNullOrWhiteSpace(configuredFile))
         {
@@ -101,7 +107,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver
     {
         if (!IsEnabled) return Task.CompletedTask;
 
-        var timestampedLogFilePath = CreateTimestampedLogFilePath(logFilePath, DateTime.Now);
+        var timestampedLogFilePath = CreateTimestampedLogFilePath(logFilePath, DataLogFileName, DateTime.Now);
         var directory = Path.GetDirectoryName(timestampedLogFilePath);
         if (!string.IsNullOrWhiteSpace(directory))
         {
@@ -208,10 +214,15 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver
                 StringComparer.OrdinalIgnoreCase);
     }
 
-    private static string CreateTimestampedLogFilePath(string configuredFilePath, DateTime timestamp)
+    private static string CreateTimestampedLogFilePath(string configuredFilePath, string? dataLogFileName, DateTime timestamp)
     {
-        var directory = Path.GetDirectoryName(configuredFilePath);
-        var fileName = Path.GetFileNameWithoutExtension(configuredFilePath);
+        var hasFileExtension = !string.IsNullOrWhiteSpace(Path.GetExtension(configuredFilePath));
+        var directory = hasFileExtension ? Path.GetDirectoryName(configuredFilePath) : configuredFilePath;
+        var fileName = !string.IsNullOrWhiteSpace(dataLogFileName)
+            ? dataLogFileName
+            : hasFileExtension
+                ? Path.GetFileNameWithoutExtension(configuredFilePath)
+                : null;
         if (string.IsNullOrWhiteSpace(fileName))
         {
             fileName = "values";
