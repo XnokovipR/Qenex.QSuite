@@ -1464,7 +1464,8 @@ public partial class ShellWindowModel
         if (requestVersion != replaySeekRequestVersion
             || activeReplayDriver == null
             || !isReplayMode
-            || !activeReplayDriver.IsDataLoaded)
+            || !activeReplayDriver.IsDataLoaded
+            || !activeReplayDriver.IsPaused)
         {
             return;
         }
@@ -1498,7 +1499,7 @@ public partial class ShellWindowModel
             ReplayDurationSeconds = duration.TotalSeconds;
             ReplayPositionSeconds = currentTime.TotalSeconds;
             ReplayPauseResumeText = isPaused ? "Resume" : "Pause";
-            IsReplaySeekEnabled = IsReplayControlEnabled && isDataLoaded;
+            IsReplaySeekEnabled = IsReplayControlEnabled && isDataLoaded && isPaused;
         }
         finally
         {

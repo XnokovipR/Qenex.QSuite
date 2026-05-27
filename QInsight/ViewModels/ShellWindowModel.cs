@@ -94,7 +94,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 			OnPropertyChanged();
 			OnPropertyChanged(nameof(ReplayCurrentTimeText));
 
-			if (!isUpdatingReplayPositionFromDriver && IsReplayControlEnabled)
+			if (!isUpdatingReplayPositionFromDriver && IsReplaySeekEnabled)
 			{
 				var seekRequestVersion = ++replaySeekRequestVersion;
 				_ = SeekReplayPositionAsync(value, seekRequestVersion);
