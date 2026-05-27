@@ -23,7 +23,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 {
     #region Const
 
-    private const double PlotFontSizeMultiplier = 1.5;
+    private const double PlotFontSizeMultiplier = 1.1;
 
     #endregion
     
