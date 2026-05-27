@@ -35,15 +35,24 @@ public partial class ShellWindowModel
         {
             case WorkspaceSeWrapper workspaceWrapper:
             {
-                if (ViewModels.FirstOrDefault(viewModelBase => viewModelBase is IWorkspaceViewModel ws && ws.WinTitle.Equals(workspaceWrapper.Label)) is IWorkspaceViewModel workspaceVm)
+                if (ViewModels.FirstOrDefault(viewModelBase => viewModelBase is IWorkspaceViewModel ws && ws.Name.Equals(workspaceWrapper.Name)) is IWorkspaceViewModel workspaceVm)
                 {
                     propVm.SelectedViewModel = new WorkspacePropertiesViewModel(eventAggregator, workspaceVm);//, workspaceWrapper.Update);
+                    ActivateOpenWorkspaceDocument(workspaceVm);
                 }
                 break;
             }
             case ScriptSeWrapper scriptSeWrapper:
             {
                 propVm.SelectedViewModel = new ScriptPropertiesViewModel(eventAggregator, scriptSeWrapper.ScriptWrapper);
+                var scriptViewModel = ViewModels
+                    .OfType<ScriptViewModel>()
+                    .FirstOrDefault(viewModel => ReferenceEquals(viewModel.ScriptWrapper.Script, scriptSeWrapper.ScriptWrapper.Script));
+                if (scriptViewModel != null)
+                {
+                    ActivateOpenWorkspaceDocument(scriptViewModel);
+                }
+
                 break;
             }
             case DriverSeWrapper driverSeWrapper:
@@ -111,6 +120,24 @@ public partial class ShellWindowModel
                 break;
             }
         }
+    }
+
+    private void ActivateOpenWorkspaceDocument(IWorkspaceViewModel workspaceViewModel)
+    {
+        if (workspaceViewModel.IsHidden)
+        {
+            return;
+        }
+
+        var pane = FindDockingPaneForViewModel(shellRadDocking, workspaceViewModel);
+        if (pane == null)
+        {
+            return;
+        }
+
+        shellRadDocking.ActivePane = pane;
+        pane.IsActive = true;
+        pane.Focus();
     }
 
     private void OnSolutionExplorerDoubleClickedMsg(SolutionExplorerDoubleClickedItemMsg msg)
