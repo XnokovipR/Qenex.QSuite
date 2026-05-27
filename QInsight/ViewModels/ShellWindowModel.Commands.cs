@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Threading;
 using System.Xml.Linq;
@@ -46,6 +47,7 @@ public partial class ShellWindowModel
     private bool canReplay = true;
     private bool canStopReplay;
     private bool isUpdatingReplayPositionFromDriver;
+    private bool isUpdatingReplayPositionTextFromPosition;
     private int replaySeekRequestVersion;
     private RadOpenFileDialog? openProjectDialog;
     private RadSaveFileDialog? saveProjectDialog;
@@ -1510,8 +1512,50 @@ public partial class ShellWindowModel
     private static string FormatReplayTime(TimeSpan time)
     {
         return time.TotalHours >= 1
-            ? time.ToString(@"h\:mm\:ss")
-            : time.ToString(@"mm\:ss");
+            ? time.ToString(@"h\:mm\:ss\.fff")
+            : time.ToString(@"mm\:ss\.fff");
+    }
+
+    private void SetReplayPositionText(double seconds)
+    {
+        isUpdatingReplayPositionTextFromPosition = true;
+        try
+        {
+            ReplayPositionText = FormatReplayTime(TimeSpan.FromSeconds(seconds));
+        }
+        finally
+        {
+            isUpdatingReplayPositionTextFromPosition = false;
+        }
+    }
+
+    private static bool TryParseReplayTime(string value, out TimeSpan time)
+    {
+        var replayTimeText = value.Trim();
+        var formats = new[]
+        {
+            @"h\:mm\:ss\.fff",
+            @"hh\:mm\:ss\.fff",
+            @"h\:mm\:ss",
+            @"hh\:mm\:ss",
+            @"m\:ss\.fff",
+            @"mm\:ss\.fff",
+            @"m\:ss",
+            @"mm\:ss"
+        };
+
+        if (TimeSpan.TryParseExact(replayTimeText, formats, CultureInfo.InvariantCulture, out time))
+        {
+            return true;
+        }
+
+        if (double.TryParse(replayTimeText, NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds))
+        {
+            time = TimeSpan.FromSeconds(seconds);
+            return true;
+        }
+
+        return false;
     }
 
     private MemoryStream CreateWorkspaceLayoutStream(RadDocking radDocking)

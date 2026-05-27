@@ -85,7 +85,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		get;
 		set
 		{
-			if (Math.Abs(field - value) < 0.001)
+			if (Math.Abs(field - value) < 0.0005)
 			{
 				return;
 			}
@@ -93,6 +93,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 			field = value;
 			OnPropertyChanged();
 			OnPropertyChanged(nameof(ReplayCurrentTimeText));
+			SetReplayPositionText(field);
 
 			if (!isUpdatingReplayPositionFromDriver && IsReplaySeekEnabled)
 			{
@@ -101,6 +102,46 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 			}
 		}
 	}
+
+	public string ReplayPositionText
+	{
+		get;
+		set
+		{
+			if (field == value)
+			{
+				return;
+			}
+
+			field = value;
+			OnPropertyChanged();
+
+			if (isUpdatingReplayPositionFromDriver
+			    || isUpdatingReplayPositionTextFromPosition
+			    || !IsReplaySeekEnabled)
+			{
+				return;
+			}
+
+			if (!TryParseReplayTime(value, out var replayPosition))
+			{
+				SetReplayPositionText(ReplayPositionSeconds);
+				return;
+			}
+
+			var replayPositionSeconds = Math.Clamp(
+				replayPosition.TotalSeconds,
+				0,
+				ReplayDurationSeconds);
+			if (Math.Abs(ReplayPositionSeconds - replayPositionSeconds) < 0.0005)
+			{
+				SetReplayPositionText(replayPositionSeconds);
+				return;
+			}
+
+			ReplayPositionSeconds = replayPositionSeconds;
+		}
+	} = FormatReplayTime(TimeSpan.Zero);
 
 	public double ReplayDurationSeconds
 	{
