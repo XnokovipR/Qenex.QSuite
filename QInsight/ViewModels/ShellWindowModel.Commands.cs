@@ -42,6 +42,7 @@ public partial class ShellWindowModel
     private bool canConnectRuntime = true;
     private bool canDisconnectRuntime;
     private bool canImportDataLog = true;
+    private bool canExportDataLog = true;
     private bool canReplay = true;
     private bool canStopReplay;
     private bool isUpdatingReplayPositionFromDriver;
@@ -49,6 +50,7 @@ public partial class ShellWindowModel
     private RadOpenFileDialog? openProjectDialog;
     private RadSaveFileDialog? saveProjectDialog;
     private RadOpenFileDialog? importDataLogDialog;
+    private RadSaveFileDialog? exportDataLogDialog;
     private string? lastProjectDialogDirectory;
     private string? lastDataLogDialogDirectory;
     
@@ -80,6 +82,7 @@ public partial class ShellWindowModel
     public RelayCommandAsync<RadDocking> RibbonConnectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonDisconnectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonImportDataLogCommand { get; set; }
+    public RelayCommandAsync<RadDocking> RibbonExportDataLogCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonReplayCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonStopReplayCommand { get; set; }
     public RelayCommand<object> RibbonReplayPauseResumeCommand { get; set; }
@@ -116,6 +119,7 @@ public partial class ShellWindowModel
         RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync, _ => CanConnectRuntime());
         RibbonDisconnectCommand = new RelayCommandAsync<RadDocking>(DisconnectAsync, _ => canDisconnectRuntime);
         RibbonImportDataLogCommand = new RelayCommandAsync<RadDocking>(ImportDataLogAsync, _ => CanImportDataLog());
+        RibbonExportDataLogCommand = new RelayCommandAsync<RadDocking>(ExportDataLogAsync, _ => CanExportDataLog());
         RibbonReplayCommand = new RelayCommandAsync<RadDocking>(ReplayAsync, _ => CanStartReplay());
         RibbonStopReplayCommand = new RelayCommandAsync<RadDocking>(StopReplayAsync, _ => canStopReplay);
         RibbonReplayPauseResumeCommand = new RelayCommand<object>(_ => ToggleReplayPause(), _ => IsReplayControlEnabled);
@@ -1040,6 +1044,7 @@ public partial class ShellWindowModel
             StartReplayDataLoad(replayDriver);
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
             SetReplayDataLogImportState(dlg.FileName);
+            RibbonExportDataLogCommand.OnCanExecuteChanged();
             RibbonReplayCommand.OnCanExecuteChanged();
             logger.Log(LogLevel.Info, $"Data log \"{Path.GetFileName(dlg.FileName)}\" imported for replay.");
         }
@@ -1049,6 +1054,45 @@ public partial class ShellWindowModel
         }
 
         await Task.CompletedTask;
+    }
+
+    private async Task ExportDataLogAsync(object obj)
+    {
+        if (!CanExportDataLog())
+        {
+            logger.Log(LogLevel.Warn, "No data log imported for export.");
+            return;
+        }
+
+        var initialDirectory = GetInitialDialogDirectory(lastDataLogDialogDirectory, replayDataLogFilePath);
+        var dlg = exportDataLogDialog ??= CreateSaveFileDialog("CSV files (*.csv)|*.csv|All files (*.*)|*.*", initialDirectory);
+        PrepareFileDialog(dlg, initialDirectory);
+        dlg.FileName = GetDefaultDataLogCsvFileName();
+
+        dlg.ShowDialog();
+        if (dlg.DialogResult != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var exportFilePath = EnsureFileExtension(dlg.FileName, ".csv");
+            lastDataLogDialogDirectory = Path.GetDirectoryName(exportFilePath);
+            var replayDriver = FindReplayDriver();
+            if (replayDriver is not IDataLogCsvExportDriver exportDriver)
+            {
+                logger.Log(LogLevel.Warn, "Replay driver does not support CSV export.");
+                return;
+            }
+
+            await exportDriver.ExportCsvAsync(exportFilePath);
+            logger.Log(LogLevel.Info, $"Data log exported to \"{Path.GetFileName(exportFilePath)}\".");
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, $"Data log export failed: {e.Message}", e);
+        }
     }
 
     private static RadOpenFileDialog CreateOpenFileDialog(string filter, string initialDirectory)
@@ -1116,6 +1160,23 @@ public partial class ShellWindowModel
         }
 
         return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+    }
+
+    private string GetDefaultDataLogCsvFileName()
+    {
+        if (!string.IsNullOrWhiteSpace(replayDataLogFilePath))
+        {
+            return $"{Path.GetFileNameWithoutExtension(replayDataLogFilePath)}.csv";
+        }
+
+        return $"{GetProjectDataLogFileName()}.csv";
+    }
+
+    private static string EnsureFileExtension(string filePath, string extension)
+    {
+        return Path.GetExtension(filePath).Equals(extension, StringComparison.OrdinalIgnoreCase)
+            ? filePath
+            : $"{filePath}{extension}";
     }
 
     private void StartReplayDataLoad(IDriverBase replayDriver)
@@ -1489,6 +1550,7 @@ public partial class ShellWindowModel
         canConnectRuntime = !runtimeStarted;
         canDisconnectRuntime = runtimeStarted && !replayStarted;
         canImportDataLog = !runtimeStarted;
+        canExportDataLog = !runtimeStarted;
         canReplay = !runtimeStarted;
         canStopReplay = replayStarted;
 
@@ -1503,6 +1565,7 @@ public partial class ShellWindowModel
         RibbonConnectCommand.OnCanExecuteChanged();
         RibbonDisconnectCommand.OnCanExecuteChanged();
         RibbonImportDataLogCommand.OnCanExecuteChanged();
+        RibbonExportDataLogCommand.OnCanExecuteChanged();
         RibbonReplayCommand.OnCanExecuteChanged();
         RibbonStopReplayCommand.OnCanExecuteChanged();
         RibbonReplayPauseResumeCommand.OnCanExecuteChanged();
@@ -1512,6 +1575,7 @@ public partial class ShellWindowModel
     {
         RibbonConnectCommand.OnCanExecuteChanged();
         RibbonImportDataLogCommand.OnCanExecuteChanged();
+        RibbonExportDataLogCommand.OnCanExecuteChanged();
         RibbonReplayCommand.OnCanExecuteChanged();
     }
 
@@ -1541,6 +1605,16 @@ public partial class ShellWindowModel
         return canImportDataLog && isProjectMade && realProjectData?.Module != null;
     }
 
+    private bool CanExportDataLog()
+    {
+        return canExportDataLog
+               && isProjectMade
+               && isReplayDataLogImported
+               && !string.IsNullOrWhiteSpace(replayDataLogFilePath)
+               && File.Exists(replayDataLogFilePath)
+               && FindReplayDriver() is IDataLogCsvExportDriver;
+    }
+
     private bool CanStartReplay()
     {
         if (!canReplay ||
@@ -1561,12 +1635,14 @@ public partial class ShellWindowModel
     {
         replayDataLogFilePath = Path.GetFullPath(filePath);
         isReplayDataLogImported = true;
+        RibbonExportDataLogCommand.OnCanExecuteChanged();
     }
 
     private void ClearReplayDataLogImportState()
     {
         replayDataLogFilePath = null;
         isReplayDataLogImported = false;
+        RibbonExportDataLogCommand.OnCanExecuteChanged();
     }
 
     #endregion

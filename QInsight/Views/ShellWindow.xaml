@@ -150,6 +150,11 @@
 										SmallImage="../Icons/Menu/OpenProject.png"
 										Command="{Binding RibbonImportDataLogCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 									<telerik:RadRibbonButton
+										Text="Export"
+										Size="Large"
+										SmallImage="../Icons/Menu/SaveProjectAs.png"
+										Command="{Binding RibbonExportDataLogCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+									<telerik:RadRibbonButton
 										Text="Replay"
 										Size="Large"
 										SmallImage="../Icons/Menu/Connect.png"

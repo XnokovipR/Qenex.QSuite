@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Reflection;
+using System.Text;
 using MessagePack;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
@@ -7,7 +9,7 @@ using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.FileDataReplayDriver;
 
-public class FileDataReplayDriver : DriverBase, IReplayDriver
+public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExportDriver
 {
     private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs", "values.qilog");
     private bool loop;
@@ -259,6 +261,62 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
         }
 
         RaiseReplayProgressChanged();
+    }
+
+    public async Task ExportCsvAsync(string filePath, CancellationToken ct = default)
+    {
+        StartLoadingData(ct);
+        var currentDataLoadTask = dataLoadTask;
+        if (currentDataLoadTask != null)
+        {
+            await currentDataLoadTask;
+        }
+
+        List<DataLogRecord> records;
+        lock (replayStateLock)
+        {
+            records = replayRecords
+                .OrderBy(GetRecordTimestampUtcTicks)
+                .ToList();
+        }
+
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        await using var stream = new FileStream(
+            filePath,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.Read,
+            bufferSize: 4096,
+            useAsync: true);
+        await using var writer = new StreamWriter(stream, new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+
+        await writer.WriteLineAsync(CreateCsvRow(["Source file", Path.GetFileName(logFilePath)]));
+        await writer.WriteLineAsync(CreateCsvRow(["Exported at", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)]));
+        await writer.WriteLineAsync();
+
+        var columns = CreateCsvColumns(records);
+        var headerRow = new List<string> { "TimestampUtc" };
+        headerRow.AddRange(columns.Select(column => column.Header));
+        await writer.WriteLineAsync(CreateCsvRow(headerRow));
+
+        foreach (var timestampGroup in records.GroupBy(record => record.TimestampUtcTicks).OrderBy(group => group.Key))
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var row = new List<string>
+            {
+                new DateTime(timestampGroup.Key, DateTimeKind.Utc)
+                    .ToString("yyyy-MM-dd HH:mm:ss.fff", CultureInfo.InvariantCulture)
+            };
+            row.AddRange(columns.Select(column =>
+                timestampGroup.LastOrDefault(record => IsSameCsvColumn(record, column))?.Value ?? string.Empty));
+            await writer.WriteLineAsync(CreateCsvRow(row));
+        }
     }
 
     private async Task RunReplayAsync(CancellationToken ct)
@@ -701,6 +759,73 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
         return record.TimestampUtcTicks > 0 ? record.TimestampUtcTicks : 0;
     }
 
+    private static List<CsvColumn> CreateCsvColumns(IEnumerable<DataLogRecord> records)
+    {
+        var columns = new List<CsvColumn>();
+        var usedHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var record in records)
+        {
+            if (columns.Any(column => IsSameCsvColumn(record, column)))
+            {
+                continue;
+            }
+
+            var header = GetCsvColumnHeader(record);
+            if (!usedHeaders.Add(header))
+            {
+                header = $"{header} ({record.VariableId})";
+                usedHeaders.Add(header);
+            }
+
+            columns.Add(new CsvColumn(record.VariableId, record.VariableNamespace, record.VariableName, header));
+        }
+
+        return columns;
+    }
+
+    private static bool IsSameCsvColumn(DataLogRecord record, CsvColumn column)
+    {
+        return record.VariableId == column.VariableId
+               && record.VariableNamespace.Equals(column.VariableNamespace, StringComparison.Ordinal)
+               && record.VariableName.Equals(column.VariableName, StringComparison.Ordinal);
+    }
+
+    private static string GetCsvColumnHeader(DataLogRecord record)
+    {
+        if (!string.IsNullOrWhiteSpace(record.VariableLabel))
+        {
+            return record.VariableLabel;
+        }
+
+        if (!string.IsNullOrWhiteSpace(record.VariableName))
+        {
+            return record.VariableName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(record.VariableNamespace))
+        {
+            return record.VariableNamespace;
+        }
+
+        return $"Variable {record.VariableId}";
+    }
+
+    private static string CreateCsvRow(IEnumerable<string> values)
+    {
+        return string.Join(',', values.Select(EscapeCsvValue));
+    }
+
+    private static string EscapeCsvValue(string value)
+    {
+        if (value.IndexOfAny(['"', ',', '\r', '\n']) < 0)
+        {
+            return value;
+        }
+
+        return $"\"{value.Replace("\"", "\"\"")}\"";
+    }
+
     private static Dictionary<string, string> ParseSettings(string rawSettings)
     {
         return rawSettings
@@ -718,4 +843,6 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver
         Realtime,
         Immediate
     }
+
+    private sealed record CsvColumn(int VariableId, string VariableNamespace, string VariableName, string Header);
 }
