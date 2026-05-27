@@ -287,8 +287,7 @@ public partial class ShellWindowModel
 
     private static bool IsProjectWorkspaceLayoutElement(string serializationTag)
     {
-        return serializationTag.Contains("WorkspaceViewModel", StringComparison.Ordinal)
-               && !serializationTag.Contains("PythonInterpreter", StringComparison.Ordinal);
+        return serializationTag.Contains("WorkspaceViewModel", StringComparison.Ordinal);
     }
 
 	#endregion
@@ -334,6 +333,7 @@ public partial class ShellWindowModel
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
             LoadProjectWorkspaces(projectData.Workspaces);
             LoadProjectScriptDocuments(projectData.ScriptDocuments);
+            LoadProjectPythonInterpreter(projectData.WorkspaceLayout);
             await Application.Current.Dispatcher.InvokeAsync(
                 () => LoadWorkspaceLayoutFromData(projectData.WorkspaceLayout),
                 DispatcherPriority.ApplicationIdle);
@@ -536,7 +536,7 @@ public partial class ShellWindowModel
     private async Task CloseProjectWorkspacesAsync()
     {
         var workspaceViewModels = ViewModels
-            .Where(vm => vm is WorkspaceViewModel or ScriptViewModel)
+            .Where(vm => vm is WorkspaceViewModel or ScriptViewModel or PythonInterpreterViewModel)
             .ToList();
         foreach (var workspaceViewModelBase in workspaceViewModels)
         {
@@ -669,10 +669,72 @@ public partial class ShellWindowModel
             return;
         }
 
-        var pythonInterpreterViewModel = new PythonInterpreterViewModel(
+        ViewModels.Add(CreatePythonInterpreterViewModel());
+    }
+
+    private void LoadProjectPythonInterpreter(byte[]? workspaceLayoutData)
+    {
+        var layoutName = GetPythonInterpreterLayoutName(workspaceLayoutData);
+        if (layoutName == null)
+        {
+            return;
+        }
+
+        if (ViewModels.OfType<PythonInterpreterViewModel>().Any())
+        {
+            return;
+        }
+
+        var pythonInterpreterViewModel = CreatePythonInterpreterViewModel();
+        pythonInterpreterViewModel.Name = layoutName;
+        ViewModels.Add(pythonInterpreterViewModel);
+    }
+
+    private PythonInterpreterViewModel CreatePythonInterpreterViewModel()
+    {
+        return new PythonInterpreterViewModel(
             eventAggregator,
             GetPythonInterpreterScriptingContextAsync);
-        ViewModels.Add(pythonInterpreterViewModel);
+    }
+
+    private static string? GetPythonInterpreterLayoutName(byte[]? workspaceLayoutData)
+    {
+        if (workspaceLayoutData == null || workspaceLayoutData.Length == 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var stream = new MemoryStream(workspaceLayoutData);
+            var document = XDocument.Load(stream);
+
+            var pythonInterpreterPane = document
+                .Descendants()
+                .FirstOrDefault(element =>
+                    element.Name.LocalName.Contains("Pane", StringComparison.Ordinal)
+                    && IsPythonInterpreterLayoutPane(element));
+
+            return pythonInterpreterPane?.Attribute("SerializationTag")?.Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool IsPythonInterpreterLayoutPane(XElement pane)
+    {
+        var serializationTag = pane.Attribute("SerializationTag")?.Value ?? string.Empty;
+        if (serializationTag.Contains("PythonInterpreter", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        var header = pane.Attribute("Header")?.Value ?? string.Empty;
+        return pane.Name.LocalName.Equals("QRadDocumentPane", StringComparison.Ordinal)
+               && (header.Equals("Python", StringComparison.Ordinal)
+                   || header.Equals("Python Interpreter", StringComparison.Ordinal));
     }
 
     private static RadPane? FindDockingPaneForViewModel(RadDocking docking, object viewModel)
@@ -777,7 +839,7 @@ public partial class ShellWindowModel
         try
         {
             requireSerializationTag = true;
-            using var stream = CreateSanitizedWorkspaceLayoutStream(workspaceLayoutData);
+            using var stream = new MemoryStream(workspaceLayoutData);
             shellRadDocking.LoadLayout(stream);
         }
         catch (Exception e)
@@ -788,42 +850,6 @@ public partial class ShellWindowModel
         {
             requireSerializationTag = previousRequireSerializationTag;
         }
-    }
-
-    private static MemoryStream CreateSanitizedWorkspaceLayoutStream(byte[] workspaceLayoutData)
-    {
-        using var source = new MemoryStream(workspaceLayoutData);
-        var document = XDocument.Load(source);
-
-        var panesToRemove = document
-            .Descendants()
-            .Where(element =>
-                element.Name.LocalName.Contains("Pane", StringComparison.Ordinal) &&
-                ShouldRemoveWorkspaceLayoutPane(element))
-            .ToList();
-
-        foreach (var pane in panesToRemove)
-        {
-            pane.Remove();
-        }
-
-        var sanitizedStream = new MemoryStream();
-        document.Save(sanitizedStream);
-        sanitizedStream.Position = 0;
-        return sanitizedStream;
-    }
-
-    private static bool ShouldRemoveWorkspaceLayoutPane(XElement pane)
-    {
-        var serializationTag = pane.Attribute("SerializationTag")?.Value ?? string.Empty;
-        if (serializationTag.Contains("PythonInterpreter", StringComparison.Ordinal))
-        {
-            return true;
-        }
-
-        var header = pane.Attribute("Header")?.Value ?? string.Empty;
-        return pane.Name.LocalName.Equals("QRadDocumentPane", StringComparison.Ordinal)
-               && header.Equals("Python", StringComparison.Ordinal);
     }
 
     private async Task ReplayAsync(object obj)
