@@ -641,10 +641,83 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     private void ActualizeCrosshairAndAnnotation(Point p)
     {
         Pixel mousePixel = new(p.X * PlotControl.DisplayScale, p.Y * PlotControl.DisplayScale);
-        Coordinates coordinates = PlotControl.Plot.GetCoordinates(mousePixel);
-        cross.Position = coordinates;
-        annotation.Text = $"{Math.Round(cross.Position.X, 3)}; {Math.Round(cross.Position.Y, 3)}";
+        Coordinates mouseCoordinates = PlotControl.Plot.GetCoordinates(mousePixel);
+        var cursorX = GetCursorX(mouseCoordinates.X);
+
+        cross.Position = new Coordinates(cursorX, mouseCoordinates.Y);
+
+        var cursorValues = GetCursorValues(cursorX);
+        annotation.Text = cursorValues.Count == 0
+            ? $"X: {Math.Round(cross.Position.X, 3)}; Y: {Math.Round(cross.Position.Y, 3)}"
+            : string.Join(Environment.NewLine, cursorValues.Select(v =>
+                $"{GetCursorLabel(v.ChartVariable)}: X: {Math.Round(v.X, 3)} Y: {Math.Round(v.Y, 3)}"));
     }
+
+    private double GetCursorX(double mouseX)
+    {
+        var chartVariable = SelectedChartVariable?.IsVisible == true && HasCursorData(SelectedChartVariable)
+            ? SelectedChartVariable
+            : ChartVariables.FirstOrDefault(v => v.IsVisible && HasCursorData(v));
+
+        if (chartVariable == null)
+        {
+            return mouseX;
+        }
+
+        var index = GetNearestXIndex(chartVariable.XVal, mouseX);
+        return chartVariable.XVal[index];
+    }
+
+    private List<CursorValue> GetCursorValues(double cursorX)
+    {
+        var cursorValues = new List<CursorValue>();
+
+        foreach (var chartVariable in ChartVariables.Where(v => v.IsVisible && HasCursorData(v)))
+        {
+            var index = GetNearestXIndex(chartVariable.XVal, cursorX);
+            cursorValues.Add(new CursorValue(chartVariable, chartVariable.XVal[index], chartVariable.YVal[index]));
+        }
+
+        return cursorValues;
+    }
+
+    private static bool HasCursorData(ChartVariable chartVariable)
+    {
+        return chartVariable.XVal.Count > 0 && chartVariable.XVal.Count == chartVariable.YVal.Count;
+    }
+
+    private static int GetNearestXIndex(List<double> values, double x)
+    {
+        var index = values.BinarySearch(x);
+        if (index >= 0)
+        {
+            return index;
+        }
+
+        index = ~index;
+        if (index <= 0)
+        {
+            return 0;
+        }
+
+        if (index >= values.Count)
+        {
+            return values.Count - 1;
+        }
+
+        return Math.Abs(values[index] - x) < Math.Abs(values[index - 1] - x)
+            ? index
+            : index - 1;
+    }
+
+    private static string GetCursorLabel(ChartVariable chartVariable)
+    {
+        return string.IsNullOrWhiteSpace(chartVariable.Variable.Label)
+            ? chartVariable.Variable.Name
+            : chartVariable.Variable.Label;
+    }
+
+    private readonly record struct CursorValue(ChartVariable ChartVariable, double X, double Y);
     
     private void RemoveChartVariable(object parameter)
     {
