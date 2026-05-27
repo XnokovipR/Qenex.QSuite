@@ -1,6 +1,9 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows;
+using System.Globalization;
+using System.IO;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
@@ -15,6 +18,8 @@ using ScottPlot;
 using ScottPlot.AxisPanels;
 using ScottPlot.Plottables;
 using ScottPlot.WPF;
+using Telerik.Windows.Controls;
+using Telerik.Windows.Controls.FileDialogs;
 
 namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
@@ -53,6 +58,8 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         ClearGraphCommand = new RelayCommand<object>(ClearGraph);
         AddAxisCommand = new RelayCommand<object>(AddAxis);
         RemoveAxisCommand = new RelayCommand<object>(RemoveAxis);
+        ExportImageCommand = new RelayCommand<object>(ExportImage);
+        ExportCsvCommand = new RelayCommand<object>(ExportCsv);
         ZoomToFitCommand = new RelayCommand<object>((i) => PlotControl?.Plot.Axes.AutoScale()); 
         
         Width = 300;
@@ -130,6 +137,10 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     public RelayCommand<object> AddAxisCommand { get; set; }
     [IgnoreDataMember]
     public RelayCommand<object> RemoveAxisCommand { get; set; }
+    [IgnoreDataMember]
+    public RelayCommand<object> ExportImageCommand { get; set; }
+    [IgnoreDataMember]
+    public RelayCommand<object> ExportCsvCommand { get; set; }
     
     [IgnoreDataMember]
     public RelayCommand<object> ZoomToFitCommand { get; set; }
@@ -424,6 +435,8 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         ClearGraphCommand = new RelayCommand<object>(ClearGraph);
         AddAxisCommand = new RelayCommand<object>(AddAxis);
         RemoveAxisCommand = new RelayCommand<object>(RemoveAxis);
+        ExportImageCommand = new RelayCommand<object>(ExportImage);
+        ExportCsvCommand = new RelayCommand<object>(ExportCsv);
         ZoomToFitCommand = new RelayCommand<object>((i) => PlotControl?.Plot.Axes.AutoScale());
 
         PlotControl = new WpfPlot();
@@ -755,6 +768,129 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     }
 
     private readonly record struct CursorValue(ChartVariable ChartVariable, double X, double Y);
+
+    private void ExportImage(object parameter)
+    {
+        var dialog = CreateSaveFileDialog(
+            "PNG image (*.png)|*.png|JPEG image (*.jpg)|*.jpg|BMP image (*.bmp)|*.bmp|WebP image (*.webp)|*.webp|SVG image (*.svg)|*.svg",
+            "graph.png");
+
+        dialog.ShowDialog();
+        if (dialog.DialogResult != true)
+        {
+            return;
+        }
+
+        var filePath = EnsureFileExtension(dialog.FileName, ".png");
+        var width = GetExportPixelWidth();
+        var height = GetExportPixelHeight();
+
+        switch (Path.GetExtension(filePath).ToLowerInvariant())
+        {
+            case ".jpg":
+            case ".jpeg":
+                PlotControl.Plot.SaveJpeg(filePath, width, height);
+                break;
+            case ".bmp":
+                PlotControl.Plot.SaveBmp(filePath, width, height);
+                break;
+            case ".webp":
+                PlotControl.Plot.SaveWebp(filePath, width, height);
+                break;
+            case ".svg":
+                PlotControl.Plot.SaveSvg(filePath, width, height);
+                break;
+            default:
+                PlotControl.Plot.SavePng(filePath, width, height);
+                break;
+        }
+    }
+
+    private void ExportCsv(object parameter)
+    {
+        var dialog = CreateSaveFileDialog("CSV files (*.csv)|*.csv", "graph-data.csv");
+
+        dialog.ShowDialog();
+        if (dialog.DialogResult != true)
+        {
+            return;
+        }
+
+        var filePath = EnsureFileExtension(dialog.FileName, ".csv");
+        File.WriteAllText(filePath, CreateCsv(), Encoding.UTF8);
+    }
+
+    private string CreateCsv()
+    {
+        var csv = new StringBuilder();
+        csv.AppendLine("VariableId,VariableName,Index,Timestamp,X,Y");
+
+        foreach (var chartVariable in ChartVariables.Where(v => v.Variable != null))
+        {
+            var count = Math.Min(chartVariable.XVal.Count, chartVariable.YVal.Count);
+            for (var i = 0; i < count; i++)
+            {
+                var timestamp = i < chartVariable.XDateTimeVal.Count
+                    ? chartVariable.XDateTimeVal[i].ToString("O", CultureInfo.InvariantCulture)
+                    : string.Empty;
+
+                csv.Append(chartVariable.Variable.Id.ToString(CultureInfo.InvariantCulture));
+                csv.Append(',');
+                csv.Append(EscapeCsv(GetVariableLegendText(chartVariable.Variable)));
+                csv.Append(',');
+                csv.Append(i.ToString(CultureInfo.InvariantCulture));
+                csv.Append(',');
+                csv.Append(EscapeCsv(timestamp));
+                csv.Append(',');
+                csv.Append(chartVariable.XVal[i].ToString("G17", CultureInfo.InvariantCulture));
+                csv.Append(',');
+                csv.Append(chartVariable.YVal[i].ToString("G17", CultureInfo.InvariantCulture));
+                csv.AppendLine();
+            }
+        }
+
+        return csv.ToString();
+    }
+
+    private int GetExportPixelWidth()
+    {
+        var width = PlotControl.ActualWidth > 0 ? PlotControl.ActualWidth : Width;
+        return Math.Max(1, (int)Math.Round(width * PlotControl.DisplayScale));
+    }
+
+    private int GetExportPixelHeight()
+    {
+        var height = PlotControl.ActualHeight > 0 ? PlotControl.ActualHeight : Height;
+        return Math.Max(1, (int)Math.Round(height * PlotControl.DisplayScale));
+    }
+
+    private static RadSaveFileDialog CreateSaveFileDialog(string filter, string fileName)
+    {
+        return new RadSaveFileDialog()
+        {
+            Owner = Application.Current?.MainWindow,
+            Filter = filter,
+            FileName = fileName,
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+        };
+    }
+
+    private static string EnsureFileExtension(string filePath, string defaultExtension)
+    {
+        return string.IsNullOrWhiteSpace(Path.GetExtension(filePath))
+            ? $"{filePath}{defaultExtension}"
+            : filePath;
+    }
+
+    private static string EscapeCsv(string value)
+    {
+        if (!value.Contains('"') && !value.Contains(',') && !value.Contains('\r') && !value.Contains('\n'))
+        {
+            return value;
+        }
+
+        return $"\"{value.Replace("\"", "\"\"")}\"";
+    }
     
     private void RemoveChartVariable(object parameter)
     {

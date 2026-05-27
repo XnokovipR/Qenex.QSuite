@@ -30,6 +30,9 @@
             <telerik:RadMenuSeparatorItem/>
             <telerik:RadMenuItem Header="Clear Graph" Command="{Binding ClearGraphCommand}"/>
             <telerik:RadMenuItem Header="Zoom to Fit" Command="{Binding ZoomToFitCommand}"/>
+            <telerik:RadMenuSeparatorItem/>
+            <telerik:RadMenuItem Header="Export Image" Command="{Binding ExportImageCommand}"/>
+            <telerik:RadMenuItem Header="Export CSV" Command="{Binding ExportCsvCommand}"/>
         </telerik:RadContextMenu>    
     </telerik:RadContextMenu.ContextMenu>
     
