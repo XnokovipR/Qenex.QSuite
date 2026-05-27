@@ -24,6 +24,7 @@ public partial class ShellWindow : Window
 	internal static AppSettings MainAppSettings = null!;
 	internal static Color ForegroundColor;
 	internal static Color BackgroundColor;
+	internal static Color TextEditorBackgroubndColor;
 	
 	public static bool IsDarkTheme = false;
 
@@ -40,6 +41,8 @@ public partial class ShellWindow : Window
 				MainAppSettings.Design.DarkThemeTextColor : MainAppSettings.Design.LightThemeTextColor;
 			BackgroundColor = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? 
 				MainAppSettings.Design.DarkThemeControlBackgroundColor : MainAppSettings.Design.LightThemeControlBackgroundColor;
+			TextEditorBackgroubndColor = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? 
+				MainAppSettings.Design.DarkThemeTextBoxBackgroundColor : MainAppSettings.Design.LightThemeTextBoxBackgroundColor;
 			
 			SourceInitialized += WindowSourceInitialized;
 

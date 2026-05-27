@@ -5,6 +5,8 @@ using Telerik.Windows.Controls;
 using Qenex.QSuite.Controls.GraphControl.ViewModels;
 using Qenex.QSuite.Controls.SignalControl.Views;
 using Qenex.QSuite.Controls.SignalControl.ViewModels;
+using System.Windows.Media;
+using Qenex.QInsight.Views;
 
 namespace Qenex.QInsight.ViewModels;
 
@@ -21,6 +23,7 @@ public class ControlsViewModel : ViewModelBase
     public ControlsViewModel(EventAggregator ea) : base(ea)
     {
         isUserControlLoaded = false;
+        BackgroundColor = ShellWindow.TextEditorBackgroubndColor;
         Controls = new ObservableCollection<IControlBase>();
         UserControlLoadedCommand = new RelayCommand<RadDocking>(OnUserControlLoaded);
     }
@@ -33,6 +36,7 @@ public class ControlsViewModel : ViewModelBase
 
     public ObservableCollection<IControlBase> Controls { get; set; }
     public RelayCommand<RadDocking> UserControlLoadedCommand { get; set; }
+    public Color BackgroundColor { get; }
     
     #endregion
 

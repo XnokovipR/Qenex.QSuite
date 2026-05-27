@@ -17,7 +17,7 @@ public class ScriptViewModel : WorkspaceViewModelBase
     public ScriptViewModel(EventAggregator ea, ScriptWrapper s) : base(ea)
     {
         ForegroundColor = ShellWindow.ForegroundColor;
-        BackgroundColor = ShellWindow.BackgroundColor;
+        BackgroundColor = ShellWindow.TextEditorBackgroubndColor;
         FontSize = ShellWindow.MainAppSettings.Design.FontSize + 1;
         PyHighlighting = SyntaxHighlighting.LoadPythonHighlighting(ShellWindow.IsDarkTheme);
         

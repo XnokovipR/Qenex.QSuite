@@ -10,7 +10,8 @@
              xmlns:dragdrop="clr-namespace:Qenex.QInsight.DragDrop"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300"
-             d:DataContext="{d:DesignInstance vm:ControlsViewModel, IsDesignTimeCreatable=False}">
+             d:DataContext="{d:DesignInstance vm:ControlsViewModel, IsDesignTimeCreatable=False}"
+             Background="{Binding BackgroundColor }">
     
     <UserControl.Resources>
         <Style TargetType="telerik:RadListBoxItem" BasedOn="{StaticResource RadListBoxItemStyle}">
@@ -34,7 +35,8 @@
     
     <telerik:RadListBox x:Name="Controls" AllowDrop="False" 
                         ItemsSource="{Binding Controls}"
-                        ItemTemplate="{StaticResource ControlItemTemplate}">
+                        ItemTemplate="{StaticResource ControlItemTemplate}"
+                        Background="{Binding BackgroundColor}">
         
         <i:Interaction.Behaviors>
             <dragdrop:ControlsDragBehavior />
