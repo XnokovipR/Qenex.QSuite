@@ -108,7 +108,12 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 
             if (annotation != null)
             {
-                annotation.IsVisible = value;
+                annotation.IsVisible = false;
+            }
+
+            if (!value && ChartVariables != null)
+            {
+                ResetLegendTexts();
             }
 
             PlotControl?.Refresh();
@@ -180,7 +185,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         ChartVariables.Add(chartVariable);
         
         var signal = PlotControl.Plot.Add.SignalXY(chartVariable.XVal, chartVariable.YVal, ChartVariable.ToScottPlotColor(c));
-        signal.LegendText = $"{variable.Label} ({variable.Id})";
+        signal.LegendText = GetVariableLegendText(variable);
         // signal.MarkerShape = MarkerShape.Asterisk;
         // signal.MarkerSize = 50; 
         chartVariable.ChartSignal = signal;
@@ -424,7 +429,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         PlotControl = new WpfPlot();
         cross = PlotControl.Plot.Add.Crosshair(0, 0);
         annotation = PlotControl.Plot.Add.Annotation("", Alignment.UpperLeft);
-        annotation.IsVisible = IsCrossEnabled;
+        annotation.IsVisible = false;
         cross.IsVisible = IsCrossEnabled;
         PlotControl.Plot.Legend.Orientation = IsLegendHorizontal ? ScottPlot.Orientation.Horizontal : ScottPlot.Orientation.Vertical;
 
@@ -634,6 +639,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         if (!IsCrossEnabled) return;
         
         var p = e.GetPosition(PlotControl);
+        MousePosition = p;
         ActualizeCrosshairAndAnnotation(p);
         PlotControl.Refresh();
     }
@@ -647,10 +653,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         cross.Position = new Coordinates(cursorX, mouseCoordinates.Y);
 
         var cursorValues = GetCursorValues(cursorX);
-        annotation.Text = cursorValues.Count == 0
-            ? $"X: {Math.Round(cross.Position.X, 3)}; Y: {Math.Round(cross.Position.Y, 3)}"
-            : string.Join(Environment.NewLine, cursorValues.Select(v =>
-                $"{GetCursorLabel(v.ChartVariable)}: X: {Math.Round(v.X, 3)} Y: {Math.Round(v.Y, 3)}"));
+        UpdateLegendTexts(cursorValues);
     }
 
     private double GetCursorX(double mouseX)
@@ -712,9 +715,43 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 
     private static string GetCursorLabel(ChartVariable chartVariable)
     {
-        return string.IsNullOrWhiteSpace(chartVariable.Variable.Label)
-            ? chartVariable.Variable.Name
-            : chartVariable.Variable.Label;
+        return GetVariableLegendText(chartVariable.Variable);
+    }
+
+    private void UpdateLegendTexts(IReadOnlyCollection<CursorValue> cursorValues)
+    {
+        foreach (var chartVariable in ChartVariables)
+        {
+            if (chartVariable.ChartSignal == null)
+            {
+                continue;
+            }
+
+            var cursorValue = cursorValues.FirstOrDefault(v => ReferenceEquals(v.ChartVariable, chartVariable));
+            chartVariable.ChartSignal.LegendText = cursorValue.ChartVariable == null
+                ? GetCursorLabel(chartVariable)
+                : $"{GetCursorLabel(chartVariable)} [{Math.Round(cursorValue.X, 3)}; {Math.Round(cursorValue.Y, 3)}]";
+        }
+    }
+
+    private void ResetLegendTexts()
+    {
+        foreach (var chartVariable in ChartVariables.Where(v => v.Variable != null))
+        {
+            if (chartVariable.ChartSignal != null)
+            {
+                chartVariable.ChartSignal.LegendText = GetCursorLabel(chartVariable);
+            }
+        }
+    }
+
+    private static string GetVariableLegendText(IVariableBase variable)
+    {
+        var label = string.IsNullOrWhiteSpace(variable.Label)
+            ? variable.Name
+            : variable.Label;
+
+        return $"{label} ({variable.Id})";
     }
 
     private readonly record struct CursorValue(ChartVariable ChartVariable, double X, double Y);

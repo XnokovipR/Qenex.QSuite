@@ -65,7 +65,7 @@
                             <CheckBox Grid.Column="1" Grid.Row="0" Margin="5,0,0,0" IsChecked="{Binding IsLegendHorizontal, Mode=TwoWay}"
                                       VerticalAlignment="Center" MinHeight="0" Padding="0" MinWidth="0"/>
                             
-                            <q:QTextBlock Grid.Column="0" Grid.Row="1" Margin="0,0,0,0" Text="Cross:" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            <q:QTextBlock Grid.Column="0" Grid.Row="1" Margin="0,0,0,0" Text="Cursor:" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                             <CheckBox Grid.Column="1" Grid.Row="1" Margin="5,0,0,0" IsChecked="{Binding IsCrossEnabled, Mode=TwoWay}"
                                       VerticalAlignment="Center" MinHeight="0" Padding="0" MinWidth="0"/>
                             
