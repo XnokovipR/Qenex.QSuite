@@ -1515,11 +1515,19 @@ public partial class ShellWindowModel
         var formats = new[]
         {
             @"h\:mm\:ss\.fff",
+            @"h\:mm\:ss\.ff",
+            @"h\:mm\:ss\.f",
             @"hh\:mm\:ss\.fff",
+            @"hh\:mm\:ss\.ff",
+            @"hh\:mm\:ss\.f",
             @"h\:mm\:ss",
             @"hh\:mm\:ss",
             @"m\:ss\.fff",
+            @"m\:ss\.ff",
+            @"m\:ss\.f",
             @"mm\:ss\.fff",
+            @"mm\:ss\.ff",
+            @"mm\:ss\.f",
             @"m\:ss",
             @"mm\:ss"
         };
