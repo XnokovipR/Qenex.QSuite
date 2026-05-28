@@ -100,6 +100,24 @@
 	                            SmallImage="../Icons/Menu/RemoveWorkspace.png"
 	                            Command="{Binding RibbonRemoveWorkspaceCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
+
+						<telerik:RadRibbonGroup Header="Project Configuration">
+							<telerik:RadRibbonButton
+								Text="Variables"
+								Size="Large"
+								SmallImage="../Icons/SolutionExplorer/Variables.png"
+								Command="{Binding RibbonProjectConfigurationVariablesCommand}"/>
+							<telerik:RadRibbonButton
+								Text="Presentations"
+								Size="Large"
+								SmallImage="../Icons/SolutionExplorer/Presentations.png"
+								Command="{Binding RibbonProjectConfigurationPresentationsCommand}"/>
+							<telerik:RadRibbonButton
+								Text="Events"
+								Size="Large"
+								SmallImage="../Icons/SolutionExplorer/Events.png"
+								Command="{Binding RibbonProjectConfigurationEventsCommand}"/>
+						</telerik:RadRibbonGroup>
 						
 						<telerik:RadRibbonGroup Header="Scripts">
 							<telerik:RadRibbonButton

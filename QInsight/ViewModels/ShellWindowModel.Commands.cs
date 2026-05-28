@@ -81,6 +81,9 @@ public partial class ShellWindowModel
     public RelayCommandAsync<RadDocking> RibbonCloseProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonAddWorkspaceCommand { get; set; }
     public RelayCommand<RadDocking> RibbonRemoveWorkspaceCommand { get; set; }
+    public RelayCommand<object> RibbonProjectConfigurationVariablesCommand { get; set; }
+    public RelayCommand<object> RibbonProjectConfigurationPresentationsCommand { get; set; }
+    public RelayCommand<object> RibbonProjectConfigurationEventsCommand { get; set; }
     
     public RelayCommandAsync<RadDocking> RibbonConnectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonDisconnectCommand { get; set; }
@@ -118,6 +121,15 @@ public partial class ShellWindowModel
         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(CloseProjectAsync, _ => CanUseProjectCommand());
         RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync, _ => CanUseProjectCommand());
         RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace, _ => CanUseProjectCommand());
+        RibbonProjectConfigurationVariablesCommand = new RelayCommand<object>(
+            _ => OpenProjectConfiguration(ProjectConfigurationSection.Variables),
+            _ => CanUseProjectCommand());
+        RibbonProjectConfigurationPresentationsCommand = new RelayCommand<object>(
+            _ => OpenProjectConfiguration(ProjectConfigurationSection.Presentations),
+            _ => CanUseProjectCommand());
+        RibbonProjectConfigurationEventsCommand = new RelayCommand<object>(
+            _ => OpenProjectConfiguration(ProjectConfigurationSection.Events),
+            _ => CanUseProjectCommand());
 
         RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync, _ => CanConnectRuntime());
         RibbonDisconnectCommand = new RelayCommandAsync<RadDocking>(DisconnectAsync, _ => canDisconnectRuntime);
@@ -299,7 +311,33 @@ public partial class ShellWindowModel
 
 	#endregion
 
-	#region Ribbon command methods
+    #region Ribbon command methods
+
+    private static void OpenProjectConfiguration(ProjectConfigurationSection selectedSection)
+    {
+        var projectConfigurationViewModel = new ProjectConfigurationViewModel();
+        projectConfigurationViewModel.SelectSection(selectedSection);
+
+        var projectConfigurationView = new ProjectConfigurationView()
+        {
+            DataContext = projectConfigurationViewModel
+        };
+
+        var projectConfigurationDialog = new RadWindow()
+        {
+            Owner = Application.Current.MainWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Header = "Project Configuration",
+            Width = 900,
+            Height = 600,
+            MinWidth = 700,
+            MinHeight = 450,
+            ResizeMode = ResizeMode.CanResize,
+            Content = projectConfigurationView
+        };
+
+        projectConfigurationDialog.ShowDialog();
+    }
 
     #region Project menu
 
@@ -1593,6 +1631,9 @@ public partial class ShellWindowModel
         RibbonCloseProjectCommand.OnCanExecuteChanged();
         RibbonAddWorkspaceCommand.OnCanExecuteChanged();
         RibbonRemoveWorkspaceCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationVariablesCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationPresentationsCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationEventsCommand.OnCanExecuteChanged();
         RibbonScriptVariablesSettingsCommand.OnCanExecuteChanged();
         RibbonScriptsSettingsCommand.OnCanExecuteChanged();
         RibbonConnectCommand.OnCanExecuteChanged();
@@ -1619,6 +1660,9 @@ public partial class ShellWindowModel
         RibbonCloseProjectCommand.OnCanExecuteChanged();
         RibbonAddWorkspaceCommand.OnCanExecuteChanged();
         RibbonRemoveWorkspaceCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationVariablesCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationPresentationsCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationEventsCommand.OnCanExecuteChanged();
         RibbonScriptVariablesSettingsCommand.OnCanExecuteChanged();
         RibbonScriptsSettingsCommand.OnCanExecuteChanged();
     }
