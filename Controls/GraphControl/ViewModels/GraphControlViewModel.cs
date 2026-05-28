@@ -162,6 +162,15 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
     [IgnoreDataMember]
     public WpfPlot PlotControl { get; private set; } = null!;
 
+    [IgnoreDataMember]
+    public Action<DialogWindowBase>? ConfigureSaveFileDialog { get; set; }
+
+    [IgnoreDataMember]
+    public Func<string?>? SaveDialogInitialDirectoryProvider { get; set; }
+
+    [IgnoreDataMember]
+    public Action<string>? SaveDialogDirectoryChanged { get; set; }
+
     [DataMember]
     public int ChartTimeSpan { get; set { if (value < 1) value = 1; field = value; OnPropertyChanged(); } } = 10;
     
@@ -782,6 +791,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         }
 
         var filePath = EnsureFileExtension(dialog.FileName, ".png");
+        RememberSaveDialogDirectory(filePath);
         var width = GetExportPixelWidth();
         var height = GetExportPixelHeight();
 
@@ -817,6 +827,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         }
 
         var filePath = EnsureFileExtension(dialog.FileName, ".csv");
+        RememberSaveDialogDirectory(filePath);
         File.WriteAllText(filePath, CreateCsv(), Encoding.UTF8);
     }
 
@@ -864,15 +875,43 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         return Math.Max(1, (int)Math.Round(height * PlotControl.DisplayScale));
     }
 
-    private static RadSaveFileDialog CreateSaveFileDialog(string filter, string fileName)
+    private RadSaveFileDialog CreateSaveFileDialog(string filter, string fileName)
     {
-        return new RadSaveFileDialog()
+        var dialog = new RadSaveFileDialog()
         {
             Owner = Application.Current?.MainWindow,
             Filter = filter,
             FileName = fileName,
-            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+            InitialDirectory = GetSaveDialogInitialDirectory()
         };
+
+        ConfigureSaveFileDialog?.Invoke(dialog);
+        return dialog;
+    }
+
+    private string GetSaveDialogInitialDirectory()
+    {
+        var initialDirectory = SaveDialogInitialDirectoryProvider?.Invoke();
+        if (Directory.Exists(initialDirectory))
+        {
+            return initialDirectory;
+        }
+
+        if (Directory.Exists(Environment.CurrentDirectory))
+        {
+            return Environment.CurrentDirectory;
+        }
+
+        return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+    }
+
+    private void RememberSaveDialogDirectory(string filePath)
+    {
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            SaveDialogDirectoryChanged?.Invoke(directory);
+        }
     }
 
     private static string EnsureFileExtension(string filePath, string defaultExtension)

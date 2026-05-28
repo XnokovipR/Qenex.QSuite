@@ -19,6 +19,7 @@ using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.DragDrop;
+using Telerik.Windows.Controls.FileDialogs;
 
 namespace Qenex.QInsight.ViewModels;
 
@@ -66,6 +67,10 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     //public RelayCommand<UserControl> WorkspaceViewLoadedCommand { get; set; }
     public RelayCommand<RadDiagram> WorkspaceViewLoadedCommand { get; set; }
+
+    public Action<DialogWindowBase>? ConfigureGraphControlSaveDialog { get; set; }
+    public Func<string?>? GraphControlSaveDialogInitialDirectoryProvider { get; set; }
+    public Action<string>? GraphControlSaveDialogDirectoryChanged { get; set; }
 
     #endregion
     
@@ -180,6 +185,8 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     private void AddControlToDiagram(IControlBase controlVm, UserControl control, double x, double y)
     {
+	    ConfigureControl(controlVm);
+
 	    var fgColor = ShellWindow.ForegroundColor;
 	    var bgColor = ShellWindow.BackgroundColor;
 	    var fontSize = ShellWindow.MainAppSettings.Design.FontSize;
@@ -246,6 +253,18 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
 		diagram.AddShape(userControl);
 	}
+
+    private void ConfigureControl(IControlBase controlVm)
+    {
+	    if (controlVm is not GraphControlViewModel graphControl)
+	    {
+		    return;
+	    }
+
+	    graphControl.ConfigureSaveFileDialog = ConfigureGraphControlSaveDialog;
+	    graphControl.SaveDialogInitialDirectoryProvider = GraphControlSaveDialogInitialDirectoryProvider;
+	    graphControl.SaveDialogDirectoryChanged = GraphControlSaveDialogDirectoryChanged;
+    }
 
     public void BindLoadedControlVariables(IEnumerable<IProtocolVariable> protocolVariables)
     {

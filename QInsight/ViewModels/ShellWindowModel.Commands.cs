@@ -5,6 +5,7 @@ using System.Windows.Threading;
 using System.Xml.Linq;
 using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.EventAggregatorMsgs;
+using Qenex.QInsight.Helpers;
 using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QInsight.Views;
@@ -19,7 +20,6 @@ using Qenex.QSuite.Scripting.Script;
 using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
-using Telerik.Windows.Controls.Animation;
 using Telerik.Windows.Controls.Docking;
 using Telerik.Windows.Controls.FileDialogs;
 
@@ -55,6 +55,7 @@ public partial class ShellWindowModel
     private RadSaveFileDialog? exportDataLogDialog;
     private string? lastProjectDialogDirectory;
     private string? lastDataLogDialogDirectory;
+    private string? lastGraphExportDialogDirectory;
     
     #endregion
     
@@ -552,9 +553,20 @@ public partial class ShellWindowModel
     
     #region Workspace menu
 
+    private WorkspaceViewModel CreateWorkspaceViewModel()
+    {
+        return new WorkspaceViewModel(eventAggregator)
+        {
+            ConfigureGraphControlSaveDialog = FileDialogConfiguration.ConfigureFastFileDialog,
+            GraphControlSaveDialogInitialDirectoryProvider = () =>
+                GetInitialDialogDirectory(lastGraphExportDialogDirectory, currentProjectFilePath),
+            GraphControlSaveDialogDirectoryChanged = directory => lastGraphExportDialogDirectory = directory
+        };
+    }
+
     private async Task AddWorkspaceAsync(RadDocking docking)
     {
-        var workspaceViewModel = new WorkspaceViewModel(eventAggregator);
+        var workspaceViewModel = CreateWorkspaceViewModel();
         ViewModels.Add(workspaceViewModel);
         
         
@@ -568,11 +580,9 @@ public partial class ShellWindowModel
     {
         foreach (var workspace in workspaces)
         {
-            var workspaceViewModel = new WorkspaceViewModel(eventAggregator)
-            {
-                Name = workspace.Name,
-                WinTitle = workspace.WinTitle
-            };
+            var workspaceViewModel = CreateWorkspaceViewModel();
+            workspaceViewModel.Name = workspace.Name;
+            workspaceViewModel.WinTitle = workspace.WinTitle;
             workspaceViewModel.SetControlProjectData(workspace.Controls);
             workspaceViewModel.BindLoadedControlVariables(GetProjectProtocolVariables());
 
@@ -1102,7 +1112,7 @@ public partial class ShellWindowModel
             InitialDirectory = initialDirectory
         };
 
-        ConfigureFastFileDialog(dialog);
+        FileDialogConfiguration.ConfigureFastFileDialog(dialog);
         return dialog;
     }
 
@@ -1115,48 +1125,23 @@ public partial class ShellWindowModel
             InitialDirectory = initialDirectory
         };
 
-        ConfigureFastFileDialog(dialog);
+        FileDialogConfiguration.ConfigureFastFileDialog(dialog);
         return dialog;
     }
 
     private static void PrepareFileDialog(DialogWindowBase dialog, string initialDirectory)
     {
-        dialog.Owner = App.Current.MainWindow;
-        dialog.InitialDirectory = initialDirectory;
-        ConfigureFastFileDialog(dialog);
+        FileDialogConfiguration.PrepareFileDialog(dialog, initialDirectory);
     }
 
     private static void ConfigureFastFileDialog(DialogWindowBase dialog)
     {
-        dialog.LoadDrivesInBackground = true;
-        dialog.ExpandToCurrentDirectory = false;
-        dialog.InitialSelectedLayout = LayoutType.Tiles;
-        dialog.CanUserRename = false;
-        AnimationManager.SetIsAnimationEnabled(dialog, false);
+        FileDialogConfiguration.ConfigureFastFileDialog(dialog);
     }
 
     private static string GetInitialDialogDirectory(string? lastDirectory, string? currentFilePath)
     {
-        if (Directory.Exists(lastDirectory))
-        {
-            return lastDirectory;
-        }
-
-        if (!string.IsNullOrWhiteSpace(currentFilePath))
-        {
-            var currentDirectory = Path.GetDirectoryName(currentFilePath);
-            if (Directory.Exists(currentDirectory))
-            {
-                return currentDirectory;
-            }
-        }
-
-        if (Directory.Exists(Environment.CurrentDirectory))
-        {
-            return Environment.CurrentDirectory;
-        }
-
-        return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        return FileDialogConfiguration.GetInitialDialogDirectory(lastDirectory, currentFilePath);
     }
 
     private string GetDefaultDataLogCsvFileName()
