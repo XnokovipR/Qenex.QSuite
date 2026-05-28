@@ -9,13 +9,24 @@
              d:DataContext="{d:DesignInstance vm:ProjectConfigurationViewModel, IsDesignTimeCreatable=True}"
              d:DesignHeight="520"
              d:DesignWidth="860">
+    <UserControl.Resources>
+        <Style x:Key="ProjectConfigurationPageStyle" TargetType="Grid">
+            <Setter Property="Visibility" Value="Collapsed"/>
+        </Style>
+    </UserControl.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-        <Border Grid.Column="0"
+        <Border Grid.Row="0"
+                Grid.Column="0"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="0,0,1,0">
             <telerik:RadListBox
@@ -33,6 +44,115 @@
             </telerik:RadListBox>
         </Border>
 
-        <Grid Grid.Column="1"/>
+        <Grid Grid.Row="0"
+              Grid.Column="1">
+            <Grid
+                Margin="8">
+                <Grid.Style>
+                    <Style TargetType="Grid" BasedOn="{StaticResource ProjectConfigurationPageStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedSection}" Value="{x:Static vm:ProjectConfigurationSection.CommunicationDrivers}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <telerik:RadGridView
+                    ItemsSource="{Binding Drivers}"
+                    AutoGenerateColumns="False"
+                    CanUserDeleteRows="False"
+                    CanUserInsertRows="False"
+                    GroupRenderMode="Flat"
+                    RowIndicatorVisibility="Collapsed"
+                    ShowGroupPanel="False">
+                    <telerik:RadGridView.Columns>
+                        <telerik:GridViewDataColumn
+                            Width="70"
+                            Header="Enabled"
+                            IsReadOnly="True">
+                            <telerik:GridViewDataColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                        IsEnabled="{Binding CanEditIsEnabled}"/>
+                                </DataTemplate>
+                            </telerik:GridViewDataColumn.CellTemplate>
+                        </telerik:GridViewDataColumn>
+                        <telerik:GridViewDataColumn
+                            Width="*"
+                            Header="Label"
+                            IsReadOnly="True">
+                            <telerik:GridViewDataColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Text="{Binding Label}"
+                                        ToolTip="{Binding ToolTip}"/>
+                                </DataTemplate>
+                            </telerik:GridViewDataColumn.CellTemplate>
+                        </telerik:GridViewDataColumn>
+                    </telerik:RadGridView.Columns>
+                </telerik:RadGridView>
+            </Grid>
+
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid" BasedOn="{StaticResource ProjectConfigurationPageStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedSection}" Value="{x:Static vm:ProjectConfigurationSection.Variables}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+            </Grid>
+
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid" BasedOn="{StaticResource ProjectConfigurationPageStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedSection}" Value="{x:Static vm:ProjectConfigurationSection.Presentations}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+            </Grid>
+
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid" BasedOn="{StaticResource ProjectConfigurationPageStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedSection}" Value="{x:Static vm:ProjectConfigurationSection.Events}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+            </Grid>
+        </Grid>
+
+        <Border Grid.Row="1"
+                Grid.ColumnSpan="2"
+                BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="0,1,0,0">
+            <StackPanel
+                Margin="8"
+                HorizontalAlignment="Right"
+                Orientation="Horizontal">
+                <telerik:RadButton
+                    MinWidth="82"
+                    Margin="0,0,8,0"
+                    Content="Apply"
+                    Command="{Binding ApplyCommand}"/>
+                <telerik:RadButton
+                    MinWidth="82"
+                    Content="Cancel"
+                    Command="{Binding CancelCommand}"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>

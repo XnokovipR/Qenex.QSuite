@@ -81,6 +81,7 @@ public partial class ShellWindowModel
     public RelayCommandAsync<RadDocking> RibbonCloseProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonAddWorkspaceCommand { get; set; }
     public RelayCommand<RadDocking> RibbonRemoveWorkspaceCommand { get; set; }
+    public RelayCommand<object> RibbonProjectConfigurationDriversCommand { get; set; }
     public RelayCommand<object> RibbonProjectConfigurationVariablesCommand { get; set; }
     public RelayCommand<object> RibbonProjectConfigurationPresentationsCommand { get; set; }
     public RelayCommand<object> RibbonProjectConfigurationEventsCommand { get; set; }
@@ -121,6 +122,9 @@ public partial class ShellWindowModel
         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(CloseProjectAsync, _ => CanUseProjectCommand());
         RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync, _ => CanUseProjectCommand());
         RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace, _ => CanUseProjectCommand());
+        RibbonProjectConfigurationDriversCommand = new RelayCommand<object>(
+            _ => OpenProjectConfiguration(ProjectConfigurationSection.CommunicationDrivers),
+            _ => CanUseProjectCommand());
         RibbonProjectConfigurationVariablesCommand = new RelayCommand<object>(
             _ => OpenProjectConfiguration(ProjectConfigurationSection.Variables),
             _ => CanUseProjectCommand());
@@ -313,9 +317,11 @@ public partial class ShellWindowModel
 
     #region Ribbon command methods
 
-    private static void OpenProjectConfiguration(ProjectConfigurationSection selectedSection)
+    private void OpenProjectConfiguration(ProjectConfigurationSection selectedSection)
     {
-        var projectConfigurationViewModel = new ProjectConfigurationViewModel();
+        var projectConfigurationViewModel = new ProjectConfigurationViewModel(
+            eventAggregator,
+            realProjectData.Module.Drivers);
         projectConfigurationViewModel.SelectSection(selectedSection);
 
         var projectConfigurationView = new ProjectConfigurationView()
@@ -336,6 +342,7 @@ public partial class ShellWindowModel
             Content = projectConfigurationView
         };
 
+        projectConfigurationViewModel.SetParentWindow(projectConfigurationDialog);
         projectConfigurationDialog.ShowDialog();
     }
 
@@ -1383,6 +1390,11 @@ public partial class ShellWindowModel
             driversPropertiesViewModel.RefreshDrivers();
         }
 
+        if (propertiesViewModel.SelectedViewModel is DriverPropertiesViewModel driverPropertiesViewModel)
+        {
+            driverPropertiesViewModel.RefreshDriver();
+        }
+
         if (propertiesViewModel.SelectedViewModel is CommunicatedProtocolsPropertiesViewModel protocolsPropertiesViewModel)
         {
             protocolsPropertiesViewModel.RefreshProtocols();
@@ -1631,6 +1643,7 @@ public partial class ShellWindowModel
         RibbonCloseProjectCommand.OnCanExecuteChanged();
         RibbonAddWorkspaceCommand.OnCanExecuteChanged();
         RibbonRemoveWorkspaceCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationDriversCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationVariablesCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationPresentationsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationEventsCommand.OnCanExecuteChanged();
@@ -1660,6 +1673,7 @@ public partial class ShellWindowModel
         RibbonCloseProjectCommand.OnCanExecuteChanged();
         RibbonAddWorkspaceCommand.OnCanExecuteChanged();
         RibbonRemoveWorkspaceCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationDriversCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationVariablesCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationPresentationsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationEventsCommand.OnCanExecuteChanged();

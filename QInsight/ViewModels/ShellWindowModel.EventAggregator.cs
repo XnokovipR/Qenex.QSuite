@@ -25,6 +25,7 @@ public partial class ShellWindowModel
         eventAggregator.SubscribeAction<SolutionExplorerClickedItemMsg>(OnSolutionExplorerClickedMsg);
         eventAggregator.SubscribeAction<SolutionExplorerDoubleClickedItemMsg>(OnSolutionExplorerDoubleClickedMsg);
         eventAggregator.SubscribeAction<RemoveWorkspaceFromSolutionExplorerMsg>(RemoveWorkspace);
+        eventAggregator.SubscribeAction<ProjectConfigurationAppliedMsg>(_ => RefreshCommunicatedDriversProperties());
     }
     private void OnSolutionExplorerClickedMsg(SolutionExplorerClickedItemMsg msg)
     {

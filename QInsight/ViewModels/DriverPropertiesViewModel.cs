@@ -23,4 +23,18 @@ public class DriverPropertiesViewModel : PropertyChangedBaseWithValidation, IPro
     public bool IsEnabled => driver.IsEnabled;
     public bool IsStarted => driver.IsStarted;
     public int ProtocolCount => driver.Protocols.Count;
+
+    public void RefreshDriver()
+    {
+        OnPropertyChanged(nameof(Name));
+        OnPropertyChanged(nameof(Label));
+        OnPropertyChanged(nameof(Description));
+        OnPropertyChanged(nameof(Version));
+        OnPropertyChanged(nameof(Author));
+        OnPropertyChanged(nameof(Company));
+        OnPropertyChanged(nameof(CreatedOn));
+        OnPropertyChanged(nameof(IsEnabled));
+        OnPropertyChanged(nameof(IsStarted));
+        OnPropertyChanged(nameof(ProtocolCount));
+    }
 }
