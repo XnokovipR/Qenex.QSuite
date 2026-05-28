@@ -94,11 +94,7 @@ public partial class ShellWindowModel
     public RelayCommandAsync<RadDocking> RibbonStopReplayCommand { get; set; }
     public RelayCommand<object> RibbonReplayPauseResumeCommand { get; set; }
     
-    public RelayCommand<RadDocking> RibbonScriptVariablesSettingsCommand { get; set; }
-    public RelayCommand<RadDocking> RibbonScriptsSettingsCommand { get; set; }
-    
     public RelayCommand<RadDocking> RibbonSaveLayoutCommand { get; set; }
-    public RelayCommand<RadDocking> RibbonSaveWorkspaceLayoutCommand { get; set; }
     
     
     public RelayCommand<RadDocking> RibbonPythonInterpreterCommand { get; set; }
@@ -143,20 +139,10 @@ public partial class ShellWindowModel
         RibbonStopReplayCommand = new RelayCommandAsync<RadDocking>(StopReplayAsync, _ => canStopReplay);
         RibbonReplayPauseResumeCommand = new RelayCommand<object>(_ => ToggleReplayPause(), _ => IsReplayControlEnabled);
         
-        RibbonScriptVariablesSettingsCommand = new RelayCommand<RadDocking>(OpenScriptVariablesOptions, _ => CanUseProjectCommand());
-        RibbonScriptsSettingsCommand = new RelayCommand<RadDocking>(RemoveScriptVariablesOptions, _ => CanUseProjectCommand());
-
         RibbonSaveLayoutCommand = new RelayCommand<RadDocking>(r =>
         {
             requireSerializationTag = false;
             SaveLayout(r);
-        });
-        
-        RibbonSaveWorkspaceLayoutCommand = new RelayCommand<RadDocking>(r =>
-        {
-            requireSerializationTag = true;
-            SaveLayout(r,"ws");
-            requireSerializationTag = false;
         });
 
         RibbonPythonInterpreterCommand = new RelayCommand<RadDocking>(OpenPythonInterpreter);
@@ -687,31 +673,6 @@ public partial class ShellWindowModel
     
     #endregion
 
-    #region Script menu
-
-    private void OpenScriptVariablesOptions(RadDocking docking)
-    {
-        var foundScriptVariablesSettingsViewModel = ViewModels.FirstOrDefault(vm => vm is IWorkspaceViewModel { Name: "ScriptVariablesSettingsViewModel" });
-        if (foundScriptVariablesSettingsViewModel != null)
-        {
-            // switch to that
-            if (foundScriptVariablesSettingsViewModel.IsHidden)
-            {
-                foundScriptVariablesSettingsViewModel.IsHidden =  false;
-            }
-        }
-        else
-        {
-            var scriptVariablesSettingsViewModel = new ScriptVariablesSettingsViewModel(eventAggregator);
-            ViewModels.Add(scriptVariablesSettingsViewModel);
-        }
-    }
-
-    private void RemoveScriptVariablesOptions(RadDocking docking)
-    {
-        
-    }
-
     private void OpenPythonInterpreter(RadDocking docking)
     {
         foreach (var pythonInterpreterViewModel in ViewModels.OfType<PythonInterpreterViewModel>().ToList())
@@ -816,8 +777,6 @@ public partial class ShellWindowModel
         await pythonInterpreterStandaloneContext.InitializeSharedScopeAsync([]);
         return pythonInterpreterStandaloneContext;
     }
-
-    #endregion
 
     #region Run menu
 
@@ -1647,8 +1606,6 @@ public partial class ShellWindowModel
         RibbonProjectConfigurationVariablesCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationPresentationsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationEventsCommand.OnCanExecuteChanged();
-        RibbonScriptVariablesSettingsCommand.OnCanExecuteChanged();
-        RibbonScriptsSettingsCommand.OnCanExecuteChanged();
         RibbonConnectCommand.OnCanExecuteChanged();
         RibbonDisconnectCommand.OnCanExecuteChanged();
         RibbonImportDataLogCommand.OnCanExecuteChanged();
@@ -1677,8 +1634,6 @@ public partial class ShellWindowModel
         RibbonProjectConfigurationVariablesCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationPresentationsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationEventsCommand.OnCanExecuteChanged();
-        RibbonScriptVariablesSettingsCommand.OnCanExecuteChanged();
-        RibbonScriptsSettingsCommand.OnCanExecuteChanged();
     }
 
     private bool CanUseProjectCommand()

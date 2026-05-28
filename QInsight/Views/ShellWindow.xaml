@@ -123,19 +123,6 @@
 								SmallImage="../Icons/SolutionExplorer/Events.png"
 								Command="{Binding RibbonProjectConfigurationEventsCommand}"/>
 						</telerik:RadRibbonGroup>
-						
-						<telerik:RadRibbonGroup Header="Scripts">
-							<telerik:RadRibbonButton
-								Text="Variables" 
-								Size="Large"
-								SmallImage="../Icons/Menu/ScriptVariablesSettings.png"
-								Command="{Binding RibbonScriptVariablesSettingsCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
-							<telerik:RadRibbonButton
-								Text="Scripts" 
-								Size="Large"
-								SmallImage="../Icons/Menu/ScriptSettings.png"
-								Command="{Binding RibbonScriptsSettingsCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
-						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
 
 					<!-- Ribbon Menu - Runtime -->
@@ -260,11 +247,6 @@
 								Size="Large"
 								SmallImage="../Icons/QInsight.png"
 								Command="{Binding RibbonSaveLayoutCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
-							<telerik:RadRibbonButton
-								Text="Save Workspace" 
-								Size="Large"
-								SmallImage="../Icons/QInsight.png"
-								Command="{Binding RibbonSaveWorkspaceLayoutCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
 
