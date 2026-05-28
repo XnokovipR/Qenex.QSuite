@@ -940,7 +940,7 @@ public partial class ShellWindowModel
                 return;
             }
 
-            solutionExplorerViewModel.ReloadProjectData(realProjectData);
+            solutionExplorerViewModel.ReloadProjectData(realProjectData, preserveWorkspaces: true);
             logger.Log(LogLevel.Info, "Replay started.");
         }
         catch (Exception e)
@@ -990,7 +990,7 @@ public partial class ShellWindowModel
             RefreshCommunicatedDriversProperties();
             LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
             RebindWorkspaceControlVariables(GetProjectProtocolVariables());
-            solutionExplorerViewModel.ReloadProjectData(realProjectData);
+            solutionExplorerViewModel.ReloadProjectData(realProjectData, preserveWorkspaces: true);
 
             if (!stopFailed)
             {
@@ -1039,7 +1039,7 @@ public partial class ShellWindowModel
 
             realProjectData.Module.AddDriver(replayDriver);
             StartReplayDataLoad(replayDriver);
-            solutionExplorerViewModel.ReloadProjectData(realProjectData);
+            solutionExplorerViewModel.ReloadProjectData(realProjectData, preserveWorkspaces: true);
             SetReplayDataLogImportState(dlg.FileName);
             RibbonExportDataLogCommand.OnCanExecuteChanged();
             RibbonReplayCommand.OnCanExecuteChanged();

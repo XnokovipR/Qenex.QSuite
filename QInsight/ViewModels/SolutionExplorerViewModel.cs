@@ -109,13 +109,18 @@ public class SolutionExplorerViewModel : ViewModelBase
     
     #region Actualize Solution treeview
 
-    public void ReloadProjectData(RealProjectData realPrjData)
+    public void ReloadProjectData(RealProjectData realPrjData, bool preserveWorkspaces = false)
     {
+        var workspaceWrappers = preserveWorkspaces
+            ? GetWorkspaceWrappers()
+            : [];
+
         // Release all previous project data
         DisposeAll();
         
         realProjectData = realPrjData;
         var projectWrapper = CreateProjectWrapper(realPrjData);
+        RestoreWorkspaceWrappers(projectWrapper.Children, workspaceWrappers);
         ProjectModules.Add(projectWrapper);
     }
 
@@ -330,14 +335,39 @@ public class SolutionExplorerViewModel : ViewModelBase
         var workspaceWrapper = new WorkspaceSeWrapper(workspaceViewModel);
         workspaces.Children.Add(workspaceWrapper);
     }
+
+    private List<WorkspaceSeWrapper> GetWorkspaceWrappers()
+    {
+        return Workspaces?.OfType<WorkspaceSeWrapper>().ToList() ?? [];
+    }
+
+    private void RestoreWorkspaceWrappers(
+        ObservableCollection<IViewableItem> children,
+        IEnumerable<WorkspaceSeWrapper> workspaceWrappers)
+    {
+        var workspaceWrappersList = workspaceWrappers.ToList();
+        if (workspaceWrappersList.Count == 0)
+        {
+            return;
+        }
+
+        var workspacesNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Workspaces);
+        Workspaces = workspacesNode.Children;
+        foreach (var workspaceWrapper in workspaceWrappersList)
+        {
+            Workspaces.Add(workspaceWrapper);
+        }
+
+        children.Add(workspacesNode);
+    }
     
     // Remove workspace node
     public void RemoveWorkspaceWrapper(IViewableItem workspaceItem)
     {
-        var item = Workspaces.FirstOrDefault(i => i.Label == workspaceItem.Label);
+        var item = Workspaces?.FirstOrDefault(i => i.Label == workspaceItem.Label);
         if (item != null)
         {
-            Workspaces.Remove(item);
+            Workspaces?.Remove(item);
         }
     }
 
