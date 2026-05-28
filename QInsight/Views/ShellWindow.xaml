@@ -122,6 +122,11 @@
 								Size="Large"
 								SmallImage="../Icons/SolutionExplorer/Events.png"
 								Command="{Binding RibbonProjectConfigurationEventsCommand}"/>
+							<telerik:RadRibbonButton
+								Text="Scripts"
+								Size="Large"
+								SmallImage="../Icons/Menu/ScriptSettings.png"
+								Command="{Binding RibbonProjectConfigurationScriptsCommand}"/>
 						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
 

@@ -178,6 +178,19 @@ public class ScriptWrapper : PropertyChangedBase
         return changed;
     }
 
+    public void RefreshProperties()
+    {
+        OnPropertyChanged(nameof(FileName));
+        OnPropertyChanged(nameof(Content));
+        OnPropertyChanged(nameof(ExecutionMode));
+        OnPropertyChanged(nameof(Blocking));
+        OnPropertyChanged(nameof(TimeoutMs));
+        OnPropertyChanged(nameof(AdditionalInfo));
+        OnPropertyChanged(nameof(IsEnabled));
+        OnPropertyChanged(nameof(IsReplayEnabled));
+        RefreshExecutionIntervals();
+    }
+
     private void OnScriptExecuted(object? sender, ScriptExecutedEventArgs e)
     {
         if (ReferenceEquals(e.Script, script))

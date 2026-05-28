@@ -133,6 +133,119 @@
                     </Style>
                 </Grid.Style>
             </Grid>
+
+            <Grid
+                Margin="8">
+                <Grid.Style>
+                    <Style TargetType="Grid" BasedOn="{StaticResource ProjectConfigurationPageStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedSection}" Value="{x:Static vm:ProjectConfigurationSection.Scripts}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <telerik:RadGridView
+                    ItemsSource="{Binding Scripts}"
+                    AutoGenerateColumns="False"
+                    CanUserDeleteRows="False"
+                    CanUserInsertRows="False"
+                    GroupRenderMode="Flat"
+                    RowIndicatorVisibility="Collapsed"
+                    ShowGroupPanel="False">
+                    <telerik:RadGridView.Columns>
+                        <telerik:GridViewDataColumn
+                            Width="190"
+                            Header="File name"
+                            IsReadOnly="True">
+                            <telerik:GridViewDataColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBox
+                                        VerticalAlignment="Center"
+                                        Text="{Binding FileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </telerik:GridViewDataColumn.CellTemplate>
+                        </telerik:GridViewDataColumn>
+                        <telerik:GridViewDataColumn
+                            Width="70"
+                            Header="Enabled"
+                            IsReadOnly="True">
+                            <telerik:GridViewDataColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </telerik:GridViewDataColumn.CellTemplate>
+                        </telerik:GridViewDataColumn>
+                        <telerik:GridViewDataColumn
+                            Width="115"
+                            Header="Replay"
+                            IsReadOnly="True">
+                            <telerik:GridViewDataColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        IsChecked="{Binding IsReplayEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </telerik:GridViewDataColumn.CellTemplate>
+                        </telerik:GridViewDataColumn>
+                        <telerik:GridViewDataColumn
+                            Width="150"
+                            Header="Execution mode"
+                            IsReadOnly="True">
+                            <telerik:GridViewDataColumn.CellTemplate>
+                                <DataTemplate>
+                                    <telerik:RadComboBox
+                                        ItemsSource="{Binding DataContext.ExecutionModes, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
+                                        SelectedValuePath="Value"
+                                        SelectedValue="{Binding ExecutionMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </telerik:GridViewDataColumn.CellTemplate>
+                        </telerik:GridViewDataColumn>
+                        <telerik:GridViewDataColumn
+                            Width="75"
+                            Header="Blocking"
+                            IsReadOnly="True">
+                            <telerik:GridViewDataColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        IsChecked="{Binding Blocking, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </telerik:GridViewDataColumn.CellTemplate>
+                        </telerik:GridViewDataColumn>
+                        <telerik:GridViewDataColumn
+                            Width="95"
+                            Header="Timeout"
+                            IsReadOnly="True">
+                            <telerik:GridViewDataColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBox
+                                        VerticalAlignment="Center"
+                                        Text="{Binding TimeoutMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </telerik:GridViewDataColumn.CellTemplate>
+                        </telerik:GridViewDataColumn>
+                        <telerik:GridViewDataColumn
+                            Width="*"
+                            Header="Parameters"
+                            IsReadOnly="True">
+                            <telerik:GridViewDataColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBox
+                                        VerticalAlignment="Center"
+                                        Text="{Binding AdditionalInfo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                </DataTemplate>
+                            </telerik:GridViewDataColumn.CellTemplate>
+                        </telerik:GridViewDataColumn>
+                    </telerik:RadGridView.Columns>
+                </telerik:RadGridView>
+            </Grid>
         </Grid>
 
         <Border Grid.Row="1"

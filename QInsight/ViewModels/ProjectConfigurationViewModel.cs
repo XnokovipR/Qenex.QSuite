@@ -4,7 +4,9 @@ using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.Scripting.Script;
 using Telerik.Windows.Controls;
+using Telerik.Windows.Data;
 
 namespace Qenex.QInsight.ViewModels;
 
@@ -14,11 +16,14 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private RadWindow? parentWindow;
 
     public ProjectConfigurationViewModel()
-        : this(null, [])
+        : this(null, [], [])
     {
     }
 
-    public ProjectConfigurationViewModel(EventAggregator? eventAggregator, IEnumerable<IDriverBase> drivers)
+    public ProjectConfigurationViewModel(
+        EventAggregator? eventAggregator,
+        IEnumerable<IDriverBase> drivers,
+        IEnumerable<IScriptBase> scripts)
     {
         this.eventAggregator = eventAggregator;
         NavigationItems =
@@ -26,13 +31,20 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.CommunicationDrivers, "Communication Drivers"),
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Variables, "Variables"),
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Presentations, "Presentations"),
-            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Events, "Events")
+            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Events, "Events"),
+            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Scripts, "Scripts")
         ];
         Drivers = new ObservableCollection<ProjectConfigurationDriverWrapper>(
             drivers.Select(driver => new ProjectConfigurationDriverWrapper(driver)));
         foreach (var driver in Drivers)
         {
             driver.PropertyChanged += OnDriverPropertyChanged;
+        }
+        Scripts = new ObservableCollection<ProjectConfigurationScriptWrapper>(
+            scripts.Select(script => new ProjectConfigurationScriptWrapper(script)));
+        foreach (var script in Scripts)
+        {
+            script.PropertyChanged += OnScriptPropertyChanged;
         }
 
         ApplyCommand = new RelayCommand<object>(_ => ApplyChanges(), _ => HasChanges);
@@ -42,10 +54,14 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
     public ObservableCollection<ProjectConfigurationNavigationItem> NavigationItems { get; }
     public ObservableCollection<ProjectConfigurationDriverWrapper> Drivers { get; }
+    public ObservableCollection<ProjectConfigurationScriptWrapper> Scripts { get; }
+    public IEnumerable<EnumMemberViewModel> ExecutionModes { get; } = EnumDataSource.FromType<ScriptExecutionMode>();
     public RelayCommand<object> ApplyCommand { get; }
     public RelayCommand<object> CancelCommand { get; }
 
-    public bool HasChanges => Drivers.Any(driver => driver.HasChanges);
+    public bool HasChanges =>
+        Drivers.Any(driver => driver.HasChanges)
+        || Scripts.Any(script => script.HasChanges);
 
     public ProjectConfigurationNavigationItem SelectedNavigationItem
     {
@@ -81,6 +97,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         {
             driver.ApplyChanges();
         }
+        foreach (var script in Scripts)
+        {
+            script.ApplyChanges();
+        }
 
         eventAggregator?.Publish(new ProjectConfigurationAppliedMsg());
         NotifyHasChangesChanged();
@@ -92,6 +112,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         {
             driver.CancelChanges();
         }
+        foreach (var script in Scripts)
+        {
+            script.CancelChanges();
+        }
 
         parentWindow?.Close();
     }
@@ -100,6 +124,16 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     {
         if (e.PropertyName != nameof(ProjectConfigurationDriverWrapper.HasChanges)
             && e.PropertyName != nameof(ProjectConfigurationDriverWrapper.IsEnabled))
+        {
+            return;
+        }
+
+        NotifyHasChangesChanged();
+    }
+
+    private void OnScriptPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ProjectConfigurationScriptWrapper.HasChanges))
         {
             return;
         }
@@ -121,5 +155,6 @@ public enum ProjectConfigurationSection
     CommunicationDrivers,
     Variables,
     Presentations,
-    Events
+    Events,
+    Scripts
 }

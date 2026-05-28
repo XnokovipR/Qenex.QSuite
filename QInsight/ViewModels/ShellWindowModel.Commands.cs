@@ -85,6 +85,7 @@ public partial class ShellWindowModel
     public RelayCommand<object> RibbonProjectConfigurationVariablesCommand { get; set; }
     public RelayCommand<object> RibbonProjectConfigurationPresentationsCommand { get; set; }
     public RelayCommand<object> RibbonProjectConfigurationEventsCommand { get; set; }
+    public RelayCommand<object> RibbonProjectConfigurationScriptsCommand { get; set; }
     
     public RelayCommandAsync<RadDocking> RibbonConnectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonDisconnectCommand { get; set; }
@@ -129,6 +130,9 @@ public partial class ShellWindowModel
             _ => CanUseProjectCommand());
         RibbonProjectConfigurationEventsCommand = new RelayCommand<object>(
             _ => OpenProjectConfiguration(ProjectConfigurationSection.Events),
+            _ => CanUseProjectCommand());
+        RibbonProjectConfigurationScriptsCommand = new RelayCommand<object>(
+            _ => OpenProjectConfiguration(ProjectConfigurationSection.Scripts),
             _ => CanUseProjectCommand());
 
         RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync, _ => CanConnectRuntime());
@@ -307,7 +311,8 @@ public partial class ShellWindowModel
     {
         var projectConfigurationViewModel = new ProjectConfigurationViewModel(
             eventAggregator,
-            realProjectData.Module.Drivers);
+            realProjectData.Module.Drivers,
+            realProjectData.Module.Scripting.Scripts);
         projectConfigurationViewModel.SelectSection(selectedSection);
 
         var projectConfigurationView = new ProjectConfigurationView()
@@ -1360,6 +1365,25 @@ public partial class ShellWindowModel
         }
     }
 
+    private void RefreshProjectConfigurationAppliedProperties()
+    {
+        RefreshCommunicatedDriversProperties();
+        RefreshScriptProperties();
+    }
+
+    private void RefreshScriptProperties()
+    {
+        if (propertiesViewModel.SelectedViewModel is ScriptPropertiesViewModel scriptPropertiesViewModel)
+        {
+            scriptPropertiesViewModel.RefreshScript();
+        }
+
+        foreach (var scriptViewModel in ViewModels.OfType<ScriptViewModel>())
+        {
+            scriptViewModel.ScriptWrapper.RefreshProperties();
+        }
+    }
+
     private void RebindWorkspaceControlVariables(IEnumerable<IProtocolVariable> protocolVariables)
     {
         var protocolVariablesList = protocolVariables.ToList();
@@ -1606,6 +1630,7 @@ public partial class ShellWindowModel
         RibbonProjectConfigurationVariablesCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationPresentationsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationEventsCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationScriptsCommand.OnCanExecuteChanged();
         RibbonConnectCommand.OnCanExecuteChanged();
         RibbonDisconnectCommand.OnCanExecuteChanged();
         RibbonImportDataLogCommand.OnCanExecuteChanged();
@@ -1634,6 +1659,7 @@ public partial class ShellWindowModel
         RibbonProjectConfigurationVariablesCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationPresentationsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationEventsCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationScriptsCommand.OnCanExecuteChanged();
     }
 
     private bool CanUseProjectCommand()
