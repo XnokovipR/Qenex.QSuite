@@ -17,9 +17,9 @@
 		<q:QTextBox Text="{Binding ScriptWrapper.FileName, Mode=TwoWay}"
                     inp:InputManager.UpdatePropertySourceWhenEnterPressed="q:QTextBox.Text"/>
 
-		<CheckBox Content="Enabled" Margin="0,10,0,0"
+		<CheckBox Content="Runtime" Margin="0,10,0,0"
 		          IsChecked="{Binding ScriptWrapper.IsEnabled, Mode=TwoWay}"/>
-		<CheckBox Content="Enabled during replay" Margin="0,5,0,0"
+		<CheckBox Content="Replay" Margin="0,5,0,0"
 		          IsChecked="{Binding ScriptWrapper.IsReplayEnabled, Mode=TwoWay}"/>
 
 		<q:QTextBlock Text="Execution mode" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,5"/>

@@ -16,7 +16,6 @@ using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
-using Qenex.QSuite.Scripting.Script;
 using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
@@ -36,7 +35,6 @@ public partial class ShellWindowModel
     private IReplayDriver? activeReplayDriver;
     private List<(IDriverBase Driver, bool IsEnabled)>? replayDriverStates;
     private List<(IProtocolBase Protocol, bool IsEnabled)>? replayProtocolStates;
-    private List<(IScriptBase Script, bool IsEnabled)>? replayScriptStates;
     private bool isReplayDataLogImported;
     private string? replayDataLogFilePath;
     private bool canUseHomeRibbon = true;
@@ -797,6 +795,7 @@ public partial class ShellWindowModel
         try
         {
             ConfigureDataLoggerFileNames();
+            realProjectData.Module.Scripting.IsReplayMode = false;
             await realProjectData.Module.StartAsync();
             IsRuntimeStarted = true;
             SetRuntimeCommandStates(true);
@@ -950,6 +949,7 @@ public partial class ShellWindowModel
             RebindWorkspaceControlVariables(replayProtocol.Variables);
             IsRuntimeStarted = true;
             isReplayMode = true;
+            realProjectData.Module.Scripting.IsReplayMode = true;
             SetRuntimeCommandStates(true, true);
             SetReplayControlEnabled(true);
             await realProjectData.Module.StartAsync();
@@ -970,6 +970,7 @@ public partial class ShellWindowModel
             RebindWorkspaceControlVariables(GetProjectProtocolVariables());
             IsRuntimeStarted = false;
             isReplayMode = false;
+            realProjectData.Module.Scripting.IsReplayMode = false;
             SetRuntimeCommandStates(false);
             SetReplayControlEnabled(false);
             logger.Log(LogLevel.Error, $"Replay start failed: {e.Message}");
@@ -1002,6 +1003,7 @@ public partial class ShellWindowModel
         {
             IsRuntimeStarted = false;
             isReplayMode = false;
+            realProjectData.Module.Scripting.IsReplayMode = false;
             SetRuntimeCommandStates(false);
             UnsubscribeReplayCompleted();
             SetReplayControlEnabled(false);
@@ -1290,9 +1292,6 @@ public partial class ShellWindowModel
             .SelectMany(driver => driver.Protocols)
             .Select(protocol => (protocol, protocol.IsEnabled))
             .ToList();
-        replayScriptStates = realProjectData.Module.Scripting.Scripts
-            .Select(script => (script, script.IsEnabled))
-            .ToList();
     }
 
     private void ApplyReplayStates(IDriverBase replayDriver, IProtocolBase replayProtocol)
@@ -1307,13 +1306,6 @@ public partial class ShellWindowModel
             protocol.IsEnabled = ReferenceEquals(protocol, replayProtocol);
         }
 
-        foreach (var script in realProjectData.Module.Scripting.Scripts)
-        {
-            if (!script.IsReplayEnabled)
-            {
-                script.IsEnabled = false;
-            }
-        }
     }
 
     private void RestoreReplayStates()
@@ -1334,17 +1326,8 @@ public partial class ShellWindowModel
             }
         }
 
-        if (replayScriptStates != null)
-        {
-            foreach (var (script, isEnabled) in replayScriptStates)
-            {
-                script.IsEnabled = isEnabled;
-            }
-        }
-
         replayDriverStates = null;
         replayProtocolStates = null;
-        replayScriptStates = null;
     }
 
     private void RefreshCommunicatedDriversProperties()

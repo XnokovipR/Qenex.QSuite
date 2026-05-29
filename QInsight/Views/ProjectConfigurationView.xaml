@@ -168,8 +168,8 @@
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>
                         <telerik:GridViewDataColumn
-                            Width="55"
-                            Header="Enabled"
+                            Width="60"
+                            Header="Runtime"
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>
                                 <DataTemplate>
@@ -181,7 +181,7 @@
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>
                         <telerik:GridViewDataColumn
-                            Width="50"
+                            Width="50"  
                             Header="Replay"
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>

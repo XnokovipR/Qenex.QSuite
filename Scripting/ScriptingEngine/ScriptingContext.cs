@@ -38,6 +38,7 @@ public class ScriptingContext
     public IList<VariableBinding> VariableBindings { get; set; }
     public IList<OnValueChangedScriptTrigger> OnValueChangedScriptTriggers { get; set; }
     public ScriptEngineSettings EngineSettings { get; set; }
+    public bool IsReplayMode { get; set; }
     public PyModule? SharedScope { get; internal set; }
     public event EventHandler<ScriptExecutedEventArgs>? ScriptExecuted;
     
@@ -293,7 +294,7 @@ if "__qenex_interactive_console" not in globals():
 
     private async Task ExecuteScriptAsync(IScriptBase script, ScriptExecutionOptions options, CancellationToken ct = default)
     {
-        if (!script.IsEnabled)
+        if (!CanExecuteScript(script))
         {
             return;
         }
@@ -319,7 +320,7 @@ if "__qenex_interactive_console" not in globals():
 
     private void ExecuteScript(IScriptBase script, Action? beforeExecute = null)
     {
-        if (!script.IsEnabled)
+        if (!CanExecuteScript(script))
         {
             return;
         }
@@ -353,6 +354,13 @@ if "__qenex_interactive_console" not in globals():
             script.LastExecutionDurationMs = stopwatch.Elapsed.TotalMilliseconds;
             OnScriptExecuted(script);
         }
+    }
+
+    private bool CanExecuteScript(IScriptBase script)
+    {
+        return IsReplayMode
+            ? script.IsReplayEnabled
+            : script.IsEnabled;
     }
 
     private void HandleVariableValueChanged(int variableId, string variableName, object value)
