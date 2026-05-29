@@ -3,7 +3,7 @@ using Qenex.QSuite.Scripting.Script;
 
 namespace Qenex.QInsight.ViewModels.ModelWrappers;
 
-public class ProjectConfigurationScriptWrapper(IScriptBase script) : PropertyChangedBase
+public class ProjectConfigurationScriptWrapper(IScriptBase script, bool isNew = false) : PropertyChangedBase
 {
     private string originalFileName = script.FileName;
     private bool originalIsEnabled = script.IsEnabled;
@@ -20,6 +20,10 @@ public class ProjectConfigurationScriptWrapper(IScriptBase script) : PropertyCha
     private bool blocking = script.Blocking;
     private double timeoutMs = script.TimeoutMs;
     private string additionalInfo = script.AdditionalInfo;
+
+    public IScriptBase Script => script;
+    public bool IsNew { get; } = isNew;
+    public string OriginalFileName => originalFileName;
 
     public string FileName
     {

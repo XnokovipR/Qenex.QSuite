@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
              xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
              xmlns:wrappers="clr-namespace:Qenex.QInsight.ViewModels.ModelWrappers"
@@ -475,8 +476,33 @@
                     </Style>
                 </Grid.Style>
 
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel
+                    Grid.Row="0"
+                    Margin="0,0,0,8"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+                    <telerik:RadButton
+                        Width="34"
+                        Height="28"
+                        Margin="0,0,6,0"
+                        Command="{Binding AddScriptCommand}"
+                        Content="+"/>
+                    <telerik:RadButton
+                        Width="34"
+                        Height="28"
+                        Command="{Binding RemoveScriptCommand}"
+                        Content="-"/>
+                </StackPanel>
+
                 <telerik:RadGridView
+                    Grid.Row="1"
                     ItemsSource="{Binding Scripts}"
+                    SelectedItem="{Binding SelectedScript, Mode=TwoWay}"
                     AutoGenerateColumns="False"
                     CanUserDeleteRows="False"
                     CanUserInsertRows="False"
@@ -492,7 +518,15 @@
                                 <DataTemplate>
                                     <q:QTextBox
                                         VerticalAlignment="Center"
-                                        Text="{Binding FileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        Text="{Binding FileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                        <i:Interaction.Triggers>
+                                            <i:EventTrigger EventName="GotKeyboardFocus">
+                                                <i:InvokeCommandAction
+                                                    Command="{Binding DataContext.SelectScriptCommand, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
+                                                    CommandParameter="{Binding}"/>
+                                            </i:EventTrigger>
+                                        </i:Interaction.Triggers>
+                                    </q:QTextBox>
                                 </DataTemplate>
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>
@@ -556,7 +590,15 @@
                                 <DataTemplate>
                                     <q:QTextBox
                                         VerticalAlignment="Center"
-                                        Text="{Binding TimeoutMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        Text="{Binding TimeoutMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                        <i:Interaction.Triggers>
+                                            <i:EventTrigger EventName="GotKeyboardFocus">
+                                                <i:InvokeCommandAction
+                                                    Command="{Binding DataContext.SelectScriptCommand, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
+                                                    CommandParameter="{Binding}"/>
+                                            </i:EventTrigger>
+                                        </i:Interaction.Triggers>
+                                    </q:QTextBox>
                                 </DataTemplate>
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>
@@ -568,7 +610,15 @@
                                 <DataTemplate>
                                     <q:QTextBox
                                         VerticalAlignment="Center"
-                                        Text="{Binding AdditionalInfo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        Text="{Binding AdditionalInfo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                        <i:Interaction.Triggers>
+                                            <i:EventTrigger EventName="GotKeyboardFocus">
+                                                <i:InvokeCommandAction
+                                                    Command="{Binding DataContext.SelectScriptCommand, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
+                                                    CommandParameter="{Binding}"/>
+                                            </i:EventTrigger>
+                                        </i:Interaction.Triggers>
+                                    </q:QTextBox>
                                 </DataTemplate>
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>

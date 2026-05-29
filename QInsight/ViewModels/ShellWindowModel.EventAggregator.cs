@@ -25,6 +25,7 @@ public partial class ShellWindowModel
         eventAggregator.SubscribeAction<SolutionExplorerClickedItemMsg>(OnSolutionExplorerClickedMsg);
         eventAggregator.SubscribeAction<SolutionExplorerDoubleClickedItemMsg>(OnSolutionExplorerDoubleClickedMsg);
         eventAggregator.SubscribeAction<RemoveWorkspaceFromSolutionExplorerMsg>(RemoveWorkspace);
+        eventAggregator.SubscribeAction<ScriptsRemovedMsg>(RemoveScriptDocuments);
         eventAggregator.SubscribeAction<ProjectConfigurationAppliedMsg>(_ => RefreshProjectConfigurationAppliedProperties());
     }
     private void OnSolutionExplorerClickedMsg(SolutionExplorerClickedItemMsg msg)
@@ -182,6 +183,27 @@ public partial class ShellWindowModel
             {
                 panetoRemove.RemoveFromParent();
             }
+        }
+    }
+
+    private void RemoveScriptDocuments(ScriptsRemovedMsg msg)
+    {
+        var removedScripts = msg.Scripts.ToHashSet();
+        foreach (var scriptViewModel in ViewModels
+                     .OfType<ScriptViewModel>()
+                     .Where(viewModel => removedScripts.Contains(viewModel.ScriptWrapper.Script))
+                     .ToList())
+        {
+            if (ReferenceEquals(propertiesViewModel.SelectedViewModel is ScriptPropertiesViewModel scriptProperties
+                    ? scriptProperties.ScriptWrapper.Script
+                    : null, scriptViewModel.ScriptWrapper.Script))
+            {
+                SetDefaultPropertiesView();
+            }
+
+            var pane = FindDockingPaneForViewModel(shellRadDocking, scriptViewModel);
+            ViewModels.Remove(scriptViewModel);
+            pane?.RemoveFromParent();
         }
     }
 }

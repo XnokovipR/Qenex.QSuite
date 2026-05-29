@@ -5,6 +5,7 @@ using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Scripting.PythonScript;
 using Qenex.QSuite.Scripting.Script;
 using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.Variables.QVariables;
@@ -20,10 +21,12 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private readonly EventAggregator? eventAggregator;
     private readonly IEnumerable<IDriverBase> drivers;
     private readonly IEnumerable<IVarEvent> variableEvents;
-    private readonly IEnumerable<IScriptBase> scripts;
+    private readonly IList<IScriptBase> scripts;
     private readonly IList<OnValueChangedScriptTrigger> onValueChangedScriptTriggers;
     private readonly List<ProjectConfigurationProtocolVariableWrapper> addedCommunicatedVariables = [];
     private readonly List<RemovedCommunicatedVariable> removedCommunicatedVariables = [];
+    private readonly List<ProjectConfigurationScriptWrapper> addedScripts = [];
+    private readonly List<ProjectConfigurationScriptWrapper> removedScripts = [];
     private RadWindow? parentWindow;
 
     public ProjectConfigurationViewModel()
@@ -38,13 +41,13 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         IEnumerable<IPresentation> presentations,
         IEnumerable<IVarEvent> variableEvents,
         IList<OnValueChangedScriptTrigger> onValueChangedScriptTriggers,
-        IEnumerable<IScriptBase> scripts)
+        IList<IScriptBase> scripts)
     {
         this.eventAggregator = eventAggregator;
         this.drivers = drivers.ToList();
         this.variableEvents = variableEvents.ToList();
         this.onValueChangedScriptTriggers = onValueChangedScriptTriggers;
-        this.scripts = scripts.ToList();
+        this.scripts = scripts;
         NavigationItems =
         [
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.CommunicationDrivers, "Communication Drivers"),
@@ -87,7 +90,11 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         CancelCommand = new RelayCommand<object>(_ => Cancel());
         AddVariableToSourceCommand = new RelayCommand<object>(_ => AddVariableToSource(), _ => CanAddVariableToSource());
         RemoveCommunicatedVariableCommand = new RelayCommand<object>(_ => RemoveCommunicatedVariable(), _ => SelectedCommunicatedVariable != null);
+        SelectScriptCommand = new RelayCommand<object>(SelectScript);
+        AddScriptCommand = new RelayCommand<object>(_ => AddScript());
+        RemoveScriptCommand = new RelayCommand<object>(_ => RemoveScript(), _ => SelectedScript != null);
         EnsureInitialVariableSelections();
+        SelectedScript = Scripts.FirstOrDefault();
         SelectedNavigationItem = NavigationItems[0];
     }
 
@@ -102,6 +109,9 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public RelayCommand<object> CancelCommand { get; }
     public RelayCommand<object> AddVariableToSourceCommand { get; }
     public RelayCommand<object> RemoveCommunicatedVariableCommand { get; }
+    public RelayCommand<object> SelectScriptCommand { get; }
+    public RelayCommand<object> AddScriptCommand { get; }
+    public RelayCommand<object> RemoveScriptCommand { get; }
 
     public ProjectConfigurationVariableWrapper? SelectedVariable
     {
@@ -132,6 +142,22 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             field = value;
             OnPropertyChanged();
             RemoveCommunicatedVariableCommand?.OnCanExecuteChanged();
+        }
+    }
+
+    public ProjectConfigurationScriptWrapper? SelectedScript
+    {
+        get => field;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            OnPropertyChanged();
+            RemoveScriptCommand?.OnCanExecuteChanged();
         }
     }
 
@@ -170,6 +196,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         || CommunicatedVariables.Any(variable => variable.HasChanges)
         || addedCommunicatedVariables.Count > 0
         || removedCommunicatedVariables.Count > 0
+        || addedScripts.Count > 0
+        || removedScripts.Count > 0
         || Scripts.Any(script => script.HasChanges);
 
     public ProjectConfigurationNavigationItem SelectedNavigationItem
@@ -254,15 +282,38 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         addedCommunicatedVariables.Clear();
         removedCommunicatedVariables.Clear();
 
+        var removedScriptModels = removedScripts
+            .Select(script => script.Script)
+            .ToList();
+
         foreach (var script in Scripts)
         {
             script.ApplyChanges();
         }
+        foreach (var removedScript in removedScripts)
+        {
+            RemoveScriptTriggers(removedScript);
+            scripts.Remove(removedScript.Script);
+        }
+        foreach (var addedScript in addedScripts)
+        {
+            if (!scripts.Any(script => string.Equals(script.FileName, addedScript.FileName, StringComparison.OrdinalIgnoreCase)))
+            {
+                scripts.Add(addedScript.Script);
+            }
+        }
+        addedScripts.Clear();
+        removedScripts.Clear();
 
         foreach (var variable in changedVariables)
         {
             eventAggregator?.Publish(new VariablePropertiesChangedMsg { Variable = variable });
         }
+        if (removedScriptModels.Count > 0)
+        {
+            eventAggregator?.Publish(new ScriptsRemovedMsg { Scripts = removedScriptModels });
+        }
+
         eventAggregator?.Publish(new ProjectConfigurationAppliedMsg());
         NotifyHasChangesChanged();
     }
@@ -294,8 +345,115 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         {
             script.CancelChanges();
         }
+        addedScripts.Clear();
+        removedScripts.Clear();
 
         parentWindow?.Close();
+    }
+
+    private void AddScript()
+    {
+        var script = new PyScript
+        {
+            FileName = CreateUniqueScriptFileName(),
+            IsEnabled = true,
+            IsReplayEnabled = false,
+            ExecutionMode = ScriptExecutionMode.Manual,
+            Blocking = true
+        };
+        var wrapper = new ProjectConfigurationScriptWrapper(script, isNew: true);
+        wrapper.PropertyChanged += OnScriptPropertyChanged;
+        Scripts.Add(wrapper);
+        addedScripts.Add(wrapper);
+        SelectedScript = wrapper;
+
+        RefreshCommunicatedVariableScriptOptions();
+        NotifyHasChangesChanged();
+    }
+
+    private void SelectScript(object? parameter)
+    {
+        if (parameter is ProjectConfigurationScriptWrapper script)
+        {
+            SelectedScript = script;
+        }
+    }
+
+    private void RemoveScript()
+    {
+        if (SelectedScript == null)
+        {
+            return;
+        }
+
+        var script = SelectedScript;
+        script.PropertyChanged -= OnScriptPropertyChanged;
+        Scripts.Remove(script);
+
+        if (script.IsNew)
+        {
+            addedScripts.Remove(script);
+        }
+        else if (!removedScripts.Contains(script))
+        {
+            removedScripts.Add(script);
+        }
+
+        ClearRemovedScriptReferences(script);
+        SelectedScript = Scripts.FirstOrDefault();
+
+        RefreshCommunicatedVariableScriptOptions();
+        NotifyHasChangesChanged();
+    }
+
+    private string CreateUniqueScriptFileName()
+    {
+        const string baseName = "script";
+        const string extension = ".py";
+
+        var existingNames = Scripts
+            .Select(script => script.FileName)
+            .Concat(scripts.Select(script => script.FileName))
+            .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var fileName = $"{baseName}{extension}";
+        var index = 1;
+        while (existingNames.Contains(fileName))
+        {
+            fileName = $"{baseName}_{index}{extension}";
+            index++;
+        }
+
+        return fileName;
+    }
+
+    private void ClearRemovedScriptReferences(ProjectConfigurationScriptWrapper removedScript)
+    {
+        foreach (var communicatedVariable in CommunicatedVariables)
+        {
+            if (IsRemovedScriptReference(communicatedVariable.SelectedScriptFileName, removedScript))
+            {
+                communicatedVariable.SelectedScriptFileName = string.Empty;
+                communicatedVariable.ScriptAdditionalInfo = string.Empty;
+            }
+        }
+    }
+
+    private static bool IsRemovedScriptReference(string scriptFileName, ProjectConfigurationScriptWrapper removedScript)
+    {
+        return string.Equals(scriptFileName, removedScript.FileName, StringComparison.OrdinalIgnoreCase)
+               || string.Equals(scriptFileName, removedScript.OriginalFileName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RemoveScriptTriggers(ProjectConfigurationScriptWrapper removedScript)
+    {
+        foreach (var trigger in onValueChangedScriptTriggers
+                     .Where(trigger => IsRemovedScriptReference(trigger.ScriptFileName, removedScript))
+                     .ToList())
+        {
+            onValueChangedScriptTriggers.Remove(trigger);
+        }
     }
 
     private void AddVariableToSource()
@@ -496,12 +654,17 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             return;
         }
 
+        RefreshCommunicatedVariableScriptOptions();
+
+        NotifyHasChangesChanged();
+    }
+
+    private void RefreshCommunicatedVariableScriptOptions()
+    {
         foreach (var communicatedVariable in CommunicatedVariables)
         {
             communicatedVariable.RefreshScriptOptions();
         }
-
-        NotifyHasChangesChanged();
     }
 
     private void OnVariablePropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -528,6 +691,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     {
         OnPropertyChanged(nameof(HasChanges));
         ApplyCommand.OnCanExecuteChanged();
+        RemoveScriptCommand.OnCanExecuteChanged();
     }
 
     private sealed record RemovedCommunicatedVariable(
