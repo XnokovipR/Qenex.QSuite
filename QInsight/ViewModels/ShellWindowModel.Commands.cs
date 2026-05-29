@@ -325,9 +325,9 @@ public partial class ShellWindowModel
             Owner = Application.Current.MainWindow,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Header = "Project Configuration",
-            Width = 900,
+            Width = 950,
             Height = 600,
-            MinWidth = 700,
+            MinWidth = 600,
             MinHeight = 450,
             ResizeMode = ResizeMode.CanResize,
             Content = projectConfigurationView
