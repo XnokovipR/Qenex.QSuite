@@ -15,11 +15,12 @@
         <Style x:Key="ProjectConfigurationPageStyle" TargetType="Grid">
             <Setter Property="Visibility" Value="Collapsed"/>
         </Style>
+        <Style TargetType="{x:Type q:QTextBox}" BasedOn="{StaticResource {x:Type TextBox}}"/>
     </UserControl.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="190"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -37,7 +38,7 @@
                 SelectedItem="{Binding SelectedNavigationItem, Mode=TwoWay}">
                 <telerik:RadListBox.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock
+                        <q:QTextBlock
                             Margin="8,6"
                             VerticalAlignment="Center"
                             Text="{Binding Label}"/>
@@ -89,7 +90,7 @@
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock
+                                    <q:QTextBlock
                                         VerticalAlignment="Center"
                                         Text="{Binding Label}"
                                         ToolTip="{Binding ToolTip}"/>
@@ -125,6 +126,7 @@
                 <Grid Grid.Column="0" Grid.RowSpan="2">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="2*"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="3*"/>
@@ -135,19 +137,24 @@
                         Margin="0,0,0,6"
                         FontWeight="SemiBold"
                         Text="Variables"/>
-                    <telerik:RadListBox
+                    <Border
                         Grid.Row="1"
+                        Height="{Binding ActualHeight, ElementName=SourceProtocolCombo}"
+                        Margin="0,0,0,8"
+                        Visibility="Hidden"/>
+                    <telerik:RadListBox
+                        Grid.Row="2"
                         ItemsSource="{Binding Variables}"
                         SelectedItem="{Binding SelectedVariable, Mode=TwoWay}"
                         DisplayMemberPath="DisplayName"/>
 
                     <q:QTextBlock
-                        Grid.Row="2"
+                        Grid.Row="3"
                         Margin="0,8,0,6"
                         FontWeight="SemiBold"
                         Text="Variable detail"/>
                     <ScrollViewer
-                        Grid.Row="3"
+                        Grid.Row="4"
                         VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding SelectedVariable.Properties}">
                             <ItemsControl.ItemTemplate>
@@ -191,28 +198,41 @@
 
                 <Grid
                     Grid.Column="1"
-                    Grid.Row="1"
+                    Grid.RowSpan="2"
                     Margin="8,0">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="2*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="3*"/>
                     </Grid.RowDefinitions>
 
-                    <telerik:RadButton
-                        Grid.Row="1"
-                        Width="34"
-                        Height="28"
+                    <Border
+                        Grid.Row="0"
+                        Height="{Binding ActualHeight, ElementName=SourceProtocolLabel}"
                         Margin="0,0,0,6"
-                        Command="{Binding AddVariableToSourceCommand}"
-                        Content=">"/>
-                    <telerik:RadButton
+                        Visibility="Hidden"/>
+                    <Border
+                        Grid.Row="1"
+                        Height="{Binding ActualHeight, ElementName=SourceProtocolCombo}"
+                        Margin="0,0,0,8"
+                        Visibility="Hidden"/>
+                    <StackPanel
                         Grid.Row="2"
-                        Width="34"
-                        Height="28"
-                        Command="{Binding RemoveCommunicatedVariableCommand}"
-                        Content="&lt;"/>
+                        VerticalAlignment="Center">
+                        <telerik:RadButton
+                            Width="34"
+                            Height="28"
+                            Margin="0,0,0,6"
+                            Command="{Binding AddVariableToSourceCommand}"
+                            Content=">"/>
+                        <telerik:RadButton
+                            Width="34"
+                            Height="28"
+                            Command="{Binding RemoveCommunicatedVariableCommand}"
+                            Content="&lt;"/>
+                    </StackPanel>
                 </Grid>
 
                 <Grid Grid.Column="2" Grid.RowSpan="2">
@@ -225,11 +245,13 @@
                     </Grid.RowDefinitions>
 
                     <q:QTextBlock
+                        x:Name="SourceProtocolLabel"
                         Grid.Row="0"
                         Margin="0,0,0,6"
                         FontWeight="SemiBold"
                         Text="Source protocol"/>
                     <telerik:RadComboBox
+                        x:Name="SourceProtocolCombo"
                         Grid.Row="1"
                         Margin="0,0,0,8"
                         ItemsSource="{Binding SourceOptions}"
@@ -468,14 +490,14 @@
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBox
+                                    <q:QTextBox
                                         VerticalAlignment="Center"
                                         Text="{Binding FileName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                 </DataTemplate>
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>
                         <telerik:GridViewDataColumn
-                            Width="60"
+                            Width="34"
                             Header="Runtime"
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>
@@ -488,7 +510,7 @@
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>
                         <telerik:GridViewDataColumn
-                            Width="50"  
+                            Width="34"
                             Header="Replay"
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>
@@ -514,7 +536,7 @@
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>
                         <telerik:GridViewDataColumn
-                            Width="60"
+                            Width="34"
                             Header="Blocking"
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>
@@ -532,7 +554,7 @@
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBox
+                                    <q:QTextBox
                                         VerticalAlignment="Center"
                                         Text="{Binding TimeoutMs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                 </DataTemplate>
@@ -544,7 +566,7 @@
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBox
+                                    <q:QTextBox
                                         VerticalAlignment="Center"
                                         Text="{Binding AdditionalInfo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                 </DataTemplate>

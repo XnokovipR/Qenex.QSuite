@@ -87,6 +87,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         CancelCommand = new RelayCommand<object>(_ => Cancel());
         AddVariableToSourceCommand = new RelayCommand<object>(_ => AddVariableToSource(), _ => CanAddVariableToSource());
         RemoveCommunicatedVariableCommand = new RelayCommand<object>(_ => RemoveCommunicatedVariable(), _ => SelectedCommunicatedVariable != null);
+        EnsureInitialVariableSelections();
         SelectedNavigationItem = NavigationItems[0];
     }
 
@@ -184,6 +185,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             field = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(SelectedSection));
+            if (field.Section == ProjectConfigurationSection.Variables)
+            {
+                EnsureInitialVariableSelections();
+            }
         }
     }
 
@@ -192,6 +197,16 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public void SelectSection(ProjectConfigurationSection section)
     {
         SelectedNavigationItem = NavigationItems.First(item => item.Section == section);
+    }
+
+    private void EnsureInitialVariableSelections()
+    {
+        SelectedVariable ??= Variables.FirstOrDefault();
+        SelectedSourceOption ??= SourceOptions.FirstOrDefault();
+        SelectedCommunicatedVariable ??= SelectedSourceOption == null
+            ? CommunicatedVariables.FirstOrDefault()
+            : CommunicatedVariables.FirstOrDefault(variable => variable.SelectedSource == SelectedSourceOption)
+              ?? CommunicatedVariables.FirstOrDefault();
     }
 
     public void SetParentWindow(RadWindow window)
