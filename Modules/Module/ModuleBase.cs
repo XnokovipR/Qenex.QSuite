@@ -293,7 +293,10 @@ public abstract class ModuleBase : IModuleBase
     {
         UnsubscribeOnValueChangedScriptTriggers();
 
-        foreach (var protocolVariable in Drivers.SelectMany(driver => driver.Protocols).SelectMany(protocol => protocol.Variables))
+        foreach (var protocolVariable in Drivers
+                     .SelectMany(driver => driver.Protocols)
+                     .SelectMany(protocol => protocol.Variables)
+                     .Where(protocolVariable => protocolVariable.IsCommunicated))
         {
             if (!Scripting.HasOnValueChangedScriptTriggers(protocolVariable.Variable.Id))
             {
@@ -327,6 +330,7 @@ public abstract class ModuleBase : IModuleBase
         var sourceProtocolVariables = sourceDrivers
             .SelectMany(driver => driver.Protocols)
             .SelectMany(protocol => protocol.Variables)
+            .Where(protocolVariable => protocolVariable.IsCommunicated)
             .ToList();
 
         foreach (var sinkDriver in sinkDrivers.OfType<IProtocolVariableSinkDriver>())

@@ -4,7 +4,9 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
              xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
+             xmlns:wrappers="clr-namespace:Qenex.QInsight.ViewModels.ModelWrappers"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance vm:ProjectConfigurationViewModel, IsDesignTimeCreatable=True}"
              d:DesignHeight="520"
@@ -98,7 +100,7 @@
                 </telerik:RadGridView>
             </Grid>
 
-            <Grid>
+            <Grid Margin="8">
                 <Grid.Style>
                     <Style TargetType="Grid" BasedOn="{StaticResource ProjectConfigurationPageStyle}">
                         <Style.Triggers>
@@ -108,6 +110,311 @@
                         </Style.Triggers>
                     </Style>
                 </Grid.Style>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="3*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Column="0" Grid.RowSpan="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="2*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="3*"/>
+                    </Grid.RowDefinitions>
+
+                    <q:QTextBlock
+                        Grid.Row="0"
+                        Margin="0,0,0,6"
+                        FontWeight="SemiBold"
+                        Text="Variables"/>
+                    <telerik:RadListBox
+                        Grid.Row="1"
+                        ItemsSource="{Binding Variables}"
+                        SelectedItem="{Binding SelectedVariable, Mode=TwoWay}"
+                        DisplayMemberPath="DisplayName"/>
+
+                    <q:QTextBlock
+                        Grid.Row="2"
+                        Margin="0,8,0,6"
+                        FontWeight="SemiBold"
+                        Text="Variable detail"/>
+                    <ScrollViewer
+                        Grid.Row="3"
+                        VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding SelectedVariable.Properties}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type wrappers:EditablePropertyWrapper}">
+                                    <Grid Margin="0,0,0,5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="130"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <q:QTextBlock
+                                            Grid.Column="0"
+                                            Margin="0,0,10,0"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding Name}"/>
+
+                                        <Grid Grid.Column="1">
+                                            <q:QTextBox
+                                                x:Name="ValueTextBox"
+                                                Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                ToolTip="{Binding Error}"/>
+                                            <telerik:RadComboBox
+                                                x:Name="ValueComboBox"
+                                                Visibility="Collapsed"
+                                                ItemsSource="{Binding Options}"
+                                                SelectedItem="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                ToolTip="{Binding Error}"/>
+                                        </Grid>
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding HasOptions}" Value="True">
+                                            <Setter TargetName="ValueTextBox" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="ValueComboBox" Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+
+                <Grid
+                    Grid.Column="1"
+                    Grid.Row="1"
+                    Margin="8,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <telerik:RadButton
+                        Grid.Row="1"
+                        Width="34"
+                        Height="28"
+                        Margin="0,0,0,6"
+                        Command="{Binding AddVariableToSourceCommand}"
+                        Content=">"/>
+                    <telerik:RadButton
+                        Grid.Row="2"
+                        Width="34"
+                        Height="28"
+                        Command="{Binding RemoveCommunicatedVariableCommand}"
+                        Content="&lt;"/>
+                </Grid>
+
+                <Grid Grid.Column="2" Grid.RowSpan="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="2*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="3*"/>
+                    </Grid.RowDefinitions>
+
+                    <q:QTextBlock
+                        Grid.Row="0"
+                        Margin="0,0,0,6"
+                        FontWeight="SemiBold"
+                        Text="Source protocol"/>
+                    <telerik:RadComboBox
+                        Grid.Row="1"
+                        Margin="0,0,0,8"
+                        ItemsSource="{Binding SourceOptions}"
+                        SelectedItem="{Binding SelectedSourceOption, Mode=TwoWay}"
+                        DisplayMemberPath="DisplayName"/>
+
+                    <telerik:RadListBox
+                        Grid.Row="2"
+                        ItemsSource="{Binding CommunicatedVariables}"
+                        SelectedItem="{Binding SelectedCommunicatedVariable, Mode=TwoWay}">
+                        <telerik:RadListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type wrappers:ProjectConfigurationProtocolVariableWrapper}">
+                                <Grid Margin="4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <q:QTextBlock
+                                        Grid.Column="0"
+                                        Text="{Binding DisplayName}"/>
+                                    <q:QTextBlock
+                                        Grid.Column="1"
+                                        Margin="12,0,0,0"
+                                        Text="{Binding SourceText}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </telerik:RadListBox.ItemTemplate>
+                    </telerik:RadListBox>
+
+                    <q:QTextBlock
+                        Grid.Row="3"
+                        Margin="0,8,0,6"
+                        FontWeight="SemiBold"
+                        Text="Communication detail"/>
+                    <Grid Grid.Row="4">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="135"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <q:QTextBlock
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Margin="0,0,10,6"
+                            VerticalAlignment="Center"
+                            Text="Source"/>
+                        <telerik:RadComboBox
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Margin="0,0,0,6"
+                            ItemsSource="{Binding SelectedCommunicatedVariable.SourceOptions}"
+                            SelectedItem="{Binding SelectedCommunicatedVariable.SelectedSource, Mode=TwoWay}"
+                            DisplayMemberPath="DisplayName"/>
+
+                        <q:QTextBlock
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="0,0,10,6"
+                            VerticalAlignment="Center"
+                            Text="Event"/>
+                        <telerik:RadComboBox
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Margin="0,0,0,6"
+                            ItemsSource="{Binding SelectedCommunicatedVariable.VariableEventOptions}"
+                            SelectedItem="{Binding SelectedCommunicatedVariable.SelectedVariableEventName, Mode=TwoWay}"/>
+
+                        <q:QTextBlock
+                            Grid.Row="2"
+                            Grid.Column="0"
+                            Margin="0,0,10,6"
+                            VerticalAlignment="Center"
+                            Text="Direction"/>
+                        <telerik:RadComboBox
+                            Grid.Row="2"
+                            Grid.Column="1"
+                            Margin="0,0,0,6"
+                            ItemsSource="{Binding SelectedCommunicatedVariable.DirectionOptions}"
+                            SelectedItem="{Binding SelectedCommunicatedVariable.SelectedDirection, Mode=TwoWay}"/>
+
+                        <q:QTextBlock
+                            Grid.Row="3"
+                            Grid.Column="0"
+                            Margin="0,0,10,6"
+                            VerticalAlignment="Center"
+                            Text="Multiplier"/>
+                        <q:QTextBox
+                            Grid.Row="3"
+                            Grid.Column="1"
+                            Margin="0,0,0,6"
+                            Text="{Binding SelectedCommunicatedVariable.Multiplier, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+
+                        <q:QTextBlock
+                            Grid.Row="4"
+                            Grid.Column="0"
+                            Margin="0,0,10,6"
+                            VerticalAlignment="Center"
+                            Text="Id"/>
+                        <q:QTextBox
+                            Grid.Row="4"
+                            Grid.Column="1"
+                            Margin="0,0,0,6"
+                            Text="{Binding SelectedCommunicatedVariable.CommunicationId, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+
+                        <q:QTextBlock
+                            Grid.Row="5"
+                            Grid.Column="0"
+                            Margin="0,0,10,6"
+                            VerticalAlignment="Center"
+                            Text="Comm params"/>
+                        <q:QTextBox
+                            Grid.Row="5"
+                            Grid.Column="1"
+                            Margin="0,0,0,6"
+                            Text="{Binding SelectedCommunicatedVariable.CommParam, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+
+                        <q:QTextBlock
+                            Grid.Row="6"
+                            Grid.Column="0"
+                            Margin="0,0,10,6"
+                            VerticalAlignment="Center"
+                            Text="Script"/>
+                        <telerik:RadComboBox
+                            Grid.Row="6"
+                            Grid.Column="1"
+                            Margin="0,0,0,6"
+                            ItemsSource="{Binding SelectedCommunicatedVariable.ScriptOptions}"
+                            SelectedItem="{Binding SelectedCommunicatedVariable.SelectedScriptFileName, Mode=TwoWay}"/>
+
+                        <q:QTextBlock
+                            Grid.Row="7"
+                            Grid.Column="0"
+                            Margin="0,0,10,6"
+                            VerticalAlignment="Center"
+                            Text="Script params"/>
+                        <q:QTextBox
+                            Grid.Row="7"
+                            Grid.Column="1"
+                            Margin="0,0,0,6"
+                            Text="{Binding SelectedCommunicatedVariable.ScriptAdditionalInfo, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+
+                        <CheckBox
+                            Grid.Row="8"
+                            Grid.Column="1"
+                            Margin="0,0,0,6"
+                            Content="Communicated"
+                            IsChecked="{Binding SelectedCommunicatedVariable.IsCommunicated, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        <CheckBox
+                            Grid.Row="9"
+                            Grid.Column="1"
+                            Margin="0,0,0,6"
+                            Content="Log to FileDataLogger"
+                            IsChecked="{Binding SelectedCommunicatedVariable.IsFileLogEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                        <q:QTextBlock
+                            Grid.Row="10"
+                            Grid.ColumnSpan="2"
+                            Foreground="Tomato"
+                            Text="{Binding ErrorMessage}">
+                            <q:QTextBlock.Style>
+                                <Style TargetType="{x:Type q:QTextBlock}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasError}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </q:QTextBlock.Style>
+                        </q:QTextBlock>
+                    </Grid>
+                </Grid>
             </Grid>
 
             <Grid>

@@ -132,6 +132,14 @@ public class VariablePropertiesViewModel : PropertyChangedBaseWithValidation, IP
         }
     }
 
+    public void RefreshProperties()
+    {
+        foreach (var property in Properties)
+        {
+            property.RefreshValue();
+        }
+    }
+
     private void SetVariableValue(string value)
     {
         var currentValue = variable.GetValue();

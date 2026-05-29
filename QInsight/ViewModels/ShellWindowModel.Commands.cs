@@ -310,6 +310,10 @@ public partial class ShellWindowModel
         var projectConfigurationViewModel = new ProjectConfigurationViewModel(
             eventAggregator,
             realProjectData.Module.Drivers,
+            realProjectData.Module.Variables,
+            realProjectData.Module.Presentations,
+            realProjectData.Module.VarEvents,
+            realProjectData.Module.Scripting.OnValueChangedScriptTriggers,
             realProjectData.Module.Scripting.Scripts);
         projectConfigurationViewModel.SelectSection(selectedSection);
 
@@ -324,7 +328,7 @@ public partial class ShellWindowModel
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Header = "Project Configuration",
             Width = 950,
-            Height = 600,
+            Height = 750,
             MinWidth = 600,
             MinHeight = 450,
             ResizeMode = ResizeMode.CanResize,
@@ -1352,6 +1356,18 @@ public partial class ShellWindowModel
     {
         RefreshCommunicatedDriversProperties();
         RefreshScriptProperties();
+        RebindWorkspaceControlVariables(GetProjectProtocolVariables());
+        solutionExplorerViewModel.ReloadProjectData(realProjectData, preserveWorkspaces: true);
+
+        switch (propertiesViewModel.SelectedViewModel)
+        {
+            case VariablePropertiesViewModel variablePropertiesViewModel:
+                variablePropertiesViewModel.RefreshProperties();
+                break;
+            case ReadOnlyVariablePropertiesViewModel readOnlyVariablePropertiesViewModel:
+                readOnlyVariablePropertiesViewModel.RefreshProperties();
+                break;
+        }
     }
 
     private void RefreshScriptProperties()

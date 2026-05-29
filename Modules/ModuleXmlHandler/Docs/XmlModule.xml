@@ -38,7 +38,7 @@
     </driverReference>
     <driverReference ref="FileDataLoggerDriver" label="File data logger">
       <isEnabled>true</isEnabled>
-      <settings>file=DataLogs;append=false;flushOnWrite=false</settings>
+      <settings>file=DataLogs;append=true;flushOnWrite=false</settings>
       <encryptedSettings />
       <protocolReferences>
         <protocolReference ref="One2OneProtocol">
@@ -47,28 +47,28 @@
           <encryptedSettings />
           <variableReferences>
             <variableReference ref="1" isCommunicated="true">
-              <commParam>commParams="commParams="""</commParam>
+              <commParam>commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams=""""""""""""""""""""""""""""</commParam>
               <script ref="valuechanged_oiltemp.py" additionalInfo="threshold=700.0" />
             </variableReference>
             <variableReference ref="2" isCommunicated="true">
-              <commParam>commParams="commParams="""</commParam>
+              <commParam>commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams=""""""""""""""""""""""""""""</commParam>
             </variableReference>
             <variableReference ref="3" isCommunicated="true">
-              <commParam>commParams="commParams="""</commParam>
+              <commParam>commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams=""""""""""""""""""""""""""""</commParam>
             </variableReference>
             <variableReference ref="5" isCommunicated="true">
-              <commParam>commParams="commParams="""</commParam>
+              <commParam>commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams=""""""""""""""""""""""""""""</commParam>
             </variableReference>
             <variableReference ref="4" isCommunicated="true">
-              <commParam>commParams="commParams="""</commParam>
+              <commParam>commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams=""""""""""""""""""""""""""""</commParam>
             </variableReference>
           </variableReferences>
         </protocolReference>
       </protocolReferences>
     </driverReference>
-    <driverReference ref="FileDataReplayDriver" label="Replay: values.qilog">
+    <driverReference ref="FileDataReplayDriver" label="Replay: QSuite-Project_20260527_17h49.qilog">
       <isEnabled>false</isEnabled>
-      <settings>file=D:\Projects\Qenex\Source\Qenex.QSuite\QInsight\bin\Debug\net10.0-windows\DataLogs\values.qilog;mode=realtime;speed=1;loop=false</settings>
+      <settings>file=D:\Projects\Qenex\Source\Qenex.QSuite\QInsight\bin\Debug\net10.0-windows\DataLogs\QSuite-Project_20260527_17h49.qilog;mode=realtime;speed=1;loop=false</settings>
       <encryptedSettings />
       <protocolReferences>
         <protocolReference ref="DataLogReplayProtocol">
@@ -77,20 +77,20 @@
           <encryptedSettings />
           <variableReferences>
             <variableReference ref="1" isCommunicated="true">
-              <commParam>commParams=""</commParam>
+              <commParam>commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="""""""""""""""""""</commParam>
               <script ref="valuechanged_oiltemp.py" additionalInfo="threshold=700.0" />
             </variableReference>
             <variableReference ref="2" isCommunicated="true">
-              <commParam>commParams=""</commParam>
+              <commParam>commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="""""""""""""""""""</commParam>
             </variableReference>
             <variableReference ref="3" isCommunicated="true">
-              <commParam>commParams=""</commParam>
+              <commParam>commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="""""""""""""""""""</commParam>
             </variableReference>
             <variableReference ref="4" isCommunicated="true">
-              <commParam>commParams=""</commParam>
+              <commParam>commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="""""""""""""""""""</commParam>
             </variableReference>
             <variableReference ref="5" isCommunicated="true">
-              <commParam>commParams=""</commParam>
+              <commParam>commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="commParams="""""""""""""""""""</commParam>
             </variableReference>
           </variableReferences>
         </protocolReference>
@@ -181,7 +181,7 @@
   <scripts>
     <script fileName="startup.py" content="" executionMode="Startup" blocking="false" timeout="5000" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
     <script fileName="shutdown.py" content="" executionMode="Shutdown" blocking="true" timeout="0" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
-    <script fileName="periodic.py" content="" executionMode="Periodic" blocking="true" timeout="5000" additionalInfo="period=2;unit=s" isEnabled="true" isReplayEnabled="false" />
+    <script fileName="periodic.py" content="" executionMode="Periodic" blocking="true" timeout="5000" additionalInfo="period=2;unit=s" isEnabled="false" isReplayEnabled="false" />
     <script fileName="valuechanged_oiltemp.py" content="" executionMode="OnValueChanged" blocking="true" timeout="0" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
   </scripts>
 </module>

@@ -77,4 +77,9 @@ public class EditablePropertyWrapper(
         OnPropertyChanged(nameof(IsReadOnly));
         OnPropertyChanged(nameof(IsEditable));
     }
+
+    public void RefreshValue()
+    {
+        OnPropertyChanged(nameof(ValueText));
+    }
 }

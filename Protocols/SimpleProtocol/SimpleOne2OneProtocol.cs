@@ -175,7 +175,8 @@ public class SimpleOne2OneProtocol : ProtocolBase<int>
         var period = periods[0] as int? ?? 0;
         var rnd = new Random();
         var vars = Variables
-            .Where(v => v.ProtocolVariableSpecification is SimpleProtVariableSpecification).Cast<SimpleOne2OneProtocolVariable>();
+            .Where(v => v.IsCommunicated && v.ProtocolVariableSpecification is SimpleProtVariableSpecification)
+            .Cast<SimpleOne2OneProtocolVariable>();
                     
         foreach (var simpleProtVariable in vars)
         {

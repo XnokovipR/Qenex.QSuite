@@ -28,15 +28,19 @@ public class SimpleProtVariableSpecification : ProtVariableSpecification
             
         // Multiplier
         var multiplierStr = comParameters.FirstOrDefault(e => e.Contains("multiplier"))?.Split('=')[1].Trim('"');
-        var multiplier = int.Parse(multiplierStr!);
+        var multiplier = string.IsNullOrWhiteSpace(multiplierStr)
+            ? 1
+            : int.Parse(multiplierStr);
             
         // Direction
         var directionStr = comParameters.FirstOrDefault(e => e.Contains("direction"))?.Split('=')[1].Trim('"');
-        directionStr = char.ToUpper(directionStr![0]) + directionStr.Substring(1);
+        directionStr = string.IsNullOrWhiteSpace(directionStr)
+            ? CommDirection.Read.ToString()
+            : char.ToUpper(directionStr[0]) + directionStr.Substring(1);
         var direction = Enum.Parse<CommDirection>(directionStr);
             
         // Id
-        var id = comParameters.FirstOrDefault(e => e.Contains("id"))?.Split('=')[1].Trim('"');
+        var id = comParameters.FirstOrDefault(e => e.Contains("id"))?.Split('=')[1].Trim('"') ?? string.Empty;
         
         var spec = new SimpleProtVariableSpecification() 
         {
