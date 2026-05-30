@@ -113,6 +113,11 @@
 								SmallImage="../Icons/SolutionExplorer/Variables.png"
 								Command="{Binding RibbonProjectConfigurationVariablesCommand}"/>
 							<telerik:RadRibbonButton
+								Text="Conversions"
+								Size="Large"
+								SmallImage="../Icons/SolutionExplorer/Presentations.png"
+								Command="{Binding RibbonProjectConfigurationConversionsCommand}"/>
+							<telerik:RadRibbonButton
 								Text="Presentations"
 								Size="Large"
 								SmallImage="../Icons/SolutionExplorer/Presentations.png"

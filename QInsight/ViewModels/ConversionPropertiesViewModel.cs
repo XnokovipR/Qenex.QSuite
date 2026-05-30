@@ -97,6 +97,26 @@ public class ConversionPropertiesViewModel : PropertyChangedBaseWithValidation, 
         {
             property.RefreshValue();
         }
+
+        RefreshEnumValues();
+    }
+
+    private void RefreshEnumValues()
+    {
+        EnumValues.Clear();
+
+        if (conversion is not EnumValConversion enumConversion)
+        {
+            return;
+        }
+
+        foreach (var enumValue in enumConversion.Enums)
+        {
+            EnumValues.Add(new EnumConversionValueWrapper(
+                enumValue,
+                refreshSource,
+                IsPropertyReadOnly));
+        }
     }
 
     private static T Parse<T>(string value)

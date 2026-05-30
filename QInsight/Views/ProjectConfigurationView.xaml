@@ -440,6 +440,191 @@
                 </Grid>
             </Grid>
 
+            <Grid Margin="8">
+                <Grid.Style>
+                    <Style TargetType="Grid" BasedOn="{StaticResource ProjectConfigurationPageStyle}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedSection}" Value="{x:Static vm:ProjectConfigurationSection.Conversions}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="3*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Margin="0,0,8,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <q:QTextBlock
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        Text="Conversions"/>
+                    <StackPanel
+                        Grid.Column="1"
+                        Orientation="Horizontal">
+                        <telerik:RadButton
+                            Width="34"
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Command="{Binding AddConversionCommand}"
+                            Content="+"/>
+                        <telerik:RadButton
+                            Width="34"
+                            Height="28"
+                            Command="{Binding RemoveConversionCommand}"
+                            Content="-"/>
+                    </StackPanel>
+                </Grid>
+                <q:QTextBlock
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="8,0,0,6"
+                    FontWeight="SemiBold"
+                    Text="Conversion detail"/>
+
+                <telerik:RadListBox
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Margin="0,0,8,0"
+                    ItemsSource="{Binding Conversions}"
+                    SelectedItem="{Binding SelectedConversion, Mode=TwoWay}"
+                    DisplayMemberPath="DisplayName"/>
+
+                <ScrollViewer
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Margin="8,0,0,0"
+                    VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding SelectedConversion.Properties}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type wrappers:EditablePropertyWrapper}">
+                                    <Grid Margin="0,0,0,5">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="130"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <q:QTextBlock
+                                            Grid.Column="0"
+                                            Margin="0,0,10,0"
+                                            VerticalAlignment="Center"
+                                            Text="{Binding Name}"/>
+
+                                        <Grid Grid.Column="1">
+                                            <q:QTextBox
+                                                x:Name="ValueTextBox"
+                                                Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                IsReadOnly="{Binding IsReadOnly}"
+                                                ToolTip="{Binding Error}"/>
+                                            <telerik:RadComboBox
+                                                x:Name="ValueComboBox"
+                                                Visibility="Collapsed"
+                                                ItemsSource="{Binding Options}"
+                                                IsEnabled="{Binding IsEditable}"
+                                                SelectedItem="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                ToolTip="{Binding Error}"/>
+                                        </Grid>
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding HasOptions}" Value="True">
+                                            <Setter TargetName="ValueTextBox" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="ValueComboBox" Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <StackPanel Margin="0,6,0,0">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedConversion.IsEnumConversion}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+
+                            <Grid Margin="130,0,0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <q:QTextBlock
+                                    Grid.Column="0"
+                                    Margin="0,0,10,0"
+                                    FontWeight="SemiBold"
+                                    Text="Name"/>
+                                <q:QTextBlock
+                                    Grid.Column="1"
+                                    FontWeight="SemiBold"
+                                    Text="Value"/>
+                                <telerik:RadButton
+                                    Grid.Column="2"
+                                    Width="34"
+                                    Height="28"
+                                    Margin="10,0,6,0"
+                                    Command="{Binding SelectedConversion.AddEnumValueCommand}"
+                                    Content="+"/>
+                                <telerik:RadButton
+                                    Grid.Column="3"
+                                    Width="34"
+                                    Height="28"
+                                    Command="{Binding SelectedConversion.RemoveEnumValueCommand}"
+                                    Content="-"/>
+                            </Grid>
+
+                            <telerik:RadListBox
+                                Margin="130,0,0,0"
+                                ItemsSource="{Binding SelectedConversion.EnumValues}"
+                                SelectedItem="{Binding SelectedConversion.SelectedEnumValue, Mode=TwoWay}">
+                                <telerik:RadListBox.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type wrappers:ProjectConfigurationEnumConversionValueWrapper}">
+                                        <Grid Margin="0,0,0,5">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="80"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <q:QTextBox
+                                                Grid.Column="0"
+                                                Margin="0,0,10,0"
+                                                Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                ToolTip="{Binding Error}"/>
+                                            <q:QTextBox
+                                                Grid.Column="1"
+                                                Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                ToolTip="{Binding Error}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </telerik:RadListBox.ItemTemplate>
+                            </telerik:RadListBox>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
             <Grid>
                 <Grid.Style>
                     <Style TargetType="Grid" BasedOn="{StaticResource ProjectConfigurationPageStyle}">

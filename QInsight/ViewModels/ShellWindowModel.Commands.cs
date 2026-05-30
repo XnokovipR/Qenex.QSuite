@@ -81,6 +81,7 @@ public partial class ShellWindowModel
     public RelayCommand<RadDocking> RibbonRemoveWorkspaceCommand { get; set; }
     public RelayCommand<object> RibbonProjectConfigurationDriversCommand { get; set; }
     public RelayCommand<object> RibbonProjectConfigurationVariablesCommand { get; set; }
+    public RelayCommand<object> RibbonProjectConfigurationConversionsCommand { get; set; }
     public RelayCommand<object> RibbonProjectConfigurationPresentationsCommand { get; set; }
     public RelayCommand<object> RibbonProjectConfigurationEventsCommand { get; set; }
     public RelayCommand<object> RibbonProjectConfigurationScriptsCommand { get; set; }
@@ -122,6 +123,9 @@ public partial class ShellWindowModel
             _ => CanUseProjectCommand());
         RibbonProjectConfigurationVariablesCommand = new RelayCommand<object>(
             _ => OpenProjectConfiguration(ProjectConfigurationSection.Variables),
+            _ => CanUseProjectCommand());
+        RibbonProjectConfigurationConversionsCommand = new RelayCommand<object>(
+            _ => OpenProjectConfiguration(ProjectConfigurationSection.Conversions),
             _ => CanUseProjectCommand());
         RibbonProjectConfigurationPresentationsCommand = new RelayCommand<object>(
             _ => OpenProjectConfiguration(ProjectConfigurationSection.Presentations),
@@ -311,6 +315,7 @@ public partial class ShellWindowModel
             eventAggregator,
             realProjectData.Module.Drivers,
             realProjectData.Module.Variables,
+            realProjectData.Module.Conversions,
             realProjectData.Module.Presentations,
             realProjectData.Module.VarEvents,
             realProjectData.Module.Scripting.OnValueChangedScriptTriggers,
@@ -1642,6 +1647,7 @@ public partial class ShellWindowModel
         RibbonRemoveWorkspaceCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationDriversCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationVariablesCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationConversionsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationPresentationsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationEventsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationScriptsCommand.OnCanExecuteChanged();
@@ -1671,6 +1677,7 @@ public partial class ShellWindowModel
         RibbonRemoveWorkspaceCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationDriversCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationVariablesCommand.OnCanExecuteChanged();
+        RibbonProjectConfigurationConversionsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationPresentationsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationEventsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationScriptsCommand.OnCanExecuteChanged();
