@@ -38,6 +38,12 @@ public class PresentationSeWrapper : PropertyChangedBase, IViewableItem
     public Dictionary<string, object>? CustomTags { get; set; } = new();
 
     #endregion
+
+    public void Refresh()
+    {
+        OnPropertyChanged(nameof(Label));
+        OnPropertyChanged(nameof(ToolTip));
+    }
     
     private string GetToolTip()
     {

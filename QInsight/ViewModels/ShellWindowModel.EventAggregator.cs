@@ -15,6 +15,7 @@ using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValueConversion;
+using Qenex.QSuite.Variables.ValuePresentation;
 using Telerik.Windows.Controls;
 
 namespace Qenex.QInsight.ViewModels;
@@ -86,6 +87,15 @@ public partial class ShellWindowModel
                     () => isEditConversionEnabled);
                 break;
             }
+            case PresentationSeWrapper presentationSeWrapper:
+            {
+                propVm.SelectedViewModel = new PresentationPropertiesViewModel(
+                    eventAggregator,
+                    presentationSeWrapper,
+                    realProjectData.Module.Conversions,
+                    () => isEditPresentationEnabled);
+                break;
+            }
             case ProtocolVariableWrapper protocolVariableWrapper:
             {
                 propVm.SelectedViewModel = new ReadOnlyVariablePropertiesViewModel(
@@ -139,6 +149,24 @@ public partial class ShellWindowModel
                         if (propertiesViewModel.SelectedViewModel is ConversionPropertiesViewModel conversionPropertiesViewModel)
                         {
                             conversionPropertiesViewModel.RefreshReadOnly();
+                        }
+                    });
+                break;
+            }
+            case NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Presentations } nodeWrapper
+                when nodeWrapper.CustomTags?.TryGetValue("Presentations", out var presentations) == true
+                     && presentations is IList<IPresentation> modulePresentations:
+            {
+                propVm.SelectedViewModel = new PresentationsPropertiesViewModel(
+                    eventAggregator,
+                    modulePresentations,
+                    () => isEditPresentationEnabled,
+                    value =>
+                    {
+                        isEditPresentationEnabled = value;
+                        if (propertiesViewModel.SelectedViewModel is PresentationPropertiesViewModel presentationPropertiesViewModel)
+                        {
+                            presentationPropertiesViewModel.RefreshReadOnly();
                         }
                     });
                 break;

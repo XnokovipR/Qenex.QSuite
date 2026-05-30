@@ -371,6 +371,7 @@ public partial class ShellWindowModel
             await CloseProjectWorkspacesAsync();
             isEditVariableEnabled = false;
             isEditConversionEnabled = false;
+            isEditPresentationEnabled = false;
             realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, ShellWindow.MainAppSettings.ScriptEngine, logger);
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
             LoadProjectWorkspaces(projectData.Workspaces);
@@ -541,6 +542,7 @@ public partial class ShellWindowModel
             realProjectData = null!;
             isEditVariableEnabled = false;
             isEditConversionEnabled = false;
+            isEditPresentationEnabled = false;
             currentProjectFilePath = null;
             SetProjectWindowTitle(currentProjectFilePath);
             ChangeIsProjectMade(false);
@@ -1368,6 +1370,12 @@ public partial class ShellWindowModel
                 break;
             case ReadOnlyVariablePropertiesViewModel readOnlyVariablePropertiesViewModel:
                 readOnlyVariablePropertiesViewModel.RefreshProperties();
+                break;
+            case ConversionPropertiesViewModel conversionPropertiesViewModel:
+                conversionPropertiesViewModel.RefreshProperties();
+                break;
+            case PresentationPropertiesViewModel presentationPropertiesViewModel:
+                presentationPropertiesViewModel.RefreshProperties();
                 break;
         }
     }

@@ -224,6 +224,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     {
         // Add presentations node
         var presentationsNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Presentations);
+        presentationsNode.CustomTags!["Presentations"] = presentations;
         children.Add(presentationsNode);
         
         // Add presentations

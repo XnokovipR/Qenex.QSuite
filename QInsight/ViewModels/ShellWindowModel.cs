@@ -39,6 +39,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	private bool isProjectMade;
 	private bool isEditVariableEnabled;
 	private bool isEditConversionEnabled;
+	private bool isEditPresentationEnabled;
 	private string? currentProjectFilePath;
 	private ScriptingContext? pythonInterpreterStandaloneContext;
 
