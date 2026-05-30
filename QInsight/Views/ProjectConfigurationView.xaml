@@ -531,7 +531,7 @@
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>
                         <telerik:GridViewDataColumn
-                            Width="34"
+                            Width="60"
                             Header="Runtime"
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>
@@ -544,7 +544,7 @@
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>
                         <telerik:GridViewDataColumn
-                            Width="34"
+                            Width="50"
                             Header="Replay"
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>
@@ -570,7 +570,7 @@
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>
                         <telerik:GridViewDataColumn
-                            Width="34"
+                            Width="60"
                             Header="Blocking"
                             IsReadOnly="True">
                             <telerik:GridViewDataColumn.CellTemplate>

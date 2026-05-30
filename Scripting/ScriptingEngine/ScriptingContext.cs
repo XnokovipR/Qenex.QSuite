@@ -1,5 +1,6 @@
 ﻿using Python.Runtime;
 using System.Globalization;
+using System.Text;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Scripting.Script;
 using Qenex.QSuite.Variables.QVariables;
@@ -8,13 +9,23 @@ namespace Qenex.QSuite.Scripting.ScriptingEngine;
 
 public class ScriptingContext
 {
+    private const string LastScriptExceptionTextName = "__qenex_script_exception_text";
+    private static readonly TimeSpan StopWaitTimeout = TimeSpan.FromSeconds(5);
     private readonly ILogger? logger;
     private readonly TaskFactory pythonFactory;
     private PythonLogWriter stdoutWriter = null!;
     private PythonLogWriter stderrWriter = null!;
     private CancellationTokenSource? periodicScriptsCts;
     private readonly List<Task> periodicScriptTasks = [];
+    private readonly object executionStateLock = new();
+    private readonly object onValueChangedStateLock = new();
+    private readonly HashSet<IScriptBase> scheduledScripts = [];
+    private readonly HashSet<IScriptBase> interruptedScripts = [];
+    private readonly HashSet<IScriptBase> notifiedInterruptedScripts = [];
     private readonly Dictionary<int, double> lastOnValueChangedValues = [];
+    private CancellationTokenSource activeExecutionCts = new();
+    private bool isStopping;
+    private bool suppressLateExecutionOutput;
     private static readonly object pythonInitLock = new();
     private static bool pythonRuntimeInitialized;
     
@@ -40,6 +51,7 @@ public class ScriptingContext
     public ScriptEngineSettings EngineSettings { get; set; }
     public bool IsReplayMode { get; set; }
     public PyModule? SharedScope { get; internal set; }
+    public bool HasAbandonedExecutions { get; private set; }
     public event EventHandler<ScriptExecutedEventArgs>? ScriptExecuted;
     
     #endregion
@@ -49,6 +61,7 @@ public class ScriptingContext
 
     public async Task InitializeSharedScopeAsync(IList<IVariableBase> variables)
     {
+        ResetStopState();
         await pythonFactory.StartNew(() => InitializeSharedScope(variables));
         await ExecuteScriptsAsync(ScriptExecutionMode.Startup, allowNonBlocking: true);
         StartPeriodicScripts();
@@ -56,6 +69,11 @@ public class ScriptingContext
     
     private void InitializeSharedScope(IList<IVariableBase> variables)
     {
+        if (HasAbandonedExecutions)
+        {
+            throw new InvalidOperationException("Abandoned scripting context cannot be restarted.");
+        }
+
         EnsurePythonRuntimeInitialized();
         VariableBindings.Clear();
         lastOnValueChangedValues.Clear();
@@ -178,11 +196,46 @@ if "__qenex_interactive_console" not in globals():
         }
     }
     
-    public async Task DisposeSharedScopeAsync()
+    public async Task DisposeSharedScopeAsync(CancellationToken ct = default)
     {
+        RequestStop();
         await StopPeriodicScriptsAsync();
-        await ExecuteScriptsAsync(ScriptExecutionMode.Shutdown, allowNonBlocking: false);
-        await pythonFactory.StartNew(DisposeSharedScope);
+        if (!HasAbandonedExecutions)
+        {
+            await ExecuteScriptsAsync(
+                ScriptExecutionMode.Shutdown,
+                allowNonBlocking: false,
+                ct,
+                allowStopCancellation: false,
+                defaultTimeout: StopWaitTimeout);
+        }
+        else
+        {
+            logger?.Log(LogLevel.Warn, "Shutdown scripts skipped because scripting context has abandoned executions.");
+        }
+
+        await RunPythonFactoryActionAsync(DisposeSharedScope, "disposing Python shared scope", StopWaitTimeout, ct);
+    }
+
+    public void RequestStop()
+    {
+        isStopping = true;
+        MarkScheduledExecutionsInterruptedOnStop();
+        if (!activeExecutionCts.IsCancellationRequested)
+        {
+            activeExecutionCts.Cancel();
+        }
+    }
+
+    public ScriptingContext CreateCleanContextForNextSession()
+    {
+        return new ScriptingContext(EngineSettings, logger)
+        {
+            Scripts = Scripts,
+            OnValueChangedScriptTriggers = OnValueChangedScriptTriggers,
+            IsReplayMode = IsReplayMode,
+            ScriptExecuted = ScriptExecuted
+        };
     }
 
     private void DisposeSharedScope()
@@ -258,33 +311,41 @@ if "__qenex_interactive_console" not in globals():
         return OnValueChangedScriptTriggers.Any(t => t.VariableId == variableId);
     }
 
-    public Task HandleVariableValueChangedAsync(IVariableBase variable)
+    public async Task HandleVariableValueChangedAsync(IVariableBase variable)
     {
         var value = variable.GetValue();
-        return pythonFactory.StartNew(() => HandleVariableValueChanged(variable.Id, variable.Name, value));
+        await HandleVariableValueChangedAsync(variable.Id, variable.Name, value);
     }
 
-    private async Task ExecuteScriptsAsync(ScriptExecutionMode scriptMode, bool allowNonBlocking)
+    private async Task ExecuteScriptsAsync(
+        ScriptExecutionMode scriptMode,
+        bool allowNonBlocking,
+        CancellationToken ct = default,
+        bool allowStopCancellation = true,
+        TimeSpan? defaultTimeout = null)
     {
         var scripts = Scripts.Where(s => s.ExecutionMode == scriptMode);
         foreach (var script in scripts)
         {
-            var options = GetScriptExecutionOptions(script);
+            var options = GetScriptExecutionOptions(script, defaultTimeout);
             if (allowNonBlocking && !options.Blocking)
             {
-                _ = RunNonBlockingScriptAsync(script, options);
+                _ = RunNonBlockingScriptAsync(script, options, allowStopCancellation);
                 continue;
             }
 
-            await ExecuteScriptAsync(script, options);
+            await ExecuteScriptAsync(script, options, ct, allowStopCancellation: allowStopCancellation);
         }
     }
 
-    private async Task RunNonBlockingScriptAsync(IScriptBase script, ScriptExecutionOptions options)
+    private async Task RunNonBlockingScriptAsync(
+        IScriptBase script,
+        ScriptExecutionOptions options,
+        bool allowStopCancellation)
     {
         try
         {
-            await ExecuteScriptAsync(script, options);
+            await ExecuteScriptAsync(script, options, allowStopCancellation: allowStopCancellation);
         }
         catch (Exception e)
         {
@@ -292,30 +353,64 @@ if "__qenex_interactive_console" not in globals():
         }
     }
 
-    private async Task ExecuteScriptAsync(IScriptBase script, ScriptExecutionOptions options, CancellationToken ct = default)
+    private async Task ExecuteScriptAsync(
+        IScriptBase script,
+        ScriptExecutionOptions options,
+        CancellationToken ct = default,
+        Action? beforeExecute = null,
+        bool allowStopCancellation = true)
     {
         if (!CanExecuteScript(script))
         {
             return;
         }
 
-        var executionTask = pythonFactory.StartNew(() => ExecuteScript(script), ct);
+        using var linkedCts = allowStopCancellation
+            ? CancellationTokenSource.CreateLinkedTokenSource(ct, activeExecutionCts.Token)
+            : CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+        if (linkedCts.IsCancellationRequested)
+        {
+            return;
+        }
+
+        if (!TryReserveScriptExecution(script))
+        {
+            return;
+        }
+
+        var executionTask = pythonFactory.StartNew(() => ExecuteScript(script, beforeExecute), linkedCts.Token);
+        ReleaseScriptExecutionWhenCompleted(executionTask, script);
+        var cancellationTask = Task.Delay(Timeout.InfiniteTimeSpan, linkedCts.Token);
+        Task completedTask;
+
         if (options.Timeout == null)
         {
-            await executionTask;
-            return;
+            completedTask = await Task.WhenAny(executionTask, cancellationTask);
         }
-
-        var timeoutTask = Task.Delay(options.Timeout.Value, ct);
-        if (await Task.WhenAny(executionTask, timeoutTask) == executionTask)
+        else
         {
-            await executionTask;
+            var timeoutTask = Task.Delay(options.Timeout.Value, ct);
+            completedTask = await Task.WhenAny(executionTask, cancellationTask, timeoutTask);
+
+            if (completedTask == timeoutTask)
+            {
+                MarkScriptInterrupted(script, $"script \"{script.FileName}\" timed out after {options.Timeout.Value.TotalMilliseconds:0} ms.");
+                await linkedCts.CancelAsync();
+                ObserveBackgroundTask(executionTask, $"script \"{script.FileName}\" after timeout");
+                return;
+            }
+        }
+
+        if (completedTask == executionTask)
+        {
+            await AwaitExecutionTaskAsync(executionTask, ct);
             return;
         }
 
-        script.RunState = ScriptRunState.Faulted;
-        logger?.Log(LogLevel.Warn, $"script \"{script.FileName}\" timed out after {options.Timeout.Value.TotalMilliseconds:0} ms.");
-        OnScriptExecuted(script);
+        MarkScriptInterrupted(script, $"script \"{script.FileName}\" was interrupted because scripting context is stopping.");
+        await linkedCts.CancelAsync();
+        ObserveBackgroundTask(executionTask, $"script \"{script.FileName}\" after stop request");
     }
 
     private void ExecuteScript(IScriptBase script, Action? beforeExecute = null)
@@ -333,71 +428,122 @@ if "__qenex_interactive_console" not in globals():
             using (Py.GIL())
             {
                 beforeExecute?.Invoke();
-                SharedScope!.Exec(script.Content);
+                var pythonError = ExecuteScriptContent(script.Content);
+                if (!string.IsNullOrWhiteSpace(pythonError))
+                {
+                    if (!ShouldSuppressScriptResult(script))
+                    {
+                        script.RunState = ScriptRunState.Faulted;
+                        logger?.Log(LogLevel.Warn, $"python script \"{script.FileName}\": {pythonError}");
+                    }
+
+                    return;
+                }
             }
 
-            script.RunState = ScriptRunState.Idle;
+            if (!ShouldSuppressScriptResult(script))
+            {
+                script.RunState = ScriptRunState.Idle;
+            }
         }
         catch (PythonException e)
         {
-            script.RunState = ScriptRunState.Faulted;
-            logger?.Log(LogLevel.Warn, $"python script \"{script.FileName}\": {e.Message}");
+            if (!ShouldSuppressScriptResult(script))
+            {
+                script.RunState = ScriptRunState.Faulted;
+                logger?.Log(LogLevel.Warn, $"python script \"{script.FileName}\": {e.Message}");
+            }
         }
         catch (Exception e)
         {
-            script.RunState = ScriptRunState.Faulted;
-            logger?.Log(LogLevel.Error, $"script \"{script.FileName}\": {e.Message}");
+            if (!ShouldSuppressScriptResult(script))
+            {
+                script.RunState = ScriptRunState.Faulted;
+                logger?.Log(LogLevel.Error, $"script \"{script.FileName}\": {e.Message}");
+            }
         }
         finally
         {
-            stopwatch.Stop();
-            script.LastExecutionDurationMs = stopwatch.Elapsed.TotalMilliseconds;
-            OnScriptExecuted(script);
+            if (!ShouldSuppressScriptNotification(script))
+            {
+                stopwatch.Stop();
+                script.LastExecutionDurationMs = stopwatch.Elapsed.TotalMilliseconds;
+                OnScriptExecuted(script);
+            }
         }
     }
 
     private bool CanExecuteScript(IScriptBase script)
     {
+        if (isStopping && script.ExecutionMode != ScriptExecutionMode.Shutdown)
+        {
+            return false;
+        }
+
         return IsReplayMode
             ? script.IsReplayEnabled
             : script.IsEnabled;
     }
 
-    private void HandleVariableValueChanged(int variableId, string variableName, object value)
+    private async Task HandleVariableValueChangedAsync(int variableId, string variableName, object value)
     {
+        if (isStopping)
+        {
+            return;
+        }
+
         if (!TryConvertToDouble(value, out var newValue))
         {
             logger?.Log(LogLevel.Warn, $"OnValueChanged script trigger for variable \"{variableName}\" skipped because value \"{value}\" is not numeric.");
             return;
         }
 
-        if (!lastOnValueChangedValues.TryGetValue(variableId, out var oldValue))
+        List<(OnValueChangedScriptTrigger Trigger, double OldValue, double NewValue, double Delta)> scriptExecutions = [];
+        lock (onValueChangedStateLock)
         {
-            lastOnValueChangedValues[variableId] = newValue;
-            return;
+            if (!lastOnValueChangedValues.TryGetValue(variableId, out var oldValue))
+            {
+                lastOnValueChangedValues[variableId] = newValue;
+                return;
+            }
+
+            // lastOnValueChangedValues[variableId] = newValue;
+            var delta = Math.Abs(newValue - oldValue);
+
+            foreach (var trigger in GetOnValueChangedScriptTriggers(variableId))
+            {
+                if (!TryGetOnValueChangedThreshold(trigger, out var threshold))
+                {
+                    continue;
+                }
+
+                if (delta <= threshold)
+                {
+                    continue;
+                }
+
+                scriptExecutions.Add((trigger, oldValue, newValue, delta));
+                lastOnValueChangedValues[variableId] = newValue;
+            }
         }
 
-        // lastOnValueChangedValues[variableId] = newValue;
-        var delta = Math.Abs(newValue - oldValue);
-
-        foreach (var trigger in GetOnValueChangedScriptTriggers(variableId))
+        foreach (var scriptExecution in scriptExecutions)
         {
-            if (!TryGetOnValueChangedThreshold(trigger, out var threshold))
-            {
-                continue;
-            }
-
-            if (delta <= threshold)
-            {
-                continue;
-            }
-
-            ExecuteOnValueChangedScript(trigger, variableName, oldValue, newValue, delta);
-            lastOnValueChangedValues[variableId] = newValue;
+            await ExecuteOnValueChangedScriptAsync(
+                scriptExecution.Trigger,
+                variableName,
+                scriptExecution.OldValue,
+                scriptExecution.NewValue,
+                scriptExecution.Delta);
         }
     }
 
-    private void ExecuteOnValueChangedScript(OnValueChangedScriptTrigger trigger, string variableName, double oldValue, double newValue, double delta)
+    private async Task ExecuteOnValueChangedScriptAsync(
+        OnValueChangedScriptTrigger trigger,
+        string variableName,
+        double oldValue,
+        double newValue,
+        double delta)
     {
         var script = Scripts.FirstOrDefault(s => s.FileName == trigger.ScriptFileName);
         if (script == null)
@@ -412,7 +558,7 @@ if "__qenex_interactive_console" not in globals():
             return;
         }
 
-        ExecuteScript(script, () =>
+        await ExecuteScriptAsync(script, GetScriptExecutionOptions(script), beforeExecute: () =>
         {
             SharedScope!.Set("qenex_trigger_variable_id", trigger.VariableId);
             SharedScope.Set("qenex_trigger_variable_name", variableName);
@@ -486,7 +632,15 @@ if "__qenex_interactive_console" not in globals():
 
         try
         {
-            await Task.WhenAll(periodicScriptTasks);
+            var stopTask = Task.WhenAll(periodicScriptTasks);
+            if (await WaitForTaskCompletionAsync(stopTask, StopWaitTimeout, CancellationToken.None))
+            {
+                await stopTask;
+                return;
+            }
+
+            ObserveBackgroundTask(stopTask, "periodic scripts after stop request");
+            logger?.Log(LogLevel.Warn, $"Periodic scripts did not stop within {StopWaitTimeout.TotalMilliseconds:0} ms.");
         }
         catch (OperationCanceledException)
         {
@@ -570,9 +724,9 @@ if "__qenex_interactive_console" not in globals():
         return settings;
     }
 
-    private ScriptExecutionOptions GetScriptExecutionOptions(IScriptBase script)
+    private ScriptExecutionOptions GetScriptExecutionOptions(IScriptBase script, TimeSpan? defaultTimeout = null)
     {
-        TimeSpan? timeout = null;
+        TimeSpan? timeout = defaultTimeout;
         if (script.TimeoutMs > 0)
         {
             timeout = TimeSpan.FromMilliseconds(script.TimeoutMs);
@@ -583,6 +737,228 @@ if "__qenex_interactive_console" not in globals():
         }
 
         return new ScriptExecutionOptions(script.Blocking, timeout);
+    }
+
+    private void ResetStopState()
+    {
+        if (HasAbandonedExecutions)
+        {
+            throw new InvalidOperationException("Abandoned scripting context cannot be restarted.");
+        }
+
+        isStopping = false;
+        suppressLateExecutionOutput = false;
+        if (!activeExecutionCts.IsCancellationRequested)
+        {
+            return;
+        }
+
+        activeExecutionCts.Dispose();
+        activeExecutionCts = new CancellationTokenSource();
+    }
+
+    private async Task RunPythonFactoryActionAsync(
+        Action action,
+        string operationName,
+        TimeSpan timeout,
+        CancellationToken ct)
+    {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(timeout);
+
+        var actionTask = pythonFactory.StartNew(action, timeoutCts.Token);
+        if (await WaitForTaskCompletionAsync(actionTask, timeout, ct))
+        {
+            await AwaitExecutionTaskAsync(actionTask, ct);
+            return;
+        }
+
+        await timeoutCts.CancelAsync();
+        ObserveBackgroundTask(actionTask, operationName);
+        logger?.Log(LogLevel.Warn, $"{operationName} did not finish within {timeout.TotalMilliseconds:0} ms.");
+    }
+
+    private static async Task<bool> WaitForTaskCompletionAsync(Task task, TimeSpan timeout, CancellationToken ct)
+    {
+        if (task.IsCompleted)
+        {
+            return true;
+        }
+
+        var delayTask = Task.Delay(timeout, ct);
+        return await Task.WhenAny(task, delayTask) == task;
+    }
+
+    private static async Task AwaitExecutionTaskAsync(Task task, CancellationToken ct)
+    {
+        try
+        {
+            await task;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void MarkScriptInterrupted(IScriptBase script, string message)
+    {
+        if (!TryMarkScriptInterrupted(script))
+        {
+            return;
+        }
+
+        script.RunState = ScriptRunState.Faulted;
+        logger?.Log(LogLevel.Warn, message);
+        OnScriptExecuted(script);
+    }
+
+    private bool TryMarkScriptInterrupted(IScriptBase script)
+    {
+        bool added;
+        lock (executionStateLock)
+        {
+            HasAbandonedExecutions = true;
+            suppressLateExecutionOutput = true;
+            added = interruptedScripts.Add(script);
+            notifiedInterruptedScripts.Add(script);
+        }
+
+        DisableOutputWriters();
+        return added;
+    }
+
+    private bool TryReserveScriptExecution(IScriptBase script)
+    {
+        lock (executionStateLock)
+        {
+            return scheduledScripts.Add(script);
+        }
+    }
+
+    private void ReleaseScriptExecutionWhenCompleted(Task task, IScriptBase script)
+    {
+        _ = task.ContinueWith(
+            _ =>
+            {
+                lock (executionStateLock)
+                {
+                    scheduledScripts.Remove(script);
+                }
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+    }
+
+    private bool ShouldSuppressScriptResult(IScriptBase script)
+    {
+        lock (executionStateLock)
+        {
+            return interruptedScripts.Remove(script) || suppressLateExecutionOutput;
+        }
+    }
+
+    private bool ShouldSuppressScriptNotification(IScriptBase script)
+    {
+        lock (executionStateLock)
+        {
+            return notifiedInterruptedScripts.Remove(script) || suppressLateExecutionOutput;
+        }
+    }
+
+    private void ObserveBackgroundTask(Task task, string operationName)
+    {
+        _ = task.ContinueWith(
+            completedTask =>
+            {
+                if (completedTask.Exception != null && !ShouldSuppressLateExecutionOutput())
+                {
+                    logger?.Log(LogLevel.Error, $"{operationName} failed after stop returned: {completedTask.Exception.GetBaseException().Message}");
+                }
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default);
+    }
+
+    private void MarkScheduledExecutionsInterruptedOnStop()
+    {
+        List<IScriptBase> scriptsToNotify;
+        lock (executionStateLock)
+        {
+            if (scheduledScripts.Count == 0)
+            {
+                return;
+            }
+
+            HasAbandonedExecutions = true;
+            suppressLateExecutionOutput = true;
+            scriptsToNotify = scheduledScripts.ToList();
+            foreach (var script in scriptsToNotify)
+            {
+                interruptedScripts.Add(script);
+                notifiedInterruptedScripts.Add(script);
+                script.RunState = ScriptRunState.Faulted;
+            }
+        }
+
+        DisableOutputWriters();
+        logger?.Log(LogLevel.Warn, $"Scripting context stopped with {scriptsToNotify.Count} active script execution(s); abandoning context.");
+        foreach (var script in scriptsToNotify)
+        {
+            OnScriptExecuted(script);
+        }
+    }
+
+    private bool ShouldSuppressLateExecutionOutput()
+    {
+        lock (executionStateLock)
+        {
+            return suppressLateExecutionOutput;
+        }
+    }
+
+    private void DisableOutputWriters()
+    {
+        stdoutWriter?.Disable();
+        stderrWriter?.Disable();
+    }
+
+    private string ExecuteScriptContent(string content)
+    {
+        SharedScope!.Exec(WrapScriptContent(content));
+        using var exceptionText = SharedScope.Get(LastScriptExceptionTextName);
+        return exceptionText.As<string>();
+    }
+
+    private static string WrapScriptContent(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return $"""
+{LastScriptExceptionTextName} = ""
+try:
+    pass
+except BaseException:
+    import traceback as __qenex_traceback
+    {LastScriptExceptionTextName} = __qenex_traceback.format_exc()
+""";
+        }
+
+        var builder = new StringBuilder();
+        builder.AppendLine($"{LastScriptExceptionTextName} = \"\"");
+        builder.AppendLine("try:");
+
+        foreach (var line in content.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n'))
+        {
+            builder.Append("    ");
+            builder.AppendLine(line);
+        }
+
+        builder.AppendLine("except BaseException:");
+        builder.AppendLine("    import traceback as __qenex_traceback");
+        builder.AppendLine($"    {LastScriptExceptionTextName} = __qenex_traceback.format_exc()");
+        return builder.ToString();
     }
     
     #endregion

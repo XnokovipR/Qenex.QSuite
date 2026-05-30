@@ -265,7 +265,6 @@ public abstract class ModuleBase : IModuleBase
     public virtual async Task StopAsync(CancellationToken ct = default)
     {
         UnsubscribeOnValueChangedScriptTriggers();
-        await Scripting.DisposeSharedScopeAsync();
 
         var sinkDrivers = Drivers
             .Where(driver => driver is IProtocolVariableSinkDriver)
@@ -274,9 +273,15 @@ public abstract class ModuleBase : IModuleBase
             .Where(driver => driver is not IProtocolVariableSinkDriver)
             .ToList();
 
+        Scripting.RequestStop();
         await Task.WhenAll(sourceDrivers.Select(driver => driver.StopAsync(ct)));
         UnsubscribeProtocolVariableSinkDrivers();
         await Task.WhenAll(sinkDrivers.Select(driver => driver.StopAsync(ct)));
+        await Scripting.DisposeSharedScopeAsync(ct);
+        if (Scripting.HasAbandonedExecutions)
+        {
+            Scripting = Scripting.CreateCleanContextForNextSession();
+        }
     }
 
     public virtual void Dispose()
@@ -293,18 +298,19 @@ public abstract class ModuleBase : IModuleBase
     {
         UnsubscribeOnValueChangedScriptTriggers();
 
+        var scriptingContext = Scripting;
         foreach (var protocolVariable in Drivers
                      .SelectMany(driver => driver.Protocols)
                      .SelectMany(protocol => protocol.Variables)
                      .Where(protocolVariable => protocolVariable.IsCommunicated))
         {
-            if (!Scripting.HasOnValueChangedScriptTriggers(protocolVariable.Variable.Id))
+            if (!scriptingContext.HasOnValueChangedScriptTriggers(protocolVariable.Variable.Id))
             {
                 continue;
             }
 
             Func<IProtocolVariable, Task> handler = changedProtocolVariable =>
-                Scripting.HandleVariableValueChangedAsync(changedProtocolVariable.Variable);
+                scriptingContext.HandleVariableValueChangedAsync(changedProtocolVariable.Variable);
 
             protocolVariable.SubscribeAsyncValueChanged(handler);
             onValueChangedScriptSubscriptions.Add((protocolVariable, handler));

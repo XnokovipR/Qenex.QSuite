@@ -7,6 +7,8 @@ public class PythonLogWriter
     private readonly ILogger logger;
     private readonly LogLevel level;
     private readonly System.Text.StringBuilder buffer = new();
+    private readonly object bufferLock = new();
+    private bool isEnabled = true;
 
     public PythonLogWriter(ILogger logger, LogLevel level)
     {
@@ -20,25 +22,45 @@ public class PythonLogWriter
     {
         if (string.IsNullOrEmpty(text)) return;
 
-        buffer.Append(text);
-
-        // Flush on every newline so multi-line output becomes multiple log entries.
-        int newlineIndex;
-        while ((newlineIndex = IndexOfNewline(buffer)) >= 0)
+        lock (bufferLock)
         {
-            var line = buffer.ToString(0, newlineIndex);
-            buffer.Remove(0, newlineIndex + 1);
-            if (line.Length > 0)
-                logger.Log(level, line);
+            if (!isEnabled)
+            {
+                return;
+            }
+
+            buffer.Append(text);
+
+            // Flush on every newline so multi-line output becomes multiple log entries.
+            int newlineIndex;
+            while ((newlineIndex = IndexOfNewline(buffer)) >= 0)
+            {
+                var line = buffer.ToString(0, newlineIndex);
+                buffer.Remove(0, newlineIndex + 1);
+                if (line.Length > 0)
+                    logger.Log(level, line);
+            }
         }
     }
 
     // Python may call sys.stdout.flush() — must exist, can be a no-op.
     public void flush()
     {
-        if (buffer.Length == 0) return;
-        logger.Log(level, buffer.ToString());
-        buffer.Clear();
+        lock (bufferLock)
+        {
+            if (!isEnabled || buffer.Length == 0) return;
+            logger.Log(level, buffer.ToString());
+            buffer.Clear();
+        }
+    }
+
+    public void Disable()
+    {
+        lock (bufferLock)
+        {
+            isEnabled = false;
+            buffer.Clear();
+        }
     }
 
     private static int IndexOfNewline(System.Text.StringBuilder sb)

@@ -11,20 +11,30 @@ public class PythonInterpreterTextEditorBehavior : Behavior<TextEditor>
     protected override void OnAttached()
     {
         base.OnAttached();
+        if (AssociatedObject == null)
+        {
+            return;
+        }
+
         AssociatedObject.PreviewKeyDown += OnPreviewKeyDown;
         AssociatedObject.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
     }
 
     protected override void OnDetaching()
     {
-        AssociatedObject.PreviewKeyDown -= OnPreviewKeyDown;
-        AssociatedObject.TextArea.Caret.PositionChanged -= OnCaretPositionChanged;
+        if (AssociatedObject != null)
+        {
+            AssociatedObject.PreviewKeyDown -= OnPreviewKeyDown;
+            AssociatedObject.TextArea.Caret.PositionChanged -= OnCaretPositionChanged;
+        }
+
         base.OnDetaching();
     }
 
     private async void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (AssociatedObject.DataContext is not PythonInterpreterViewModel viewModel)
+        var editor = AssociatedObject;
+        if (editor?.Document == null || editor.DataContext is not PythonInterpreterViewModel viewModel)
         {
             return;
         }
@@ -33,8 +43,12 @@ public class PythonInterpreterTextEditorBehavior : Behavior<TextEditor>
         {
             e.Handled = true;
             await viewModel.SubmitInputAsync();
-            AssociatedObject.CaretOffset = AssociatedObject.Document.TextLength;
-            AssociatedObject.ScrollToEnd();
+            if (editor.Document != null)
+            {
+                editor.CaretOffset = editor.Document.TextLength;
+                editor.ScrollToEnd();
+            }
+
             return;
         }
 
@@ -42,7 +56,7 @@ public class PythonInterpreterTextEditorBehavior : Behavior<TextEditor>
         {
             e.Handled = true;
             viewModel.ShowPreviousHistoryInput();
-            AssociatedObject.CaretOffset = AssociatedObject.Document.TextLength;
+            editor.CaretOffset = editor.Document.TextLength;
             return;
         }
 
@@ -50,11 +64,11 @@ public class PythonInterpreterTextEditorBehavior : Behavior<TextEditor>
         {
             e.Handled = true;
             viewModel.ShowNextHistoryInput();
-            AssociatedObject.CaretOffset = AssociatedObject.Document.TextLength;
+            editor.CaretOffset = editor.Document.TextLength;
             return;
         }
 
-        if ((e.Key == Key.Back || e.Key == Key.Left) && AssociatedObject.CaretOffset <= viewModel.InputStartOffset)
+        if ((e.Key == Key.Back || e.Key == Key.Left) && editor.CaretOffset <= viewModel.InputStartOffset)
         {
             e.Handled = true;
             return;
@@ -63,21 +77,22 @@ public class PythonInterpreterTextEditorBehavior : Behavior<TextEditor>
         if (e.Key == Key.Home)
         {
             e.Handled = true;
-            AssociatedObject.CaretOffset = viewModel.InputStartOffset;
+            editor.CaretOffset = viewModel.InputStartOffset;
         }
     }
 
     private void OnCaretPositionChanged(object? sender, EventArgs e)
     {
-        if (AssociatedObject.DataContext is not PythonInterpreterViewModel viewModel)
+        var editor = AssociatedObject;
+        if (editor?.Document == null || editor.DataContext is not PythonInterpreterViewModel viewModel)
         {
             return;
         }
 
-        var inputStartOffset = Math.Min(viewModel.InputStartOffset, AssociatedObject.Document.TextLength);
-        if (AssociatedObject.CaretOffset < inputStartOffset)
+        var inputStartOffset = Math.Min(viewModel.InputStartOffset, editor.Document.TextLength);
+        if (editor.CaretOffset < inputStartOffset)
         {
-            AssociatedObject.CaretOffset = inputStartOffset;
+            editor.CaretOffset = inputStartOffset;
         }
     }
 }
