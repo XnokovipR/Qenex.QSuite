@@ -138,11 +138,23 @@
                         Margin="0,0,0,6"
                         FontWeight="SemiBold"
                         Text="Variables"/>
-                    <Border
+                    <StackPanel
                         Grid.Row="1"
-                        Height="{Binding ActualHeight, ElementName=SourceProtocolCombo}"
                         Margin="0,0,0,8"
-                        Visibility="Hidden"/>
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                        <telerik:RadButton
+                            Width="34"
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Command="{Binding AddVariableCommand}"
+                            Content="+"/>
+                        <telerik:RadButton
+                            Width="34"
+                            Height="28"
+                            Command="{Binding RemoveVariableCommand}"
+                            Content="-"/>
+                    </StackPanel>
                     <telerik:RadListBox
                         Grid.Row="2"
                         ItemsSource="{Binding Variables}"

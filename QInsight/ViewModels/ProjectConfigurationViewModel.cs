@@ -9,6 +9,7 @@ using Qenex.QSuite.Scripting.PythonScript;
 using Qenex.QSuite.Scripting.Script;
 using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.QVariables.Values;
 using Qenex.QSuite.Variables.ValueConversion;
 using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.VariableEvents;
@@ -21,11 +22,14 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 {
     private readonly EventAggregator? eventAggregator;
     private readonly IEnumerable<IDriverBase> drivers;
+    private readonly IList<IVariableBase> variables;
     private readonly IList<IVarEvent> variableEvents;
     private readonly IList<IValConversion> conversions;
     private readonly IList<IPresentation> presentations;
     private readonly IList<IScriptBase> scripts;
     private readonly IList<OnValueChangedScriptTrigger> onValueChangedScriptTriggers;
+    private readonly List<ProjectConfigurationVariableWrapper> addedVariables = [];
+    private readonly List<ProjectConfigurationVariableWrapper> removedVariables = [];
     private readonly List<ProjectConfigurationProtocolVariableWrapper> addedCommunicatedVariables = [];
     private readonly List<RemovedCommunicatedVariable> removedCommunicatedVariables = [];
     private readonly List<ProjectConfigurationConversionWrapper> addedConversions = [];
@@ -55,6 +59,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     {
         this.eventAggregator = eventAggregator;
         this.drivers = drivers.ToList();
+        this.variables = variables as IList<IVariableBase> ?? variables.ToList();
         this.variableEvents = variableEvents as IList<IVarEvent> ?? variableEvents.ToList();
         this.conversions = conversions as IList<IValConversion> ?? conversions.ToList();
         this.presentations = presentations as IList<IPresentation> ?? presentations.ToList();
@@ -76,7 +81,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             driver.PropertyChanged += OnDriverPropertyChanged;
         }
         Variables = new ObservableCollection<ProjectConfigurationVariableWrapper>(
-            variables.Select(variable => new ProjectConfigurationVariableWrapper(variable, presentations)));
+            this.variables.Select(variable => new ProjectConfigurationVariableWrapper(variable, presentations)));
         foreach (var variable in Variables)
         {
             variable.PropertyChanged += OnVariablePropertyChanged;
@@ -122,6 +127,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
         ApplyCommand = new RelayCommand<object>(_ => ApplyChanges(), _ => HasChanges);
         CancelCommand = new RelayCommand<object>(_ => Cancel());
+        AddVariableCommand = new RelayCommand<object>(_ => AddVariable(), _ => CanAddVariable());
+        RemoveVariableCommand = new RelayCommand<object>(_ => RemoveVariable(), _ => SelectedVariable != null);
         AddVariableToSourceCommand = new RelayCommand<object>(_ => AddVariableToSource(), _ => CanAddVariableToSource());
         RemoveCommunicatedVariableCommand = new RelayCommand<object>(_ => RemoveCommunicatedVariable(), _ => SelectedCommunicatedVariable != null);
         SelectScriptCommand = new RelayCommand<object>(SelectScript);
@@ -153,6 +160,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public IEnumerable<EnumMemberViewModel> ExecutionModes { get; } = EnumDataSource.FromType<ScriptExecutionMode>();
     public RelayCommand<object> ApplyCommand { get; }
     public RelayCommand<object> CancelCommand { get; }
+    public RelayCommand<object> AddVariableCommand { get; }
+    public RelayCommand<object> RemoveVariableCommand { get; }
     public RelayCommand<object> AddVariableToSourceCommand { get; }
     public RelayCommand<object> RemoveCommunicatedVariableCommand { get; }
     public RelayCommand<object> SelectScriptCommand { get; }
@@ -177,6 +186,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
             field = value;
             OnPropertyChanged();
+            RemoveVariableCommand?.OnCanExecuteChanged();
             AddVariableToSourceCommand?.OnCanExecuteChanged();
         }
     }
@@ -295,6 +305,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public bool HasChanges =>
         Drivers.Any(driver => driver.HasChanges)
         || Variables.Any(variable => variable.HasChanges)
+        || addedVariables.Count > 0
+        || removedVariables.Count > 0
         || Conversions.Any(conversion => conversion.HasChanges)
         || addedConversions.Count > 0
         || removedConversions.Count > 0
@@ -368,6 +380,19 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         {
             variable.ApplyChanges();
         }
+        foreach (var removedVariable in removedVariables)
+        {
+            variables.Remove(removedVariable.Variable);
+        }
+        foreach (var addedVariable in addedVariables)
+        {
+            if (!variables.Contains(addedVariable.Variable))
+            {
+                variables.Add(addedVariable.Variable);
+            }
+        }
+        addedVariables.Clear();
+        removedVariables.Clear();
         foreach (var conversion in Conversions)
         {
             conversion.ApplyChanges();
@@ -493,6 +518,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         {
             variable.CancelChanges();
         }
+        addedVariables.Clear();
+        removedVariables.Clear();
         foreach (var conversion in Conversions)
         {
             conversion.CancelChanges();
@@ -532,6 +559,106 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         removedScripts.Clear();
 
         parentWindow?.Close();
+    }
+
+    private void AddVariable()
+    {
+        if (!CanAddVariable())
+        {
+            return;
+        }
+
+        var values = ValuesGlobal.CreateInstance(ValuesGlobal.ValueDataType.Int);
+        values.ValPresentation = Presentations.First().Presentation;
+        var variable = new ScalarVariable
+        {
+            Id = CreateUniqueVariableId(),
+            Namespace = "/",
+            Name = CreateUniqueVariableName(),
+            Label = "Variable",
+            Description = string.Empty,
+            Size = values.Size,
+            Values = values
+        };
+        var wrapper = new ProjectConfigurationVariableWrapper(
+            variable,
+            Presentations.Select(presentation => presentation.Presentation),
+            isNew: true);
+        wrapper.PropertyChanged += OnVariablePropertyChanged;
+        Variables.Add(wrapper);
+        addedVariables.Add(wrapper);
+        SelectedVariable = wrapper;
+
+        NotifyHasChangesChanged();
+    }
+
+    private bool CanAddVariable()
+    {
+        return Presentations.Count > 0;
+    }
+
+    private void RemoveVariable()
+    {
+        if (SelectedVariable == null)
+        {
+            return;
+        }
+
+        var variable = SelectedVariable;
+        foreach (var communicatedVariable in CommunicatedVariables
+                     .Where(communicatedVariable => communicatedVariable.Variable.Id == variable.Id)
+                     .ToList())
+        {
+            RemoveCommunicatedVariable(communicatedVariable);
+        }
+
+        variable.PropertyChanged -= OnVariablePropertyChanged;
+        Variables.Remove(variable);
+
+        if ((!variable.IsNew || !addedVariables.Remove(variable)) && !removedVariables.Contains(variable))
+        {
+            removedVariables.Add(variable);
+        }
+
+        SelectedVariable = Variables.FirstOrDefault();
+        NotifyHasChangesChanged();
+    }
+
+    private int CreateUniqueVariableId()
+    {
+        var usedIds = Variables
+            .Select(variable => variable.Id)
+            .Concat(variables.Select(variable => variable.Id))
+            .ToHashSet();
+
+        var id = usedIds.Count == 0 ? 1 : usedIds.Max() + 1;
+        while (usedIds.Contains(id))
+        {
+            id++;
+        }
+
+        return id;
+    }
+
+    private string CreateUniqueVariableName()
+    {
+        const string baseName = "variable";
+
+        var existingNames = Variables
+            .Select(variable => variable.Variable.Name)
+            .Concat(variables.Select(variable => variable.Name))
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var name = baseName;
+        var index = 1;
+        while (existingNames.Contains(name))
+        {
+            name = $"{baseName}_{index}";
+            index++;
+        }
+
+        return name;
     }
 
     private void AddConversion()
@@ -946,7 +1073,11 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             return;
         }
 
-        var communicatedVariable = SelectedCommunicatedVariable;
+        RemoveCommunicatedVariable(SelectedCommunicatedVariable);
+    }
+
+    private void RemoveCommunicatedVariable(ProjectConfigurationProtocolVariableWrapper communicatedVariable)
+    {
         communicatedVariable.PropertyChanged -= OnCommunicatedVariablePropertyChanged;
         CommunicatedVariables.Remove(communicatedVariable);
         communicatedVariable.SelectedSource.Protocol.RemoveProtocolVariable(communicatedVariable.ProtocolVariable);
@@ -1178,6 +1309,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     {
         OnPropertyChanged(nameof(HasChanges));
         ApplyCommand.OnCanExecuteChanged();
+        AddVariableCommand.OnCanExecuteChanged();
+        RemoveVariableCommand.OnCanExecuteChanged();
         RemoveConversionCommand.OnCanExecuteChanged();
         AddPresentationCommand.OnCanExecuteChanged();
         RemovePresentationCommand.OnCanExecuteChanged();

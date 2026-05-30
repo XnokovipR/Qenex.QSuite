@@ -15,18 +15,21 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
     private VariableState originalState;
     private VariableState currentState;
 
-    public ProjectConfigurationVariableWrapper(IVariableBase variable, IEnumerable<IPresentation> presentations)
+    public ProjectConfigurationVariableWrapper(IVariableBase variable, IEnumerable<IPresentation> presentations, bool isNew = false)
     {
         Variable = variable;
         this.presentations = presentations;
+        IsNew = isNew;
         originalState = VariableState.FromVariable(variable);
         currentState = originalState;
         Properties = CreateProperties();
     }
 
     public IVariableBase Variable { get; }
+    public bool IsNew { get; }
 
     public ObservableCollection<EditablePropertyWrapper> Properties { get; }
+    public int Id => currentState.Id;
 
     public string DisplayName => $"{currentState.Label} ({currentState.Id})";
 
@@ -123,6 +126,7 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
     private void NotifyStateChanged()
     {
         OnPropertyChanged(nameof(DisplayName));
+        OnPropertyChanged(nameof(Id));
         OnPropertyChanged(nameof(HasChanges));
     }
 
