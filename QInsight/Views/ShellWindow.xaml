@@ -108,25 +108,25 @@
 								SmallImage="../Icons/SolutionExplorer/Drivers.png"
 								Command="{Binding RibbonProjectConfigurationDriversCommand}"/>
 							<telerik:RadRibbonButton
+								Text="Events"
+								Size="Large"
+								SmallImage="../Icons/SolutionExplorer/Events.png"
+								Command="{Binding RibbonProjectConfigurationEventsCommand}"/>
+							<telerik:RadRibbonButton
 								Text="Variables"
 								Size="Large"
 								SmallImage="../Icons/SolutionExplorer/Variables.png"
 								Command="{Binding RibbonProjectConfigurationVariablesCommand}"/>
-							<telerik:RadRibbonButton
-								Text="Conversions"
-								Size="Large"
-								SmallImage="../Icons/SolutionExplorer/Presentations.png"
-								Command="{Binding RibbonProjectConfigurationConversionsCommand}"/>
 							<telerik:RadRibbonButton
 								Text="Presentations"
 								Size="Large"
 								SmallImage="../Icons/SolutionExplorer/Presentations.png"
 								Command="{Binding RibbonProjectConfigurationPresentationsCommand}"/>
 							<telerik:RadRibbonButton
-								Text="Events"
+								Text="Conversions"
 								Size="Large"
-								SmallImage="../Icons/SolutionExplorer/Events.png"
-								Command="{Binding RibbonProjectConfigurationEventsCommand}"/>
+								SmallImage="../Icons/SolutionExplorer/Presentations.png"
+								Command="{Binding RibbonProjectConfigurationConversionsCommand}"/>
 							<telerik:RadRibbonButton
 								Text="Scripts"
 								Size="Large"

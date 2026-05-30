@@ -143,13 +143,13 @@ public class SolutionExplorerViewModel : ViewModelBase
         
         CreateDriverWrappers(projectWrapper.Children, realPrjData.Module.Drivers);
         
+        CreateVariableEventWrapper(projectWrapper.Children, realPrjData.Module.VarEvents);
+        
         CreateVariableWrapper(projectWrapper.Children, realPrjData.Module.Variables);
 
-        CreateConversionWrapper(projectWrapper.Children, realPrjData.Module.Conversions);
-        
         CreatePresentationWrapper(projectWrapper.Children, realPrjData.Module.Presentations);
         
-        CreateVariableEventWrapper(projectWrapper.Children, realPrjData.Module.VarEvents);
+        CreateConversionWrapper(projectWrapper.Children, realPrjData.Module.Conversions);
         
         CreateScriptsWrapper(projectWrapper.Children, realPrjData.Module.Scripting);
         

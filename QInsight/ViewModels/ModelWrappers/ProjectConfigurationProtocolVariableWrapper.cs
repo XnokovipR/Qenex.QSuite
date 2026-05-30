@@ -14,6 +14,7 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
 {
     private readonly IEnumerable<ProjectConfigurationProtocolOption> sourceOptions;
     private readonly IEnumerable<IVarEvent> variableEvents;
+    private readonly Func<IEnumerable<string>>? variableEventOptionsProvider;
     private readonly IEnumerable<ProjectConfigurationScriptWrapper> scripts;
     private readonly OnValueChangedScriptTrigger? originalScriptTrigger;
     private ProjectConfigurationProtocolOption originalSource;
@@ -40,13 +41,15 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
         IEnumerable<IVarEvent> variableEvents,
         IEnumerable<ProjectConfigurationScriptWrapper> scripts,
         OnValueChangedScriptTrigger? scriptTrigger,
-        bool isFileLogEnabled)
+        bool isFileLogEnabled,
+        Func<IEnumerable<string>>? variableEventOptionsProvider = null)
     {
         ProtocolVariable = protocolVariable;
         originalSource = source;
         selectedSource = source;
         this.sourceOptions = sourceOptions;
-        this.variableEvents = variableEvents.ToList();
+        this.variableEvents = variableEvents;
+        this.variableEventOptionsProvider = variableEventOptionsProvider;
         this.scripts = scripts;
         originalScriptTrigger = scriptTrigger;
         originalCommParam = ProjectConfigurationProtocolVariableFactory.GetCommParam(protocolVariable.ProtocolVariableSpecification);
@@ -65,7 +68,8 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
     public IProtocolVariable ProtocolVariable { get; private set; }
     public IVariableBase Variable => ProtocolVariable.Variable;
     public IEnumerable<ProjectConfigurationProtocolOption> SourceOptions => sourceOptions;
-    public IEnumerable<string> VariableEventOptions => variableEvents.Select(variableEvent => variableEvent.Name).Prepend(string.Empty);
+    public IEnumerable<string> VariableEventOptions => (variableEventOptionsProvider?.Invoke() ?? variableEvents.Select(variableEvent => variableEvent.Name))
+        .Prepend(string.Empty);
     public IEnumerable<CommDirection> DirectionOptions => Enum.GetValues<CommDirection>();
     public IEnumerable<string> ScriptOptions => scripts
         .Where(script => script.ExecutionMode == ScriptExecutionMode.OnValueChanged)
@@ -313,6 +317,11 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
     public void RefreshScriptOptions()
     {
         OnPropertyChanged(nameof(ScriptOptions));
+    }
+
+    public void RefreshVariableEventOptions()
+    {
+        OnPropertyChanged(nameof(VariableEventOptions));
     }
 
     private void ReadCommunicationFieldsFromCommParam()

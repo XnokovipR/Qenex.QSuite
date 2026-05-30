@@ -735,7 +735,7 @@
                 </ScrollViewer>
             </Grid>
 
-            <Grid>
+            <Grid Margin="8">
                 <Grid.Style>
                     <Style TargetType="Grid" BasedOn="{StaticResource ProjectConfigurationPageStyle}">
                         <Style.Triggers>
@@ -745,6 +745,106 @@
                         </Style.Triggers>
                     </Style>
                 </Grid.Style>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="3*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Grid
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Margin="0,0,8,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <q:QTextBlock
+                        Grid.Column="0"
+                        VerticalAlignment="Center"
+                        FontWeight="SemiBold"
+                        Text="Events"/>
+                    <StackPanel
+                        Grid.Column="1"
+                        Orientation="Horizontal">
+                        <telerik:RadButton
+                            Width="34"
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Command="{Binding AddEventCommand}"
+                            Content="+"/>
+                        <telerik:RadButton
+                            Width="34"
+                            Height="28"
+                            Command="{Binding RemoveEventCommand}"
+                            Content="-"/>
+                    </StackPanel>
+                </Grid>
+                <q:QTextBlock
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Margin="8,0,0,6"
+                    FontWeight="SemiBold"
+                    Text="Event detail"/>
+
+                <telerik:RadListBox
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Margin="0,0,8,0"
+                    ItemsSource="{Binding Events}"
+                    SelectedItem="{Binding SelectedEvent, Mode=TwoWay}"
+                    DisplayMemberPath="DisplayName"/>
+
+                <ScrollViewer
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Margin="8,0,0,0"
+                    VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding SelectedEvent.Properties}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type wrappers:EditablePropertyWrapper}">
+                                <Grid Margin="0,0,0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <q:QTextBlock
+                                        Grid.Column="0"
+                                        Margin="0,0,10,0"
+                                        VerticalAlignment="Center"
+                                        Text="{Binding Name}"/>
+
+                                    <Grid Grid.Column="1">
+                                        <q:QTextBox
+                                            x:Name="ValueTextBox"
+                                            Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                            IsReadOnly="{Binding IsReadOnly}"
+                                            ToolTip="{Binding Error}"/>
+                                        <telerik:RadComboBox
+                                            x:Name="ValueComboBox"
+                                            Visibility="Collapsed"
+                                            ItemsSource="{Binding Options}"
+                                            IsEnabled="{Binding IsEditable}"
+                                            SelectedItem="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            ToolTip="{Binding Error}"/>
+                                    </Grid>
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding HasOptions}" Value="True">
+                                        <Setter TargetName="ValueTextBox" Property="Visibility" Value="Collapsed"/>
+                                        <Setter TargetName="ValueComboBox" Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </Grid>
 
             <Grid

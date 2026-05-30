@@ -21,7 +21,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 {
     private readonly EventAggregator? eventAggregator;
     private readonly IEnumerable<IDriverBase> drivers;
-    private readonly IEnumerable<IVarEvent> variableEvents;
+    private readonly IList<IVarEvent> variableEvents;
     private readonly IList<IValConversion> conversions;
     private readonly IList<IPresentation> presentations;
     private readonly IList<IScriptBase> scripts;
@@ -32,6 +32,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private readonly List<ProjectConfigurationConversionWrapper> removedConversions = [];
     private readonly List<ProjectConfigurationPresentationWrapper> addedPresentations = [];
     private readonly List<ProjectConfigurationPresentationWrapper> removedPresentations = [];
+    private readonly List<ProjectConfigurationEventWrapper> addedEvents = [];
+    private readonly List<ProjectConfigurationEventWrapper> removedEvents = [];
     private readonly List<ProjectConfigurationScriptWrapper> addedScripts = [];
     private readonly List<ProjectConfigurationScriptWrapper> removedScripts = [];
     private RadWindow? parentWindow;
@@ -53,7 +55,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     {
         this.eventAggregator = eventAggregator;
         this.drivers = drivers.ToList();
-        this.variableEvents = variableEvents.ToList();
+        this.variableEvents = variableEvents as IList<IVarEvent> ?? variableEvents.ToList();
         this.conversions = conversions as IList<IValConversion> ?? conversions.ToList();
         this.presentations = presentations as IList<IPresentation> ?? presentations.ToList();
         this.onValueChangedScriptTriggers = onValueChangedScriptTriggers;
@@ -61,10 +63,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         NavigationItems =
         [
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.CommunicationDrivers, "Communication Drivers"),
-            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Variables, "Variables"),
-            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Conversions, "Conversions"),
-            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Presentations, "Presentations"),
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Events, "Events"),
+            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Variables, "Variables"),
+            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Presentations, "Presentations"),
+            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Conversions, "Conversions"),
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Scripts, "Scripts")
         ];
         Drivers = new ObservableCollection<ProjectConfigurationDriverWrapper>(
@@ -94,6 +96,13 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             presentation.PropertyChanged += OnPresentationPropertyChanged;
         }
 
+        Events = new ObservableCollection<ProjectConfigurationEventWrapper>(
+            this.variableEvents.Select(variableEvent => new ProjectConfigurationEventWrapper(variableEvent)));
+        foreach (var variableEvent in Events)
+        {
+            variableEvent.PropertyChanged += OnEventPropertyChanged;
+        }
+
         Scripts = new ObservableCollection<ProjectConfigurationScriptWrapper>(
             this.scripts.Select(script => new ProjectConfigurationScriptWrapper(script)));
         foreach (var script in Scripts)
@@ -120,11 +129,14 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         RemoveConversionCommand = new RelayCommand<object>(_ => RemoveConversion(), _ => SelectedConversion != null);
         AddPresentationCommand = new RelayCommand<object>(_ => AddPresentation(), _ => CanAddPresentation());
         RemovePresentationCommand = new RelayCommand<object>(_ => RemovePresentation(), _ => CanRemovePresentation());
+        AddEventCommand = new RelayCommand<object>(_ => AddEvent());
+        RemoveEventCommand = new RelayCommand<object>(_ => RemoveEvent(), _ => CanRemoveEvent());
         AddScriptCommand = new RelayCommand<object>(_ => AddScript());
         RemoveScriptCommand = new RelayCommand<object>(_ => RemoveScript(), _ => SelectedScript != null);
         EnsureInitialVariableSelections();
         SelectedConversion = Conversions.FirstOrDefault();
         SelectedPresentation = Presentations.FirstOrDefault();
+        SelectedEvent = Events.FirstOrDefault();
         SelectedScript = Scripts.FirstOrDefault();
         SelectedNavigationItem = NavigationItems[0];
     }
@@ -134,6 +146,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public ObservableCollection<ProjectConfigurationVariableWrapper> Variables { get; }
     public ObservableCollection<ProjectConfigurationConversionWrapper> Conversions { get; }
     public ObservableCollection<ProjectConfigurationPresentationWrapper> Presentations { get; }
+    public ObservableCollection<ProjectConfigurationEventWrapper> Events { get; }
     public ObservableCollection<ProjectConfigurationProtocolVariableWrapper> CommunicatedVariables { get; }
     public IReadOnlyList<ProjectConfigurationProtocolOption> SourceOptions { get; }
     public ObservableCollection<ProjectConfigurationScriptWrapper> Scripts { get; }
@@ -147,6 +160,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public RelayCommand<object> RemoveConversionCommand { get; }
     public RelayCommand<object> AddPresentationCommand { get; }
     public RelayCommand<object> RemovePresentationCommand { get; }
+    public RelayCommand<object> AddEventCommand { get; }
+    public RelayCommand<object> RemoveEventCommand { get; }
     public RelayCommand<object> AddScriptCommand { get; }
     public RelayCommand<object> RemoveScriptCommand { get; }
 
@@ -231,6 +246,23 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
     }
 
+    public ProjectConfigurationEventWrapper? SelectedEvent
+    {
+        get => field;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            ErrorMessage = string.Empty;
+            OnPropertyChanged();
+            RemoveEventCommand?.OnCanExecuteChanged();
+        }
+    }
+
     public ProjectConfigurationProtocolOption? SelectedSourceOption
     {
         get => field;
@@ -269,6 +301,9 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         || Presentations.Any(presentation => presentation.HasChanges)
         || addedPresentations.Count > 0
         || removedPresentations.Count > 0
+        || Events.Any(variableEvent => variableEvent.HasChanges)
+        || addedEvents.Count > 0
+        || removedEvents.Count > 0
         || CommunicatedVariables.Any(variable => variable.HasChanges)
         || addedCommunicatedVariables.Count > 0
         || removedCommunicatedVariables.Count > 0
@@ -368,6 +403,25 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
         addedPresentations.Clear();
         removedPresentations.Clear();
+        SynchronizeRenamedEventReferences();
+        foreach (var variableEvent in Events)
+        {
+            variableEvent.ApplyChanges();
+        }
+        foreach (var removedEvent in removedEvents)
+        {
+            variableEvents.Remove(removedEvent.VariableEvent);
+        }
+        foreach (var addedEvent in addedEvents)
+        {
+            var variableEvent = addedEvent.ApplyChanges();
+            if (!variableEvents.Contains(variableEvent))
+            {
+                variableEvents.Add(variableEvent);
+            }
+        }
+        addedEvents.Clear();
+        removedEvents.Clear();
         foreach (var removed in removedCommunicatedVariables)
         {
             if (CommunicatedVariables.Any(variable => variable.Variable.Id == removed.ProtocolVariable.Variable.Id))
@@ -451,6 +505,12 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
         addedPresentations.Clear();
         removedPresentations.Clear();
+        foreach (var variableEvent in Events)
+        {
+            variableEvent.CancelChanges();
+        }
+        addedEvents.Clear();
+        removedEvents.Clear();
         foreach (var communicatedVariable in CommunicatedVariables)
         {
             communicatedVariable.CancelChanges();
@@ -637,6 +697,101 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         return name;
     }
 
+    private void AddEvent()
+    {
+        var variableEvent = ProjectConfigurationEventWrapper.CreateEvent(
+            CreateUniqueEventName(),
+            EventsGlobal.VariableEventType.Periodic);
+        var wrapper = new ProjectConfigurationEventWrapper(variableEvent, isNew: true);
+        wrapper.PropertyChanged += OnEventPropertyChanged;
+        Events.Add(wrapper);
+        addedEvents.Add(wrapper);
+        SelectedEvent = wrapper;
+
+        RefreshCommunicatedVariableEventOptions();
+        NotifyHasChangesChanged();
+    }
+
+    private void RemoveEvent()
+    {
+        if (SelectedEvent == null)
+        {
+            return;
+        }
+
+        if (IsEventUsed(SelectedEvent))
+        {
+            ErrorMessage = $"Event \"{SelectedEvent.Name}\" is used by a communicated variable.";
+            return;
+        }
+
+        ErrorMessage = string.Empty;
+        var variableEvent = SelectedEvent;
+        variableEvent.PropertyChanged -= OnEventPropertyChanged;
+        Events.Remove(variableEvent);
+
+        if (variableEvent.IsNew)
+        {
+            addedEvents.Remove(variableEvent);
+        }
+        else if (!removedEvents.Contains(variableEvent))
+        {
+            removedEvents.Add(variableEvent);
+        }
+
+        SelectedEvent = Events.FirstOrDefault();
+        RefreshCommunicatedVariableEventOptions();
+        NotifyHasChangesChanged();
+    }
+
+    private bool CanRemoveEvent()
+    {
+        return SelectedEvent != null && !IsEventUsed(SelectedEvent);
+    }
+
+    private bool IsEventUsed(ProjectConfigurationEventWrapper variableEvent)
+    {
+        var eventNames = new[] { variableEvent.Name, variableEvent.OriginalName, variableEvent.VariableEvent.Name }
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        return CommunicatedVariables.Any(variable => eventNames.Contains(variable.SelectedVariableEventName));
+    }
+
+    private void SynchronizeRenamedEventReferences()
+    {
+        foreach (var variableEvent in Events.Where(variableEvent =>
+                     !string.Equals(variableEvent.OriginalName, variableEvent.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            foreach (var communicatedVariable in CommunicatedVariables.Where(communicatedVariable =>
+                         string.Equals(communicatedVariable.SelectedVariableEventName, variableEvent.OriginalName, StringComparison.OrdinalIgnoreCase)))
+            {
+                communicatedVariable.SelectedVariableEventName = variableEvent.Name;
+            }
+        }
+    }
+
+    private string CreateUniqueEventName()
+    {
+        const string baseName = "event";
+
+        var existingNames = Events
+            .Select(variableEvent => variableEvent.Name)
+            .Concat(variableEvents.Select(variableEvent => variableEvent.Name))
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var name = baseName;
+        var index = 1;
+        while (existingNames.Contains(name))
+        {
+            name = $"{baseName}_{index}";
+            index++;
+        }
+
+        return name;
+    }
+
     private void AddScript()
     {
         var script = new PyScript
@@ -761,8 +916,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             var protocolVariable = ProjectConfigurationProtocolVariableFactory.CreateProtocolVariable(
                 SelectedSourceOption.Protocol,
                 SelectedVariable.Variable,
-                variableEvents,
-                ProjectConfigurationProtocolVariableFactory.CreateDefaultCommParam(SelectedVariable.Variable, variableEvents),
+                GetConfigurationVariableEvents(),
+                ProjectConfigurationProtocolVariableFactory.CreateDefaultCommParam(SelectedVariable.Variable, GetConfigurationVariableEvents()),
                 true);
             SelectedSourceOption.Protocol.AddVariable(protocolVariable);
 
@@ -815,10 +970,16 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             protocolVariable,
             source,
             SourceOptions,
-            variableEvents,
+            GetConfigurationVariableEvents(),
             Scripts,
             onValueChangedScriptTriggers.FirstOrDefault(trigger => trigger.VariableId == protocolVariable.Variable.Id),
-            IsFileLogEnabled(protocolVariable.Variable));
+            IsFileLogEnabled(protocolVariable.Variable),
+            () => Events.Select(variableEvent => variableEvent.Name));
+    }
+
+    private IEnumerable<IVarEvent> GetConfigurationVariableEvents()
+    {
+        return Events.Select(variableEvent => variableEvent.VariableEvent);
     }
 
     private void SynchronizeFileLogAndReplayVariables()
@@ -857,7 +1018,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
                 var protocolVariable = ProjectConfigurationProtocolVariableFactory.CreateProtocolVariable(
                     protocol,
                     variable,
-                    variableEvents,
+                    GetConfigurationVariableEvents(),
                     string.Empty,
                     true);
                 protocol.AddVariable(protocolVariable);
@@ -880,7 +1041,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
                 var protocolVariable = ProjectConfigurationProtocolVariableFactory.CreateProtocolVariable(
                     protocol,
                     variable,
-                    variableEvents,
+                    GetConfigurationVariableEvents(),
                     string.Empty,
                     true);
                 protocol.AddVariable(protocolVariable);
@@ -953,6 +1114,14 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
     }
 
+    private void RefreshCommunicatedVariableEventOptions()
+    {
+        foreach (var communicatedVariable in CommunicatedVariables)
+        {
+            communicatedVariable.RefreshVariableEventOptions();
+        }
+    }
+
     private void OnVariablePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(ProjectConfigurationVariableWrapper.HasChanges))
@@ -983,6 +1152,18 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         NotifyHasChangesChanged();
     }
 
+    private void OnEventPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ProjectConfigurationEventWrapper.HasChanges)
+            && e.PropertyName != nameof(ProjectConfigurationEventWrapper.Name))
+        {
+            return;
+        }
+
+        RefreshCommunicatedVariableEventOptions();
+        NotifyHasChangesChanged();
+    }
+
     private void OnCommunicatedVariablePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(ProjectConfigurationProtocolVariableWrapper.HasChanges))
@@ -1000,6 +1181,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         RemoveConversionCommand.OnCanExecuteChanged();
         AddPresentationCommand.OnCanExecuteChanged();
         RemovePresentationCommand.OnCanExecuteChanged();
+        RemoveEventCommand.OnCanExecuteChanged();
         RemoveScriptCommand.OnCanExecuteChanged();
     }
 
