@@ -23,12 +23,15 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private readonly IEnumerable<IDriverBase> drivers;
     private readonly IEnumerable<IVarEvent> variableEvents;
     private readonly IList<IValConversion> conversions;
+    private readonly IList<IPresentation> presentations;
     private readonly IList<IScriptBase> scripts;
     private readonly IList<OnValueChangedScriptTrigger> onValueChangedScriptTriggers;
     private readonly List<ProjectConfigurationProtocolVariableWrapper> addedCommunicatedVariables = [];
     private readonly List<RemovedCommunicatedVariable> removedCommunicatedVariables = [];
     private readonly List<ProjectConfigurationConversionWrapper> addedConversions = [];
     private readonly List<ProjectConfigurationConversionWrapper> removedConversions = [];
+    private readonly List<ProjectConfigurationPresentationWrapper> addedPresentations = [];
+    private readonly List<ProjectConfigurationPresentationWrapper> removedPresentations = [];
     private readonly List<ProjectConfigurationScriptWrapper> addedScripts = [];
     private readonly List<ProjectConfigurationScriptWrapper> removedScripts = [];
     private RadWindow? parentWindow;
@@ -52,6 +55,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         this.drivers = drivers.ToList();
         this.variableEvents = variableEvents.ToList();
         this.conversions = conversions as IList<IValConversion> ?? conversions.ToList();
+        this.presentations = presentations as IList<IPresentation> ?? presentations.ToList();
         this.onValueChangedScriptTriggers = onValueChangedScriptTriggers;
         this.scripts = scripts;
         NavigationItems =
@@ -83,6 +87,13 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             conversion.PropertyChanged += OnConversionPropertyChanged;
         }
 
+        Presentations = new ObservableCollection<ProjectConfigurationPresentationWrapper>(
+            presentations.Select(presentation => CreatePresentationWrapper(presentation)));
+        foreach (var presentation in Presentations)
+        {
+            presentation.PropertyChanged += OnPresentationPropertyChanged;
+        }
+
         Scripts = new ObservableCollection<ProjectConfigurationScriptWrapper>(
             this.scripts.Select(script => new ProjectConfigurationScriptWrapper(script)));
         foreach (var script in Scripts)
@@ -107,10 +118,13 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         SelectScriptCommand = new RelayCommand<object>(SelectScript);
         AddConversionCommand = new RelayCommand<object>(_ => AddConversion());
         RemoveConversionCommand = new RelayCommand<object>(_ => RemoveConversion(), _ => SelectedConversion != null);
+        AddPresentationCommand = new RelayCommand<object>(_ => AddPresentation(), _ => CanAddPresentation());
+        RemovePresentationCommand = new RelayCommand<object>(_ => RemovePresentation(), _ => CanRemovePresentation());
         AddScriptCommand = new RelayCommand<object>(_ => AddScript());
         RemoveScriptCommand = new RelayCommand<object>(_ => RemoveScript(), _ => SelectedScript != null);
         EnsureInitialVariableSelections();
         SelectedConversion = Conversions.FirstOrDefault();
+        SelectedPresentation = Presentations.FirstOrDefault();
         SelectedScript = Scripts.FirstOrDefault();
         SelectedNavigationItem = NavigationItems[0];
     }
@@ -119,6 +133,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public ObservableCollection<ProjectConfigurationDriverWrapper> Drivers { get; }
     public ObservableCollection<ProjectConfigurationVariableWrapper> Variables { get; }
     public ObservableCollection<ProjectConfigurationConversionWrapper> Conversions { get; }
+    public ObservableCollection<ProjectConfigurationPresentationWrapper> Presentations { get; }
     public ObservableCollection<ProjectConfigurationProtocolVariableWrapper> CommunicatedVariables { get; }
     public IReadOnlyList<ProjectConfigurationProtocolOption> SourceOptions { get; }
     public ObservableCollection<ProjectConfigurationScriptWrapper> Scripts { get; }
@@ -130,6 +145,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public RelayCommand<object> SelectScriptCommand { get; }
     public RelayCommand<object> AddConversionCommand { get; }
     public RelayCommand<object> RemoveConversionCommand { get; }
+    public RelayCommand<object> AddPresentationCommand { get; }
+    public RelayCommand<object> RemovePresentationCommand { get; }
     public RelayCommand<object> AddScriptCommand { get; }
     public RelayCommand<object> RemoveScriptCommand { get; }
 
@@ -197,6 +214,23 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
     }
 
+    public ProjectConfigurationPresentationWrapper? SelectedPresentation
+    {
+        get => field;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            ErrorMessage = string.Empty;
+            OnPropertyChanged();
+            RemovePresentationCommand?.OnCanExecuteChanged();
+        }
+    }
+
     public ProjectConfigurationProtocolOption? SelectedSourceOption
     {
         get => field;
@@ -232,6 +266,9 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         || Conversions.Any(conversion => conversion.HasChanges)
         || addedConversions.Count > 0
         || removedConversions.Count > 0
+        || Presentations.Any(presentation => presentation.HasChanges)
+        || addedPresentations.Count > 0
+        || removedPresentations.Count > 0
         || CommunicatedVariables.Any(variable => variable.HasChanges)
         || addedCommunicatedVariables.Count > 0
         || removedCommunicatedVariables.Count > 0
@@ -314,6 +351,23 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
         addedConversions.Clear();
         removedConversions.Clear();
+        foreach (var presentation in Presentations)
+        {
+            presentation.ApplyChanges();
+        }
+        foreach (var removedPresentation in removedPresentations)
+        {
+            presentations.Remove(removedPresentation.Presentation);
+        }
+        foreach (var addedPresentation in addedPresentations)
+        {
+            if (!presentations.Contains(addedPresentation.Presentation))
+            {
+                presentations.Add(addedPresentation.Presentation);
+            }
+        }
+        addedPresentations.Clear();
+        removedPresentations.Clear();
         foreach (var removed in removedCommunicatedVariables)
         {
             if (CommunicatedVariables.Any(variable => variable.Variable.Id == removed.ProtocolVariable.Variable.Id))
@@ -391,6 +445,12 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
         addedConversions.Clear();
         removedConversions.Clear();
+        foreach (var presentation in Presentations)
+        {
+            presentation.CancelChanges();
+        }
+        addedPresentations.Clear();
+        removedPresentations.Clear();
         foreach (var communicatedVariable in CommunicatedVariables)
         {
             communicatedVariable.CancelChanges();
@@ -459,6 +519,110 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         var existingNames = Conversions
             .Select(conversion => conversion.Name)
             .Concat(conversions.Select(conversion => conversion.Name))
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var name = baseName;
+        var index = 1;
+        while (existingNames.Contains(name))
+        {
+            name = $"{baseName}_{index}";
+            index++;
+        }
+
+        return name;
+    }
+
+    private ProjectConfigurationPresentationWrapper CreatePresentationWrapper(IPresentation presentation, bool isNew = false)
+    {
+        return new ProjectConfigurationPresentationWrapper(
+            presentation,
+            Conversions.Select(conversion => conversion.Conversion),
+            isNew);
+    }
+
+    private void AddPresentation()
+    {
+        if (!CanAddPresentation())
+        {
+            return;
+        }
+
+        var conversion = Conversions.First().Conversion;
+        var presentation = new Presentation
+        {
+            Name = CreateUniquePresentationName(),
+            Label = "Presentation",
+            Min = 0,
+            Max = 1,
+            PrintFormat = "{0}",
+            Unit = string.Empty,
+            Conversion = conversion
+        };
+        var wrapper = CreatePresentationWrapper(presentation, isNew: true);
+        wrapper.PropertyChanged += OnPresentationPropertyChanged;
+        Presentations.Add(wrapper);
+        addedPresentations.Add(wrapper);
+        SelectedPresentation = wrapper;
+
+        NotifyHasChangesChanged();
+    }
+
+    private bool CanAddPresentation()
+    {
+        return Conversions.Count > 0;
+    }
+
+    private void RemovePresentation()
+    {
+        if (SelectedPresentation == null)
+        {
+            return;
+        }
+
+        if (IsPresentationUsed(SelectedPresentation))
+        {
+            ErrorMessage = $"Presentation \"{SelectedPresentation.Name}\" is used by a variable.";
+            return;
+        }
+
+        ErrorMessage = string.Empty;
+        var presentation = SelectedPresentation;
+        presentation.PropertyChanged -= OnPresentationPropertyChanged;
+        Presentations.Remove(presentation);
+
+        if (presentation.IsNew)
+        {
+            addedPresentations.Remove(presentation);
+        }
+        else if (!removedPresentations.Contains(presentation))
+        {
+            removedPresentations.Add(presentation);
+        }
+
+        SelectedPresentation = Presentations.FirstOrDefault();
+        NotifyHasChangesChanged();
+    }
+
+    private bool CanRemovePresentation()
+    {
+        return SelectedPresentation != null && !IsPresentationUsed(SelectedPresentation);
+    }
+
+    private bool IsPresentationUsed(ProjectConfigurationPresentationWrapper presentation)
+    {
+        return Variables.Any(variable =>
+            variable.Variable is ScalarVariable scalarVariable
+            && ReferenceEquals(scalarVariable.Values.ValPresentation, presentation.Presentation));
+    }
+
+    private string CreateUniquePresentationName()
+    {
+        const string baseName = "presentation";
+
+        var existingNames = Presentations
+            .Select(presentation => presentation.Name)
+            .Concat(presentations.Select(presentation => presentation.Name))
             .Where(name => !string.IsNullOrWhiteSpace(name))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -809,6 +973,16 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         NotifyHasChangesChanged();
     }
 
+    private void OnPresentationPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ProjectConfigurationPresentationWrapper.HasChanges))
+        {
+            return;
+        }
+
+        NotifyHasChangesChanged();
+    }
+
     private void OnCommunicatedVariablePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(ProjectConfigurationProtocolVariableWrapper.HasChanges))
@@ -824,6 +998,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         OnPropertyChanged(nameof(HasChanges));
         ApplyCommand.OnCanExecuteChanged();
         RemoveConversionCommand.OnCanExecuteChanged();
+        AddPresentationCommand.OnCanExecuteChanged();
+        RemovePresentationCommand.OnCanExecuteChanged();
         RemoveScriptCommand.OnCanExecuteChanged();
     }
 
