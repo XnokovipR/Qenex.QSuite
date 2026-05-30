@@ -47,6 +47,12 @@
             <DataTemplate DataType="{x:Type vm:PresentationPropertiesViewModel}">
                 <local:PresentationPropertiesView />
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:EventsPropertiesViewModel}">
+                <local:EventsPropertiesView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:EventPropertiesViewModel}">
+                <local:EventPropertiesView />
+            </DataTemplate>
             <DataTemplate DataType="{x:Type vm:ReadOnlyVariablePropertiesViewModel}">
                 <local:ReadOnlyVariablePropertiesView />
             </DataTemplate>

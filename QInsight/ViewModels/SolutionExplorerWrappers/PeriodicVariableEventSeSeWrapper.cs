@@ -50,4 +50,10 @@ public class PeriodicVariableEventSeSeWrapper : PropertyChangedBase, IVariableEv
     public Dictionary<string, object>? CustomTags { get; set; } = new();
 
     #endregion
+
+    public void Refresh()
+    {
+        OnPropertyChanged(nameof(Label));
+        OnPropertyChanged(nameof(ToolTip));
+    }
 }

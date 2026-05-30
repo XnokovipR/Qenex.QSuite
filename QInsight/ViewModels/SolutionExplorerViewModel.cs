@@ -254,6 +254,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     {
         // Add events node
         var eventsNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Events);
+        eventsNode.CustomTags!["Events"] = events;
         children.Add(eventsNode);
         
         // Add events

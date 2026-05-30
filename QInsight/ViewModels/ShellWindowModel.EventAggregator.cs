@@ -16,6 +16,7 @@ using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValueConversion;
 using Qenex.QSuite.Variables.ValuePresentation;
+using Qenex.QSuite.Variables.VariableEvents;
 using Telerik.Windows.Controls;
 
 namespace Qenex.QInsight.ViewModels;
@@ -96,6 +97,14 @@ public partial class ShellWindowModel
                     () => isEditPresentationEnabled);
                 break;
             }
+            case IVariableEventSeWrapper eventSeWrapper:
+            {
+                propVm.SelectedViewModel = new EventPropertiesViewModel(
+                    eventAggregator,
+                    eventSeWrapper,
+                    () => isEditEventEnabled);
+                break;
+            }
             case ProtocolVariableWrapper protocolVariableWrapper:
             {
                 propVm.SelectedViewModel = new ReadOnlyVariablePropertiesViewModel(
@@ -167,6 +176,24 @@ public partial class ShellWindowModel
                         if (propertiesViewModel.SelectedViewModel is PresentationPropertiesViewModel presentationPropertiesViewModel)
                         {
                             presentationPropertiesViewModel.RefreshReadOnly();
+                        }
+                    });
+                break;
+            }
+            case NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Events } nodeWrapper
+                when nodeWrapper.CustomTags?.TryGetValue("Events", out var events) == true
+                     && events is IList<IVarEvent> moduleEvents:
+            {
+                propVm.SelectedViewModel = new EventsPropertiesViewModel(
+                    eventAggregator,
+                    moduleEvents,
+                    () => isEditEventEnabled,
+                    value =>
+                    {
+                        isEditEventEnabled = value;
+                        if (propertiesViewModel.SelectedViewModel is EventPropertiesViewModel eventPropertiesViewModel)
+                        {
+                            eventPropertiesViewModel.RefreshReadOnly();
                         }
                     });
                 break;
