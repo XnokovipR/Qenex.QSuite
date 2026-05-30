@@ -14,6 +14,7 @@ using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.ValueConversion;
 using Telerik.Windows.Controls;
 
 namespace Qenex.QInsight.ViewModels;
@@ -77,6 +78,14 @@ public partial class ShellWindowModel
                     () => isEditVariableEnabled);
                 break;
             }
+            case ConversionSeWrapper conversionSeWrapper:
+            {
+                propVm.SelectedViewModel = new ConversionPropertiesViewModel(
+                    eventAggregator,
+                    conversionSeWrapper,
+                    () => isEditConversionEnabled);
+                break;
+            }
             case ProtocolVariableWrapper protocolVariableWrapper:
             {
                 propVm.SelectedViewModel = new ReadOnlyVariablePropertiesViewModel(
@@ -112,6 +121,24 @@ public partial class ShellWindowModel
                         if (propertiesViewModel.SelectedViewModel is VariablePropertiesViewModel variablePropertiesViewModel)
                         {
                             variablePropertiesViewModel.RefreshReadOnly();
+                        }
+                    });
+                break;
+            }
+            case NodeSeWrapper { TypeOfNode: NodeSeWrapper.NodeType.Conversions } nodeWrapper
+                when nodeWrapper.CustomTags?.TryGetValue("Conversions", out var conversions) == true
+                     && conversions is IList<IValConversion> moduleConversions:
+            {
+                propVm.SelectedViewModel = new ConversionsPropertiesViewModel(
+                    eventAggregator,
+                    moduleConversions,
+                    () => isEditConversionEnabled,
+                    value =>
+                    {
+                        isEditConversionEnabled = value;
+                        if (propertiesViewModel.SelectedViewModel is ConversionPropertiesViewModel conversionPropertiesViewModel)
+                        {
+                            conversionPropertiesViewModel.RefreshReadOnly();
                         }
                     });
                 break;

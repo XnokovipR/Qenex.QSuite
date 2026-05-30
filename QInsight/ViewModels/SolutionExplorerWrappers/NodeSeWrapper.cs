@@ -55,6 +55,7 @@ public class NodeSeWrapper : IViewableItem
             NodeType.Protocols => "Protocols.png",
             NodeType.Variables => "Variables.png",
             NodeType.Events => "Events.png",
+            NodeType.Conversions => "Presentations.png",
             NodeType.Presentations => "Presentations.png",
             NodeType.OnlyPrefixFolder => "VariableFolder.png",
             NodeType.Workspaces => "Workspaces.png",
@@ -69,6 +70,7 @@ public class NodeSeWrapper : IViewableItem
         Protocols,
         Variables,
         Events,
+        Conversions,
         Presentations,
         Workspaces,
         Scripts

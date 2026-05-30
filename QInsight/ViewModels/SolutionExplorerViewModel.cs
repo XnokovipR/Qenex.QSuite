@@ -14,6 +14,7 @@ using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Scripting.Script;
 using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.ValueConversion;
 using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.VariableEvents;
 using Telerik.Windows.Controls;
@@ -143,6 +144,8 @@ public class SolutionExplorerViewModel : ViewModelBase
         CreateDriverWrappers(projectWrapper.Children, realPrjData.Module.Drivers);
         
         CreateVariableWrapper(projectWrapper.Children, realPrjData.Module.Variables);
+
+        CreateConversionWrapper(projectWrapper.Children, realPrjData.Module.Conversions);
         
         CreatePresentationWrapper(projectWrapper.Children, realPrjData.Module.Presentations);
         
@@ -228,6 +231,21 @@ public class SolutionExplorerViewModel : ViewModelBase
         {
             var presentationWrapper = new PresentationSeWrapper(presentation);
             presentationsNode.Children.Add(presentationWrapper);
+        }
+    }
+
+    private void CreateConversionWrapper(ObservableCollection<IViewableItem> children, IList<IValConversion> conversions)
+    {
+        // Add conversions node
+        var conversionsNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Conversions);
+        conversionsNode.CustomTags!["Conversions"] = conversions;
+        children.Add(conversionsNode);
+
+        // Add conversions
+        foreach (var conversion in conversions)
+        {
+            var conversionWrapper = new ConversionSeWrapper(conversion);
+            conversionsNode.Children.Add(conversionWrapper);
         }
     }
     

@@ -370,6 +370,7 @@ public partial class ShellWindowModel
 
             await CloseProjectWorkspacesAsync();
             isEditVariableEnabled = false;
+            isEditConversionEnabled = false;
             realProjectData = RealProjectData.CreateRealProjectData(driverPlugins, protocolPlugins, projectData, ShellWindow.MainAppSettings.ScriptEngine, logger);
             solutionExplorerViewModel.ReloadProjectData(realProjectData);
             LoadProjectWorkspaces(projectData.Workspaces);
@@ -539,6 +540,7 @@ public partial class ShellWindowModel
             
             realProjectData = null!;
             isEditVariableEnabled = false;
+            isEditConversionEnabled = false;
             currentProjectFilePath = null;
             SetProjectWindowTitle(currentProjectFilePath);
             ChangeIsProjectMade(false);
