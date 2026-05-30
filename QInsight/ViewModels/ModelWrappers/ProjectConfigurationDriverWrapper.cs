@@ -1,15 +1,21 @@
 using System.Text;
+using System.Collections.ObjectModel;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Drivers.Driver;
 
 namespace Qenex.QInsight.ViewModels.ModelWrappers;
 
-public class ProjectConfigurationDriverWrapper(IDriverBase driver) : PropertyChangedBase
+public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = false) : PropertyChangedBase
 {
     private const string FileDataReplayDriverName = "FileDataReplayDriver";
     private const string FileDataReplayDisplayLabel = "File data replay";
     private bool originalIsEnabled = driver.IsEnabled;
     private bool isEnabled = driver.IsEnabled;
+
+    public IDriverBase Driver => driver;
+    public bool IsNew => isNew;
+    public ObservableCollection<ProjectConfigurationLoadedProtocolWrapper> Protocols { get; } = new(
+        driver.Protocols.Select(protocol => new ProjectConfigurationLoadedProtocolWrapper(protocol)));
 
     public string Label
     {

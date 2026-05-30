@@ -62,44 +62,185 @@
                     </Style>
                 </Grid.Style>
 
-                <telerik:RadGridView
-                    ItemsSource="{Binding Drivers}"
-                    AutoGenerateColumns="False"
-                    CanUserDeleteRows="False"
-                    CanUserInsertRows="False"
-                    GroupRenderMode="Flat"
-                    RowIndicatorVisibility="Collapsed"
-                    ShowGroupPanel="False">
-                    <telerik:RadGridView.Columns>
-                        <telerik:GridViewDataColumn
-                            Width="70"
-                            Header="Enabled"
-                            IsReadOnly="True">
-                            <telerik:GridViewDataColumn.CellTemplate>
-                                <DataTemplate>
-                                    <CheckBox
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                        IsEnabled="{Binding CanEditIsEnabled}"/>
-                                </DataTemplate>
-                            </telerik:GridViewDataColumn.CellTemplate>
-                        </telerik:GridViewDataColumn>
-                        <telerik:GridViewDataColumn
-                            Width="*"
-                            Header="Label"
-                            IsReadOnly="True">
-                            <telerik:GridViewDataColumn.CellTemplate>
-                                <DataTemplate>
-                                    <q:QTextBlock
-                                        VerticalAlignment="Center"
-                                        Text="{Binding Label}"
-                                        ToolTip="{Binding ToolTip}"/>
-                                </DataTemplate>
-                            </telerik:GridViewDataColumn.CellTemplate>
-                        </telerik:GridViewDataColumn>
-                    </telerik:RadGridView.Columns>
-                </telerik:RadGridView>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="3*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <q:QTextBlock
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        Margin="0,0,8,6"
+                        FontWeight="SemiBold"
+                        Text="Drivers"/>
+                    <q:QTextBlock
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Margin="8,0,0,6"
+                        FontWeight="SemiBold"
+                        Text="Protocols"/>
+
+                    <Grid
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        Margin="0,0,8,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <telerik:RadComboBox
+                            Grid.Column="0"
+                            Margin="0,0,8,0"
+                            ItemsSource="{Binding DriverPluginOptions}"
+                            SelectedItem="{Binding SelectedDriverPlugin, Mode=TwoWay}"
+                            DisplayMemberPath="DisplayName"/>
+                        <telerik:RadButton
+                            Grid.Column="1"
+                            Width="34"
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Command="{Binding AddDriverCommand}"
+                            Content="+"/>
+                        <telerik:RadButton
+                            Grid.Column="2"
+                            Width="34"
+                            Height="28"
+                            Command="{Binding RemoveDriverCommand}"
+                            Content="-"/>
+                    </Grid>
+
+                    <telerik:RadGridView
+                        Grid.Row="2"
+                        Grid.Column="0"
+                        Margin="0,0,8,0"
+                        ItemsSource="{Binding Drivers}"
+                        SelectedItem="{Binding SelectedDriver, Mode=TwoWay}"
+                        AutoGenerateColumns="False"
+                        CanUserDeleteRows="False"
+                        CanUserInsertRows="False"
+                        GroupRenderMode="Flat"
+                        RowIndicatorVisibility="Collapsed"
+                        ShowGroupPanel="False">
+                        <telerik:RadGridView.Columns>
+                            <telerik:GridViewDataColumn
+                                Width="70"
+                                Header="Enabled"
+                                IsReadOnly="True">
+                                <telerik:GridViewDataColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <CheckBox
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                            IsEnabled="{Binding CanEditIsEnabled}"/>
+                                    </DataTemplate>
+                                </telerik:GridViewDataColumn.CellTemplate>
+                            </telerik:GridViewDataColumn>
+                            <telerik:GridViewDataColumn
+                                Width="*"
+                                Header="Label"
+                                IsReadOnly="True">
+                                <telerik:GridViewDataColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <q:QTextBlock
+                                            VerticalAlignment="Center"
+                                            Text="{Binding Label}"
+                                            ToolTip="{Binding ToolTip}"/>
+                                    </DataTemplate>
+                                </telerik:GridViewDataColumn.CellTemplate>
+                            </telerik:GridViewDataColumn>
+                        </telerik:RadGridView.Columns>
+                    </telerik:RadGridView>
+
+                    <Grid
+                        Grid.Row="1"
+                        Grid.RowSpan="2"
+                        Grid.Column="1"
+                        Margin="8,0,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <telerik:RadComboBox
+                            Grid.Row="0"
+                            Grid.Column="0"
+                            Margin="0,0,8,8"
+                            ItemsSource="{Binding ProtocolPluginOptions}"
+                            SelectedItem="{Binding SelectedProtocolPlugin, Mode=TwoWay}"
+                            DisplayMemberPath="DisplayName"/>
+                        <telerik:RadButton
+                            Grid.Row="0"
+                            Grid.Column="1"
+                            Width="34"
+                            Height="28"
+                            Margin="0,0,6,8"
+                            Command="{Binding AddProtocolCommand}"
+                            Content="+"/>
+                        <telerik:RadButton
+                            Grid.Row="0"
+                            Grid.Column="2"
+                            Width="34"
+                            Height="28"
+                            Margin="0,0,0,8"
+                            Command="{Binding RemoveProtocolCommand}"
+                            Content="-"/>
+
+                        <telerik:RadGridView
+                            Grid.Row="1"
+                            Grid.ColumnSpan="3"
+                            ItemsSource="{Binding SelectedDriver.Protocols}"
+                            SelectedItem="{Binding SelectedProtocol, Mode=TwoWay}"
+                            AutoGenerateColumns="False"
+                            CanUserDeleteRows="False"
+                            CanUserInsertRows="False"
+                            GroupRenderMode="Flat"
+                            RowIndicatorVisibility="Collapsed"
+                            ShowGroupPanel="False">
+                            <telerik:RadGridView.Columns>
+                                <telerik:GridViewDataColumn
+                                    Width="70"
+                                    Header="Enabled"
+                                    IsReadOnly="True">
+                                    <telerik:GridViewDataColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                IsChecked="{Binding IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DataTemplate>
+                                    </telerik:GridViewDataColumn.CellTemplate>
+                                </telerik:GridViewDataColumn>
+                                <telerik:GridViewDataColumn
+                                    Width="*"
+                                    Header="Protocol"
+                                    IsReadOnly="True">
+                                    <telerik:GridViewDataColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <q:QTextBlock
+                                                VerticalAlignment="Center"
+                                                Text="{Binding DisplayName}"
+                                                ToolTip="{Binding ToolTip}"/>
+                                        </DataTemplate>
+                                    </telerik:GridViewDataColumn.CellTemplate>
+                                </telerik:GridViewDataColumn>
+                            </telerik:RadGridView.Columns>
+                        </telerik:RadGridView>
+                    </Grid>
+                </Grid>
             </Grid>
 
             <Grid Margin="8">

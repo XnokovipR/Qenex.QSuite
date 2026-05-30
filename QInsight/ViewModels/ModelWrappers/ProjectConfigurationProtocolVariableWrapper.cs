@@ -324,6 +324,11 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
         OnPropertyChanged(nameof(VariableEventOptions));
     }
 
+    public void RefreshSourceOptions()
+    {
+        OnPropertyChanged(nameof(SourceOptions));
+    }
+
     private void ReadCommunicationFieldsFromCommParam()
     {
         var parameters = ProjectConfigurationProtocolVariableFactory.ParseCommParam(CommParam);

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QLibs.QUI;
+using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Scripting.PythonScript;
@@ -20,14 +21,24 @@ namespace Qenex.QInsight.ViewModels;
 
 public class ProjectConfigurationViewModel : PropertyChangedBase
 {
+    private const string FileDataLoggerDriverName = "FileDataLoggerDriver";
+    private const string FileDataReplayDriverName = "FileDataReplayDriver";
+    private const string DataLogReplayProtocolName = "DataLogReplayProtocol";
+
     private readonly EventAggregator? eventAggregator;
-    private readonly IEnumerable<IDriverBase> drivers;
+    private readonly IList<IDriverBase> drivers;
+    private readonly IEnumerable<PluginDetails> driverPlugins;
+    private readonly IEnumerable<PluginDetails> protocolPlugins;
     private readonly IList<IVariableBase> variables;
     private readonly IList<IVarEvent> variableEvents;
     private readonly IList<IValConversion> conversions;
     private readonly IList<IPresentation> presentations;
     private readonly IList<IScriptBase> scripts;
     private readonly IList<OnValueChangedScriptTrigger> onValueChangedScriptTriggers;
+    private readonly List<ProjectConfigurationDriverWrapper> addedDrivers = [];
+    private readonly List<ProjectConfigurationDriverWrapper> removedDrivers = [];
+    private readonly List<AddedProtocol> addedProtocols = [];
+    private readonly List<RemovedProtocol> removedProtocols = [];
     private readonly List<ProjectConfigurationVariableWrapper> addedVariables = [];
     private readonly List<ProjectConfigurationVariableWrapper> removedVariables = [];
     private readonly List<ProjectConfigurationProtocolVariableWrapper> addedCommunicatedVariables = [];
@@ -43,13 +54,15 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private RadWindow? parentWindow;
 
     public ProjectConfigurationViewModel()
-        : this(null, [], [], [], [], [], [], [])
+        : this(null, [], [], [], [], [], [], [], [], [])
     {
     }
 
     public ProjectConfigurationViewModel(
         EventAggregator? eventAggregator,
         IEnumerable<IDriverBase> drivers,
+        IEnumerable<PluginDetails> driverPlugins,
+        IEnumerable<PluginDetails> protocolPlugins,
         IEnumerable<IVariableBase> variables,
         IEnumerable<IValConversion> conversions,
         IEnumerable<IPresentation> presentations,
@@ -58,7 +71,9 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         IList<IScriptBase> scripts)
     {
         this.eventAggregator = eventAggregator;
-        this.drivers = drivers.ToList();
+        this.drivers = drivers as IList<IDriverBase> ?? drivers.ToList();
+        this.driverPlugins = driverPlugins.ToList();
+        this.protocolPlugins = protocolPlugins.ToList();
         this.variables = variables as IList<IVariableBase> ?? variables.ToList();
         this.variableEvents = variableEvents as IList<IVarEvent> ?? variableEvents.ToList();
         this.conversions = conversions as IList<IValConversion> ?? conversions.ToList();
@@ -75,11 +90,22 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Scripts, "Scripts")
         ];
         Drivers = new ObservableCollection<ProjectConfigurationDriverWrapper>(
-            drivers.Select(driver => new ProjectConfigurationDriverWrapper(driver)));
+            this.drivers.Select(driver => new ProjectConfigurationDriverWrapper(driver)));
         foreach (var driver in Drivers)
         {
-            driver.PropertyChanged += OnDriverPropertyChanged;
+            SubscribeDriverWrapper(driver);
         }
+        DriverPluginOptions = this.driverPlugins
+            .Where(plugin => !plugin.Name.Equals(FileDataReplayDriverName, StringComparison.OrdinalIgnoreCase))
+            .Select(plugin => new ProjectConfigurationDriverPluginOption(plugin))
+            .OrderBy(option => option.DisplayName)
+            .ToList();
+        SelectedDriverPlugin = DriverPluginOptions.FirstOrDefault();
+        ProtocolPluginOptions = this.protocolPlugins
+            .Select(plugin => new ProjectConfigurationProtocolPluginOption(plugin))
+            .OrderBy(option => option.DisplayName)
+            .ToList();
+        SelectedProtocolPlugin = ProtocolPluginOptions.FirstOrDefault();
         Variables = new ObservableCollection<ProjectConfigurationVariableWrapper>(
             this.variables.Select(variable => new ProjectConfigurationVariableWrapper(variable, presentations)));
         foreach (var variable in Variables)
@@ -115,7 +141,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             script.PropertyChanged += OnScriptPropertyChanged;
         }
 
-        SourceOptions = CreateSourceOptions(this.drivers).ToList();
+        SourceOptions = new ObservableCollection<ProjectConfigurationProtocolOption>(CreateSourceOptions(this.drivers));
         SelectedSourceOption = SourceOptions.FirstOrDefault();
         CommunicatedVariables = new ObservableCollection<ProjectConfigurationProtocolVariableWrapper>(
             SourceOptions.SelectMany(source => source.Protocol.Variables.Select(protocolVariable =>
@@ -127,6 +153,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
         ApplyCommand = new RelayCommand<object>(_ => ApplyChanges(), _ => HasChanges);
         CancelCommand = new RelayCommand<object>(_ => Cancel());
+        AddDriverCommand = new RelayCommand<object>(_ => AddDriver(), _ => CanAddDriver());
+        RemoveDriverCommand = new RelayCommand<object>(_ => RemoveDriver(), _ => SelectedDriver != null);
+        AddProtocolCommand = new RelayCommand<object>(_ => AddProtocol(), _ => CanAddProtocol());
+        RemoveProtocolCommand = new RelayCommand<object>(_ => RemoveProtocol(), _ => SelectedProtocol != null);
         AddVariableCommand = new RelayCommand<object>(_ => AddVariable(), _ => CanAddVariable());
         RemoveVariableCommand = new RelayCommand<object>(_ => RemoveVariable(), _ => SelectedVariable != null);
         AddVariableToSourceCommand = new RelayCommand<object>(_ => AddVariableToSource(), _ => CanAddVariableToSource());
@@ -141,6 +171,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         AddScriptCommand = new RelayCommand<object>(_ => AddScript());
         RemoveScriptCommand = new RelayCommand<object>(_ => RemoveScript(), _ => SelectedScript != null);
         EnsureInitialVariableSelections();
+        SelectedDriver = Drivers.FirstOrDefault();
         SelectedConversion = Conversions.FirstOrDefault();
         SelectedPresentation = Presentations.FirstOrDefault();
         SelectedEvent = Events.FirstOrDefault();
@@ -150,16 +181,22 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
     public ObservableCollection<ProjectConfigurationNavigationItem> NavigationItems { get; }
     public ObservableCollection<ProjectConfigurationDriverWrapper> Drivers { get; }
+    public IReadOnlyList<ProjectConfigurationDriverPluginOption> DriverPluginOptions { get; }
+    public IReadOnlyList<ProjectConfigurationProtocolPluginOption> ProtocolPluginOptions { get; }
     public ObservableCollection<ProjectConfigurationVariableWrapper> Variables { get; }
     public ObservableCollection<ProjectConfigurationConversionWrapper> Conversions { get; }
     public ObservableCollection<ProjectConfigurationPresentationWrapper> Presentations { get; }
     public ObservableCollection<ProjectConfigurationEventWrapper> Events { get; }
     public ObservableCollection<ProjectConfigurationProtocolVariableWrapper> CommunicatedVariables { get; }
-    public IReadOnlyList<ProjectConfigurationProtocolOption> SourceOptions { get; }
+    public ObservableCollection<ProjectConfigurationProtocolOption> SourceOptions { get; }
     public ObservableCollection<ProjectConfigurationScriptWrapper> Scripts { get; }
     public IEnumerable<EnumMemberViewModel> ExecutionModes { get; } = EnumDataSource.FromType<ScriptExecutionMode>();
     public RelayCommand<object> ApplyCommand { get; }
     public RelayCommand<object> CancelCommand { get; }
+    public RelayCommand<object> AddDriverCommand { get; }
+    public RelayCommand<object> RemoveDriverCommand { get; }
+    public RelayCommand<object> AddProtocolCommand { get; }
+    public RelayCommand<object> RemoveProtocolCommand { get; }
     public RelayCommand<object> AddVariableCommand { get; }
     public RelayCommand<object> RemoveVariableCommand { get; }
     public RelayCommand<object> AddVariableToSourceCommand { get; }
@@ -173,6 +210,74 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public RelayCommand<object> RemoveEventCommand { get; }
     public RelayCommand<object> AddScriptCommand { get; }
     public RelayCommand<object> RemoveScriptCommand { get; }
+
+    public ProjectConfigurationDriverWrapper? SelectedDriver
+    {
+        get => field;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            SelectedProtocol = field?.Protocols.FirstOrDefault();
+            OnPropertyChanged();
+            AddDriverCommand?.OnCanExecuteChanged();
+            RemoveDriverCommand?.OnCanExecuteChanged();
+            AddProtocolCommand?.OnCanExecuteChanged();
+            RemoveProtocolCommand?.OnCanExecuteChanged();
+        }
+    }
+
+    public ProjectConfigurationDriverPluginOption? SelectedDriverPlugin
+    {
+        get => field;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            OnPropertyChanged();
+            AddDriverCommand?.OnCanExecuteChanged();
+        }
+    }
+
+    public ProjectConfigurationLoadedProtocolWrapper? SelectedProtocol
+    {
+        get => field;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            OnPropertyChanged();
+            RemoveProtocolCommand?.OnCanExecuteChanged();
+        }
+    }
+
+    public ProjectConfigurationProtocolPluginOption? SelectedProtocolPlugin
+    {
+        get => field;
+        set
+        {
+            if (field == value)
+            {
+                return;
+            }
+
+            field = value;
+            OnPropertyChanged();
+            AddProtocolCommand?.OnCanExecuteChanged();
+        }
+    }
 
     public ProjectConfigurationVariableWrapper? SelectedVariable
     {
@@ -304,6 +409,11 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
     public bool HasChanges =>
         Drivers.Any(driver => driver.HasChanges)
+        || addedDrivers.Count > 0
+        || removedDrivers.Count > 0
+        || Drivers.SelectMany(driver => driver.Protocols).Any(protocol => protocol.HasChanges)
+        || addedProtocols.Count > 0
+        || removedProtocols.Count > 0
         || Variables.Any(variable => variable.HasChanges)
         || addedVariables.Count > 0
         || removedVariables.Count > 0
@@ -376,6 +486,14 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         {
             driver.ApplyChanges();
         }
+        foreach (var protocol in Drivers.SelectMany(driver => driver.Protocols))
+        {
+            protocol.ApplyChanges();
+        }
+        addedDrivers.Clear();
+        removedDrivers.Clear();
+        addedProtocols.Clear();
+        removedProtocols.Clear();
         foreach (var variable in Variables)
         {
             variable.ApplyChanges();
@@ -514,6 +632,37 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         {
             driver.CancelChanges();
         }
+        foreach (var protocol in Drivers.SelectMany(driver => driver.Protocols))
+        {
+            protocol.CancelChanges();
+        }
+        foreach (var addedProtocol in addedProtocols)
+        {
+            RemoveProtocolFromSourceOptions(addedProtocol.Protocol.Protocol);
+            addedProtocol.Driver.Driver.RemoveProtocol(addedProtocol.Protocol.Protocol);
+            addedProtocol.Driver.Protocols.Remove(addedProtocol.Protocol);
+            addedProtocol.Protocol.PropertyChanged -= OnProtocolPropertyChanged;
+        }
+        foreach (var removedProtocol in removedProtocols)
+        {
+            removedProtocol.Protocol.CancelChanges();
+            removedProtocol.Driver.Driver.AddProtocol(removedProtocol.Protocol.Protocol);
+            removedProtocol.Driver.Protocols.Add(removedProtocol.Protocol);
+            AddProtocolToSourceOptions(removedProtocol.Driver, removedProtocol.Protocol.Protocol);
+            removedProtocol.Protocol.PropertyChanged += OnProtocolPropertyChanged;
+        }
+        foreach (var addedDriver in addedDrivers)
+        {
+            RemoveDriverFromProject(addedDriver);
+        }
+        foreach (var removedDriver in removedDrivers)
+        {
+            RestoreDriverToProject(removedDriver);
+        }
+        addedDrivers.Clear();
+        removedDrivers.Clear();
+        addedProtocols.Clear();
+        removedProtocols.Clear();
         foreach (var variable in Variables)
         {
             variable.CancelChanges();
@@ -559,6 +708,373 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         removedScripts.Clear();
 
         parentWindow?.Close();
+    }
+
+    private void AddDriver()
+    {
+        if (!CanAddDriver() || SelectedDriverPlugin == null)
+        {
+            return;
+        }
+
+        try
+        {
+            ErrorMessage = string.Empty;
+            var driver = CreateDriver(SelectedDriverPlugin.Plugin);
+            var wrapper = AddDriverToProject(driver, isNew: true);
+            addedDrivers.Add(wrapper);
+            SelectedDriver = wrapper;
+
+            if (IsFileLogDriver(driver))
+            {
+                EnsureReplayDriverForFileLogger();
+            }
+
+            NotifySourceOptionsChanged();
+            NotifyHasChangesChanged();
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = e.Message;
+        }
+    }
+
+    private bool CanAddDriver()
+    {
+        return SelectedDriverPlugin != null;
+    }
+
+    private void RemoveDriver()
+    {
+        if (SelectedDriver == null)
+        {
+            return;
+        }
+
+        RemoveDriver(SelectedDriver, removePairedReplayDriver: true);
+        NotifySourceOptionsChanged();
+        NotifyHasChangesChanged();
+    }
+
+    private IDriverBase CreateDriver(PluginDetails plugin)
+    {
+        var pluginLoader = new PluginLoader();
+        var driver = pluginLoader.LoadPlugin<IDriverBase>(plugin.PathName)
+                     ?? throw new InvalidOperationException($"Driver \"{plugin.Name}\" could not be loaded.");
+
+        driver.Id = CreateUniqueDriverId();
+        driver.Label = driver.Specification.Label;
+        driver.RawSettings = string.Empty;
+        driver.RawEncryptedSettings = string.Empty;
+        driver.IsEnabled = !driver.Specification.Name.Equals(FileDataReplayDriverName, StringComparison.OrdinalIgnoreCase);
+
+        if (driver.Specification.Name.Equals(FileDataLoggerDriverName, StringComparison.OrdinalIgnoreCase))
+        {
+            driver.Label = "File data logger";
+            driver.RawSettings = "file=DataLogs;append=true;flushOnWrite=false";
+        }
+        else if (driver.Specification.Name.Equals(FileDataReplayDriverName, StringComparison.OrdinalIgnoreCase))
+        {
+            driver.Label = "File data replay";
+            driver.RawSettings = "file=DataLogs\\values.qilog;mode=realtime;speed=1;loop=false";
+        }
+
+        driver.SetConfiguration();
+        return driver;
+    }
+
+    private ProjectConfigurationDriverWrapper AddDriverToProject(IDriverBase driver, bool isNew)
+    {
+        if (!drivers.Contains(driver))
+        {
+            drivers.Add(driver);
+        }
+
+        var wrapper = new ProjectConfigurationDriverWrapper(driver, isNew);
+        SubscribeDriverWrapper(wrapper);
+        Drivers.Add(wrapper);
+        foreach (var protocol in wrapper.Protocols)
+        {
+            AddProtocolToSourceOptions(wrapper, protocol.Protocol);
+        }
+
+        return wrapper;
+    }
+
+    private void RemoveDriver(ProjectConfigurationDriverWrapper driver, bool removePairedReplayDriver)
+    {
+        if (removePairedReplayDriver && IsFileLogDriver(driver.Driver))
+        {
+            foreach (var replayDriver in Drivers.Where(IsReplayDriverWrapper).ToList())
+            {
+                RemoveDriver(replayDriver, removePairedReplayDriver: false);
+            }
+        }
+
+        foreach (var protocol in driver.Protocols.Select(protocol => protocol.Protocol).ToList())
+        {
+            foreach (var communicatedVariable in CommunicatedVariables
+                         .Where(communicatedVariable => ReferenceEquals(communicatedVariable.SelectedSource.Protocol, protocol))
+                         .ToList())
+            {
+                RemoveCommunicatedVariable(communicatedVariable);
+            }
+
+            RemoveProtocolFromSourceOptions(protocol);
+        }
+
+        UnsubscribeDriverWrapper(driver);
+        Drivers.Remove(driver);
+        drivers.Remove(driver.Driver);
+
+        if ((!driver.IsNew || !addedDrivers.Remove(driver)) && !removedDrivers.Contains(driver))
+        {
+            removedDrivers.Add(driver);
+        }
+
+        if (SelectedDriver == driver)
+        {
+            SelectedDriver = Drivers.FirstOrDefault();
+        }
+    }
+
+    private void RemoveDriverFromProject(ProjectConfigurationDriverWrapper driver)
+    {
+        foreach (var protocol in driver.Protocols.Select(protocol => protocol.Protocol).ToList())
+        {
+            RemoveProtocolFromSourceOptions(protocol);
+        }
+
+        UnsubscribeDriverWrapper(driver);
+        Drivers.Remove(driver);
+        drivers.Remove(driver.Driver);
+    }
+
+    private void RestoreDriverToProject(ProjectConfigurationDriverWrapper driver)
+    {
+        if (!drivers.Contains(driver.Driver))
+        {
+            drivers.Add(driver.Driver);
+        }
+
+        if (!Drivers.Contains(driver))
+        {
+            Drivers.Add(driver);
+        }
+
+        SubscribeDriverWrapper(driver);
+        foreach (var protocol in driver.Protocols)
+        {
+            AddProtocolToSourceOptions(driver, protocol.Protocol);
+        }
+    }
+
+    private void EnsureReplayDriverForFileLogger()
+    {
+        if (Drivers.Any(IsReplayDriverWrapper))
+        {
+            return;
+        }
+
+        var removedReplayDriver = removedDrivers.FirstOrDefault(IsReplayDriverWrapper);
+        if (removedReplayDriver != null)
+        {
+            removedDrivers.Remove(removedReplayDriver);
+            RestoreDriverToProject(removedReplayDriver);
+            return;
+        }
+
+        var replayDriverPlugin = driverPlugins.FirstOrDefault(plugin =>
+            plugin.Name.Equals(FileDataReplayDriverName, StringComparison.OrdinalIgnoreCase));
+        if (replayDriverPlugin == null)
+        {
+            throw new InvalidOperationException("FileDataReplayDriver plugin was not found.");
+        }
+
+        var replayDriver = CreateDriver(replayDriverPlugin);
+        AddReplayProtocol(replayDriver);
+        var replayWrapper = AddDriverToProject(replayDriver, isNew: true);
+        addedDrivers.Add(replayWrapper);
+    }
+
+    private void AddReplayProtocol(IDriverBase replayDriver)
+    {
+        var replayProtocolPlugin = protocolPlugins.FirstOrDefault(plugin =>
+            plugin.Name.Equals(DataLogReplayProtocolName, StringComparison.OrdinalIgnoreCase));
+        if (replayProtocolPlugin == null)
+        {
+            return;
+        }
+
+        var pluginLoader = new PluginLoader();
+        var replayProtocol = pluginLoader.LoadPlugin<IProtocolBase>(replayProtocolPlugin.PathName);
+        if (replayProtocol == null)
+        {
+            return;
+        }
+
+        replayProtocol.IsEnabled = false;
+        replayProtocol.RawSettings = string.Empty;
+        replayProtocol.RawEncryptedSettings = string.Empty;
+        replayProtocol.SetConfiguration();
+        replayDriver.AddProtocol(replayProtocol);
+    }
+
+    private int CreateUniqueDriverId()
+    {
+        var usedIds = Drivers
+            .Select(driver => driver.Driver.Id)
+            .Concat(drivers.Select(driver => driver.Id))
+            .ToHashSet();
+
+        var id = usedIds.Count == 0 ? 1 : usedIds.Max() + 1;
+        while (usedIds.Contains(id))
+        {
+            id++;
+        }
+
+        return id;
+    }
+
+    private static bool IsReplayDriverWrapper(ProjectConfigurationDriverWrapper driver)
+    {
+        return IsReplayDriver(driver.Driver);
+    }
+
+    private void SubscribeDriverWrapper(ProjectConfigurationDriverWrapper driver)
+    {
+        driver.PropertyChanged += OnDriverPropertyChanged;
+        foreach (var protocol in driver.Protocols)
+        {
+            protocol.PropertyChanged += OnProtocolPropertyChanged;
+        }
+    }
+
+    private void UnsubscribeDriverWrapper(ProjectConfigurationDriverWrapper driver)
+    {
+        driver.PropertyChanged -= OnDriverPropertyChanged;
+        foreach (var protocol in driver.Protocols)
+        {
+            protocol.PropertyChanged -= OnProtocolPropertyChanged;
+        }
+    }
+
+    private void AddProtocol()
+    {
+        if (!CanAddProtocol() || SelectedDriver == null || SelectedProtocolPlugin == null)
+        {
+            return;
+        }
+
+        try
+        {
+            ErrorMessage = string.Empty;
+            var pluginLoader = new PluginLoader();
+            var protocol = pluginLoader.LoadPlugin<IProtocolBase>(SelectedProtocolPlugin.Plugin.PathName)
+                           ?? throw new InvalidOperationException($"Protocol \"{SelectedProtocolPlugin.Plugin.Name}\" could not be loaded.");
+            protocol.IsEnabled = true;
+            protocol.RawSettings = string.Empty;
+            protocol.RawEncryptedSettings = string.Empty;
+            protocol.SetConfiguration();
+
+            SelectedDriver.Driver.AddProtocol(protocol);
+            var wrapper = new ProjectConfigurationLoadedProtocolWrapper(protocol, isNew: true);
+            wrapper.PropertyChanged += OnProtocolPropertyChanged;
+            SelectedDriver.Protocols.Add(wrapper);
+            addedProtocols.Add(new AddedProtocol(SelectedDriver, wrapper));
+            AddProtocolToSourceOptions(SelectedDriver, protocol);
+            SelectedProtocol = wrapper;
+
+            NotifySourceOptionsChanged();
+            NotifyHasChangesChanged();
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = e.Message;
+        }
+    }
+
+    private bool CanAddProtocol()
+    {
+        return SelectedDriver != null
+               && SelectedProtocolPlugin != null
+               && SelectedDriver.Protocols.All(protocol => !protocol.Protocol.Specification.Name.Equals(
+                   SelectedProtocolPlugin.Plugin.Name,
+                   StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void RemoveProtocol()
+    {
+        if (SelectedDriver == null || SelectedProtocol == null)
+        {
+            return;
+        }
+
+        var protocol = SelectedProtocol;
+        foreach (var communicatedVariable in CommunicatedVariables
+                     .Where(communicatedVariable => ReferenceEquals(communicatedVariable.SelectedSource.Protocol, protocol.Protocol))
+                     .ToList())
+        {
+            RemoveCommunicatedVariable(communicatedVariable);
+        }
+
+        protocol.PropertyChanged -= OnProtocolPropertyChanged;
+        SelectedDriver.Driver.RemoveProtocol(protocol.Protocol);
+        SelectedDriver.Protocols.Remove(protocol);
+        RemoveProtocolFromSourceOptions(protocol.Protocol);
+
+        var addedProtocol = addedProtocols.FirstOrDefault(addedProtocol => addedProtocol.Protocol == protocol);
+        if (addedProtocol != null)
+        {
+            addedProtocols.Remove(addedProtocol);
+        }
+        else
+        {
+            removedProtocols.Add(new RemovedProtocol(SelectedDriver, protocol));
+        }
+
+        SelectedProtocol = SelectedDriver.Protocols.FirstOrDefault();
+        NotifySourceOptionsChanged();
+        NotifyHasChangesChanged();
+    }
+
+    private void AddProtocolToSourceOptions(ProjectConfigurationDriverWrapper driver, IProtocolBase protocol)
+    {
+        if (!IsSourceDriver(driver.Driver))
+        {
+            return;
+        }
+
+        if (SourceOptions.Any(option => ReferenceEquals(option.Protocol, protocol)))
+        {
+            return;
+        }
+
+        SourceOptions.Add(new ProjectConfigurationProtocolOption(driver.Driver, protocol));
+    }
+
+    private void RemoveProtocolFromSourceOptions(IProtocolBase protocol)
+    {
+        foreach (var sourceOption in SourceOptions
+                     .Where(option => ReferenceEquals(option.Protocol, protocol))
+                     .ToList())
+        {
+            SourceOptions.Remove(sourceOption);
+        }
+
+        if (SelectedSourceOption != null && ReferenceEquals(SelectedSourceOption.Protocol, protocol))
+        {
+            SelectedSourceOption = SourceOptions.FirstOrDefault();
+        }
+    }
+
+    private void NotifySourceOptionsChanged()
+    {
+        OnPropertyChanged(nameof(SourceOptions));
+        foreach (var communicatedVariable in CommunicatedVariables)
+        {
+            communicatedVariable.RefreshSourceOptions();
+        }
     }
 
     private void AddVariable()
@@ -1225,6 +1741,17 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         NotifyHasChangesChanged();
     }
 
+    private void OnProtocolPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ProjectConfigurationLoadedProtocolWrapper.HasChanges)
+            && e.PropertyName != nameof(ProjectConfigurationLoadedProtocolWrapper.IsEnabled))
+        {
+            return;
+        }
+
+        NotifyHasChangesChanged();
+    }
+
     private void OnScriptPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(ProjectConfigurationScriptWrapper.HasChanges))
@@ -1309,6 +1836,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     {
         OnPropertyChanged(nameof(HasChanges));
         ApplyCommand.OnCanExecuteChanged();
+        AddDriverCommand.OnCanExecuteChanged();
+        RemoveDriverCommand.OnCanExecuteChanged();
+        AddProtocolCommand.OnCanExecuteChanged();
+        RemoveProtocolCommand.OnCanExecuteChanged();
         AddVariableCommand.OnCanExecuteChanged();
         RemoveVariableCommand.OnCanExecuteChanged();
         RemoveConversionCommand.OnCanExecuteChanged();
@@ -1321,9 +1852,27 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private sealed record RemovedCommunicatedVariable(
         IProtocolVariable ProtocolVariable,
         ProjectConfigurationProtocolOption Source);
+
+    private sealed record AddedProtocol(
+        ProjectConfigurationDriverWrapper Driver,
+        ProjectConfigurationLoadedProtocolWrapper Protocol);
+
+    private sealed record RemovedProtocol(
+        ProjectConfigurationDriverWrapper Driver,
+        ProjectConfigurationLoadedProtocolWrapper Protocol);
 }
 
 public sealed record ProjectConfigurationNavigationItem(ProjectConfigurationSection Section, string Label);
+
+public sealed record ProjectConfigurationDriverPluginOption(PluginDetails Plugin)
+{
+    public string DisplayName => $"{Plugin.Name} ({Plugin.Version})";
+}
+
+public sealed record ProjectConfigurationProtocolPluginOption(PluginDetails Plugin)
+{
+    public string DisplayName => $"{Plugin.Name} ({Plugin.Version})";
+}
 
 public enum ProjectConfigurationSection
 {

@@ -314,6 +314,8 @@ public partial class ShellWindowModel
         var projectConfigurationViewModel = new ProjectConfigurationViewModel(
             eventAggregator,
             realProjectData.Module.Drivers,
+            driverPlugins,
+            protocolPlugins,
             realProjectData.Module.Variables,
             realProjectData.Module.Conversions,
             realProjectData.Module.Presentations,
