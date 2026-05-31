@@ -11,7 +11,7 @@
       <settings>periodes=20</settings>
       <encryptedSettings />
       <protocolReferences>
-        <protocolReference ref="SimpleO2OProtocol">
+        <protocolReference ref="SimulDataProtocol">
           <isEnabled>true</isEnabled>
           <settings />
           <encryptedSettings />
@@ -109,7 +109,7 @@
     </driver>
   </drivers>
   <protocols>
-    <protocol id="1" name="SimpleO2OProtocol" label="Simple One to One Protocol">
+    <protocol id="1" name="SimulDataProtocol" label="Simulation Data Protocol">
       <version>1.0.0.0</version>
     </protocol>
     <protocol id="1" name="One2OneProtocol" label="One2One Protocol">

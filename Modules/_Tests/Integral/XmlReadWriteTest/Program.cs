@@ -33,7 +33,7 @@ class Program
             
             var pluginManager = new PluginLoader();
             var driversDetails = pluginManager.GetPluginDetails<IDriverBase>(FromOutputDir(@"..\..\..\..\..\..\..\Drivers\SimDataDriver\bin\Debug\net10.0"));
-            var protocolsDetails = pluginManager.GetPluginDetails<IProtocolBase>(FromOutputDir(@"..\..\..\..\..\..\..\Protocols\SimpleProtocol\bin\Debug\net10.0"));
+            var protocolsDetails = pluginManager.GetPluginDetails<IProtocolBase>(FromOutputDir(@"..\..\..\..\..\..\..\Protocols\SimulDataProtocol\bin\Debug\net10.0"));
             
             var xmlModuleHandler = new XmlModuleHandler(driversDetails, protocolsDetails);
             var realModule = xmlModuleHandler.CreateModule<UnifiedModule>(xmlModule, new UnifiedModuleFactory(), new ScriptEngineSettings(), null);

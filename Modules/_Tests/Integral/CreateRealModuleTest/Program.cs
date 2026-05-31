@@ -28,7 +28,7 @@ class Program
         //Load drivers and protocols
         var pluginManager = new PluginLoader(logger);
         var driversDetails = pluginManager.GetPluginDetails<IDriverBase>(@"..\..\..\..\..\..\..\Drivers\SimDataDriver\bin\Debug\net10.0");
-        var protocolsDetails = pluginManager.GetPluginDetails<IProtocolBase>(@"..\..\..\..\..\..\..\Protocols\SimpleProtocol\bin\Debug\net10.0");
+        var protocolsDetails = pluginManager.GetPluginDetails<IProtocolBase>(@"..\..\..\..\..\..\..\Protocols\SimulDataProtocol\bin\Debug\net10.0");
         
         var xmlModule = XmlInOut<XmlModule>.LoadFromFile(@"..\..\..\..\..\..\ModuleXmlHandler\Docs\XmlModule.xml");
         

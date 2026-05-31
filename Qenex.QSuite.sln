@@ -57,7 +57,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integral", "Integral", "{2C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlReadWriteTest", "Modules\_Tests\Integral\XmlReadWriteTest\XmlReadWriteTest.csproj", "{5624F006-4FE9-4DEB-ACB3-F154DC47E257}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleProtocol", "Protocols\SimpleProtocol\SimpleProtocol.csproj", "{673ED106-3B85-48BA-B173-D3D0E8F99E1F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimulDataProtocol", "Protocols\SimulDataProtocol\SimulDataProtocol.csproj", "{673ED106-3B85-48BA-B173-D3D0E8F99E1F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "One2OneProtocol", "Protocols\One2OneProtocol\One2OneProtocol.csproj", "{0A176EA7-B35E-4A40-908B-ECC7651DA12A}"
 EndProject

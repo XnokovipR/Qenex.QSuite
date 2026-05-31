@@ -26,7 +26,7 @@ public class SimDriver : DriverBase
         {
             Name = "SimulDataDriver",
             Label = "Simulation Data Driver",
-            Description = "Peak CAN Driver",
+            Description = "Testing driver for simulating data communication.",
             CreatedOn = new DateTime(2025, 2, 1),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",
