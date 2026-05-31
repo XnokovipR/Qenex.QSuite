@@ -572,7 +572,7 @@
                             Grid.Column="0"
                             Margin="0,0,10,6"
                             VerticalAlignment="Center"
-                            Text="Script"/>
+                            Text="On-change script"/>
                         <telerik:RadComboBox
                             Grid.Row="6"
                             Grid.Column="1"
@@ -1167,6 +1167,49 @@
                                             </i:EventTrigger>
                                         </i:Interaction.Triggers>
                                     </q:QTextBox>
+                                </DataTemplate>
+                            </telerik:GridViewDataColumn.CellTemplate>
+                        </telerik:GridViewDataColumn>
+                        <telerik:GridViewDataColumn
+                            Width="75"
+                            Header="Period"
+                            IsReadOnly="True">
+                            <telerik:GridViewDataColumn.CellTemplate>
+                                <DataTemplate>
+                                    <q:QTextBox
+                                        VerticalAlignment="Center"
+                                        Text="{Binding PeriodicPeriod, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                        <q:QTextBox.Style>
+                                            <Style TargetType="{x:Type q:QTextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsPeriodic}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </q:QTextBox.Style>
+                                        <i:Interaction.Triggers>
+                                            <i:EventTrigger EventName="GotKeyboardFocus">
+                                                <i:InvokeCommandAction
+                                                    Command="{Binding DataContext.SelectScriptCommand, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
+                                                    CommandParameter="{Binding}"/>
+                                            </i:EventTrigger>
+                                        </i:Interaction.Triggers>
+                                    </q:QTextBox>
+                                </DataTemplate>
+                            </telerik:GridViewDataColumn.CellTemplate>
+                        </telerik:GridViewDataColumn>
+                        <telerik:GridViewDataColumn
+                            Width="70"
+                            Header="Unit"
+                            IsReadOnly="True">
+                            <telerik:GridViewDataColumn.CellTemplate>
+                                <DataTemplate>
+                                    <telerik:RadComboBox
+                                        IsEnabled="{Binding IsPeriodic}"
+                                        ItemsSource="{Binding PeriodicUnitOptions}"
+                                        SelectedValue="{Binding PeriodicUnit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                 </DataTemplate>
                             </telerik:GridViewDataColumn.CellTemplate>
                         </telerik:GridViewDataColumn>

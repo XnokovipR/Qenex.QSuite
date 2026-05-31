@@ -12,6 +12,7 @@ namespace Qenex.QInsight.ViewModels.ModelWrappers;
 
 public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
 {
+    private const string DefaultScriptAdditionalInfo = "threshold=1000.0";
     private readonly IEnumerable<ProjectConfigurationProtocolOption> sourceOptions;
     private readonly IEnumerable<IVarEvent> variableEvents;
     private readonly Func<IEnumerable<string>>? variableEventOptionsProvider;
@@ -226,6 +227,9 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
             }
 
             selectedScriptFileName = value;
+            ScriptAdditionalInfo = string.IsNullOrWhiteSpace(selectedScriptFileName)
+                ? string.Empty
+                : DefaultScriptAdditionalInfo;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasChanges));
         }
