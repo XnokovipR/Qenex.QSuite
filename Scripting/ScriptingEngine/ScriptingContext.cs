@@ -10,7 +10,9 @@ namespace Qenex.QSuite.Scripting.ScriptingEngine;
 public class ScriptingContext
 {
     private const string LastScriptExceptionTextName = "__qenex_script_exception_text";
+    private const double ScriptOverloadWarningRatio = 0.7;
     private static readonly TimeSpan StopWaitTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan ScriptOverloadWarningInterval = TimeSpan.FromSeconds(5);
     private readonly ILogger? logger;
     private readonly TaskFactory pythonFactory;
     private PythonLogWriter stdoutWriter = null!;
@@ -19,10 +21,12 @@ public class ScriptingContext
     private readonly List<Task> periodicScriptTasks = [];
     private readonly object executionStateLock = new();
     private readonly object onValueChangedStateLock = new();
+    private readonly object scriptOverloadStateLock = new();
     private readonly HashSet<IScriptBase> scheduledScripts = [];
     private readonly HashSet<IScriptBase> interruptedScripts = [];
     private readonly HashSet<IScriptBase> notifiedInterruptedScripts = [];
     private readonly Dictionary<int, double> lastOnValueChangedValues = [];
+    private readonly Dictionary<string, ScriptCallOverloadState> scriptOverloadStates = [];
     private CancellationTokenSource activeExecutionCts = new();
     private bool isStopping;
     private bool suppressLateExecutionOutput;
@@ -77,6 +81,7 @@ public class ScriptingContext
         EnsurePythonRuntimeInitialized();
         VariableBindings.Clear();
         lastOnValueChangedValues.Clear();
+        ClearScriptOverloadState();
         
         var variablesById = variables.ToDictionary(v => v.Id);
         foreach (var varById in variablesById)
@@ -353,7 +358,7 @@ if "__qenex_interactive_console" not in globals():
         }
     }
 
-    private async Task ExecuteScriptAsync(
+    private async Task<bool> ExecuteScriptAsync(
         IScriptBase script,
         ScriptExecutionOptions options,
         CancellationToken ct = default,
@@ -362,7 +367,7 @@ if "__qenex_interactive_console" not in globals():
     {
         if (!CanExecuteScript(script))
         {
-            return;
+            return false;
         }
 
         using var linkedCts = allowStopCancellation
@@ -371,12 +376,12 @@ if "__qenex_interactive_console" not in globals():
 
         if (linkedCts.IsCancellationRequested)
         {
-            return;
+            return false;
         }
 
         if (!TryReserveScriptExecution(script))
         {
-            return;
+            return false;
         }
 
         var executionTask = pythonFactory.StartNew(() => ExecuteScript(script, beforeExecute), linkedCts.Token);
@@ -398,19 +403,20 @@ if "__qenex_interactive_console" not in globals():
                 MarkScriptInterrupted(script, $"script \"{script.FileName}\" timed out after {options.Timeout.Value.TotalMilliseconds:0} ms.");
                 await linkedCts.CancelAsync();
                 ObserveBackgroundTask(executionTask, $"script \"{script.FileName}\" after timeout");
-                return;
+                return false;
             }
         }
 
         if (completedTask == executionTask)
         {
             await AwaitExecutionTaskAsync(executionTask, ct);
-            return;
+            return true;
         }
 
         MarkScriptInterrupted(script, $"script \"{script.FileName}\" was interrupted because scripting context is stopping.");
         await linkedCts.CancelAsync();
         ObserveBackgroundTask(executionTask, $"script \"{script.FileName}\" after stop request");
+        return false;
     }
 
     private void ExecuteScript(IScriptBase script, Action? beforeExecute = null)
@@ -558,7 +564,13 @@ if "__qenex_interactive_console" not in globals():
             return;
         }
 
-        await ExecuteScriptAsync(script, GetScriptExecutionOptions(script), beforeExecute: () =>
+        var overloadKey = GetScriptOverloadKey("onvaluechanged", script);
+        if (!TryEnterObservedScriptCall(overloadKey, out var observedCallPeriod))
+        {
+            return;
+        }
+
+        var executed = await ExecuteScriptAsync(script, GetScriptExecutionOptions(script), beforeExecute: () =>
         {
             SharedScope!.Set("qenex_trigger_variable_id", trigger.VariableId);
             SharedScope.Set("qenex_trigger_variable_name", variableName);
@@ -566,6 +578,15 @@ if "__qenex_interactive_console" not in globals():
             SharedScope.Set("qenex_trigger_new_value", newValue);
             SharedScope.Set("qenex_trigger_delta", delta);
         });
+
+        if (executed && observedCallPeriod.HasValue)
+        {
+            UpdateScriptOverloadGuard(
+                overloadKey,
+                script,
+                observedCallPeriod.Value,
+                "OnValueChanged script");
+        }
     }
 
     private bool TryGetOnValueChangedThreshold(OnValueChangedScriptTrigger trigger, out double threshold)
@@ -600,6 +621,119 @@ if "__qenex_interactive_console" not in globals():
             result = 0;
             return false;
         }
+    }
+
+    private bool TryEnterObservedScriptCall(string overloadKey, out TimeSpan? observedCallPeriod)
+    {
+        var nowUtc = DateTime.UtcNow;
+        lock (scriptOverloadStateLock)
+        {
+            var state = GetScriptOverloadState(overloadKey);
+            observedCallPeriod = state.LastCallUtc.HasValue
+                ? nowUtc - state.LastCallUtc.Value
+                : null;
+            state.LastCallUtc = nowUtc;
+
+            if (state.SkipCallsRemaining <= 0)
+            {
+                return true;
+            }
+
+            state.SkipCallsRemaining--;
+            return false;
+        }
+    }
+
+    private bool TrySkipScriptCall(string overloadKey)
+    {
+        lock (scriptOverloadStateLock)
+        {
+            var state = GetScriptOverloadState(overloadKey);
+            if (state.SkipCallsRemaining <= 0)
+            {
+                return false;
+            }
+
+            state.SkipCallsRemaining--;
+            return true;
+        }
+    }
+
+    private void UpdateScriptOverloadGuard(
+        string overloadKey,
+        IScriptBase script,
+        TimeSpan callPeriod,
+        string executionSource)
+    {
+        var skipCalls = CalculateScriptOverloadSkipCount(script.LastExecutionDurationMs, callPeriod);
+        if (skipCalls <= 0)
+        {
+            return;
+        }
+
+        var nowUtc = DateTime.UtcNow;
+        bool shouldLogWarning;
+        lock (scriptOverloadStateLock)
+        {
+            var state = GetScriptOverloadState(overloadKey);
+            state.SkipCallsRemaining = Math.Max(state.SkipCallsRemaining, skipCalls);
+            shouldLogWarning = nowUtc - state.LastWarningUtc >= ScriptOverloadWarningInterval;
+            if (shouldLogWarning)
+            {
+                state.LastWarningUtc = nowUtc;
+            }
+        }
+
+        if (!shouldLogWarning)
+        {
+            return;
+        }
+
+        var periodMs = callPeriod.TotalMilliseconds;
+        var durationRatio = script.LastExecutionDurationMs / periodMs * 100;
+        logger?.Log(
+            LogLevel.Warn,
+            $"{executionSource} \"{script.FileName}\" took {script.LastExecutionDurationMs:0.0} ms ({durationRatio:0}% of {periodMs:0.0} ms call period). It exceeds 70% of the call period; skipping next {skipCalls} scheduled call(s).");
+    }
+
+    private static int CalculateScriptOverloadSkipCount(double executionDurationMs, TimeSpan callPeriod)
+    {
+        if (executionDurationMs <= 0 || callPeriod <= TimeSpan.Zero)
+        {
+            return 0;
+        }
+
+        var allowedDurationMs = callPeriod.TotalMilliseconds * ScriptOverloadWarningRatio;
+        if (allowedDurationMs <= 0 || executionDurationMs <= allowedDurationMs)
+        {
+            return 0;
+        }
+
+        return Math.Max(1, (int)Math.Ceiling(executionDurationMs / allowedDurationMs) - 1);
+    }
+
+    private ScriptCallOverloadState GetScriptOverloadState(string overloadKey)
+    {
+        if (!scriptOverloadStates.TryGetValue(overloadKey, out var state))
+        {
+            state = new ScriptCallOverloadState();
+            scriptOverloadStates[overloadKey] = state;
+        }
+
+        return state;
+    }
+
+    private void ClearScriptOverloadState()
+    {
+        lock (scriptOverloadStateLock)
+        {
+            scriptOverloadStates.Clear();
+        }
+    }
+
+    private static string GetScriptOverloadKey(string executionSource, IScriptBase script)
+    {
+        return $"{executionSource}:{script.FileName}";
     }
 
     private void StartPeriodicScripts()
@@ -657,12 +791,26 @@ if "__qenex_interactive_console" not in globals():
     {
         using var timer = new PeriodicTimer(interval);
         using var cancellationRegistration = ct.Register(static state => ((PeriodicTimer)state!).Dispose(), timer);
+        var overloadKey = GetScriptOverloadKey("periodic", script);
 
         try
         {
             while (!ct.IsCancellationRequested && await timer.WaitForNextTickAsync())
             {
-                await ExecuteScriptAsync(script, GetScriptExecutionOptions(script), ct);
+                if (TrySkipScriptCall(overloadKey))
+                {
+                    continue;
+                }
+
+                var executed = await ExecuteScriptAsync(script, GetScriptExecutionOptions(script), ct);
+                if (executed)
+                {
+                    UpdateScriptOverloadGuard(
+                        overloadKey,
+                        script,
+                        interval,
+                        "Periodic script");
+                }
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -936,13 +1084,13 @@ if "__qenex_interactive_console" not in globals():
         if (string.IsNullOrWhiteSpace(content))
         {
             return $"""
-{LastScriptExceptionTextName} = ""
-try:
-    pass
-except BaseException:
-    import traceback as __qenex_traceback
-    {LastScriptExceptionTextName} = __qenex_traceback.format_exc()
-""";
+                {LastScriptExceptionTextName} = ""
+                try:
+                    pass
+                except BaseException:
+                    import traceback as __qenex_traceback
+                    {LastScriptExceptionTextName} = __qenex_traceback.format_exc()
+                """;
         }
 
         var builder = new StringBuilder();
@@ -970,6 +1118,13 @@ except BaseException:
 }
 
 internal readonly record struct ScriptExecutionOptions(bool Blocking, TimeSpan? Timeout);
+
+internal sealed class ScriptCallOverloadState
+{
+    public DateTime? LastCallUtc { get; set; }
+    public int SkipCallsRemaining { get; set; }
+    public DateTime LastWarningUtc { get; set; } = DateTime.MinValue;
+}
 
 public class ScriptExecutedEventArgs(IScriptBase script) : EventArgs
 {
