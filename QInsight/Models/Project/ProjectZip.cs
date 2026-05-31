@@ -93,6 +93,7 @@ public class ProjectZip
         ILogger? logger = null)
     {
         var prjZip = new Qenex.QSuite.Helpers.ProjectFile.ProjectZip(logger);
+        realProjectData.Module.Specification.Modified = DateTime.Now;
         var xmlModuleHandler = new XmlModuleHandler([], [], logger);
         var xmlModule = xmlModuleHandler.CreateXmlModule(realProjectData.Module);
         var streams = CreateProjectStreams(xmlModule, workspaces, scriptDocuments, workspaceLayoutStream);
@@ -147,7 +148,8 @@ public class ProjectZip
             Version = xmlModule.Version,
             Author = xmlModule.Author,
             Company = xmlModule.Company,
-            CreatedOn = xmlModule.CreatedOn,
+            CreationDate = xmlModule.CreationDate,
+            Modified = xmlModule.Modified,
             DriverReferences = xmlModule.DriverReferences,
             Drivers = xmlModule.Drivers,
             Protocols = xmlModule.Protocols,

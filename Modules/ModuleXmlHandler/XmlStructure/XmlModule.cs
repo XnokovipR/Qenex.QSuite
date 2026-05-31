@@ -16,7 +16,11 @@ public class XmlModule
     [XmlElement("version")] public string Version { get; set; } = null!;
     [XmlElement("author")] public string Author { get; set; } = string.Empty;
     [XmlElement("company")] public string Company { get; set; } = string.Empty;
+    [XmlElement("creationDate")] public DateTime CreationDate { get; set; }
+    [XmlElement("modified")] public DateTime Modified { get; set; }
     [XmlElement("createdOn")] public DateTime CreatedOn { get; set; }
+
+    public bool ShouldSerializeCreatedOn() => false;
     
     // Driver relations
     [XmlArray("driverReferences")]

@@ -108,6 +108,11 @@
 
 						<telerik:RadRibbonGroup Header="Project Configuration">
 							<telerik:RadRibbonButton
+								Text="Project"
+								Size="Large"
+								SmallImage="../Icons/SolutionExplorer/Project.png"
+								Command="{Binding RibbonProjectConfigurationProjectCommand}"/>
+							<telerik:RadRibbonButton
 								Text="Drivers"
 								Size="Large"
 								SmallImage="../Icons/SolutionExplorer/Drivers.png"

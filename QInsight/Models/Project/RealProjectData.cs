@@ -45,6 +45,7 @@ public class RealProjectData
         realModule.Specification.Label = "New Project";
         realModule.Specification.Version = new Version(1, 0, 0);
         realModule.Specification.CreatedOn = DateTime.Now;
+        realModule.Specification.Modified = realModule.Specification.CreatedOn;
 
         return new RealProjectData(logger)
         {

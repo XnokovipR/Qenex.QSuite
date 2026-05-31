@@ -55,6 +55,92 @@
                 <Grid.Style>
                     <Style TargetType="Grid" BasedOn="{StaticResource ProjectConfigurationPageStyle}">
                         <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedSection}" Value="{x:Static vm:ProjectConfigurationSection.Project}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <q:QTextBlock
+                    Grid.Row="0"
+                    Margin="0,0,0,12"
+                    FontWeight="SemiBold"
+                    Text="Project"/>
+
+                <Grid
+                    Grid.Row="1"
+                    MaxWidth="760"
+                    HorizontalAlignment="Left">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="135"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <q:QTextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Label"/>
+                    <q:QTextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Label, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+
+                    <q:QTextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Description"/>
+                    <q:QTextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Description, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+
+                    <q:QTextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Version"/>
+                    <q:QTextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Version, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+
+                    <q:QTextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Author"/>
+                    <q:QTextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Author, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+
+                    <q:QTextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Company"/>
+                    <q:QTextBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Company, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+
+                    <q:QTextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Creation date"/>
+                    <q:QTextBox Grid.Row="5" Grid.Column="1" Margin="0,0,8,6" Text="{Binding Project.CreationDate, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                    <telerik:RadButton Grid.Row="5" Grid.Column="2" MinWidth="82" Margin="0,0,0,6" Content="Get Date" Command="{Binding Project.SetCreationDateNowCommand}"/>
+
+                    <q:QTextBlock Grid.Row="6" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Modified"/>
+                    <q:QTextBox Grid.Row="6" Grid.Column="1" Margin="0,0,8,6" Text="{Binding Project.Modified, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                    <telerik:RadButton Grid.Row="6" Grid.Column="2" MinWidth="82" Margin="0,0,0,6" Content="Get Date" Command="{Binding Project.SetModifiedNowCommand}"/>
+
+                    <q:QTextBlock
+                        Grid.Row="7"
+                        Grid.ColumnSpan="3"
+                        Foreground="Tomato"
+                        Text="{Binding Project.ErrorMessage}">
+                        <q:QTextBlock.Style>
+                            <Style TargetType="{x:Type q:QTextBlock}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Project.HasError}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </q:QTextBlock.Style>
+                    </q:QTextBlock>
+                </Grid>
+            </Grid>
+
+            <Grid
+                Margin="8">
+                <Grid.Style>
+                    <Style TargetType="Grid" BasedOn="{StaticResource ProjectConfigurationPageStyle}">
+                        <Style.Triggers>
                             <DataTrigger Binding="{Binding SelectedSection}" Value="{x:Static vm:ProjectConfigurationSection.CommunicationDrivers}">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>

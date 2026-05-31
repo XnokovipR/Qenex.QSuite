@@ -65,6 +65,7 @@ public class ProjectZip(ILogger? logger = null)
 
     public async Task ZipModuleAsync(string filePath, IModuleBase module)
     {
+        module.Specification.Modified = DateTime.Now;
         var xmlModuleHandler = new XmlModuleHandler([], [], logger);
         var xmlModule = xmlModuleHandler.CreateXmlModule(module);
         await ZipModuleAsync(filePath, xmlModule);
@@ -95,7 +96,8 @@ public class ProjectZip(ILogger? logger = null)
             Version = xmlModule.Version,
             Author = xmlModule.Author,
             Company = xmlModule.Company,
-            CreatedOn = xmlModule.CreatedOn,
+            CreationDate = xmlModule.CreationDate,
+            Modified = xmlModule.Modified,
             DriverReferences = xmlModule.DriverReferences,
             Drivers = xmlModule.Drivers,
             Protocols = xmlModule.Protocols,

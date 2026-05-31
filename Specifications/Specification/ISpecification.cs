@@ -24,6 +24,11 @@ public interface ISpecification
     /// The release date of the specification.
     /// </summary>
     DateTime CreatedOn { get; set; }
+
+    /// <summary>
+    /// The last modification date.
+    /// </summary>
+    DateTime Modified { get; set; }
     
     /// <summary>
     /// The version of the specification.

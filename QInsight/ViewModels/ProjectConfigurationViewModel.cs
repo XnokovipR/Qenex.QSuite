@@ -6,9 +6,11 @@ using Qenex.QLibs.QUI;
 using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Modules.Module;
 using Qenex.QSuite.Scripting.PythonScript;
 using Qenex.QSuite.Scripting.Script;
 using Qenex.QSuite.Scripting.ScriptingEngine;
+using Qenex.QSuite.UnifModule;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.QVariables.Values;
 using Qenex.QSuite.Variables.ValueConversion;
@@ -27,6 +29,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private const string SimulationDriverName = "SimulDataDriver";
 
     private readonly EventAggregator? eventAggregator;
+    private readonly IModuleBase module;
     private readonly IList<IDriverBase> drivers;
     private readonly IEnumerable<PluginDetails> driverPlugins;
     private readonly IEnumerable<PluginDetails> protocolPlugins;
@@ -55,12 +58,13 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private RadWindow? parentWindow;
 
     public ProjectConfigurationViewModel()
-        : this(null, [], [], [], [], [], [], [], [], [])
+        : this(null, new UnifiedModuleFactory().Create(new ScriptEngineSettings(), null), [], [], [], [], [], [], [], [], [])
     {
     }
 
     public ProjectConfigurationViewModel(
         EventAggregator? eventAggregator,
+        IModuleBase module,
         IEnumerable<IDriverBase> drivers,
         IEnumerable<PluginDetails> driverPlugins,
         IEnumerable<PluginDetails> protocolPlugins,
@@ -72,6 +76,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         IList<IScriptBase> scripts)
     {
         this.eventAggregator = eventAggregator;
+        this.module = module;
         this.drivers = drivers as IList<IDriverBase> ?? drivers.ToList();
         this.driverPlugins = driverPlugins.ToList();
         this.protocolPlugins = protocolPlugins.ToList();
@@ -81,8 +86,11 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         this.presentations = presentations as IList<IPresentation> ?? presentations.ToList();
         this.onValueChangedScriptTriggers = onValueChangedScriptTriggers;
         this.scripts = scripts;
+        Project = new ProjectConfigurationProjectWrapper(this.module);
+        Project.PropertyChanged += OnProjectPropertyChanged;
         NavigationItems =
         [
+            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Project, "Project"),
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.CommunicationDrivers, "Drivers & Protocols"),
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Events, "Events"),
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Variables, "Variables"),
@@ -181,6 +189,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     }
 
     public ObservableCollection<ProjectConfigurationNavigationItem> NavigationItems { get; }
+    public ProjectConfigurationProjectWrapper Project { get; }
     public ObservableCollection<ProjectConfigurationDriverWrapper> Drivers { get; }
     public IReadOnlyList<ProjectConfigurationDriverPluginOption> DriverPluginOptions { get; }
     public IReadOnlyList<ProjectConfigurationProtocolPluginOption> ProtocolPluginOptions { get; }
@@ -409,7 +418,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
     public bool HasChanges =>
-        Drivers.Any(driver => driver.HasChanges)
+        Project.HasChanges
+        || Drivers.Any(driver => driver.HasChanges)
         || addedDrivers.Count > 0
         || removedDrivers.Count > 0
         || Drivers.SelectMany(driver => driver.Protocols).Any(protocol => protocol.HasChanges)
@@ -478,6 +488,18 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
     private void ApplyChanges()
     {
+        ErrorMessage = string.Empty;
+        try
+        {
+            Project.MarkModifiedNow();
+            Project.ApplyChanges();
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = e.Message;
+            return;
+        }
+
         var changedVariables = Variables
             .Where(variable => variable.HasChanges)
             .Select(variable => variable.Variable)
@@ -629,6 +651,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
     private void Cancel()
     {
+        Project.CancelChanges();
         foreach (var driver in Drivers)
         {
             driver.CancelChanges();
@@ -1746,6 +1769,17 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         NotifyHasChangesChanged();
     }
 
+    private void OnProjectPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(ProjectConfigurationProjectWrapper.HasChanges)
+            && e.PropertyName != nameof(ProjectConfigurationProjectWrapper.HasError))
+        {
+            return;
+        }
+
+        NotifyHasChangesChanged();
+    }
+
     private void OnProtocolPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(ProjectConfigurationLoadedProtocolWrapper.HasChanges)
@@ -1881,6 +1915,7 @@ public sealed record ProjectConfigurationProtocolPluginOption(PluginDetails Plug
 
 public enum ProjectConfigurationSection
 {
+    Project,
     CommunicationDrivers,
     Variables,
     Conversions,

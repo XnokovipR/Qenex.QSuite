@@ -50,7 +50,8 @@ public class XmlModuleHandler
         module.Specification.Version = new Version(xmlModule.Version);
         module.Specification.Author = xmlModule.Author;
         module.Specification.Company = xmlModule.Company;
-        module.Specification.CreatedOn = xmlModule.CreatedOn;
+        module.Specification.CreatedOn = xmlModule.CreationDate == default ? xmlModule.CreatedOn : xmlModule.CreationDate;
+        module.Specification.Modified = xmlModule.Modified;
         
         // Add Events
         module.AddVarEvents(GetVarEvents(xmlModule.Events));
@@ -83,7 +84,8 @@ public class XmlModuleHandler
             Version = module.Specification.Version?.ToString() ?? string.Empty,
             Author = module.Specification.Author ?? string.Empty,
             Company = module.Specification.Company ?? string.Empty,
-            CreatedOn = module.Specification.CreatedOn,
+            CreationDate = module.Specification.CreatedOn,
+            Modified = module.Specification.Modified,
             DriverReferences = GetXmlDriverReferences(module.Drivers, module.Scripting),
             Drivers = GetXmlDrivers(module.Drivers),
             Protocols = GetXmlProtocols(module.Drivers.SelectMany(d => d.Protocols)),

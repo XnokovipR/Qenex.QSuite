@@ -46,6 +46,10 @@ public class ProjectSeWrapper : PropertyChangedBase, IViewableItem
             sb.Append($"Author\t{PrjModule.Specification.Author}");
             sb.Append(Environment.NewLine);
             sb.Append($"Co.\t{PrjModule.Specification.Company}");
+            sb.Append(Environment.NewLine);
+            sb.Append($"Created\t{PrjModule.Specification.CreatedOn}");
+            sb.Append(Environment.NewLine);
+            sb.Append($"Modified\t{PrjModule.Specification.Modified}");
             
             
             return sb.ToString();
