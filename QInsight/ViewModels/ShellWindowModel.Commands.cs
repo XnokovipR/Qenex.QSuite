@@ -73,6 +73,7 @@ public partial class ShellWindowModel
 
     #region Ribbon command Properties
 
+    public RelayCommandAsync<RadDocking> RibbonNewProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonOpenProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonSaveProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonSaveProjectAsCommand { get; set; }
@@ -112,6 +113,7 @@ public partial class ShellWindowModel
         ShellWindowLocationChangedCommand = new RelayCommand<object>(OnShellWindowLocationChanged);
         ShellWindowSizeChangedCommand = new RelayCommand<object>(OnShellWindowSizeChanged);
         
+        RibbonNewProjectCommand = new RelayCommandAsync<RadDocking>(NewProjectAsync, _ => canUseHomeRibbon);
         RibbonOpenProjectCommand = new RelayCommandAsync<RadDocking>(OpenProjectAsync, _ => canUseHomeRibbon);
         RibbonSaveProjectCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsync, _ => CanUseProjectCommand());
         RibbonSaveProjectAsCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsAsync, _ => CanUseProjectCommand());
@@ -347,6 +349,32 @@ public partial class ShellWindowModel
     }
 
     #region Project menu
+
+    private async Task NewProjectAsync(object obj)
+    {
+        try
+        {
+            await CloseProjectWorkspacesAsync();
+            isEditVariableEnabled = false;
+            isEditConversionEnabled = false;
+            isEditPresentationEnabled = false;
+            isEditEventEnabled = false;
+            realProjectData = RealProjectData.CreateEmptyProjectData(ShellWindow.MainAppSettings.ScriptEngine, logger);
+            solutionExplorerViewModel.ReloadProjectData(realProjectData);
+            currentProjectFilePath = null;
+            SetProjectWindowTitle(currentProjectFilePath);
+            ChangeIsProjectMade(true);
+            ClearReplayDataLogImportState();
+            NotifyRuntimeCommandsCanExecuteChanged();
+            RibbonReplayCommand.OnCanExecuteChanged();
+            SetDefaultPropertiesView();
+            logger.Log(LogLevel.Info, "New project created.");
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, e.Message);
+        }
+    }
 
     private async Task OpenProjectAsync(object obj)
     {
@@ -1641,6 +1669,7 @@ public partial class ShellWindowModel
         canReplay = !runtimeStarted;
         canStopReplay = replayStarted;
 
+        RibbonNewProjectCommand.OnCanExecuteChanged();
         RibbonOpenProjectCommand.OnCanExecuteChanged();
         RibbonSaveProjectCommand.OnCanExecuteChanged();
         RibbonSaveProjectAsCommand.OnCanExecuteChanged();

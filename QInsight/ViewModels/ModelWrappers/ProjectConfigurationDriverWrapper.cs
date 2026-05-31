@@ -11,6 +11,8 @@ public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = 
     private const string FileDataReplayDisplayLabel = "File data replay";
     private bool originalIsEnabled = driver.IsEnabled;
     private bool isEnabled = driver.IsEnabled;
+    private string originalSettings = driver.RawSettings;
+    private string settings = driver.RawSettings;
 
     public IDriverBase Driver => driver;
     public bool IsNew => isNew;
@@ -80,29 +82,68 @@ public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = 
     public bool CanEditIsEnabled =>
         !IsFileDataReplayDriver;
 
-    public bool HasChanges => CanEditIsEnabled && isEnabled != originalIsEnabled;
+    public string Settings
+    {
+        get => settings;
+        set
+        {
+            value ??= string.Empty;
+            if (settings == value)
+            {
+                return;
+            }
+
+            settings = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasChanges));
+        }
+    }
+
+    public bool HasChanges => (CanEditIsEnabled && isEnabled != originalIsEnabled)
+                              || settings != originalSettings;
 
     public void ApplyChanges()
     {
-        if (!CanEditIsEnabled)
+        if (CanEditIsEnabled)
         {
-            return;
+            driver.IsEnabled = isEnabled;
+            originalIsEnabled = isEnabled;
         }
 
-        driver.IsEnabled = isEnabled;
-        originalIsEnabled = isEnabled;
+        if (settings != originalSettings)
+        {
+            var previousSettings = driver.RawSettings;
+            driver.RawSettings = settings;
+            try
+            {
+                driver.SetConfiguration();
+            }
+            catch
+            {
+                driver.RawSettings = previousSettings;
+                driver.SetConfiguration();
+                throw;
+            }
+            originalSettings = settings;
+        }
+
         OnPropertyChanged(nameof(HasChanges));
     }
 
     public void CancelChanges()
     {
-        if (!CanEditIsEnabled || isEnabled == originalIsEnabled)
+        if (CanEditIsEnabled && isEnabled != originalIsEnabled)
         {
-            return;
+            isEnabled = originalIsEnabled;
+            OnPropertyChanged(nameof(IsEnabled));
         }
 
-        isEnabled = originalIsEnabled;
-        OnPropertyChanged(nameof(IsEnabled));
+        if (settings != originalSettings)
+        {
+            settings = originalSettings;
+            OnPropertyChanged(nameof(Settings));
+        }
+
         OnPropertyChanged(nameof(HasChanges));
     }
 

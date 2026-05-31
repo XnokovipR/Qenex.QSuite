@@ -67,11 +67,12 @@
                         <ColumnDefinition Width="2*"/>
                         <ColumnDefinition Width="3*"/>
                     </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
                     <q:QTextBlock
                         Grid.Row="0"
@@ -239,6 +240,37 @@
                                 </telerik:GridViewDataColumn>
                             </telerik:RadGridView.Columns>
                         </telerik:RadGridView>
+                    </Grid>
+
+                    <Grid
+                        Grid.Row="3"
+                        Grid.ColumnSpan="2"
+                        Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="125"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <q:QTextBlock
+                            Grid.Row="0"
+                            Grid.ColumnSpan="2"
+                            Margin="0,0,0,8"
+                            FontWeight="SemiBold"
+                            Text="Driver detail"/>
+                        <q:QTextBlock
+                            Grid.Row="1"
+                            Grid.Column="0"
+                            Margin="0,0,10,0"
+                            VerticalAlignment="Center"
+                            Text="Settings"/>
+                        <q:QTextBox
+                            Grid.Row="1"
+                            Grid.Column="1"
+                            Text="{Binding SelectedDriver.Settings, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
                     </Grid>
                 </Grid>
             </Grid>

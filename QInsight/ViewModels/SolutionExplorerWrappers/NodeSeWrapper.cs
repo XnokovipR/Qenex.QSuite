@@ -12,12 +12,14 @@ public class NodeSeWrapper : IViewableItem
     //private readonly NodeType nodeType;
     private readonly string prefix;
     private readonly string suffix;
+    private readonly string customLabel;
     
 
-    public NodeSeWrapper(NodeType nType, string labelPrefix = "", string labelSuffix = "")
+    public NodeSeWrapper(NodeType nType, string labelPrefix = "", string labelSuffix = "", string label = "")
     {
         prefix = labelPrefix;
         suffix = labelSuffix;
+        customLabel = label;
         TypeOfNode = nType;
         Children = [];
         CustomTags = [];
@@ -27,7 +29,15 @@ public class NodeSeWrapper : IViewableItem
     
     public string Label
     {
-        get => TypeOfNode == NodeType.OnlyPrefixFolder ? prefix : $"{prefix} {TypeOfNode.ToString()} {suffix}"; 
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(customLabel))
+            {
+                return customLabel;
+            }
+
+            return TypeOfNode == NodeType.OnlyPrefixFolder ? prefix : $"{prefix} {TypeOfNode.ToString()} {suffix}";
+        }
         set { }
     }
     

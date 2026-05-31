@@ -24,6 +24,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private const string FileDataLoggerDriverName = "FileDataLoggerDriver";
     private const string FileDataReplayDriverName = "FileDataReplayDriver";
     private const string DataLogReplayProtocolName = "DataLogReplayProtocol";
+    private const string SimulationDriverName = "SimulDataDriver";
 
     private readonly EventAggregator? eventAggregator;
     private readonly IList<IDriverBase> drivers;
@@ -82,7 +83,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         this.scripts = scripts;
         NavigationItems =
         [
-            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.CommunicationDrivers, "Communication Drivers"),
+            new ProjectConfigurationNavigationItem(ProjectConfigurationSection.CommunicationDrivers, "Drivers & Protocols"),
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Events, "Events"),
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Variables, "Variables"),
             new ProjectConfigurationNavigationItem(ProjectConfigurationSection.Presentations, "Presentations"),
@@ -777,6 +778,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         {
             driver.Label = "File data replay";
             driver.RawSettings = "file=DataLogs\\values.qilog;mode=realtime;speed=1;loop=false";
+        }
+        else if (driver.Specification.Name.Equals(SimulationDriverName, StringComparison.OrdinalIgnoreCase))
+        {
+            driver.RawSettings = "periodes=20";
         }
 
         driver.SetConfiguration();

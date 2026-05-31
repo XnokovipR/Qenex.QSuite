@@ -67,6 +67,11 @@
 					<telerik:RadRibbonTab Header="Home" x:Name="HomeTab">
 						<telerik:RadRibbonGroup Header="Project">
 							<telerik:RadRibbonButton
+	                            Text="New" 
+	                            Size="Large"
+	                            SmallImage="../Icons/SolutionExplorer/Project.png"
+	                            Command="{Binding RibbonNewProjectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+							<telerik:RadRibbonButton
 	                            Text="Open" 
 	                            Size="Large"
 	                            SmallImage="../Icons/Menu/OpenProject.png"
@@ -106,6 +111,11 @@
 								Text="Drivers"
 								Size="Large"
 								SmallImage="../Icons/SolutionExplorer/Drivers.png"
+								Command="{Binding RibbonProjectConfigurationDriversCommand}"/>
+							<telerik:RadRibbonButton
+								Text="Protocols"
+								Size="Large"
+								SmallImage="../Icons/SolutionExplorer/Protocols.png"
 								Command="{Binding RibbonProjectConfigurationDriversCommand}"/>
 							<telerik:RadRibbonButton
 								Text="Events"

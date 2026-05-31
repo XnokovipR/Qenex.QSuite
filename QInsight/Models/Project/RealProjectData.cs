@@ -37,6 +37,22 @@ public class RealProjectData
         return realProjectData;
     }
 
+    public static RealProjectData CreateEmptyProjectData(
+        ScriptEngineSettings scriptEngineSettings,
+        ILogger? logger = null)
+    {
+        var realModule = new UnifiedModuleFactory().Create(scriptEngineSettings, logger);
+        realModule.Specification.Label = "New Project";
+        realModule.Specification.Version = new Version(1, 0, 0);
+        realModule.Specification.CreatedOn = DateTime.Now;
+
+        return new RealProjectData(logger)
+        {
+            logger = logger,
+            Module = realModule
+        };
+    }
+
     public RealProjectData(ILogger? logger = null)
     {
         this.logger = logger;

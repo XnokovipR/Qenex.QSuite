@@ -159,7 +159,7 @@ public class SolutionExplorerViewModel : ViewModelBase
     private void CreateDriverWrappers(ObservableCollection<IViewableItem> children, IList<IDriverBase> drivers)
     {
         // Add drivers node
-        var driversNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Drivers, "Communicated");
+        var driversNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Drivers, label: "Drivers & Protocols");
         driversNode.CustomTags!["Drivers"] = drivers;
         children.Add(driversNode);
         
