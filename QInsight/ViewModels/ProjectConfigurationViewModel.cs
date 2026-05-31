@@ -1588,7 +1588,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
                 SelectedSourceOption.Protocol,
                 SelectedVariable.Variable,
                 GetConfigurationVariableEvents(),
-                ProjectConfigurationProtocolVariableFactory.CreateDefaultCommParam(SelectedVariable.Variable, GetConfigurationVariableEvents()),
+                ProjectConfigurationProtocolVariableFactory.CreateDefaultCommParam(
+                    SelectedSourceOption.Protocol,
+                    SelectedVariable.Variable,
+                    GetConfigurationVariableEvents()),
                 true);
             SelectedSourceOption.Protocol.AddVariable(protocolVariable);
 
