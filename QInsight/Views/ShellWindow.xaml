@@ -273,6 +273,13 @@
 								SmallImage="../Icons/QInsight.png"
 								Command="{Binding RibbonSaveLayoutCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
+						<telerik:RadRibbonGroup Header="General">
+							<telerik:RadRibbonButton
+								Text="Preferences"
+								Size="Large"
+								SmallImage="../Icons/QInsight.png"
+								Command="{Binding RibbonPreferencesCommand}"/>
+						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
 
                     <!-- Ribbon Menu - Help -->

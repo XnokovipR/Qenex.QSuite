@@ -36,48 +36,10 @@ public partial class ShellWindow : Window
 		{
 			ProcessAppSettings("QInsightAppSettings.xml");
 
-			IsDarkTheme = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark;
-			ForegroundColor = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ?
-				MainAppSettings.Design.DarkThemeTextColor : MainAppSettings.Design.LightThemeTextColor;
-			BackgroundColor = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? 
-				MainAppSettings.Design.DarkThemeControlBackgroundColor : MainAppSettings.Design.LightThemeControlBackgroundColor;
-			TextEditorBackgroubndColor = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? 
-				MainAppSettings.Design.DarkThemeTextBoxBackgroundColor : MainAppSettings.Design.LightThemeTextBoxBackgroundColor;
-			
 			SourceInitialized += WindowSourceInitialized;
 
 			Windows11ThemeSizeHelper.Helper.IsInCompactMode = true;
-			Windows11Palette.Palette.FontSize = MainAppSettings.Design.FontSize;
-			Windows11Palette.LoadPreset(MainAppSettings.Design.AppTheme == ApplicationTheme.Dark ? Windows11Palette.ColorVariation.Dark : Windows11Palette.ColorVariation.Light);
-			
-			var textboxStyle = new Style(typeof(QTextBox));
-			var textblockStyle = new Style(typeof(QTextBlock));
-			var labelStyle = new Style(typeof(QLabel));
-			
-			if (MainAppSettings.Design.AppTheme == ApplicationTheme.Dark)
-			{
-				// Dark theme styles
-				textblockStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(MainAppSettings.Design.DarkThemeTextColor)));
-				
-				textboxStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(MainAppSettings.Design.DarkThemeTextColor)));
-				textboxStyle.Setters.Add(new Setter(BackgroundProperty, new SolidColorBrush(MainAppSettings.Design.DarkThemeTextBoxBackgroundColor)));
-				
-				labelStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(MainAppSettings.Design.DarkThemeTextColor)));
-			}
-			else
-			{
-				// Light theme styles
-				textblockStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(MainAppSettings.Design.LightThemeTextColor)));
-				
-				textboxStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(MainAppSettings.Design.LightThemeTextColor)));
-				textboxStyle.Setters.Add(new Setter(BackgroundProperty,  new SolidColorBrush(MainAppSettings.Design.LightThemeTextBoxBackgroundColor)));		
-				
-				labelStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(MainAppSettings.Design.LightThemeTextColor)));
-			}
-			
-			Resources.Add(typeof(QTextBox), textboxStyle);
-			Resources.Add(typeof(QTextBlock), textblockStyle);
-			Resources.Add(typeof(QLabel), labelStyle);
+			ApplyDesignSettings();
 		}
 		catch (Exception exception)
 		{
@@ -88,12 +50,56 @@ public partial class ShellWindow : Window
 
 	private void WindowSourceInitialized(object sender, EventArgs e)
 	{
-		var hwnd = new WindowInteropHelper(Application.Current.MainWindow).Handle;
-		//IsDarkTheme = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark;//IsDarkThemeEnabled();
-		SetImmersiveDarkMode(hwnd, IsDarkTheme);
-		Resources["AppBorderBrush"] = IsDarkTheme
-			? new SolidColorBrush(Color.FromRgb(50, 50, 50)) // Dark border color
-			: new SolidColorBrush(Color.FromRgb(200, 200, 200)); // Light border color
+		ApplyDesignSettings();
+	}
+
+	internal static void ApplyDesignSettings()
+	{
+		if (MainAppSettings?.Design == null)
+		{
+			return;
+		}
+
+		IsDarkTheme = MainAppSettings.Design.AppTheme == ApplicationTheme.Dark;
+		ForegroundColor = IsDarkTheme
+			? MainAppSettings.Design.DarkThemeTextColor
+			: MainAppSettings.Design.LightThemeTextColor;
+		BackgroundColor = IsDarkTheme
+			? MainAppSettings.Design.DarkThemeControlBackgroundColor
+			: MainAppSettings.Design.LightThemeControlBackgroundColor;
+		TextEditorBackgroubndColor = IsDarkTheme
+			? MainAppSettings.Design.DarkThemeTextBoxBackgroundColor
+			: MainAppSettings.Design.LightThemeTextBoxBackgroundColor;
+
+		Windows11Palette.Palette.FontSize = MainAppSettings.Design.FontSize;
+		Windows11Palette.LoadPreset(IsDarkTheme ? Windows11Palette.ColorVariation.Dark : Windows11Palette.ColorVariation.Light);
+
+		if (Application.Current.MainWindow is not ShellWindow shellWindow)
+		{
+			return;
+		}
+
+		var textboxStyle = new Style(typeof(QTextBox));
+		var textblockStyle = new Style(typeof(QTextBlock));
+		var labelStyle = new Style(typeof(QLabel));
+
+		textblockStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(ForegroundColor)));
+		textboxStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(ForegroundColor)));
+		textboxStyle.Setters.Add(new Setter(BackgroundProperty, new SolidColorBrush(TextEditorBackgroubndColor)));
+		labelStyle.Setters.Add(new Setter(ForegroundProperty, new SolidColorBrush(ForegroundColor)));
+
+		shellWindow.Resources[typeof(QTextBox)] = textboxStyle;
+		shellWindow.Resources[typeof(QTextBlock)] = textblockStyle;
+		shellWindow.Resources[typeof(QLabel)] = labelStyle;
+		shellWindow.Resources["AppBorderBrush"] = IsDarkTheme
+			? new SolidColorBrush(Color.FromRgb(50, 50, 50))
+			: new SolidColorBrush(Color.FromRgb(200, 200, 200));
+
+		var hwnd = new WindowInteropHelper(shellWindow).Handle;
+		if (hwnd != IntPtr.Zero)
+		{
+			SetImmersiveDarkMode(hwnd, IsDarkTheme);
+		}
 	}
 
 	private static void SetImmersiveDarkMode(IntPtr hwnd, bool enabled)

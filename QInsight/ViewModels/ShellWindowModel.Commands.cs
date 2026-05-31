@@ -97,6 +97,7 @@ public partial class ShellWindowModel
     public RelayCommand<object> RibbonReplayPauseResumeCommand { get; set; }
     
     public RelayCommand<RadDocking> RibbonSaveLayoutCommand { get; set; }
+    public RelayCommand<object> RibbonPreferencesCommand { get; set; }
     
     
     public RelayCommand<RadDocking> RibbonPythonInterpreterCommand { get; set; }
@@ -156,6 +157,7 @@ public partial class ShellWindowModel
             requireSerializationTag = false;
             SaveLayout(r);
         });
+        RibbonPreferencesCommand = new RelayCommand<object>(_ => OpenPreferences());
 
         RibbonPythonInterpreterCommand = new RelayCommand<RadDocking>(OpenPythonInterpreter);
         
@@ -351,6 +353,31 @@ public partial class ShellWindowModel
 
         projectConfigurationViewModel.SetParentWindow(projectConfigurationDialog);
         projectConfigurationDialog.ShowDialog();
+    }
+
+    private void OpenPreferences()
+    {
+        var preferencesViewModel = new PreferencesViewModel(ShellWindow.MainAppSettings, logger);
+        var preferencesView = new PreferencesView
+        {
+            DataContext = preferencesViewModel
+        };
+
+        var preferencesDialog = new RadWindow
+        {
+            Owner = Application.Current.MainWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Header = "Preferences",
+            Width = 710,
+            Height = 580,
+            MinWidth = 710,
+            MinHeight = 580,
+            ResizeMode = ResizeMode.NoResize,
+            Content = preferencesView
+        };
+
+        preferencesViewModel.SetParentWindow(preferencesDialog);
+        preferencesDialog.ShowDialog();
     }
 
     #region Project menu
