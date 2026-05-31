@@ -409,6 +409,7 @@ public partial class ShellWindowModel
             }
 
             await CloseProjectWorkspacesAsync();
+            isEditProjectEnabled = false;
             isEditVariableEnabled = false;
             isEditConversionEnabled = false;
             isEditPresentationEnabled = false;
@@ -611,6 +612,7 @@ public partial class ShellWindowModel
         solutionExplorerViewModel.DisposeAll();
 
         realProjectData = null!;
+        isEditProjectEnabled = false;
         isEditVariableEnabled = false;
         isEditConversionEnabled = false;
         isEditPresentationEnabled = false;
@@ -629,6 +631,7 @@ public partial class ShellWindowModel
 
     private void CreateNewProject()
     {
+        isEditProjectEnabled = false;
         isEditVariableEnabled = false;
         isEditConversionEnabled = false;
         isEditPresentationEnabled = false;
@@ -1435,6 +1438,9 @@ public partial class ShellWindowModel
 
         switch (propertiesViewModel.SelectedViewModel)
         {
+            case ProjectPropertiesViewModel projectPropertiesViewModel:
+                projectPropertiesViewModel.RefreshProperties();
+                break;
             case VariablePropertiesViewModel variablePropertiesViewModel:
                 variablePropertiesViewModel.RefreshProperties();
                 break;

@@ -1,0 +1,63 @@
+<UserControl x:Class="Qenex.QInsight.Views.ProjectPropertiesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
+             xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
+             xmlns:wrappers="clr-namespace:Qenex.QInsight.ViewModels.ModelWrappers"
+             mc:Ignorable="d"
+             d:DesignHeight="300"
+             d:DesignWidth="300"
+             d:DataContext="{d:DesignInstance vm:ProjectPropertiesViewModel, IsDesignTimeCreatable=False}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="5">
+            <CheckBox
+                Margin="0,0,0,8"
+                Content="Edit"
+                IsChecked="{Binding IsEditProjectEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+            <ItemsControl ItemsSource="{Binding Properties}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type wrappers:EditablePropertyWrapper}">
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <q:QTextBlock
+                                Grid.Column="0"
+                                Margin="0,0,10,0"
+                                VerticalAlignment="Center"
+                                Text="{Binding Name}"/>
+
+                            <Grid Grid.Column="1">
+                                <q:QTextBlock
+                                    x:Name="ValueTextBlock"
+                                    Visibility="Collapsed"
+                                    VerticalAlignment="Center"
+                                    Text="{Binding ValueText}"
+                                    ToolTip="{Binding Error}"/>
+                                <q:QTextBox
+                                    x:Name="ValueTextBox"
+                                    Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                    IsReadOnly="{Binding IsReadOnly}"
+                                    ToolTip="{Binding Error}"/>
+                            </Grid>
+                        </Grid>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsReadOnly}" Value="True">
+                                <Setter TargetName="ValueTextBlock" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="ValueTextBox" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="ValueTextBox" Property="Focusable" Value="False"/>
+                                <Setter TargetName="ValueTextBox" Property="IsEnabled" Value="False"/>
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

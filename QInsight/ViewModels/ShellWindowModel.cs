@@ -37,6 +37,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	// Project
 	private RealProjectData realProjectData;
 	private bool isProjectMade;
+	private bool isEditProjectEnabled;
 	private bool isEditVariableEnabled;
 	private bool isEditConversionEnabled;
 	private bool isEditPresentationEnabled;

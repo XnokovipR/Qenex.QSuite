@@ -25,6 +25,12 @@ public class ProjectSeWrapper : PropertyChangedBase, IViewableItem
         get => PrjModule.Specification.Label;
         set { PrjModule.Specification.Label = value; OnPropertyChanged(); }
     }
+
+    public void Refresh()
+    {
+        OnPropertyChanged(nameof(Label));
+        OnPropertyChanged(nameof(ToolTip));
+    }
     
     public FontWeight LabelWeight => FontWeights.Bold;
     

@@ -38,6 +38,15 @@ public partial class ShellWindowModel
         
         switch (msg.Item)
         {
+            case ProjectSeWrapper projectSeWrapper:
+            {
+                propVm.SelectedViewModel = new ProjectPropertiesViewModel(
+                    eventAggregator,
+                    projectSeWrapper,
+                    () => isEditProjectEnabled,
+                    value => isEditProjectEnabled = value);
+                break;
+            }
             case WorkspaceSeWrapper workspaceWrapper:
             {
                 if (ViewModels.FirstOrDefault(viewModelBase => viewModelBase is IWorkspaceViewModel ws && ws.Name.Equals(workspaceWrapper.Name)) is IWorkspaceViewModel workspaceVm)
