@@ -354,21 +354,21 @@ public partial class ShellWindowModel
     {
         try
         {
-            await CloseProjectWorkspacesAsync();
-            isEditVariableEnabled = false;
-            isEditConversionEnabled = false;
-            isEditPresentationEnabled = false;
-            isEditEventEnabled = false;
-            realProjectData = RealProjectData.CreateEmptyProjectData(ShellWindow.MainAppSettings.ScriptEngine, logger);
-            solutionExplorerViewModel.ReloadProjectData(realProjectData);
-            currentProjectFilePath = null;
-            SetProjectWindowTitle(currentProjectFilePath);
-            ChangeIsProjectMade(true);
-            ClearReplayDataLogImportState();
-            NotifyRuntimeCommandsCanExecuteChanged();
-            RibbonReplayCommand.OnCanExecuteChanged();
-            SetDefaultPropertiesView();
-            logger.Log(LogLevel.Info, "New project created.");
+            if (isProjectMade)
+            {
+                if (!await ConfirmCloseProjectAsync("Do you want to close current project and create a new one?", "New Project"))
+                {
+                    return;
+                }
+
+                await CloseProjectCoreAsync();
+            }
+            else
+            {
+                await CloseProjectWorkspacesAsync();
+            }
+
+            CreateNewProject();
         }
         catch (Exception e)
         {
@@ -565,31 +565,7 @@ public partial class ShellWindowModel
 
         try
         {
-            if (IsRuntimeStarted)
-            {
-                await realProjectData.Module.StopAsync();
-                IsRuntimeStarted = false;
-                SetRuntimeCommandStates(false);
-            }
-            
-            await CloseProjectWorkspacesAsync();
-            solutionExplorerViewModel.DisposeAll();
-            
-            realProjectData = null!;
-            isEditVariableEnabled = false;
-            isEditConversionEnabled = false;
-            isEditPresentationEnabled = false;
-            isEditEventEnabled = false;
-            currentProjectFilePath = null;
-            SetProjectWindowTitle(currentProjectFilePath);
-            ChangeIsProjectMade(false);
-            ClearReplayDataLogImportState();
-            NotifyRuntimeCommandsCanExecuteChanged();
-            RibbonReplayCommand.OnCanExecuteChanged();
-            
-            ScriptLogsViewModel.ClearLog();
-            LogsViewModel.ClearLog();
-            SetDefaultPropertiesView();
+            await CloseProjectCoreAsync();
         }
         catch (Exception e)
         {
@@ -599,17 +575,69 @@ public partial class ShellWindowModel
 
     private Task<bool> ConfirmCloseProjectAsync()
     {
+        return ConfirmCloseProjectAsync("Do you want to close current project?", "Close Project");
+    }
+
+    private Task<bool> ConfirmCloseProjectAsync(string content, string header)
+    {
         var closeConfirmed = new TaskCompletionSource<bool>();
         RadWindow.Confirm(new DialogParameters()
         {
-            Content = "Do you want to close current project?",
-            Header = "Close Project",
+            Content = content,
+            Header = header,
             Owner = Application.Current.MainWindow,
             DialogStartupLocation = WindowStartupLocation.CenterOwner,
             Closed = (_, arg) => closeConfirmed.SetResult(arg.DialogResult == true)
         });
 
         return closeConfirmed.Task;
+    }
+
+    private async Task CloseProjectCoreAsync()
+    {
+        if (IsRuntimeStarted)
+        {
+            await realProjectData.Module.StopAsync();
+            IsRuntimeStarted = false;
+            SetRuntimeCommandStates(false);
+        }
+
+        await CloseProjectWorkspacesAsync();
+        solutionExplorerViewModel.DisposeAll();
+
+        realProjectData = null!;
+        isEditVariableEnabled = false;
+        isEditConversionEnabled = false;
+        isEditPresentationEnabled = false;
+        isEditEventEnabled = false;
+        currentProjectFilePath = null;
+        SetProjectWindowTitle(currentProjectFilePath);
+        ChangeIsProjectMade(false);
+        ClearReplayDataLogImportState();
+        NotifyRuntimeCommandsCanExecuteChanged();
+        RibbonReplayCommand.OnCanExecuteChanged();
+
+        ScriptLogsViewModel.ClearLog();
+        LogsViewModel.ClearLog();
+        SetDefaultPropertiesView();
+    }
+
+    private void CreateNewProject()
+    {
+        isEditVariableEnabled = false;
+        isEditConversionEnabled = false;
+        isEditPresentationEnabled = false;
+        isEditEventEnabled = false;
+        realProjectData = RealProjectData.CreateEmptyProjectData(ShellWindow.MainAppSettings.ScriptEngine, logger);
+        solutionExplorerViewModel.ReloadProjectData(realProjectData);
+        currentProjectFilePath = null;
+        SetProjectWindowTitle(currentProjectFilePath);
+        ChangeIsProjectMade(true);
+        ClearReplayDataLogImportState();
+        NotifyRuntimeCommandsCanExecuteChanged();
+        RibbonReplayCommand.OnCanExecuteChanged();
+        SetDefaultPropertiesView();
+        logger.Log(LogLevel.Info, "New project created.");
     }
 
     private async Task CloseProjectWorkspacesAsync()
