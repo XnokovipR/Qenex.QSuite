@@ -1,4 +1,3 @@
-﻿using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,7 +11,6 @@ using Qenex.QInsight.Views;
 using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
-using Qenex.QSuite.Variables.VariableEvents;
 using Telerik.Windows.Controls;
 using Telerik.Windows.DragDrop;
 
@@ -32,30 +30,39 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
     
     private void OnDragInitialized(object sender, DragInitializeEventArgs e)
     {
-        if (((FrameworkElement)e.OriginalSource).DataContext is not VariableSeWrapper varWrapper) return;
-        if (varWrapper.Variable is not IVariableBase variable) return;
-        
+        if (e.OriginalSource is not FrameworkElement source) return;
+
+        IVariableBase variable;
+        IProtocolVariable? protocolVariable = null;
+        if (source.DataContext is ProtocolVariableWrapper protocolVariableWrapper)
+        {
+            protocolVariable = protocolVariableWrapper.ProtocolVariable;
+            variable = protocolVariable.Variable;
+        }
+        else if (source.DataContext is VariableSeWrapper varWrapper)
+        {
+            variable = varWrapper.Variable;
+        }
+        else
+        {
+            return;
+        }
+
         if (sender is not RadTreeView treeView) return;
         if (treeView.DataContext is not SolutionExplorerViewModel vm) return;
 
-        var defaultEvent = ((IVariableEventSeWrapper)vm.ProjectModules.First().Children.First(i => i.Label.Contains("Events")).Children.First()).VariableEvent;
-        var defaultProtocol = vm.ProjectModules
-            .First().Children
-            .First(i => i.Label.Contains("Communicated Drivers")).Children
-            .First(i => i.Label.Contains("Simulation Data Driver")).Children
-            .First(i => i.Label.Contains("Communicated Protocols")).Children
-            .First();
-        var defaultDriverProtocolVariables = defaultProtocol.Children
-            .First(i => i.Label.Contains("Communicated Variables")).Children; 
+        protocolVariable ??= FindProtocolVariable(vm.ProjectModules, variable);
+        if (protocolVariable == null)
+        {
+            return;
+        }
         
         var dragVisualControl = new ContentControl();
         var payload = DragDropPayloadManager.GeneratePayload(null);
 
         payload.SetData("DraggedVariable", variable);
+        payload.SetData("DraggedProtocolVariable", protocolVariable);
         payload.SetData("DraggedVariableDragVisual", dragVisualControl);
-        payload.SetData("DefaultEvent", defaultEvent);
-        payload.SetData("DefaultProtocol", defaultProtocol);
-        payload.SetData("DefaultDriverProtocolVariables", defaultDriverProtocolVariables);
         
         e.Data = payload;
 
@@ -95,34 +102,12 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
     {
         try
         {
-            var draggedVariable = (IVariableBase)DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
-            var defaultEvent = (IVarEvent)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultEvent");
-            var defaultProtocol = (ProtocolSeWrapper)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultProtocol");
-            var defaultDriverProtocolVariables = (ObservableCollection<IViewableItem>)DragDropPayloadManager.GetDataFromObject(e.Data, "DefaultDriverProtocolVariables"); 
+            var protVariable = (IProtocolVariable)DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedProtocolVariable");
             if (DragDropPayloadManager.GetDataFromObject(e.Data, "ChosenControl") is not IControlBase chosenControl)
             {
                 return;
             }
-            
-            // Add variable to Communicated Drivers
-            IProtocolVariable? protVariable = null;
-            var alreadyAdded = defaultProtocol.Protocol.Variables.Any(v => v.Variable.Name == draggedVariable.Name);
-            if (!alreadyAdded)
-            {
-                protVariable = defaultProtocol.Protocol.CreateProtocolVariable(draggedVariable, defaultEvent, draggedVariable.Name);
-                defaultProtocol.Protocol.AddVariable(protVariable);
-                var protVarWrapper = new ProtocolVariableWrapper(protVariable);
-                defaultDriverProtocolVariables.Add(protVarWrapper);
-            }
-            else
-            {
-                var protVarWrapper = defaultDriverProtocolVariables.Cast<ProtocolVariableWrapper>().First(v => v.ProtocolVariable.Variable.Label.Equals(draggedVariable.Label));
-                if (protVarWrapper is ProtocolVariableWrapper existingProtVarWrapper)
-                {
-                    protVariable = existingProtVarWrapper.ProtocolVariable;
-                }
-            }
-            
+
             // Data notification
             protVariable?.SubscribeAsyncValueChanged(async _ =>
             {
@@ -137,11 +122,37 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
 
             e.Handled = true;
         }
-        catch (NullReferenceException exception)
+        catch (NullReferenceException)
         {
             // ignore
         }
         
+    }
+
+    private static IProtocolVariable? FindProtocolVariable(IEnumerable<IViewableItem> items, IVariableBase variable)
+    {
+        foreach (var item in items)
+        {
+            if (item is ProtocolVariableWrapper protocolVariableWrapper
+                && IsSameVariable(protocolVariableWrapper.ProtocolVariable.Variable, variable))
+            {
+                return protocolVariableWrapper.ProtocolVariable;
+            }
+
+            var protocolVariable = FindProtocolVariable(item.Children, variable);
+            if (protocolVariable != null)
+            {
+                return protocolVariable;
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsSameVariable(IVariableBase left, IVariableBase right)
+    {
+        return ReferenceEquals(left, right)
+               || ControlBase.IsVariableReferenceMatch(ControlBase.GetVariableReference(left), right);
     }
     
 }
