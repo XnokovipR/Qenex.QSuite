@@ -18,6 +18,7 @@ using Qenex.QSuite.Controls.SignalControl.Views;
 using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.QVariables.Values;
 using Telerik.Windows.DragDrop;
 using Telerik.Windows.Controls.FileDialogs;
 
@@ -284,13 +285,14 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 				    control.BindVariable(protocolVariable.Variable);
 				    Func<IProtocolVariable, Task> handler = changedProtocolVariable =>
 				    {
+					    var variableSnapshot = CreateVariableSnapshot(changedProtocolVariable.Variable);
 					    if (Application.Current?.Dispatcher == null || Application.Current.Dispatcher.CheckAccess())
 					    {
-						    return control.UpdateVariableValueAsync(changedProtocolVariable.Variable);
+						    return control.UpdateVariableValueAsync(variableSnapshot);
 					    }
 
 					    return Application.Current.Dispatcher
-						    .InvokeAsync(() => control.UpdateVariableValueAsync(changedProtocolVariable.Variable))
+						    .InvokeAsync(() => control.UpdateVariableValueAsync(variableSnapshot))
 						    .Task
 						    .Unwrap();
 				    };
@@ -300,6 +302,51 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 			    }
 		    }
 	    }
+    }
+
+    private static IVariableBase CreateVariableSnapshot(IVariableBase variable)
+    {
+	    return variable switch
+	    {
+		    ScalarVariable scalarVariable => CreateScalarVariableSnapshot(scalarVariable),
+		    StringVariable stringVariable => CreateStringVariableSnapshot(stringVariable),
+		    _ => variable
+	    };
+    }
+
+    private static ScalarVariable CreateScalarVariableSnapshot(ScalarVariable variable)
+    {
+	    var values = ValuesGlobal.CreateInstance(variable.Values.ValueType);
+	    values.ValPresentation = variable.Values.ValPresentation;
+	    values.SetValue(variable.GetValue());
+
+	    return new ScalarVariable
+	    {
+		    Id = variable.Id,
+		    Namespace = variable.Namespace,
+		    Name = variable.Name,
+		    Label = variable.Label,
+		    Description = variable.Description,
+		    Timestamp = variable.Timestamp,
+		    CommComponents = variable.CommComponents,
+		    Size = variable.Size,
+		    Values = values
+	    };
+    }
+
+    private static StringVariable CreateStringVariableSnapshot(StringVariable variable)
+    {
+	    return new StringVariable
+	    {
+		    Id = variable.Id,
+		    Namespace = variable.Namespace,
+		    Name = variable.Name,
+		    Label = variable.Label,
+		    Description = variable.Description,
+		    Timestamp = variable.Timestamp,
+		    CommComponents = variable.CommComponents,
+		    Values = variable.Values
+	    };
     }
 
     public override void Clean()
