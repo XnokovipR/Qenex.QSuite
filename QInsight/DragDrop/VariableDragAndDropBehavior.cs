@@ -52,7 +52,7 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         if (sender is not RadTreeView treeView) return;
         if (treeView.DataContext is not SolutionExplorerViewModel vm) return;
 
-        if (protocolVariable != null && IsSinkProtocolVariable(vm.ProjectModules, protocolVariable))
+        if (protocolVariable != null && IsNonLiveSourceProtocolVariable(vm.ProjectModules, protocolVariable))
         {
             protocolVariable = null;
         }
@@ -143,21 +143,21 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
     private static IProtocolVariable? FindProtocolVariable(
         IEnumerable<IViewableItem> items,
         IVariableBase variable,
-        bool isSinkDriverBranch)
+        bool isNonLiveSourceDriverBranch)
     {
         foreach (var item in items)
         {
-            var nextIsSinkDriverBranch = isSinkDriverBranch
-                                         || item is DriverSeWrapper { Driver: IProtocolVariableSinkDriver };
+            var nextIsNonLiveSourceDriverBranch = isNonLiveSourceDriverBranch
+                                                  || item is DriverSeWrapper { Driver: IProtocolVariableSinkDriver or IReplayDriver };
 
-            if (!nextIsSinkDriverBranch
+            if (!nextIsNonLiveSourceDriverBranch
                 && item is ProtocolVariableWrapper protocolVariableWrapper
                 && IsSameVariable(protocolVariableWrapper.ProtocolVariable.Variable, variable))
             {
                 return protocolVariableWrapper.ProtocolVariable;
             }
 
-            var protocolVariable = FindProtocolVariable(item.Children, variable, nextIsSinkDriverBranch);
+            var protocolVariable = FindProtocolVariable(item.Children, variable, nextIsNonLiveSourceDriverBranch);
             if (protocolVariable != null)
             {
                 return protocolVariable;
@@ -167,28 +167,28 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         return null;
     }
 
-    private static bool IsSinkProtocolVariable(IEnumerable<IViewableItem> items, IProtocolVariable protocolVariable)
+    private static bool IsNonLiveSourceProtocolVariable(IEnumerable<IViewableItem> items, IProtocolVariable protocolVariable)
     {
-        return IsSinkProtocolVariable(items, protocolVariable, false);
+        return IsNonLiveSourceProtocolVariable(items, protocolVariable, false);
     }
 
-    private static bool IsSinkProtocolVariable(
+    private static bool IsNonLiveSourceProtocolVariable(
         IEnumerable<IViewableItem> items,
         IProtocolVariable protocolVariable,
-        bool isSinkDriverBranch)
+        bool isNonLiveSourceDriverBranch)
     {
         foreach (var item in items)
         {
-            var nextIsSinkDriverBranch = isSinkDriverBranch
-                                         || item is DriverSeWrapper { Driver: IProtocolVariableSinkDriver };
+            var nextIsNonLiveSourceDriverBranch = isNonLiveSourceDriverBranch
+                                                  || item is DriverSeWrapper { Driver: IProtocolVariableSinkDriver or IReplayDriver };
 
             if (item is ProtocolVariableWrapper protocolVariableWrapper
                 && ReferenceEquals(protocolVariableWrapper.ProtocolVariable, protocolVariable))
             {
-                return nextIsSinkDriverBranch;
+                return nextIsNonLiveSourceDriverBranch;
             }
 
-            if (IsSinkProtocolVariable(item.Children, protocolVariable, nextIsSinkDriverBranch))
+            if (IsNonLiveSourceProtocolVariable(item.Children, protocolVariable, nextIsNonLiveSourceDriverBranch))
             {
                 return true;
             }

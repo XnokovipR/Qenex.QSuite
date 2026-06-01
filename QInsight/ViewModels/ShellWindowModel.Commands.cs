@@ -1332,9 +1332,15 @@ public partial class ShellWindowModel
     private IEnumerable<IProtocolVariable> GetProjectProtocolVariables()
     {
         return realProjectData.Module.Drivers
-            .Where(driver => driver is not IProtocolVariableSinkDriver)
+            .Where(IsLiveSourceDriver)
             .SelectMany(driver => driver.Protocols)
             .SelectMany(protocol => protocol.Variables);
+    }
+
+    private static bool IsLiveSourceDriver(IDriverBase driver)
+    {
+        return driver is not IProtocolVariableSinkDriver
+               && driver is not IReplayDriver;
     }
 
     private IDriverBase CreateFileDataReplayDriver(string logFilePath)
