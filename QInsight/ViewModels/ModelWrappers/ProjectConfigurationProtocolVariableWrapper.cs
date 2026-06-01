@@ -478,14 +478,16 @@ public static class ProjectConfigurationProtocolVariableFactory
 
     public static Dictionary<string, string> ParseCommParam(string commParam)
     {
-        return commParam
-            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(parameter => parameter.Split('=', 2))
-            .Where(parts => parts.Length == 2)
-            .ToDictionary(
-                parts => parts[0].Trim(),
-                parts => parts[1].Trim().Trim('"'),
-                StringComparer.OrdinalIgnoreCase);
+        var parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var parts in commParam
+                     .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                     .Select(parameter => parameter.Split('=', 2))
+                     .Where(parts => parts.Length == 2))
+        {
+            parameters[parts[0].Trim()] = parts[1].Trim().Trim('"');
+        }
+
+        return parameters;
     }
 
     private static void AddCommParam(

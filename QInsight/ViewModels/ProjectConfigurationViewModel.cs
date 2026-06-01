@@ -27,6 +27,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private const string FileDataReplayDriverName = "FileDataReplayDriver";
     private const string DataLogReplayProtocolName = "DataLogReplayProtocol";
     private const string SimulationDriverName = "SimulDataDriver";
+    private const string TcpClientDriverName = "TcpClientDriver";
 
     private readonly EventAggregator? eventAggregator;
     private readonly IModuleBase module;
@@ -791,6 +792,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         driver.RawSettings = string.Empty;
         driver.RawEncryptedSettings = string.Empty;
         driver.IsEnabled = !driver.Specification.Name.Equals(FileDataReplayDriverName, StringComparison.OrdinalIgnoreCase);
+        if (driver is DriverBase driverBase && module is ModuleBase moduleBase)
+        {
+            driverBase.Logger = moduleBase.Logger;
+        }
 
         if (driver.Specification.Name.Equals(FileDataLoggerDriverName, StringComparison.OrdinalIgnoreCase))
         {
@@ -805,6 +810,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         else if (driver.Specification.Name.Equals(SimulationDriverName, StringComparison.OrdinalIgnoreCase))
         {
             driver.RawSettings = "periodes=20";
+        }
+        else if (driver.Specification.Name.Equals(TcpClientDriverName, StringComparison.OrdinalIgnoreCase))
+        {
+            driver.RawSettings = "ip=127.0.0.1;port=5000;connectionTimeoutMs=5000;reconnectTimeMs=1000;numberOfReconnections=3";
         }
 
         driver.SetConfiguration();

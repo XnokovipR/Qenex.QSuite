@@ -354,6 +354,11 @@ public class XmlModuleHandler
             .Where(p => p.CanRead)
             .ToList();
 
+        if (properties.FirstOrDefault(p => p.Name == "CommParams")?.GetValue(specification) is string commParams)
+        {
+            return commParams;
+        }
+
         var parameters = new List<string>();
         AddCommParam(parameters, properties, specification, "Direction", value => value.ToString()!.ToLowerInvariant());
         AddCommParam(parameters, properties, specification, "VariableEvent", value => ((IVarEvent)value).Name, "eventRef");
@@ -697,6 +702,11 @@ public class XmlModuleHandler
             }
             
             driver.Label = driverRef.Label;
+            if (driver is DriverBase driverBase)
+            {
+                driverBase.Logger = logger;
+            }
+
             driver.IsEnabled = driverRef.IsEnabled;
             driver.RawSettings = driverRef.Settings;
             driver.RawEncryptedSettings = driverRef.EncryptedSettings;

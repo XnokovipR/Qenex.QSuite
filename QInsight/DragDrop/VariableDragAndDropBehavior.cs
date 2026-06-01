@@ -9,6 +9,7 @@ using Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QInsight.Views;
 using Qenex.QSuite.Controls.Control;
+using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
@@ -50,6 +51,11 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
 
         if (sender is not RadTreeView treeView) return;
         if (treeView.DataContext is not SolutionExplorerViewModel vm) return;
+
+        if (protocolVariable != null && IsSinkProtocolVariable(vm.ProjectModules, protocolVariable))
+        {
+            protocolVariable = null;
+        }
 
         protocolVariable ??= FindProtocolVariable(vm.ProjectModules, variable);
         if (protocolVariable == null)
@@ -131,15 +137,27 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
 
     private static IProtocolVariable? FindProtocolVariable(IEnumerable<IViewableItem> items, IVariableBase variable)
     {
+        return FindProtocolVariable(items, variable, false);
+    }
+
+    private static IProtocolVariable? FindProtocolVariable(
+        IEnumerable<IViewableItem> items,
+        IVariableBase variable,
+        bool isSinkDriverBranch)
+    {
         foreach (var item in items)
         {
-            if (item is ProtocolVariableWrapper protocolVariableWrapper
+            var nextIsSinkDriverBranch = isSinkDriverBranch
+                                         || item is DriverSeWrapper { Driver: IProtocolVariableSinkDriver };
+
+            if (!nextIsSinkDriverBranch
+                && item is ProtocolVariableWrapper protocolVariableWrapper
                 && IsSameVariable(protocolVariableWrapper.ProtocolVariable.Variable, variable))
             {
                 return protocolVariableWrapper.ProtocolVariable;
             }
 
-            var protocolVariable = FindProtocolVariable(item.Children, variable);
+            var protocolVariable = FindProtocolVariable(item.Children, variable, nextIsSinkDriverBranch);
             if (protocolVariable != null)
             {
                 return protocolVariable;
@@ -147,6 +165,36 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         }
 
         return null;
+    }
+
+    private static bool IsSinkProtocolVariable(IEnumerable<IViewableItem> items, IProtocolVariable protocolVariable)
+    {
+        return IsSinkProtocolVariable(items, protocolVariable, false);
+    }
+
+    private static bool IsSinkProtocolVariable(
+        IEnumerable<IViewableItem> items,
+        IProtocolVariable protocolVariable,
+        bool isSinkDriverBranch)
+    {
+        foreach (var item in items)
+        {
+            var nextIsSinkDriverBranch = isSinkDriverBranch
+                                         || item is DriverSeWrapper { Driver: IProtocolVariableSinkDriver };
+
+            if (item is ProtocolVariableWrapper protocolVariableWrapper
+                && ReferenceEquals(protocolVariableWrapper.ProtocolVariable, protocolVariable))
+            {
+                return nextIsSinkDriverBranch;
+            }
+
+            if (IsSinkProtocolVariable(item.Children, protocolVariable, nextIsSinkDriverBranch))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool IsSameVariable(IVariableBase left, IVariableBase right)

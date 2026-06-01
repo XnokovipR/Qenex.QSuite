@@ -1332,6 +1332,7 @@ public partial class ShellWindowModel
     private IEnumerable<IProtocolVariable> GetProjectProtocolVariables()
     {
         return realProjectData.Module.Drivers
+            .Where(driver => driver is not IProtocolVariableSinkDriver)
             .SelectMany(driver => driver.Protocols)
             .SelectMany(protocol => protocol.Variables);
     }

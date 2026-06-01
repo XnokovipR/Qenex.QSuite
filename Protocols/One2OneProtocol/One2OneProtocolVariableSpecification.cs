@@ -15,7 +15,9 @@ public class One2OneProtocolVariableSpecification : ProtVariableSpecification
     {
         return new One2OneProtocolVariableSpecification
         {
-            CommParams = commParams
+            CommParams = commParams.Contains("commParams=", StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : commParams
         };
     }
 }
