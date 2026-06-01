@@ -14,6 +14,8 @@ public class JsonSignalProtocol : ProtocolBase<string>
     private volatile bool exitRequested;
     private readonly EventWaitHandle waitHandle;
     private readonly ConcurrentQueue<string> receivedDataQueue;
+    private DateTime? sourceTimeBaseUtc;
+    private double? lastSourceTimeSeconds;
 
     public JsonSignalProtocol()
     {
@@ -64,6 +66,8 @@ public class JsonSignalProtocol : ProtocolBase<string>
     {
         if (!IsEnabled) return Task.CompletedTask;
         exitRequested = false;
+        sourceTimeBaseUtc = null;
+        lastSourceTimeSeconds = null;
         _ = RunLoopAsync(ct);
         return Task.CompletedTask;
     }
@@ -154,7 +158,7 @@ public class JsonSignalProtocol : ProtocolBase<string>
 
     private IProtocolVariable? ApplyMessage(string line)
     {
-        if (!TryParseMessage(line, out var signalName, out var value))
+        if (!TryParseMessage(line, out var signalName, out var value, out var sourceTimeSeconds))
         {
             return null;
         }
@@ -167,7 +171,7 @@ public class JsonSignalProtocol : ProtocolBase<string>
 
         try
         {
-            protocolVariable.Variable.Timestamp = DateTime.UtcNow;
+            protocolVariable.Variable.Timestamp = GetTimestamp(sourceTimeSeconds);
             protocolVariable.Variable.SetValue(ConvertValue(value, protocolVariable.Variable));
             return protocolVariable;
         }
@@ -185,10 +189,15 @@ public class JsonSignalProtocol : ProtocolBase<string>
             && string.Equals(spec.SignalName, signalName, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static bool TryParseMessage(string line, out string signalName, out JsonElement value)
+    private bool TryParseMessage(
+        string line,
+        out string signalName,
+        out JsonElement value,
+        out double? sourceTimeSeconds)
     {
         signalName = string.Empty;
         value = default;
+        sourceTimeSeconds = null;
 
         try
         {
@@ -202,12 +211,64 @@ public class JsonSignalProtocol : ProtocolBase<string>
 
             signalName = nameElement.GetString() ?? string.Empty;
             value = valueElement.Clone();
+            if (root.TryGetProperty("t", out var sourceTimeElement)
+                && TryReadSourceTimeSeconds(sourceTimeElement, out var parsedSourceTimeSeconds))
+            {
+                sourceTimeSeconds = parsedSourceTimeSeconds;
+            }
+
             return !string.IsNullOrWhiteSpace(signalName);
         }
         catch (JsonException)
         {
             return false;
         }
+    }
+
+    private DateTime GetTimestamp(double? sourceTimeSeconds)
+    {
+        if (sourceTimeSeconds == null)
+        {
+            return DateTime.UtcNow;
+        }
+
+        var sourceTime = sourceTimeSeconds.Value;
+        if (sourceTimeBaseUtc == null
+            || (lastSourceTimeSeconds != null && sourceTime < lastSourceTimeSeconds.Value))
+        {
+            sourceTimeBaseUtc = DateTime.UtcNow - TimeSpan.FromSeconds(sourceTime);
+        }
+
+        lastSourceTimeSeconds = sourceTime;
+        return DateTime.SpecifyKind(sourceTimeBaseUtc.Value + TimeSpan.FromSeconds(sourceTime), DateTimeKind.Utc);
+    }
+
+    private static bool TryReadSourceTimeSeconds(JsonElement element, out double sourceTimeSeconds)
+    {
+        sourceTimeSeconds = 0;
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Number:
+                if (!element.TryGetDouble(out sourceTimeSeconds))
+                {
+                    return false;
+                }
+
+                break;
+            case JsonValueKind.String:
+                if (!double.TryParse(element.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out sourceTimeSeconds))
+                {
+                    return false;
+                }
+
+                break;
+            default:
+                return false;
+        }
+
+        return !double.IsNaN(sourceTimeSeconds)
+               && !double.IsInfinity(sourceTimeSeconds)
+               && sourceTimeSeconds >= 0;
     }
 
     private static object ConvertValue(JsonElement value, IVariableBase variable)
