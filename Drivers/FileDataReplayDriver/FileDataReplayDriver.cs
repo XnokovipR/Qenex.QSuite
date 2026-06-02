@@ -12,6 +12,7 @@ namespace Qenex.QSuite.Drivers.FileDataReplayDriver;
 
 public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExportDriver
 {
+    private static readonly TimeSpan DataLoadProgressUpdateInterval = TimeSpan.FromMilliseconds(100);
     private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs", "values.qilog");
     private bool loop;
     private double speed = 1.0;
@@ -28,6 +29,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
     private long replayFirstTimestampUtcTicks;
     private long replayCurrentTimestampUtcTicks;
     private int replaySeekVersion;
+    private long lastDataLoadProgressTimestamp;
     private bool isPaused;
     private bool isDataLoaded;
     private bool isDataLoading;
@@ -413,6 +415,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
                 stream,
                 cancellationToken: ct);
             AddLoadedRecord(serializedRecord.ToDataLogRecord());
+            RaiseDataLoadProgressChangedIfDue();
         }
 
         CompleteReplayDataLoad();
@@ -429,6 +432,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
             replayCurrentTimestampUtcTicks = 0;
             CurrentTime = TimeSpan.Zero;
             Duration = TimeSpan.Zero;
+            lastDataLoadProgressTimestamp = 0;
             isDataLoaded = false;
             isDataLoading = true;
         }
@@ -454,6 +458,19 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
         }
 
         replayRecordsAvailable.Release();
+    }
+
+    private void RaiseDataLoadProgressChangedIfDue()
+    {
+        var now = Stopwatch.GetTimestamp();
+        if (lastDataLoadProgressTimestamp != 0
+            && StopwatchTicksToTimeSpan(now - lastDataLoadProgressTimestamp) < DataLoadProgressUpdateInterval)
+        {
+            return;
+        }
+
+        lastDataLoadProgressTimestamp = now;
+        RaiseReplayProgressChanged();
     }
 
     private void CompleteReplayDataLoad()
@@ -864,6 +881,11 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
     private static long GetRecordTimestampUtcTicks(DataLogRecord record)
     {
         return record.TimestampUtcTicks > 0 ? record.TimestampUtcTicks : 0;
+    }
+
+    private static TimeSpan StopwatchTicksToTimeSpan(long stopwatchTicks)
+    {
+        return TimeSpan.FromTicks((long)(stopwatchTicks * (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency));
     }
 
     private sealed class ReplayTimingState

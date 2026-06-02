@@ -1162,6 +1162,12 @@ public partial class ShellWindowModel
                 driver.Specification.Name.Equals("FileDataReplayDriver", StringComparison.OrdinalIgnoreCase));
             if (existingReplayDriver != null)
             {
+                if (existingReplayDriver is IReplayDriver existingReplayDriverWithEvents
+                    && ReferenceEquals(activeReplayDriver, existingReplayDriverWithEvents))
+                {
+                    UnsubscribeReplayCompleted();
+                }
+
                 existingReplayDriver.Dispose();
                 realProjectData.Module.RemoveDriver(existingReplayDriver);
             }
@@ -1287,6 +1293,7 @@ public partial class ShellWindowModel
             return;
         }
 
+        SubscribeReplayCompleted(replayDriver);
         replayDriverWithDataLoad.StartLoadingData();
         logger.Log(LogLevel.Info, "Replay data loading started.");
     }
@@ -1524,6 +1531,17 @@ public partial class ShellWindowModel
             return;
         }
 
+        if (ReferenceEquals(activeReplayDriver, replayDriverWithEvents))
+        {
+            UpdateReplayProgress(
+                activeReplayDriver.CurrentTime,
+                activeReplayDriver.Duration,
+                activeReplayDriver.IsPaused,
+                activeReplayDriver.IsDataLoaded);
+            return;
+        }
+
+        UnsubscribeReplayCompleted();
         activeReplayDriver = replayDriverWithEvents;
         activeReplayDriver.ReplayCompleted += OnReplayCompleted;
         activeReplayDriver.ReplayProgressChanged += OnReplayProgressChanged;
@@ -1570,7 +1588,11 @@ public partial class ShellWindowModel
         try
         {
             await Application.Current.Dispatcher.InvokeAsync(() =>
-                UpdateReplayProgress(e.CurrentTime, e.Duration, e.IsPaused, e.IsDataLoaded));
+            {
+                UpdateReplayProgress(e.CurrentTime, e.Duration, e.IsPaused, e.IsDataLoaded);
+                RibbonReplayCommand.OnCanExecuteChanged();
+                RibbonExportDataLogCommand.OnCanExecuteChanged();
+            });
         }
         catch (Exception ex)
         {
