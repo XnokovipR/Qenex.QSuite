@@ -187,6 +187,11 @@
 										SmallImage="../Icons/Menu/OpenProject.png"
 										Command="{Binding RibbonImportDataLogCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 									<telerik:RadRibbonButton
+										Text="Stop loading"
+										Size="Large"
+										SmallImage="../Icons/Menu/Disconnect.png"
+										Command="{Binding RibbonCancelReplayDataLoadCommand}"/>
+									<telerik:RadRibbonButton
 										Text="Export"
 										Size="Large"
 										SmallImage="../Icons/Menu/SaveProjectAs.png"

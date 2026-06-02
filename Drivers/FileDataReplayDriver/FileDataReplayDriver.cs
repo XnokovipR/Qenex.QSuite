@@ -33,6 +33,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
     private bool isPaused;
     private bool isDataLoaded;
     private bool isDataLoading;
+    private volatile bool completeDataLoadOnCancellation;
 
     public FileDataReplayDriver()
     {
@@ -61,6 +62,17 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
             lock (replayStateLock)
             {
                 return isDataLoaded;
+            }
+        }
+    }
+
+    public bool IsDataLoading
+    {
+        get
+        {
+            lock (replayStateLock)
+            {
+                return isDataLoading;
             }
         }
     }
@@ -127,8 +139,20 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
         }
 
         dataLoadCancellation?.Dispose();
+        completeDataLoadOnCancellation = false;
         dataLoadCancellation = CancellationTokenSource.CreateLinkedTokenSource(ct);
         dataLoadTask = LoadReplayRecordsSafeAsync(dataLoadCancellation.Token);
+    }
+
+    public void CancelLoadingData()
+    {
+        if (!IsDataLoading)
+        {
+            return;
+        }
+
+        completeDataLoadOnCancellation = true;
+        dataLoadCancellation?.Cancel();
     }
 
     public override Task StartAsync(CancellationToken ct = default)
@@ -181,6 +205,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
         replayCancellation?.Cancel();
         replayCancellation?.Dispose();
         dataLoadCancellation?.Cancel();
+        completeDataLoadOnCancellation = false;
         dataLoadCancellation?.Dispose();
         replayRecordGate.Dispose();
         replayRecordsAvailable.Dispose();
@@ -381,6 +406,11 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
+            if (completeDataLoadOnCancellation)
+            {
+                Logger?.Log(LogLevel.Info, "Replay data loading canceled.");
+                CompleteReplayDataLoad();
+            }
         }
         catch (Exception e)
         {

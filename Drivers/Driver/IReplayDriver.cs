@@ -9,8 +9,10 @@ public interface IReplayDriver
     TimeSpan Duration { get; }
     bool IsPaused { get; }
     bool IsDataLoaded { get; }
+    bool IsDataLoading { get; }
 
     void StartLoadingData(CancellationToken ct = default);
+    void CancelLoadingData();
     void Pause();
     void Resume();
     Task SeekAsync(TimeSpan position, CancellationToken ct = default);

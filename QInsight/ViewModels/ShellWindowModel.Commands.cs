@@ -91,6 +91,7 @@ public partial class ShellWindowModel
     public RelayCommandAsync<RadDocking> RibbonConnectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonDisconnectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonImportDataLogCommand { get; set; }
+    public RelayCommand<object> RibbonCancelReplayDataLoadCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonExportDataLogCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonReplayCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonStopReplayCommand { get; set; }
@@ -147,6 +148,7 @@ public partial class ShellWindowModel
         RibbonConnectCommand = new RelayCommandAsync<RadDocking>(ConnectAsync, _ => CanConnectRuntime());
         RibbonDisconnectCommand = new RelayCommandAsync<RadDocking>(DisconnectAsync, _ => canDisconnectRuntime);
         RibbonImportDataLogCommand = new RelayCommandAsync<RadDocking>(ImportDataLogAsync, _ => CanImportDataLog());
+        RibbonCancelReplayDataLoadCommand = new RelayCommand<object>(_ => CancelReplayDataLoad(), _ => CanCancelReplayDataLoad());
         RibbonExportDataLogCommand = new RelayCommandAsync<RadDocking>(ExportDataLogAsync, _ => CanExportDataLog());
         RibbonReplayCommand = new RelayCommandAsync<RadDocking>(ReplayAsync, _ => CanStartReplay());
         RibbonStopReplayCommand = new RelayCommandAsync<RadDocking>(StopReplayAsync, _ => canStopReplay);
@@ -1112,8 +1114,13 @@ public partial class ShellWindowModel
             IsRuntimeStarted = false;
             isReplayMode = false;
             realProjectData.Module.Scripting.IsReplayMode = false;
+            var keepReplayProgressSubscription = activeReplayDriver?.IsDataLoading == true;
             SetRuntimeCommandStates(false);
-            UnsubscribeReplayCompleted();
+            if (!keepReplayProgressSubscription)
+            {
+                UnsubscribeReplayCompleted();
+            }
+
             SetReplayControlEnabled(false);
             RestoreReplayStates();
             RefreshCommunicatedDriversProperties();
@@ -1296,6 +1303,18 @@ public partial class ShellWindowModel
         SubscribeReplayCompleted(replayDriver);
         replayDriverWithDataLoad.StartLoadingData();
         logger.Log(LogLevel.Info, "Replay data loading started.");
+        RibbonCancelReplayDataLoadCommand.OnCanExecuteChanged();
+    }
+
+    private void CancelReplayDataLoad()
+    {
+        if (activeReplayDriver?.IsDataLoading != true)
+        {
+            return;
+        }
+
+        activeReplayDriver.CancelLoadingData();
+        RibbonCancelReplayDataLoadCommand.OnCanExecuteChanged();
     }
 
     private void SaveLayout(RadDocking radDocking, string? filePrep = null)
@@ -1592,6 +1611,7 @@ public partial class ShellWindowModel
                 UpdateReplayProgress(e.CurrentTime, e.Duration, e.IsPaused, e.IsDataLoaded);
                 RibbonReplayCommand.OnCanExecuteChanged();
                 RibbonExportDataLogCommand.OnCanExecuteChanged();
+                RibbonCancelReplayDataLoadCommand.OnCanExecuteChanged();
             });
         }
         catch (Exception ex)
@@ -1644,7 +1664,18 @@ public partial class ShellWindowModel
         IsReplayControlEnabled = isEnabled;
         if (!isEnabled)
         {
-            UpdateReplayProgress(TimeSpan.Zero, TimeSpan.Zero, false, false);
+            if (activeReplayDriver?.IsDataLoading == true)
+            {
+                UpdateReplayProgress(
+                    activeReplayDriver.CurrentTime,
+                    activeReplayDriver.Duration,
+                    activeReplayDriver.IsPaused,
+                    activeReplayDriver.IsDataLoaded);
+            }
+            else
+            {
+                UpdateReplayProgress(TimeSpan.Zero, TimeSpan.Zero, false, false);
+            }
         }
 
         RibbonReplayPauseResumeCommand.OnCanExecuteChanged();
@@ -1781,6 +1812,7 @@ public partial class ShellWindowModel
         RibbonConnectCommand.OnCanExecuteChanged();
         RibbonDisconnectCommand.OnCanExecuteChanged();
         RibbonImportDataLogCommand.OnCanExecuteChanged();
+        RibbonCancelReplayDataLoadCommand.OnCanExecuteChanged();
         RibbonExportDataLogCommand.OnCanExecuteChanged();
         RibbonReplayCommand.OnCanExecuteChanged();
         RibbonStopReplayCommand.OnCanExecuteChanged();
@@ -1791,6 +1823,7 @@ public partial class ShellWindowModel
     {
         RibbonConnectCommand.OnCanExecuteChanged();
         RibbonImportDataLogCommand.OnCanExecuteChanged();
+        RibbonCancelReplayDataLoadCommand.OnCanExecuteChanged();
         RibbonExportDataLogCommand.OnCanExecuteChanged();
         RibbonReplayCommand.OnCanExecuteChanged();
     }
@@ -1824,6 +1857,11 @@ public partial class ShellWindowModel
     private bool CanImportDataLog()
     {
         return canImportDataLog && isProjectMade && realProjectData?.Module != null;
+    }
+
+    private bool CanCancelReplayDataLoad()
+    {
+        return activeReplayDriver?.IsDataLoading == true;
     }
 
     private bool CanExportDataLog()
