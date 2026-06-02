@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 using MessagePack;
@@ -13,11 +12,15 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 {
     private const string DataLogExtension = ".qilog";
     private const string TimestampFormat = "yyyyMMdd'_'HH'h'mm";
-    private readonly ConcurrentQueue<VariableLogRecord> pendingRecords = new();
+    private static readonly TimeSpan DefaultReorderBufferDelay = TimeSpan.FromMilliseconds(500);
+    private readonly object pendingRecordsLock = new();
+    private readonly LinkedList<BufferedVariableLogRecord> pendingRecords = [];
     private readonly EventWaitHandle waitHandle = new AutoResetEvent(false);
     private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs");
     private bool append = true;
     private bool flushOnWrite;
+    private TimeSpan reorderBufferDelay = DefaultReorderBufferDelay;
+    private long highestBufferedTimestampUtcTicks;
     private volatile bool exitRequested;
     private FileStream? logStream;
     private Task? writerTask;
@@ -43,6 +46,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
         logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs");
         append = true;
         flushOnWrite = false;
+        reorderBufferDelay = DefaultReorderBufferDelay;
 
         var settings = ParseSettings(RawSettings);
         if (settings.TryGetValue("file", out var configuredFile) && !string.IsNullOrWhiteSpace(configuredFile))
@@ -70,6 +74,13 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
         {
             flushOnWrite = parsedFlush;
         }
+
+        if (settings.TryGetValue("reorderBufferMs", out var reorderBufferValue)
+            && double.TryParse(reorderBufferValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedReorderBufferMs)
+            && parsedReorderBufferMs >= 0)
+        {
+            reorderBufferDelay = TimeSpan.FromMilliseconds(parsedReorderBufferMs);
+        }
     }
 
     public bool CanSubscribe(IProtocolVariable sourceVariable)
@@ -87,7 +98,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
         }
 
         var record = CreateRecord(sourceVariable);
-        pendingRecords.Enqueue(record);
+        BufferRecord(record);
         waitHandle.Set();
         return Task.CompletedTask;
     }
@@ -113,6 +124,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             useAsync: true);
 
         exitRequested = false;
+        highestBufferedTimestampUtcTicks = 0;
         writerTask = RunWriterLoopAsync();
         IsStarted = true;
         return Task.CompletedTask;
@@ -162,18 +174,96 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
     {
         await Task.Run(async () =>
         {
-            while (!exitRequested || pendingRecords.Count > 0)
+            while (!exitRequested || HasPendingRecords())
             {
-                if (pendingRecords.TryDequeue(out var record))
+                var record = TryTakeWritableRecord();
+                if (record != null)
                 {
                     await WriteRecordAsync(record);
                 }
                 else
                 {
-                    waitHandle.WaitOne();
+                    waitHandle.WaitOne(TimeSpan.FromMilliseconds(20));
                 }
             }
         });
+    }
+
+    private void BufferRecord(VariableLogRecord record)
+    {
+        var bufferedRecord = new BufferedVariableLogRecord(record);
+        lock (pendingRecordsLock)
+        {
+            if (record.TimestampUtcTicks > highestBufferedTimestampUtcTicks)
+            {
+                highestBufferedTimestampUtcTicks = record.TimestampUtcTicks;
+            }
+
+            if (pendingRecords.Last == null)
+            {
+                pendingRecords.AddLast(bufferedRecord);
+                return;
+            }
+
+            var node = pendingRecords.Last;
+            while (node != null && node.Value.Record.TimestampUtcTicks > record.TimestampUtcTicks)
+            {
+                node = node.Previous;
+            }
+
+            if (node == null)
+            {
+                pendingRecords.AddFirst(bufferedRecord);
+            }
+            else
+            {
+                pendingRecords.AddAfter(node, bufferedRecord);
+            }
+        }
+    }
+
+    private bool HasPendingRecords()
+    {
+        lock (pendingRecordsLock)
+        {
+            return pendingRecords.Count > 0;
+        }
+    }
+
+    private VariableLogRecord? TryTakeWritableRecord()
+    {
+        lock (pendingRecordsLock)
+        {
+            var first = pendingRecords.First;
+            if (first == null)
+            {
+                return null;
+            }
+
+            if (!exitRequested && !CanWriteBufferedRecord(first.Value))
+            {
+                return null;
+            }
+
+            pendingRecords.RemoveFirst();
+            return first.Value.Record;
+        }
+    }
+
+    private bool CanWriteBufferedRecord(BufferedVariableLogRecord bufferedRecord)
+    {
+        if (reorderBufferDelay <= TimeSpan.Zero)
+        {
+            return true;
+        }
+
+        var timestampDistance = highestBufferedTimestampUtcTicks - bufferedRecord.Record.TimestampUtcTicks;
+        if (timestampDistance >= reorderBufferDelay.Ticks)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private async Task WriteRecordAsync(VariableLogRecord record)
@@ -255,4 +345,6 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             ? timestampedFileName
             : Path.Combine(directory, timestampedFileName);
     }
+
+    private sealed record BufferedVariableLogRecord(VariableLogRecord Record);
 }
