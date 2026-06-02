@@ -1,0 +1,13 @@
+[Unit]
+Description=Sine signal TCP master
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/radek/scripts/zero01_tcp_master_sine.py
+Restart=always
+RestartSec=3
+User=radek
+
+[Install]
+WantedBy=multi-user.target
