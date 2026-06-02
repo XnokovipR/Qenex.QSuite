@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 using Qenex.QSuite.Protocols.Protocol;
@@ -10,15 +9,8 @@ namespace Qenex.QSuite.Protocols.DataLogReplayProtocol;
 
 public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
 {
-    private volatile bool exitRequested;
-    private readonly EventWaitHandle waitHandle;
-    private readonly ConcurrentQueue<DataLogRecord> receivedDataQueue;
-
     public DataLogReplayProtocol()
     {
-        waitHandle = new AutoResetEvent(false);
-        receivedDataQueue = new ConcurrentQueue<DataLogRecord>();
-
         Specification = new SpecificationBase
         {
             Name = "DataLogReplayProtocol",
@@ -61,33 +53,23 @@ public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
 
     public override Task StartAsync(CancellationToken ct = default)
     {
-        if (!IsEnabled) return Task.CompletedTask;
-        exitRequested = false;
-        _ = RunLoopAsync(ct);
+        IsStarted = IsEnabled;
         return Task.CompletedTask;
     }
 
     public override Task StopAsync(CancellationToken ct = default)
     {
-        exitRequested = true;
-        waitHandle.Set();
+        IsStarted = false;
         return Task.CompletedTask;
     }
 
     public override void Dispose()
     {
-        waitHandle.Dispose();
     }
 
     public override Task AddReceivedDataToQueueAsync(IEnumerable<DataLogRecord> data, CancellationToken ct = default)
     {
-        foreach (var record in data)
-        {
-            receivedDataQueue.Enqueue(record);
-        }
-
-        waitHandle.Set();
-        return Task.CompletedTask;
+        return IsStarted ? ProcessReceivedDataAsync(data, ct) : Task.CompletedTask;
     }
 
     protected override void ProcessReceivedData(IEnumerable<DataLogRecord> data)
@@ -126,29 +108,6 @@ public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
             .Select(ApplyRecord)
             .Where(variable => variable != null)
             .Cast<IProtocolVariable>();
-    }
-
-    private async Task RunLoopAsync(CancellationToken ct)
-    {
-        await Task.Run(async () =>
-        {
-            IsStarted = true;
-            while (!ct.IsCancellationRequested && !exitRequested)
-            {
-                if (receivedDataQueue.Count > 0)
-                {
-                    receivedDataQueue.TryDequeue(out var record);
-                    await ProcessReceivedDataAsync(new List<DataLogRecord> { record! }, ct);
-                }
-                else
-                {
-                    waitHandle.WaitOne();
-                }
-            }
-
-            IsStarted = false;
-        }, ct);
-        exitRequested = false;
     }
 
     private IProtocolVariable? ApplyRecord(DataLogRecord record)

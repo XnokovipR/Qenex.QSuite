@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using MessagePack;
@@ -491,6 +492,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
 
     private async Task ReplayRecordsAsync(CancellationToken ct)
     {
+        var timingState = new ReplayTimingState();
         while (true)
         {
             if (ct.IsCancellationRequested)
@@ -498,9 +500,9 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
                 break;
             }
 
-            DataLogRecord? record;
+            DataLogRecord? nextRecord;
             long currentTimestampUtcTicks;
-            long recordTimestampUtcTicks;
+            long nextRecordTimestampUtcTicks;
             int seekVersion;
             lock (replayStateLock)
             {
@@ -511,21 +513,21 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
                         break;
                     }
 
-                    record = null!;
+                    nextRecord = null!;
                     currentTimestampUtcTicks = 0;
-                    recordTimestampUtcTicks = 0;
+                    nextRecordTimestampUtcTicks = 0;
                     seekVersion = replaySeekVersion;
                 }
                 else
                 {
-                    record = replayRecords[replayRecordIndex];
+                    nextRecord = replayRecords[replayRecordIndex];
                     currentTimestampUtcTicks = replayCurrentTimestampUtcTicks;
-                    recordTimestampUtcTicks = GetRecordTimestampUtcTicks(record);
+                    nextRecordTimestampUtcTicks = GetRecordTimestampUtcTicks(nextRecord);
                     seekVersion = replaySeekVersion;
                 }
             }
 
-            if (record == null)
+            if (nextRecord == null)
             {
                 if (!await WaitForReplayRecordsAvailableAsync(ct))
                 {
@@ -535,7 +537,12 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
                 continue;
             }
 
-            var canContinue = await DelayBeforeReplayAsync(currentTimestampUtcTicks, recordTimestampUtcTicks, seekVersion, ct);
+            var canContinue = await WaitUntilReplayRecordDueAsync(
+                currentTimestampUtcTicks,
+                nextRecordTimestampUtcTicks,
+                seekVersion,
+                timingState,
+                ct);
             if (!canContinue)
             {
                 continue;
@@ -553,7 +560,13 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
                     continue;
                 }
 
-                await PublishRecordAsync(record, ct);
+                var records = GetDueReplayRecords(timingState, nextRecordTimestampUtcTicks);
+                if (records.Count == 0)
+                {
+                    continue;
+                }
+
+                await PublishRecordsAsync(records, ct);
                 lock (replayStateLock)
                 {
                     if (!IsCurrentSeekVersionCore(seekVersion))
@@ -561,9 +574,9 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
                         continue;
                     }
 
-                    replayRecordIndex++;
-                    replayCurrentTimestampUtcTicks = recordTimestampUtcTicks;
-                    CurrentTime = GetRelativeReplayTime(recordTimestampUtcTicks);
+                    replayRecordIndex += records.Count;
+                    replayCurrentTimestampUtcTicks = GetRecordTimestampUtcTicks(records[^1]);
+                    CurrentTime = GetRelativeReplayTime(replayCurrentTimestampUtcTicks);
                 }
 
                 RaiseReplayProgressChanged();
@@ -573,6 +586,98 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
                 replayRecordGate.Release();
             }
         }
+    }
+
+    private async Task<bool> WaitUntilReplayRecordDueAsync(
+        long currentTimestampUtcTicks,
+        long nextRecordTimestampUtcTicks,
+        int seekVersion,
+        ReplayTimingState timingState,
+        CancellationToken ct)
+    {
+        if (replayMode == ReplayMode.Immediate)
+        {
+            return await WaitWhilePausedAsync(seekVersion, ct);
+        }
+
+        if (timingState.SeekVersion != seekVersion)
+        {
+            timingState.SeekVersion = seekVersion;
+            timingState.BaseTimestampUtcTicks = currentTimestampUtcTicks;
+            timingState.BaseStopwatchTimestamp = Stopwatch.GetTimestamp();
+        }
+
+        while (!ct.IsCancellationRequested)
+        {
+            if (!IsCurrentSeekVersion(seekVersion))
+            {
+                return false;
+            }
+
+            if (IsPaused)
+            {
+                var pauseStartedTimestamp = Stopwatch.GetTimestamp();
+                if (!await WaitWhilePausedAsync(seekVersion, ct))
+                {
+                    return false;
+                }
+
+                timingState.BaseStopwatchTimestamp += Stopwatch.GetTimestamp() - pauseStartedTimestamp;
+                continue;
+            }
+
+            var dueTimestampUtcTicks = GetReplayDueTimestampUtcTicks(timingState);
+            if (dueTimestampUtcTicks >= nextRecordTimestampUtcTicks)
+            {
+                return true;
+            }
+
+            var remainingTicks = (long)((nextRecordTimestampUtcTicks - dueTimestampUtcTicks) / speed);
+            var delay = TimeSpan.FromTicks(Math.Max(1, remainingTicks));
+            await Task.Delay(delay > TimeSpan.FromMilliseconds(50) ? TimeSpan.FromMilliseconds(50) : delay, ct);
+        }
+
+        return false;
+    }
+
+    private List<DataLogRecord> GetDueReplayRecords(ReplayTimingState timingState, long firstRecordTimestampUtcTicks)
+    {
+        lock (replayStateLock)
+        {
+            if (replayRecordIndex >= replayRecords.Count)
+            {
+                return [];
+            }
+
+            var dueTimestampUtcTicks = replayMode == ReplayMode.Immediate
+                ? long.MaxValue
+                : Math.Max(firstRecordTimestampUtcTicks, GetReplayDueTimestampUtcTicks(timingState));
+
+            var records = new List<DataLogRecord>();
+            for (var index = replayRecordIndex; index < replayRecords.Count; index++)
+            {
+                var record = replayRecords[index];
+                if (GetRecordTimestampUtcTicks(record) > dueTimestampUtcTicks)
+                {
+                    break;
+                }
+
+                records.Add(record);
+            }
+
+            return records;
+        }
+    }
+
+    private long GetReplayDueTimestampUtcTicks(ReplayTimingState timingState)
+    {
+        var elapsedStopwatchTicks = Stopwatch.GetTimestamp() - timingState.BaseStopwatchTimestamp;
+        var elapsedReplayTicks = (long)(elapsedStopwatchTicks
+            * (double)TimeSpan.TicksPerSecond
+            / Stopwatch.Frequency
+            * speed);
+
+        return timingState.BaseTimestampUtcTicks + elapsedReplayTicks;
     }
 
     private async Task<bool> DelayBeforeReplayAsync(
@@ -759,6 +864,13 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
     private static long GetRecordTimestampUtcTicks(DataLogRecord record)
     {
         return record.TimestampUtcTicks > 0 ? record.TimestampUtcTicks : 0;
+    }
+
+    private sealed class ReplayTimingState
+    {
+        public int SeekVersion { get; set; } = -1;
+        public long BaseTimestampUtcTicks { get; set; }
+        public long BaseStopwatchTimestamp { get; set; }
     }
 
     private static List<CsvColumn> CreateCsvColumns(IEnumerable<DataLogRecord> records)
