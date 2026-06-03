@@ -294,6 +294,11 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
         PlotControl?.Refresh();
     }
 
+    protected override void OnEditToRun()
+    {
+        ClearGraph(null!);
+    }
+
     private void ClearChartData(DateTime newBaseTime)
     {
         foreach (var chartVariable in ChartVariables)

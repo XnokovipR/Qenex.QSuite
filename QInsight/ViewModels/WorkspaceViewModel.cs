@@ -304,6 +304,14 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 	    }
     }
 
+    public void SetControlsRunState(bool isRun)
+    {
+	    foreach (var control in GetWorkspaceControls())
+	    {
+		    control.IsRun = isRun;
+	    }
+    }
+
     private static IVariableBase CreateVariableSnapshot(IVariableBase variable)
     {
 	    return variable switch

@@ -670,7 +670,7 @@ public partial class ShellWindowModel
         if (IsRuntimeStarted)
         {
             await realProjectData.Module.StopAsync();
-            IsRuntimeStarted = false;
+            SetRuntimeStartedState(false);
             SetRuntimeCommandStates(false);
         }
 
@@ -1178,12 +1178,12 @@ public partial class ShellWindowModel
             ConfigureDataLoggerFileNames();
             realProjectData.Module.Scripting.IsReplayMode = false;
             await realProjectData.Module.StartAsync();
-            IsRuntimeStarted = true;
+            SetRuntimeStartedState(true);
             SetRuntimeCommandStates(true);
         }
         catch (Exception e)
         {
-            IsRuntimeStarted = false;
+            SetRuntimeStartedState(false);
             SetRuntimeCommandStates(false);
             logger.Log(LogLevel.Error, e.Message);
         }
@@ -1201,7 +1201,7 @@ public partial class ShellWindowModel
         try
         {
             await realProjectData.Module.StopAsync();
-            IsRuntimeStarted = false;
+            SetRuntimeStartedState(false);
             SetRuntimeCommandStates(false);
         }
         catch (Exception e)
@@ -1328,7 +1328,7 @@ public partial class ShellWindowModel
             SubscribeReplayCompleted(replayDriver);
             LoadSettingsFromFile(shellRadDocking, runtimeSettingLayoutFile);
             RebindWorkspaceControlVariables(replayProtocol.Variables);
-            IsRuntimeStarted = true;
+            SetRuntimeStartedState(true);
             isReplayMode = true;
             realProjectData.Module.Scripting.IsReplayMode = true;
             SetRuntimeCommandStates(true, true);
@@ -1349,7 +1349,7 @@ public partial class ShellWindowModel
             RestoreReplayStates();
             LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
             RebindWorkspaceControlVariables(GetProjectProtocolVariables());
-            IsRuntimeStarted = false;
+            SetRuntimeStartedState(false);
             isReplayMode = false;
             realProjectData.Module.Scripting.IsReplayMode = false;
             SetRuntimeCommandStates(false);
@@ -1382,7 +1382,7 @@ public partial class ShellWindowModel
         }
         finally
         {
-            IsRuntimeStarted = false;
+            SetRuntimeStartedState(false);
             isReplayMode = false;
             realProjectData.Module.Scripting.IsReplayMode = false;
             var keepReplayProgressSubscription = activeReplayDriver?.IsDataLoading == true;
@@ -1811,6 +1811,20 @@ public partial class ShellWindowModel
         foreach (var workspaceViewModel in ViewModels.OfType<WorkspaceViewModel>())
         {
             workspaceViewModel.BindLoadedControlVariables(protocolVariablesList);
+        }
+    }
+
+    private void SetRuntimeStartedState(bool runtimeStarted)
+    {
+        if (IsRuntimeStarted != runtimeStarted)
+        {
+            IsRuntimeStarted = runtimeStarted;
+            OnPropertyChanged(nameof(IsRuntimeStarted));
+        }
+
+        foreach (var workspaceViewModel in ViewModels.OfType<WorkspaceViewModel>())
+        {
+            workspaceViewModel.SetControlsRunState(runtimeStarted);
         }
     }
 
