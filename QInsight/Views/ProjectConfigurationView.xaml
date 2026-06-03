@@ -241,7 +241,15 @@
                                             VerticalAlignment="Center"
                                             Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                             IsEnabled="{Binding CanEditLabel}"
-                                            ToolTip="{Binding ToolTip}"/>
+                                            ToolTip="{Binding ToolTip}">
+                                            <i:Interaction.Triggers>
+                                                <i:EventTrigger EventName="GotKeyboardFocus">
+                                                    <i:InvokeCommandAction
+                                                        Command="{Binding DataContext.SelectDriverCommand, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
+                                                        CommandParameter="{Binding}"/>
+                                                </i:EventTrigger>
+                                            </i:Interaction.Triggers>
+                                        </q:QTextBox>
                                     </DataTemplate>
                                 </telerik:GridViewDataColumn.CellTemplate>
                             </telerik:GridViewDataColumn>

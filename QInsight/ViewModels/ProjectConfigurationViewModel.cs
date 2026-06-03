@@ -167,6 +167,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         RemoveDriverCommand = new RelayCommand<object>(_ => RemoveDriver(), _ => SelectedDriver != null);
         AddProtocolCommand = new RelayCommand<object>(_ => AddProtocol(), _ => CanAddProtocol());
         RemoveProtocolCommand = new RelayCommand<object>(_ => RemoveProtocol(), _ => SelectedProtocol != null);
+        SelectDriverCommand = new RelayCommand<object>(SelectDriver);
         AddVariableCommand = new RelayCommand<object>(_ => AddVariable(), _ => CanAddVariable());
         RemoveVariableCommand = new RelayCommand<object>(_ => RemoveVariable(), _ => SelectedVariable != null);
         AddVariableToSourceCommand = new RelayCommand<object>(_ => AddVariableToSource(), _ => CanAddVariableToSource());
@@ -208,6 +209,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public RelayCommand<object> RemoveDriverCommand { get; }
     public RelayCommand<object> AddProtocolCommand { get; }
     public RelayCommand<object> RemoveProtocolCommand { get; }
+    public RelayCommand<object> SelectDriverCommand { get; }
     public RelayCommand<object> AddVariableCommand { get; }
     public RelayCommand<object> RemoveVariableCommand { get; }
     public RelayCommand<object> AddVariableToSourceCommand { get; }
@@ -779,6 +781,14 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         RemoveDriver(SelectedDriver, removePairedReplayDriver: true);
         NotifySourceOptionsChanged();
         NotifyHasChangesChanged();
+    }
+
+    private void SelectDriver(object? parameter)
+    {
+        if (parameter is ProjectConfigurationDriverWrapper driver)
+        {
+            SelectedDriver = driver;
+        }
     }
 
     private IDriverBase CreateDriver(PluginDetails plugin)
