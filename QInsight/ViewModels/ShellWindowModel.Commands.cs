@@ -98,10 +98,12 @@ public partial class ShellWindowModel
     public RelayCommand<object> RibbonReplayPauseResumeCommand { get; set; }
     
     public RelayCommand<RadDocking> RibbonSaveLayoutCommand { get; set; }
-    public RelayCommand<object> RibbonPreferencesCommand { get; set; }
+    public RelayCommand<object> RibbonThemePreferencesCommand { get; set; }
+    public RelayCommand<object> RibbonGeneralPreferencesCommand { get; set; }
     
     
     public RelayCommand<RadDocking> RibbonPythonInterpreterCommand { get; set; }
+    public RelayCommand<RadDocking> RibbonVariableWatchCommand { get; set; }
     public RelayCommand<object> RibbonAboutAppCommand { get; set; }
 
     #endregion
@@ -159,9 +161,11 @@ public partial class ShellWindowModel
             requireSerializationTag = false;
             SaveLayout(r);
         });
-        RibbonPreferencesCommand = new RelayCommand<object>(_ => OpenPreferences());
+        RibbonThemePreferencesCommand = new RelayCommand<object>(_ => OpenThemePreferences(), _ => CanOpenThemePreferences());
+        RibbonGeneralPreferencesCommand = new RelayCommand<object>(_ => OpenGeneralPreferences(), _ => CanOpenGeneralPreferences());
 
         RibbonPythonInterpreterCommand = new RelayCommand<RadDocking>(OpenPythonInterpreter);
+        RibbonVariableWatchCommand = new RelayCommand<RadDocking>(OpenVariableWatch);
         
         RibbonAboutAppCommand = new RelayCommand<object>((o) =>
         {
@@ -262,13 +266,17 @@ public partial class ShellWindowModel
     {
         foreach (var pane in arg.Panes.ToList())
         {
-            if (pane.DataContext is not PythonInterpreterViewModel pythonInterpreterViewModel)
+            if (pane.DataContext is PythonInterpreterViewModel pythonInterpreterViewModel)
             {
-                continue;
+                await pythonInterpreterViewModel.CleanAsync();
+                ViewModels.Remove(pythonInterpreterViewModel);
             }
 
-            await pythonInterpreterViewModel.CleanAsync();
-            ViewModels.Remove(pythonInterpreterViewModel);
+            if (pane.DataContext is VariableWatchViewModel variableWatchViewModel)
+            {
+                await variableWatchViewModel.CleanAsync();
+                ViewModels.Remove(variableWatchViewModel);
+            }
         }
     }
     
@@ -357,10 +365,10 @@ public partial class ShellWindowModel
         projectConfigurationDialog.ShowDialog();
     }
 
-    private void OpenPreferences()
+    private void OpenThemePreferences()
     {
-        var preferencesViewModel = new PreferencesViewModel(ShellWindow.MainAppSettings, logger);
-        var preferencesView = new PreferencesView
+        var preferencesViewModel = new ThemePreferencesViewModel(ShellWindow.MainAppSettings, logger);
+        var preferencesView = new ThemePreferencesView
         {
             DataContext = preferencesViewModel
         };
@@ -369,17 +377,42 @@ public partial class ShellWindowModel
         {
             Owner = Application.Current.MainWindow,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Header = "Preferences",
-            Width = 710,
-            Height = 580,
-            MinWidth = 710,
-            MinHeight = 580,
+            Header = "Theme Preferences",
+            Width = 680,
+            Height = 540,
+            MinWidth = 680,
+            MinHeight = 540,
             ResizeMode = ResizeMode.NoResize,
             Content = preferencesView
         };
 
         preferencesViewModel.SetParentWindow(preferencesDialog);
         preferencesDialog.ShowDialog();
+    }
+
+    private void OpenGeneralPreferences()
+    {
+        var generalPreferencesViewModel = new GeneralPreferencesViewModel(ShellWindow.MainAppSettings, logger);
+        var generalPreferencesView = new GeneralPreferencesView
+        {
+            DataContext = generalPreferencesViewModel
+        };
+
+        var generalPreferencesDialog = new RadWindow
+        {
+            Owner = Application.Current.MainWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Header = "General",
+            Width = 640,
+            Height = 220,
+            MinWidth = 640,
+            MinHeight = 220,
+            ResizeMode = ResizeMode.NoResize,
+            Content = generalPreferencesView
+        };
+
+        generalPreferencesViewModel.SetParentWindow(generalPreferencesDialog);
+        generalPreferencesDialog.ShowDialog();
     }
 
     #region Project menu
@@ -448,6 +481,7 @@ public partial class ShellWindowModel
             LoadProjectWorkspaces(projectData.Workspaces);
             LoadProjectScriptDocuments(projectData.ScriptDocuments);
             LoadProjectPythonInterpreter(projectData.WorkspaceLayout);
+            LoadProjectVariableWatch(projectData.WorkspaceLayout);
             await Application.Current.Dispatcher.InvokeAsync(
                 () => LoadWorkspaceLayoutFromData(projectData.WorkspaceLayout),
                 DispatcherPriority.ApplicationIdle);
@@ -456,6 +490,7 @@ public partial class ShellWindowModel
             SetProjectWindowTitle(currentProjectFilePath);
             ChangeIsProjectMade(true);
             ClearReplayDataLogImportState();
+            RefreshVariableWatch();
             NotifyRuntimeCommandsCanExecuteChanged();
             RibbonReplayCommand.OnCanExecuteChanged();
             logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\" opened.");
@@ -650,6 +685,7 @@ public partial class ShellWindowModel
         SetProjectWindowTitle(currentProjectFilePath);
         ChangeIsProjectMade(false);
         ClearReplayDataLogImportState();
+        RefreshVariableWatch();
         NotifyRuntimeCommandsCanExecuteChanged();
         RibbonReplayCommand.OnCanExecuteChanged();
 
@@ -671,6 +707,7 @@ public partial class ShellWindowModel
         SetProjectWindowTitle(currentProjectFilePath);
         ChangeIsProjectMade(true);
         ClearReplayDataLogImportState();
+        RefreshVariableWatch();
         NotifyRuntimeCommandsCanExecuteChanged();
         RibbonReplayCommand.OnCanExecuteChanged();
         SetDefaultPropertiesView();
@@ -680,7 +717,7 @@ public partial class ShellWindowModel
     private async Task CloseProjectWorkspacesAsync()
     {
         var workspaceViewModels = ViewModels
-            .Where(vm => vm is WorkspaceViewModel or ScriptViewModel or PythonInterpreterViewModel)
+            .Where(vm => vm is WorkspaceViewModel or ScriptViewModel or PythonInterpreterViewModel or VariableWatchViewModel)
             .ToList();
         foreach (var workspaceViewModelBase in workspaceViewModels)
         {
@@ -802,6 +839,30 @@ public partial class ShellWindowModel
         ViewModels.Add(CreatePythonInterpreterViewModel());
     }
 
+    private void OpenVariableWatch(RadDocking docking)
+    {
+        foreach (var variableWatchViewModel in ViewModels.OfType<VariableWatchViewModel>().ToList())
+        {
+            if (FindDockingPaneForViewModel(docking, variableWatchViewModel) != null)
+            {
+                variableWatchViewModel.Refresh(realProjectData);
+                variableWatchViewModel.IsHidden = false;
+                return;
+            }
+
+            ViewModels.Remove(variableWatchViewModel);
+        }
+
+        var newVariableWatchViewModel = CreateVariableWatchViewModel();
+        newVariableWatchViewModel.Refresh(realProjectData);
+        ViewModels.Add(newVariableWatchViewModel);
+    }
+
+    private VariableWatchViewModel CreateVariableWatchViewModel()
+    {
+        return new VariableWatchViewModel(eventAggregator);
+    }
+
     private void LoadProjectPythonInterpreter(byte[]? workspaceLayoutData)
     {
         var layoutName = GetPythonInterpreterLayoutName(workspaceLayoutData);
@@ -818,6 +879,25 @@ public partial class ShellWindowModel
         var pythonInterpreterViewModel = CreatePythonInterpreterViewModel();
         pythonInterpreterViewModel.Name = layoutName;
         ViewModels.Add(pythonInterpreterViewModel);
+    }
+
+    private void LoadProjectVariableWatch(byte[]? workspaceLayoutData)
+    {
+        var layoutName = GetVariableWatchLayoutName(workspaceLayoutData);
+        if (layoutName == null)
+        {
+            return;
+        }
+
+        if (ViewModels.OfType<VariableWatchViewModel>().Any())
+        {
+            return;
+        }
+
+        var variableWatchViewModel = CreateVariableWatchViewModel();
+        variableWatchViewModel.Name = layoutName;
+        variableWatchViewModel.Refresh(realProjectData);
+        ViewModels.Add(variableWatchViewModel);
     }
 
     private PythonInterpreterViewModel CreatePythonInterpreterViewModel()
@@ -853,6 +933,32 @@ public partial class ShellWindowModel
         }
     }
 
+    private static string? GetVariableWatchLayoutName(byte[]? workspaceLayoutData)
+    {
+        if (workspaceLayoutData == null || workspaceLayoutData.Length == 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var stream = new MemoryStream(workspaceLayoutData);
+            var document = XDocument.Load(stream);
+
+            var variableWatchPane = document
+                .Descendants()
+                .FirstOrDefault(element =>
+                    element.Name.LocalName.Contains("Pane", StringComparison.Ordinal)
+                    && IsVariableWatchLayoutPane(element));
+
+            return variableWatchPane?.Attribute("SerializationTag")?.Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static bool IsPythonInterpreterLayoutPane(XElement pane)
     {
         var serializationTag = pane.Attribute("SerializationTag")?.Value ?? string.Empty;
@@ -865,6 +971,19 @@ public partial class ShellWindowModel
         return pane.Name.LocalName.Equals("QRadDocumentPane", StringComparison.Ordinal)
                && (header.Equals("Python", StringComparison.Ordinal)
                    || header.Equals("Python Interpreter", StringComparison.Ordinal));
+    }
+
+    private static bool IsVariableWatchLayoutPane(XElement pane)
+    {
+        var serializationTag = pane.Attribute("SerializationTag")?.Value ?? string.Empty;
+        if (serializationTag.Contains("VariableWatch", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        var header = pane.Attribute("Header")?.Value ?? string.Empty;
+        return pane.Name.LocalName.Equals("QRadDocumentPane", StringComparison.Ordinal)
+               && header.Equals("Variable Watch", StringComparison.Ordinal);
     }
 
     private static RadPane? FindDockingPaneForViewModel(RadDocking docking, object viewModel)
@@ -1183,6 +1302,7 @@ public partial class ShellWindowModel
             StartReplayDataLoad(replayDriver);
             solutionExplorerViewModel.ReloadProjectData(realProjectData, preserveWorkspaces: true);
             SetReplayDataLogImportState(dlg.FileName);
+            RefreshVariableWatch();
             RibbonExportDataLogCommand.OnCanExecuteChanged();
             RibbonReplayCommand.OnCanExecuteChanged();
             logger.Log(LogLevel.Info, $"Data log \"{Path.GetFileName(dlg.FileName)}\" imported for replay.");
@@ -1494,6 +1614,7 @@ public partial class ShellWindowModel
         RefreshCommunicatedDriversProperties();
         RefreshScriptProperties();
         RebindWorkspaceControlVariables(GetProjectProtocolVariables());
+        RefreshVariableWatch();
         solutionExplorerViewModel.ReloadProjectData(realProjectData, preserveWorkspaces: true);
 
         switch (propertiesViewModel.SelectedViewModel)
@@ -1538,6 +1659,14 @@ public partial class ShellWindowModel
         foreach (var workspaceViewModel in ViewModels.OfType<WorkspaceViewModel>())
         {
             workspaceViewModel.BindLoadedControlVariables(protocolVariablesList);
+        }
+    }
+
+    private void RefreshVariableWatch()
+    {
+        foreach (var variableWatchViewModel in ViewModels.OfType<VariableWatchViewModel>())
+        {
+            variableWatchViewModel.Refresh(realProjectData);
         }
     }
 
@@ -1817,6 +1946,8 @@ public partial class ShellWindowModel
         RibbonReplayCommand.OnCanExecuteChanged();
         RibbonStopReplayCommand.OnCanExecuteChanged();
         RibbonReplayPauseResumeCommand.OnCanExecuteChanged();
+        RibbonThemePreferencesCommand.OnCanExecuteChanged();
+        RibbonGeneralPreferencesCommand.OnCanExecuteChanged();
     }
 
     private void NotifyRuntimeCommandsCanExecuteChanged()
@@ -1826,6 +1957,8 @@ public partial class ShellWindowModel
         RibbonCancelReplayDataLoadCommand.OnCanExecuteChanged();
         RibbonExportDataLogCommand.OnCanExecuteChanged();
         RibbonReplayCommand.OnCanExecuteChanged();
+        RibbonThemePreferencesCommand.OnCanExecuteChanged();
+        RibbonGeneralPreferencesCommand.OnCanExecuteChanged();
     }
 
     private void NotifyProjectCommandsCanExecuteChanged()
@@ -1842,6 +1975,7 @@ public partial class ShellWindowModel
         RibbonProjectConfigurationPresentationsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationEventsCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationScriptsCommand.OnCanExecuteChanged();
+        RibbonThemePreferencesCommand.OnCanExecuteChanged();
     }
 
     private bool CanUseProjectCommand()
@@ -1857,6 +1991,16 @@ public partial class ShellWindowModel
     private bool CanImportDataLog()
     {
         return canImportDataLog && isProjectMade && realProjectData?.Module != null;
+    }
+
+    private bool CanOpenThemePreferences()
+    {
+        return canUseHomeRibbon && !isProjectMade;
+    }
+
+    private bool CanOpenGeneralPreferences()
+    {
+        return canUseHomeRibbon;
     }
 
     private bool CanCancelReplayDataLoad()

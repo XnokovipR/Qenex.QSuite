@@ -2,9 +2,9 @@ using System.Windows.Controls;
 
 namespace Qenex.QInsight.Views;
 
-public partial class PreferencesView : UserControl
+public partial class ThemePreferencesView : UserControl
 {
-    public PreferencesView()
+    public ThemePreferencesView()
     {
         InitializeComponent();
     }

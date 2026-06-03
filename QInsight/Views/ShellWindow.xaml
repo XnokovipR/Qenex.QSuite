@@ -267,6 +267,13 @@
 								SmallImage="../Icons/Menu/ScriptSettings.png"
 								Command="{Binding RibbonPythonInterpreterCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
+						<telerik:RadRibbonGroup Header="Watch">
+							<telerik:RadRibbonButton
+								Text="Variables"
+								Size="Large"
+								SmallImage="../Icons/SolutionExplorer/Variables.png"
+								Command="{Binding RibbonVariableWatchCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
 					
 					<!-- Options-->
@@ -278,12 +285,17 @@
 								SmallImage="../Icons/QInsight.png"
 								Command="{Binding RibbonSaveLayoutCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
-						<telerik:RadRibbonGroup Header="General">
+						<telerik:RadRibbonGroup Header="Preferences">
 							<telerik:RadRibbonButton
-								Text="Preferences"
+								Text="Theme"
 								Size="Large"
 								SmallImage="../Icons/QInsight.png"
-								Command="{Binding RibbonPreferencesCommand}"/>
+								Command="{Binding RibbonThemePreferencesCommand}"/>
+							<telerik:RadRibbonButton
+								Text="General"
+								Size="Large"
+								SmallImage="../Icons/QInsight.png"
+								Command="{Binding RibbonGeneralPreferencesCommand}"/>
 						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
 
