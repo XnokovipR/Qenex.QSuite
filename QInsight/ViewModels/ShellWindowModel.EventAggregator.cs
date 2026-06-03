@@ -255,8 +255,10 @@ public partial class ShellWindowModel
                 }
                 else
                 {
+                    var targetGroup = GetTargetDocumentPaneGroup(shellRadDocking);
                     var scriptViewModel = new ScriptViewModel(eventAggregator, scriptSeWrapper.ScriptWrapper);
                     ViewModels.Add(scriptViewModel);
+                    _ = MoveNewWorkspaceDocumentToTargetGroupAsync(shellRadDocking, scriptViewModel, targetGroup);
                 }
                 break;
             }

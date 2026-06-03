@@ -1,6 +1,8 @@
 ﻿using System.IO;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 using System.Xml.Linq;
 using Qenex.QInsight.AppConfig;
@@ -747,14 +749,13 @@ public partial class ShellWindowModel
 
     private async Task AddWorkspaceAsync(RadDocking docking)
     {
+        var targetGroup = GetTargetDocumentPaneGroup(docking);
         var workspaceViewModel = CreateWorkspaceViewModel();
         ViewModels.Add(workspaceViewModel);
-        
+        await MoveNewWorkspaceDocumentToTargetGroupAsync(docking, workspaceViewModel, targetGroup);
         
         // Add new workspace to Solution Explorer
         eventAggregator.Publish(new AddWorkspaceEaMsg() { WorkspaceViewModel =  workspaceViewModel});
-
-        await Task.CompletedTask;
     }
 
     private void LoadProjectWorkspaces(IEnumerable<WorkspaceProjectData> workspaces)
@@ -836,7 +837,10 @@ public partial class ShellWindowModel
             ViewModels.Remove(pythonInterpreterViewModel);
         }
 
-        ViewModels.Add(CreatePythonInterpreterViewModel());
+        var targetGroup = GetTargetDocumentPaneGroup(docking);
+        var newPythonInterpreterViewModel = CreatePythonInterpreterViewModel();
+        ViewModels.Add(newPythonInterpreterViewModel);
+        _ = MoveNewWorkspaceDocumentToTargetGroupAsync(docking, newPythonInterpreterViewModel, targetGroup);
     }
 
     private void OpenVariableWatch(RadDocking docking)
@@ -853,9 +857,11 @@ public partial class ShellWindowModel
             ViewModels.Remove(variableWatchViewModel);
         }
 
+        var targetGroup = GetTargetDocumentPaneGroup(docking);
         var newVariableWatchViewModel = CreateVariableWatchViewModel();
         newVariableWatchViewModel.Refresh(realProjectData);
         ViewModels.Add(newVariableWatchViewModel);
+        _ = MoveNewWorkspaceDocumentToTargetGroupAsync(docking, newVariableWatchViewModel, targetGroup);
     }
 
     private VariableWatchViewModel CreateVariableWatchViewModel()
@@ -991,6 +997,146 @@ public partial class ShellWindowModel
         return docking
             .Panes
             .FirstOrDefault(pane => ReferenceEquals(pane.DataContext, viewModel));
+    }
+
+    private RadPaneGroup? GetTargetDocumentPaneGroup(RadDocking docking)
+    {
+        if (docking.ActivePane is RadDocumentPane activeDocumentPane)
+        {
+            var activeGroup = FindParent<RadPaneGroup>(activeDocumentPane);
+            if (activeGroup != null && ContainsDocumentPane(activeGroup))
+            {
+                return activeGroup;
+            }
+        }
+
+        return FindTopLeftDocumentPaneGroup(docking);
+    }
+
+    private async Task MoveNewWorkspaceDocumentToTargetGroupAsync(
+        RadDocking docking,
+        object viewModel,
+        RadPaneGroup? targetGroup)
+    {
+        try
+        {
+            await docking.Dispatcher.InvokeAsync(
+                () => MoveWorkspaceDocumentToTargetGroup(docking, viewModel, targetGroup),
+                DispatcherPriority.ApplicationIdle);
+        }
+        catch (Exception ex)
+        {
+            logger.Log(LogLevel.Error, ex.Message);
+        }
+    }
+
+    private void MoveWorkspaceDocumentToTargetGroup(RadDocking docking, object viewModel, RadPaneGroup? targetGroup)
+    {
+        if (FindDockingPaneForViewModel(docking, viewModel) is not RadDocumentPane documentPane)
+        {
+            return;
+        }
+
+        if (targetGroup != null)
+        {
+            var currentGroup = FindParent<RadPaneGroup>(documentPane);
+            if (!ReferenceEquals(currentGroup, targetGroup))
+            {
+                documentPane.RemoveFromParent();
+                targetGroup.Items.Add(documentPane);
+            }
+        }
+
+        docking.ActivePane = documentPane;
+        documentPane.IsActive = true;
+        documentPane.Focus();
+    }
+
+    private static RadPaneGroup? FindTopLeftDocumentPaneGroup(RadDocking docking)
+    {
+        return FindVisualChildren<RadPaneGroup>(docking)
+            .Where(ContainsDocumentPane)
+            .Select(group => new
+            {
+                Group = group,
+                Position = TryGetPosition(docking, group)
+            })
+            .OrderBy(item => item.Position.HasValue ? 0 : 1)
+            .ThenBy(item => item.Position?.Y ?? 0)
+            .ThenBy(item => item.Position?.X ?? 0)
+            .Select(item => item.Group)
+            .FirstOrDefault();
+    }
+
+    private static Point? TryGetPosition(RadDocking docking, RadPaneGroup group)
+    {
+        try
+        {
+            return group.TransformToAncestor(docking).Transform(new Point(0, 0));
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    private static bool ContainsDocumentPane(RadPaneGroup group)
+    {
+        return group.Items.OfType<RadDocumentPane>().Any();
+    }
+
+    private static T? FindParent<T>(DependencyObject child)
+        where T : DependencyObject
+    {
+        var parent = GetParent(child);
+        while (parent != null)
+        {
+            if (parent is T typedParent)
+            {
+                return typedParent;
+            }
+
+            parent = GetParent(parent);
+        }
+
+        return null;
+    }
+
+    private static DependencyObject? GetParent(DependencyObject child)
+    {
+        if (child is Visual or Visual3D)
+        {
+            var visualParent = VisualTreeHelper.GetParent(child);
+            if (visualParent != null)
+            {
+                return visualParent;
+            }
+        }
+
+        return LogicalTreeHelper.GetParent(child);
+    }
+
+    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent)
+        where T : DependencyObject
+    {
+        var childCount = VisualTreeHelper.GetChildrenCount(parent);
+        for (var i = 0; i < childCount; i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T typedChild)
+            {
+                yield return typedChild;
+            }
+
+            foreach (var descendant in FindVisualChildren<T>(child))
+            {
+                yield return descendant;
+            }
+        }
     }
 
     private async Task<ScriptingContext?> GetPythonInterpreterScriptingContextAsync()
