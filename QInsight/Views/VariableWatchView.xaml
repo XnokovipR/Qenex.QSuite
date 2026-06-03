@@ -22,6 +22,7 @@
             ShowGroupPanel="False">
 
             <telerik:RadGridView.Columns>
+                <telerik:GridViewDataColumn Width="160" Header="Namespace" DataMemberBinding="{Binding Namespace}" IsReadOnly="True"/>
                 <telerik:GridViewDataColumn Width="160" Header="Label" DataMemberBinding="{Binding Label}" IsReadOnly="True"/>
                 <telerik:GridViewDataColumn Width="160" Header="Name" DataMemberBinding="{Binding Name}" IsReadOnly="True"/>
                 <telerik:GridViewDataColumn Width="80" Header="Id" DataMemberBinding="{Binding Id}" IsReadOnly="True"/>

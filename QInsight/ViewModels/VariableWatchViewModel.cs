@@ -31,7 +31,11 @@ public class VariableWatchViewModel : WorkspaceViewModelBase
         }
 
         var loggedVariableIds = GetLoggedVariableIds(projectData.Module.Drivers);
-        foreach (var variable in projectData.Module.Variables.OrderBy(variable => variable.Id))
+        foreach (var variable in projectData.Module.Variables
+                     .OrderBy(variable => variable.Namespace)
+                     .ThenBy(variable => variable.Label)
+                     .ThenBy(variable => variable.Name)
+                     .ThenBy(variable => variable.Id))
         {
             Variables.Add(new VariableWatchItemViewModel(variable, loggedVariableIds.Contains(variable.Id)));
         }
@@ -136,6 +140,7 @@ public class VariableWatchItemViewModel : PropertyChangedBase
         Logged = logged;
     }
 
+    public string Namespace => variable.Namespace;
     public string Label => variable.Label;
     public string Name => variable.Name;
     public int Id => variable.Id;
