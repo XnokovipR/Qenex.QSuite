@@ -283,19 +283,19 @@
 							<telerik:RadRibbonButton
 								Text="Save" 
 								Size="Large"
-								SmallImage="../Icons/QInsight.png"
+								SmallImage="../Icons/Menu/SaveLayout.png"
 								Command="{Binding RibbonSaveLayoutCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
 						<telerik:RadRibbonGroup Header="Preferences">
 							<telerik:RadRibbonButton
 								Text="Theme"
 								Size="Large"
-								SmallImage="../Icons/QInsight.png"
+								SmallImage="../Icons/Menu/Theme.png"
 								Command="{Binding RibbonThemePreferencesCommand}"/>
 							<telerik:RadRibbonButton
 								Text="General"
 								Size="Large"
-								SmallImage="../Icons/QInsight.png"
+								SmallImage="../Icons/Menu/GeneralPreferences.png"
 								Command="{Binding RibbonGeneralPreferencesCommand}"/>
 						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
