@@ -7,10 +7,13 @@ namespace Qenex.QInsight.ViewModels.ModelWrappers;
 
 public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = false) : PropertyChangedBase
 {
+    private const string FileDataLoggerDriverName = "FileDataLoggerDriver";
     private const string FileDataReplayDriverName = "FileDataReplayDriver";
     private const string FileDataReplayDisplayLabel = "File data replay";
     private bool originalIsEnabled = driver.IsEnabled;
     private bool isEnabled = driver.IsEnabled;
+    private string originalLabel = driver.Label;
+    private string label = driver.Label;
     private string originalSettings = driver.RawSettings;
     private string settings = driver.RawSettings;
 
@@ -18,6 +21,9 @@ public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = 
     public bool IsNew => isNew;
     public ObservableCollection<ProjectConfigurationLoadedProtocolWrapper> Protocols { get; } = new(
         driver.Protocols.Select(protocol => new ProjectConfigurationLoadedProtocolWrapper(protocol)));
+
+    public string Name => driver.Specification.Name;
+    public string Version => driver.Specification.Version?.ToString() ?? string.Empty;
 
     public string Label
     {
@@ -28,17 +34,24 @@ public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = 
                 return FileDataReplayDisplayLabel;
             }
 
-            return string.IsNullOrWhiteSpace(driver.Label) ? driver.Specification.Label : driver.Label;
+            return label;
         }
         set
         {
-            if (driver.Label == value)
+            if (!CanEditLabel)
             {
                 return;
             }
 
-            driver.Label = value;
+            value ??= string.Empty;
+            if (label == value)
+            {
+                return;
+            }
+
+            label = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(HasChanges));
         }
     }
 
@@ -48,6 +61,8 @@ public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = 
         {
             var sb = new StringBuilder();
             sb.Append("Driver:");
+            sb.Append(Environment.NewLine);
+            sb.Append($"Name\t{driver.Specification.Name}");
             sb.Append(Environment.NewLine);
             sb.Append($"Label\t{driver.Specification.Label}");
             sb.Append(Environment.NewLine);
@@ -82,6 +97,9 @@ public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = 
     public bool CanEditIsEnabled =>
         !IsFileDataReplayDriver;
 
+    public bool CanEditLabel =>
+        !IsFileDataLoggerDriver && !IsFileDataReplayDriver;
+
     public string Settings
     {
         get => settings;
@@ -99,11 +117,18 @@ public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = 
         }
     }
 
-    public bool HasChanges => (CanEditIsEnabled && isEnabled != originalIsEnabled)
+    public bool HasChanges => label != originalLabel
+                              || (CanEditIsEnabled && isEnabled != originalIsEnabled)
                               || settings != originalSettings;
 
     public void ApplyChanges()
     {
+        if (label != originalLabel)
+        {
+            driver.Label = label;
+            originalLabel = label;
+        }
+
         if (CanEditIsEnabled)
         {
             driver.IsEnabled = isEnabled;
@@ -132,6 +157,12 @@ public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = 
 
     public void CancelChanges()
     {
+        if (label != originalLabel)
+        {
+            label = originalLabel;
+            OnPropertyChanged(nameof(Label));
+        }
+
         if (CanEditIsEnabled && isEnabled != originalIsEnabled)
         {
             isEnabled = originalIsEnabled;
@@ -149,4 +180,7 @@ public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = 
 
     private bool IsFileDataReplayDriver =>
         driver.Specification.Name.Equals(FileDataReplayDriverName, StringComparison.OrdinalIgnoreCase);
+
+    private bool IsFileDataLoggerDriver =>
+        driver.Specification.Name.Equals(FileDataLoggerDriverName, StringComparison.OrdinalIgnoreCase);
 }
