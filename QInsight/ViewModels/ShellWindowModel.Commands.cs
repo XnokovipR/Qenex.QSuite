@@ -1020,9 +1020,14 @@ public partial class ShellWindowModel
     {
         try
         {
+            if (MoveWorkspaceDocumentToTargetGroup(docking, viewModel, targetGroup))
+            {
+                return;
+            }
+
             await docking.Dispatcher.InvokeAsync(
                 () => MoveWorkspaceDocumentToTargetGroup(docking, viewModel, targetGroup),
-                DispatcherPriority.ApplicationIdle);
+                DispatcherPriority.DataBind);
         }
         catch (Exception ex)
         {
@@ -1030,11 +1035,11 @@ public partial class ShellWindowModel
         }
     }
 
-    private void MoveWorkspaceDocumentToTargetGroup(RadDocking docking, object viewModel, RadPaneGroup? targetGroup)
+    private bool MoveWorkspaceDocumentToTargetGroup(RadDocking docking, object viewModel, RadPaneGroup? targetGroup)
     {
         if (FindDockingPaneForViewModel(docking, viewModel) is not RadDocumentPane documentPane)
         {
-            return;
+            return false;
         }
 
         if (targetGroup != null)
@@ -1050,6 +1055,7 @@ public partial class ShellWindowModel
         docking.ActivePane = documentPane;
         documentPane.IsActive = true;
         documentPane.Focus();
+        return true;
     }
 
     private static RadPaneGroup? FindTopLeftDocumentPaneGroup(RadDocking docking)
