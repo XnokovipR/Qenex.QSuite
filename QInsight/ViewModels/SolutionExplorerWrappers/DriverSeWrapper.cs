@@ -21,8 +21,13 @@ public class DriverSeWrapper : PropertyChangedBase, IViewableItem
     
     public string Label
     {
-        get => Driver.Specification.Label;
-        set { Driver.Specification.Label = value; OnPropertyChanged(); }
+        get => GetDisplayLabel();
+        set
+        {
+            Driver.Label = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ToolTip));
+        }
     }
 
     public FontWeight LabelWeight => FontWeights.SemiBold;
@@ -35,7 +40,7 @@ public class DriverSeWrapper : PropertyChangedBase, IViewableItem
             var sb = new StringBuilder();
             sb.Append("Driver:");
             sb.Append(Environment.NewLine);
-            sb.Append($"Label\t{Driver.Specification.Label}");
+            sb.Append($"Label\t{GetDisplayLabel()}");
             sb.Append(Environment.NewLine);
             sb.Append($"Desc.\t{Driver.Specification.Description}");
             sb.Append(Environment.NewLine);
@@ -56,5 +61,8 @@ public class DriverSeWrapper : PropertyChangedBase, IViewableItem
     public Dictionary<string, object>? CustomTags { get; set; } = [];
 
     #endregion
+
+    private string GetDisplayLabel() =>
+        string.IsNullOrWhiteSpace(Driver.Label) ? Driver.Specification.Label : Driver.Label;
     
 }
