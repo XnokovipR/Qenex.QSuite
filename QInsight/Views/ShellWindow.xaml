@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:Qenex.QInsight.Views"
 		xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
 		xmlns:converters="clr-namespace:Qenex.QInsight.Converters"
+		xmlns:behaviors="clr-namespace:Qenex.QInsight.Behaviors"
 		xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
 		xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
 		xmlns:inp="clr-namespace:Qenex.QSuite.Common.InpBindingManager;assembly=Qenex.QSuite.Common.InpBindingManager"
@@ -317,6 +318,7 @@
 				Grid.Row="1"
 				CloseButtonPosition="InPaneAndGroup"
 				AllowDragReorder="True" 
+				behaviors:ActiveDocumentPaneHighlightBehavior.IsEnabled="True"
 				PanesSource="{Binding ViewModels}">
 				
 				<telerik:EventToCommandBehavior.EventBindings>
