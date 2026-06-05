@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" name="UnifiedModule" label="Simulation">
+  <description>Sample project</description>
+  <version>1.0.0</version>
+  <author>Radek</author>
+  <company>QENEX</company>
+  <creationDate>2026-05-31T16:19:48.2507663+02:00</creationDate>
+  <modified>2026-06-03T12:18:31.7088882+02:00</modified>
+  <driverReferences>
+    <driverReference ref="SimulDataDriver" label="Simulation Data Driver">
+      <isEnabled>true</isEnabled>
+      <settings>periodes=20</settings>
+      <encryptedSettings />
+      <protocolReferences>
+        <protocolReference ref="SimulDataProtocol">
+          <isEnabled>true</isEnabled>
+          <settings />
+          <encryptedSettings />
+          <variableReferences>
+            <variableReference ref="1" isCommunicated="true">
+              <commParam>direction="read";eventRef="Event20ms";multiplier="1";id="LivingRoomTemp"</commParam>
+              <script ref="value_changed_filter.py" additionalInfo="threshold=10.0" />
+            </variableReference>
+            <variableReference ref="2" isCommunicated="true">
+              <commParam>direction="read";eventRef="Event20ms";multiplier="1";id="LivingRoomPressure"</commParam>
+            </variableReference>
+            <variableReference ref="3" isCommunicated="true">
+              <commParam>direction="read";eventRef="Event20ms";multiplier="1";id="variable"</commParam>
+            </variableReference>
+          </variableReferences>
+        </protocolReference>
+      </protocolReferences>
+    </driverReference>
+    <driverReference ref="FileDataLoggerDriver" label="File data logger">
+      <isEnabled>true</isEnabled>
+      <settings>file=DataLogs;append=true;flushOnWrite=false</settings>
+      <encryptedSettings />
+      <protocolReferences>
+        <protocolReference ref="One2OneProtocol">
+          <isEnabled>true</isEnabled>
+          <settings />
+          <encryptedSettings />
+          <variableReferences>
+            <variableReference ref="1" isCommunicated="true">
+              <commParam />
+              <script ref="value_changed_filter.py" additionalInfo="threshold=10.0" />
+            </variableReference>
+            <variableReference ref="2" isCommunicated="true">
+              <commParam />
+            </variableReference>
+          </variableReferences>
+        </protocolReference>
+      </protocolReferences>
+    </driverReference>
+    <driverReference ref="FileDataReplayDriver" label="Replay: SimulationTest_20260603_00h06.qilog">
+      <isEnabled>false</isEnabled>
+      <settings>file=D:\Projects\Qenex\Source\Qenex.QSuite\QInsight\bin\Debug\net10.0-windows\DataLogs\SimulationTest_20260603_00h06.qilog;mode=realtime;speed=1;loop=false</settings>
+      <encryptedSettings />
+      <protocolReferences>
+        <protocolReference ref="DataLogReplayProtocol">
+          <isEnabled>false</isEnabled>
+          <settings />
+          <encryptedSettings />
+          <variableReferences>
+            <variableReference ref="1" isCommunicated="true">
+              <commParam />
+              <script ref="value_changed_filter.py" additionalInfo="threshold=10.0" />
+            </variableReference>
+            <variableReference ref="2" isCommunicated="true">
+              <commParam />
+            </variableReference>
+          </variableReferences>
+        </protocolReference>
+      </protocolReferences>
+    </driverReference>
+  </driverReferences>
+  <drivers>
+    <driver id="1" name="SimulDataDriver">
+      <version>1.0.0.0</version>
+    </driver>
+    <driver id="2" name="FileDataLoggerDriver">
+      <version>1.0.0.0</version>
+    </driver>
+    <driver id="3" name="FileDataReplayDriver">
+      <version>1.0.0.0</version>
+    </driver>
+  </drivers>
+  <protocols>
+    <protocol id="1" name="SimulDataProtocol" label="Simulation Data Protocol">
+      <version>1.0.0.0</version>
+    </protocol>
+    <protocol id="1" name="One2OneProtocol" label="One2One Protocol">
+      <version>1.0.0.0</version>
+    </protocol>
+    <protocol id="1" name="DataLogReplayProtocol" label="Data Log Replay Protocol">
+      <version>1.0.0.0</version>
+    </protocol>
+  </protocols>
+  <presentations>
+    <presentation name="Temperature" label="Temperature" min="-1000" max="1000" printFormat="" unit="°C ">
+      <conversionReference ref="Linear" />
+    </presentation>
+    <presentation name="Pressure" label="Pressure" min="-1000" max="1000" printFormat="" unit="">
+      <conversionReference ref="Linearx2" />
+    </presentation>
+  </presentations>
+  <conversions>
+    <linearConversion name="Linear" multiplier="1" offset="0" />
+    <linearConversion name="Linearx2" multiplier="2" offset="0" />
+  </conversions>
+  <variableEvents>
+    <periodicVariableEvent name="Event20ms" period="20" unit="Milisec" />
+  </variableEvents>
+  <variables>
+    <scalarVariable id="1" namespace="/Home/TempSensors" name="LivingRoomTemp" label="Living Room Temp" size="4">
+      <description>Temp. in living room</description>
+      <values dataType="int" size="4" length="1">
+        <presentationReference ref="Temperature" />
+      </values>
+    </scalarVariable>
+    <scalarVariable id="2" namespace="/Home/PressureSensons" name="LivingRoomPressure" label="Living Room Pressure" size="4">
+      <description>Pressure in living room</description>
+      <values dataType="float" size="4" length="1">
+        <presentationReference ref="Pressure" />
+      </values>
+    </scalarVariable>
+    <scalarVariable id="3" namespace="/Home/Virtual" name="FilteredTemp" label="FilteredTemp" size="8">
+      <description />
+      <values dataType="double" size="8" length="1">
+        <presentationReference ref="Temperature" />
+      </values>
+    </scalarVariable>
+  </variables>
+  <scripts>
+    <script fileName="periodic_sql.py" content="" executionMode="Periodic" blocking="true" timeout="2000" additionalInfo="period=3;unit=s" isEnabled="false" isReplayEnabled="false" />
+    <script fileName="value_changed_filter.py" content="" executionMode="OnValueChanged" blocking="true" timeout="0" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
+    <script fileName="startup_sql.py" content="" executionMode="Startup" blocking="false" timeout="5000" additionalInfo="" isEnabled="false" isReplayEnabled="false" />
+    <script fileName="shutdown_sql.py" content="" executionMode="Shutdown" blocking="true" timeout="0" additionalInfo="" isEnabled="false" isReplayEnabled="false" />
+    <script fileName="startup_filter.py" content="" executionMode="Startup" blocking="false" timeout="2000" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
+    <script fileName="shutdown_filter.py" content="" executionMode="Shutdown" blocking="true" timeout="0" additionalInfo="" isEnabled="true" isReplayEnabled="false" />
+  </scripts>
+</module>
