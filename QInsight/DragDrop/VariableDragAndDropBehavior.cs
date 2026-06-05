@@ -35,12 +35,14 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
 
         IVariableBase variable;
         IProtocolVariable? protocolVariable = null;
-        if (source.DataContext is ProtocolVariableWrapper protocolVariableWrapper)
+        /*if (source.DataContext is ProtocolVariableWrapper protocolVariableWrapper)
         {
             protocolVariable = protocolVariableWrapper.ProtocolVariable;
             variable = protocolVariable.Variable;
         }
-        else if (source.DataContext is VariableSeWrapper varWrapper)
+        else */
+        // only variables can be dragged 
+        if (source.DataContext is VariableSeWrapper varWrapper)
         {
             variable = varWrapper.Variable;
         }
