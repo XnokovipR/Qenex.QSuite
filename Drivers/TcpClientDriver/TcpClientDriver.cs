@@ -1,5 +1,6 @@
 using System.Net.Sockets;
 using System.Reflection;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
@@ -45,9 +46,14 @@ public class TcpClientDriver : DriverBase
 
     public override Task StartAsync(CancellationToken ct = default)
     {
-        if (!IsEnabled) return Task.CompletedTask;
-        if (IsStarted) return Task.CompletedTask;
+        if (!IsEnabled)
+        {
+            SetState(CommunicationState.Stopped);
+            return Task.CompletedTask;
+        }
+        if (State == CommunicationState.Running) return Task.CompletedTask;
 
+        SetState(CommunicationState.Starting);
         exitRequested = false;
         runCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         runTask = RunLoopAsync(runCts.Token);
@@ -56,6 +62,7 @@ public class TcpClientDriver : DriverBase
 
     public override async Task StopAsync(CancellationToken ct = default)
     {
+        SetState(CommunicationState.Stopping);
         exitRequested = true;
         if (runCts != null)
         {
@@ -81,7 +88,6 @@ public class TcpClientDriver : DriverBase
         runCts?.Dispose();
         runCts = null;
         runTask = null;
-        IsStarted = false;
     }
 
     public override void Dispose()
@@ -107,7 +113,7 @@ public class TcpClientDriver : DriverBase
             await protocol.StartAsync(ct);
         }
 
-        IsStarted = true;
+        SetState(CommunicationState.Running);
         var reconnectAttempt = 0;
 
         try
@@ -149,7 +155,7 @@ public class TcpClientDriver : DriverBase
                 await protocol.StopAsync(CancellationToken.None);
             }
 
-            IsStarted = false;
+            SetState(CommunicationState.Stopped);
             exitRequested = false;
         }
     }

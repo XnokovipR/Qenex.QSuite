@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
 using Qenex.QSuite.Variables.QVariables;
@@ -137,7 +138,7 @@ public class JsonSignalProtocol : ProtocolBase<string>
     {
         await Task.Run(async () =>
         {
-            IsStarted = true;
+            SetState(CommunicationState.Running);
             while (!ct.IsCancellationRequested && !exitRequested)
             {
                 if (receivedDataQueue.Count > 0)
@@ -151,7 +152,7 @@ public class JsonSignalProtocol : ProtocolBase<string>
                 }
             }
 
-            IsStarted = false;
+            SetState(CommunicationState.Stopped);
         }, ct);
         exitRequested = false;
     }
