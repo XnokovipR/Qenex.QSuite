@@ -232,14 +232,49 @@
                                 </telerik:GridViewDataColumn.CellTemplate>
                             </telerik:GridViewDataColumn>
                             <telerik:GridViewDataColumn
-                                Width="*"
+                                Width="180"
                                 Header="Label"
+                                IsReadOnly="True">
+                                <telerik:GridViewDataColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <q:QTextBox
+                                            VerticalAlignment="Center"
+                                            Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                            IsEnabled="{Binding CanEditLabel}"
+                                            ToolTip="{Binding ToolTip}">
+                                            <i:Interaction.Triggers>
+                                                <i:EventTrigger EventName="GotKeyboardFocus">
+                                                    <i:InvokeCommandAction
+                                                        Command="{Binding DataContext.SelectDriverCommand, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
+                                                        CommandParameter="{Binding}"/>
+                                                </i:EventTrigger>
+                                            </i:Interaction.Triggers>
+                                        </q:QTextBox>
+                                    </DataTemplate>
+                                </telerik:GridViewDataColumn.CellTemplate>
+                            </telerik:GridViewDataColumn>
+                            <telerik:GridViewDataColumn
+                                Width="*"
+                                Header="Name"
                                 IsReadOnly="True">
                                 <telerik:GridViewDataColumn.CellTemplate>
                                     <DataTemplate>
                                         <q:QTextBlock
                                             VerticalAlignment="Center"
-                                            Text="{Binding Label}"
+                                            Text="{Binding Name}"
+                                            ToolTip="{Binding ToolTip}"/>
+                                    </DataTemplate>
+                                </telerik:GridViewDataColumn.CellTemplate>
+                            </telerik:GridViewDataColumn>
+                            <telerik:GridViewDataColumn
+                                Width="90"
+                                Header="Version"
+                                IsReadOnly="True">
+                                <telerik:GridViewDataColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <q:QTextBlock
+                                            VerticalAlignment="Center"
+                                            Text="{Binding Version}"
                                             ToolTip="{Binding ToolTip}"/>
                                     </DataTemplate>
                                 </telerik:GridViewDataColumn.CellTemplate>
@@ -312,14 +347,40 @@
                                     </telerik:GridViewDataColumn.CellTemplate>
                                 </telerik:GridViewDataColumn>
                                 <telerik:GridViewDataColumn
-                                    Width="*"
-                                    Header="Protocol"
+                                    Width="180"
+                                    Header="Label"
                                     IsReadOnly="True">
                                     <telerik:GridViewDataColumn.CellTemplate>
                                         <DataTemplate>
                                             <q:QTextBlock
                                                 VerticalAlignment="Center"
-                                                Text="{Binding DisplayName}"
+                                                Text="{Binding Label}"
+                                                ToolTip="{Binding ToolTip}"/>
+                                        </DataTemplate>
+                                    </telerik:GridViewDataColumn.CellTemplate>
+                                </telerik:GridViewDataColumn>
+                                <telerik:GridViewDataColumn
+                                    Width="*"
+                                    Header="Name"
+                                    IsReadOnly="True">
+                                    <telerik:GridViewDataColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <q:QTextBlock
+                                                VerticalAlignment="Center"
+                                                Text="{Binding Name}"
+                                                ToolTip="{Binding ToolTip}"/>
+                                        </DataTemplate>
+                                    </telerik:GridViewDataColumn.CellTemplate>
+                                </telerik:GridViewDataColumn>
+                                <telerik:GridViewDataColumn
+                                    Width="90"
+                                    Header="Version"
+                                    IsReadOnly="True">
+                                    <telerik:GridViewDataColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <q:QTextBlock
+                                                VerticalAlignment="Center"
+                                                Text="{Binding Version}"
                                                 ToolTip="{Binding ToolTip}"/>
                                         </DataTemplate>
                                     </telerik:GridViewDataColumn.CellTemplate>

@@ -132,6 +132,13 @@ public class SignalControlViewModel : ControlBase
 		    : string.Empty;
     }
 
+    protected override void OnEditToRun()
+    {
+	    VariableValue = string.Empty;
+	    previousUpdateTime = DateTime.MinValue;
+	    prevValue = 0;
+    }
+
     [OnDeserialized]
     private void OnDeserialized(StreamingContext context)
     {

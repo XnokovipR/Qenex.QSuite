@@ -1,0 +1,59 @@
+<UserControl x:Class="Qenex.QInsight.Views.GeneralPreferencesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
+             xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
+             mc:Ignorable="d"
+             MinWidth="600"
+             MinHeight="180"
+             d:DataContext="{d:DesignInstance vm:GeneralPreferencesViewModel, IsDesignTimeCreatable=False}">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type q:QTextBox}" BasedOn="{StaticResource {x:Type TextBox}}"/>
+    </UserControl.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <q:QTextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Text="Python Dll Path"/>
+            <q:QTextBox Grid.Column="1" Margin="0,0,6,0" Text="{Binding PythonDllPath, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+            <telerik:RadButton Grid.Column="2" MinWidth="72" Content="Browse" Command="{Binding BrowsePythonDllCommand}"/>
+        </Grid>
+
+        <q:QTextBlock Grid.Row="1"
+                      Margin="0,8,0,0"
+                      Foreground="Tomato"
+                      Text="{Binding ErrorMessage}"
+                      TextWrapping="Wrap">
+            <q:QTextBlock.Style>
+                <Style TargetType="{x:Type q:QTextBlock}">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasError}" Value="True">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </q:QTextBlock.Style>
+        </q:QTextBlock>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <telerik:RadButton MinWidth="80" Margin="0,0,8,0" Content="OK" Command="{Binding OkCommand}"/>
+            <telerik:RadButton MinWidth="80" Margin="0,0,8,0" Content="Apply" Command="{Binding ApplyCommand}"/>
+            <telerik:RadButton MinWidth="80" Content="Cancel" Command="{Binding CancelCommand}"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

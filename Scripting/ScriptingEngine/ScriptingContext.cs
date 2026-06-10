@@ -10,6 +10,7 @@ namespace Qenex.QSuite.Scripting.ScriptingEngine;
 public class ScriptingContext
 {
     private const string LastScriptExceptionTextName = "__qenex_script_exception_text";
+    private const string ScriptStopTokenName = "__qenex_stop_token";
     private const double ScriptOverloadWarningRatio = 0.7;
     private static readonly TimeSpan StopWaitTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan ScriptOverloadWarningInterval = TimeSpan.FromSeconds(5);
@@ -384,7 +385,7 @@ if "__qenex_interactive_console" not in globals():
             return false;
         }
 
-        var executionTask = pythonFactory.StartNew(() => ExecuteScript(script, beforeExecute), linkedCts.Token);
+        var executionTask = pythonFactory.StartNew(() => ExecuteScript(script, beforeExecute, linkedCts.Token), linkedCts.Token);
         ReleaseScriptExecutionWhenCompleted(executionTask, script);
         var cancellationTask = Task.Delay(Timeout.InfiniteTimeSpan, linkedCts.Token);
         Task completedTask;
@@ -419,7 +420,7 @@ if "__qenex_interactive_console" not in globals():
         return false;
     }
 
-    private void ExecuteScript(IScriptBase script, Action? beforeExecute = null)
+    private void ExecuteScript(IScriptBase script, Action? beforeExecute = null, CancellationToken ct = default)
     {
         if (!CanExecuteScript(script))
         {
@@ -434,6 +435,7 @@ if "__qenex_interactive_console" not in globals():
             using (Py.GIL())
             {
                 beforeExecute?.Invoke();
+                SharedScope!.Set(ScriptStopTokenName, new ScriptStopToken(ct));
                 var pythonError = ExecuteScriptContent(script.Content);
                 if (!string.IsNullOrWhiteSpace(pythonError))
                 {
@@ -1085,17 +1087,47 @@ if "__qenex_interactive_console" not in globals():
         {
             return $"""
                 {LastScriptExceptionTextName} = ""
-                try:
+                import sys as __qenex_sys
+                class __QenexScriptStop(BaseException):
                     pass
+                __qenex_script_globals = globals()
+                def __qenex_script_stop_trace(frame, event, arg):
+                    if frame.f_globals is not __qenex_script_globals:
+                        return None
+                    if event == "line" and {ScriptStopTokenName}.IsStopRequested():
+                        raise __QenexScriptStop()
+                    return __qenex_script_stop_trace
+                __qenex_previous_trace = __qenex_sys.gettrace()
+                try:
+                    __qenex_sys.settrace(__qenex_script_stop_trace)
+                    __qenex_sys._getframe().f_trace = __qenex_script_stop_trace
+                    pass
+                except __QenexScriptStop:
+                    {LastScriptExceptionTextName} = "Script execution was stopped."
                 except BaseException:
                     import traceback as __qenex_traceback
                     {LastScriptExceptionTextName} = __qenex_traceback.format_exc()
+                finally:
+                    __qenex_sys.settrace(__qenex_previous_trace)
                 """;
         }
 
         var builder = new StringBuilder();
         builder.AppendLine($"{LastScriptExceptionTextName} = \"\"");
+        builder.AppendLine("import sys as __qenex_sys");
+        builder.AppendLine("class __QenexScriptStop(BaseException):");
+        builder.AppendLine("    pass");
+        builder.AppendLine("__qenex_script_globals = globals()");
+        builder.AppendLine("def __qenex_script_stop_trace(frame, event, arg):");
+        builder.AppendLine("    if frame.f_globals is not __qenex_script_globals:");
+        builder.AppendLine("        return None");
+        builder.AppendLine($"    if event == \"line\" and {ScriptStopTokenName}.IsStopRequested():");
+        builder.AppendLine("        raise __QenexScriptStop()");
+        builder.AppendLine("    return __qenex_script_stop_trace");
+        builder.AppendLine("__qenex_previous_trace = __qenex_sys.gettrace()");
         builder.AppendLine("try:");
+        builder.AppendLine("    __qenex_sys.settrace(__qenex_script_stop_trace)");
+        builder.AppendLine("    __qenex_sys._getframe().f_trace = __qenex_script_stop_trace");
 
         foreach (var line in content.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Split('\n'))
         {
@@ -1103,9 +1135,13 @@ if "__qenex_interactive_console" not in globals():
             builder.AppendLine(line);
         }
 
+        builder.AppendLine("except __QenexScriptStop:");
+        builder.AppendLine($"    {LastScriptExceptionTextName} = \"Script execution was stopped.\"");
         builder.AppendLine("except BaseException:");
         builder.AppendLine("    import traceback as __qenex_traceback");
         builder.AppendLine($"    {LastScriptExceptionTextName} = __qenex_traceback.format_exc()");
+        builder.AppendLine("finally:");
+        builder.AppendLine("    __qenex_sys.settrace(__qenex_previous_trace)");
         return builder.ToString();
     }
     
@@ -1124,6 +1160,21 @@ internal sealed class ScriptCallOverloadState
     public DateTime? LastCallUtc { get; set; }
     public int SkipCallsRemaining { get; set; }
     public DateTime LastWarningUtc { get; set; } = DateTime.MinValue;
+}
+
+public sealed class ScriptStopToken(CancellationToken cancellationToken)
+{
+    public bool IsStopRequested()
+    {
+        try
+        {
+            return cancellationToken.IsCancellationRequested;
+        }
+        catch (ObjectDisposedException)
+        {
+            return true;
+        }
+    }
 }
 
 public class ScriptExecutedEventArgs(IScriptBase script) : EventArgs

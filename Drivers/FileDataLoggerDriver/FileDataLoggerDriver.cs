@@ -3,6 +3,7 @@ using System.Reflection;
 using MessagePack;
 using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
 
@@ -12,11 +13,18 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 {
     private const string DataLogExtension = ".qilog";
     private const string TimestampFormat = "yyyyMMdd'_'HH'h'mm";
-    private readonly SemaphoreSlim fileLock = new(1, 1);
+    private static readonly TimeSpan DefaultReorderBufferDelay = TimeSpan.FromMilliseconds(500);
+    private readonly object pendingRecordsLock = new();
+    private readonly LinkedList<BufferedVariableLogRecord> pendingRecords = [];
+    private readonly EventWaitHandle waitHandle = new AutoResetEvent(false);
     private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs");
     private bool append = true;
     private bool flushOnWrite;
+    private TimeSpan reorderBufferDelay = DefaultReorderBufferDelay;
+    private long highestBufferedTimestampUtcTicks;
+    private volatile bool exitRequested;
     private FileStream? logStream;
+    private Task? writerTask;
 
     public FileDataLoggerDriver()
     {
@@ -39,6 +47,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
         logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs");
         append = true;
         flushOnWrite = false;
+        reorderBufferDelay = DefaultReorderBufferDelay;
 
         var settings = ParseSettings(RawSettings);
         if (settings.TryGetValue("file", out var configuredFile) && !string.IsNullOrWhiteSpace(configuredFile))
@@ -66,6 +75,13 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
         {
             flushOnWrite = parsedFlush;
         }
+
+        if (settings.TryGetValue("reorderBufferMs", out var reorderBufferValue)
+            && double.TryParse(reorderBufferValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedReorderBufferMs)
+            && parsedReorderBufferMs >= 0)
+        {
+            reorderBufferDelay = TimeSpan.FromMilliseconds(parsedReorderBufferMs);
+        }
     }
 
     public bool CanSubscribe(IProtocolVariable sourceVariable)
@@ -75,33 +91,17 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             .Any(protocol => protocol.CanProcess(sourceVariable));
     }
 
-    public async Task OnProtocolVariableValueChangedAsync(IProtocolVariable sourceVariable)
+    public Task OnProtocolVariableValueChangedAsync(IProtocolVariable sourceVariable)
     {
-        if (State != CommunicationState.Running || logStream == null)
+        if (State != CommunicationState.Running || logStream == null || !CanSubscribe(sourceVariable))
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        var processedVariable = await ProcessVariableAsync(sourceVariable);
-        if (processedVariable == null)
-        {
-            return;
-        }
-
-        var record = CreateRecord(processedVariable);
-        await fileLock.WaitAsync();
-        try
-        {
-            await MessagePackSerializer.SerializeAsync(logStream, record);
-            if (flushOnWrite)
-            {
-                await logStream.FlushAsync();
-            }
-        }
-        finally
-        {
-            fileLock.Release();
-        }
+        var record = CreateRecord(sourceVariable);
+        BufferRecord(record);
+        waitHandle.Set();
+        return Task.CompletedTask;
     }
 
     public override Task StartAsync(CancellationToken ct = default)
@@ -111,6 +111,8 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             SetState(CommunicationState.Disabled);
             return Task.CompletedTask;
         }
+        if (State != CommunicationState.Running) return Task.CompletedTask;
+
 
         SetState(CommunicationState.Starting);
         var timestampedLogFilePath = CreateTimestampedLogFilePath(logFilePath, DataLogFileName, DateTime.Now);
@@ -127,6 +129,11 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             FileShare.Read,
             bufferSize: 4096,
             useAsync: true);
+        
+
+        exitRequested = false;
+        highestBufferedTimestampUtcTicks = 0;
+        writerTask = RunWriterLoopAsync();
         SetState(CommunicationState.Running);
         return Task.CompletedTask;
     }
@@ -134,19 +141,20 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
     public override async Task StopAsync(CancellationToken ct = default)
     {
         SetState(CommunicationState.Stopping);
+        exitRequested = true;
+        waitHandle.Set();
+
+        if (writerTask != null)
+        {
+            await writerTask.WaitAsync(ct);
+            writerTask = null;
+        }
+
         if (logStream != null)
         {
-            await fileLock.WaitAsync(ct);
-            try
-            {
-                await logStream.FlushAsync(ct);
-                await logStream.DisposeAsync();
-                logStream = null;
-            }
-            finally
-            {
-                fileLock.Release();
-            }
+            await logStream.FlushAsync(ct);
+            await logStream.DisposeAsync();
+            logStream = null;
         }
 
         SetState(CommunicationState.Stopped);
@@ -154,8 +162,11 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 
     public override void Dispose()
     {
+        exitRequested = true;
+        waitHandle.Set();
+        writerTask?.Wait(TimeSpan.FromSeconds(1));
         logStream?.Dispose();
-        fileLock.Dispose();
+        waitHandle.Dispose();
     }
 
     public override void Send<T>(T data)
@@ -168,19 +179,121 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
         throw new NotSupportedException("File data logger driver does not send data.");
     }
 
-    private async ValueTask<IProtocolVariable?> ProcessVariableAsync(IProtocolVariable sourceVariable)
+    private async Task RunWriterLoopAsync()
     {
-        foreach (var protocol in Protocols.OfType<IProtocolVariableSinkProtocol>())
+        await Task.Run(async () =>
         {
-            if (!protocol.CanProcess(sourceVariable))
+            while (!exitRequested || HasPendingRecords())
             {
-                continue;
+                var record = TryTakeWritableRecord();
+                if (record != null)
+                {
+                    await WriteRecordAsync(record);
+                }
+                else
+                {
+                    waitHandle.WaitOne(TimeSpan.FromMilliseconds(20));
+                }
+            }
+        });
+    }
+
+    private void BufferRecord(VariableLogRecord record)
+    {
+        var bufferedRecord = new BufferedVariableLogRecord(record);
+        lock (pendingRecordsLock)
+        {
+            if (record.TimestampUtcTicks > highestBufferedTimestampUtcTicks)
+            {
+                highestBufferedTimestampUtcTicks = record.TimestampUtcTicks;
             }
 
-            return await protocol.ProcessObservedValueAsync(sourceVariable);
+            if (pendingRecords.Last == null)
+            {
+                pendingRecords.AddLast(bufferedRecord);
+                return;
+            }
+
+            var node = pendingRecords.Last;
+            while (node != null && node.Value.Record.TimestampUtcTicks > record.TimestampUtcTicks)
+            {
+                node = node.Previous;
+            }
+
+            if (node == null)
+            {
+                pendingRecords.AddFirst(bufferedRecord);
+            }
+            else
+            {
+                pendingRecords.AddAfter(node, bufferedRecord);
+            }
+        }
+    }
+
+    private bool HasPendingRecords()
+    {
+        lock (pendingRecordsLock)
+        {
+            return pendingRecords.Count > 0;
+        }
+    }
+
+    private VariableLogRecord? TryTakeWritableRecord()
+    {
+        lock (pendingRecordsLock)
+        {
+            var first = pendingRecords.First;
+            if (first == null)
+            {
+                return null;
+            }
+
+            if (!exitRequested && !CanWriteBufferedRecord(first.Value))
+            {
+                return null;
+            }
+
+            pendingRecords.RemoveFirst();
+            return first.Value.Record;
+        }
+    }
+
+    private bool CanWriteBufferedRecord(BufferedVariableLogRecord bufferedRecord)
+    {
+        if (reorderBufferDelay <= TimeSpan.Zero)
+        {
+            return true;
         }
 
-        return null;
+        var timestampDistance = highestBufferedTimestampUtcTicks - bufferedRecord.Record.TimestampUtcTicks;
+        if (timestampDistance >= reorderBufferDelay.Ticks)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private async Task WriteRecordAsync(VariableLogRecord record)
+    {
+        if (logStream == null)
+        {
+            return;
+        }
+
+        try
+        {
+            await MessagePackSerializer.SerializeAsync(logStream, record);
+            if (flushOnWrite)
+            {
+                await logStream.FlushAsync();
+            }
+        }
+        catch (Exception e)
+        {
+            Logger?.Log(LogLevel.Error, $"Data log record could not be written: {e.Message}");
+        }
     }
 
     private static VariableLogRecord CreateRecord(IProtocolVariable protocolVariable)
@@ -241,4 +354,6 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             ? timestampedFileName
             : Path.Combine(directory, timestampedFileName);
     }
+
+    private sealed record BufferedVariableLogRecord(VariableLogRecord Record);
 }

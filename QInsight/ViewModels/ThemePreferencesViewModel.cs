@@ -1,19 +1,15 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
-using System.IO;
-using System.Windows;
 using System.Windows.Media;
 using Qenex.QInsight.AppConfig;
-using Qenex.QInsight.Helpers;
 using Qenex.QInsight.Views;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Telerik.Windows.Controls;
-using Telerik.Windows.Controls.FileDialogs;
 
 namespace Qenex.QInsight.ViewModels;
 
-public class PreferencesViewModel : PropertyChangedBaseWithValidation
+public class ThemePreferencesViewModel : PropertyChangedBaseWithValidation
 {
     private const string AppSettingsFileName = "QInsightAppSettings.xml";
     private static readonly AppSettings DefaultSettings = AppSettings.GetDefaultAppSettings();
@@ -21,7 +17,7 @@ public class PreferencesViewModel : PropertyChangedBaseWithValidation
     private readonly Logger logger;
     private RadWindow? parentWindow;
 
-    public PreferencesViewModel(AppSettings appSettings, Logger logger)
+    public ThemePreferencesViewModel(AppSettings appSettings, Logger logger)
     {
         this.appSettings = appSettings;
         this.logger = logger;
@@ -37,8 +33,6 @@ public class PreferencesViewModel : PropertyChangedBaseWithValidation
             new ColorPreferenceViewModel("DarkThemeTextBoxBackgroundColor", appSettings.Design.DarkThemeTextBoxBackgroundColor, DefaultSettings.Design.DarkThemeTextBoxBackgroundColor),
             new ColorPreferenceViewModel("DarkThemeControlBackgroundColor", appSettings.Design.DarkThemeControlBackgroundColor, DefaultSettings.Design.DarkThemeControlBackgroundColor)
         ];
-        PythonDllPath = appSettings.ScriptEngine.PythonDllPath;
-
         ApplyCommand = new RelayCommand<object>(_ => ApplySettings());
         OkCommand = new RelayCommand<object>(_ =>
         {
@@ -48,7 +42,6 @@ public class PreferencesViewModel : PropertyChangedBaseWithValidation
             }
         });
         CancelCommand = new RelayCommand<object>(_ => parentWindow?.Close());
-        BrowsePythonDllCommand = new RelayCommand<object>(_ => BrowsePythonDll());
     }
 
     public IReadOnlyList<ApplicationTheme> ThemeOptions { get; } = Enum.GetValues<ApplicationTheme>();
@@ -67,12 +60,6 @@ public class PreferencesViewModel : PropertyChangedBaseWithValidation
 
     public ObservableCollection<ColorPreferenceViewModel> ColorSettings { get; }
 
-    public string PythonDllPath
-    {
-        get;
-        set { field = value; OnPropertyChanged(); }
-    }
-
     public string ErrorMessage
     {
         get;
@@ -89,7 +76,6 @@ public class PreferencesViewModel : PropertyChangedBaseWithValidation
     public RelayCommand<object> ApplyCommand { get; }
     public RelayCommand<object> OkCommand { get; }
     public RelayCommand<object> CancelCommand { get; }
-    public RelayCommand<object> BrowsePythonDllCommand { get; }
 
     public void SetParentWindow(RadWindow window)
     {
@@ -113,7 +99,6 @@ public class PreferencesViewModel : PropertyChangedBaseWithValidation
             appSettings.Design.DarkThemeTextColor = GetColor("DarkThemeTextColor");
             appSettings.Design.DarkThemeTextBoxBackgroundColor = GetColor("DarkThemeTextBoxBackgroundColor");
             appSettings.Design.DarkThemeControlBackgroundColor = GetColor("DarkThemeControlBackgroundColor");
-            appSettings.ScriptEngine.PythonDllPath = PythonDllPath.Trim();
 
             AppSettings.SaveAppSettingsToFile(AppSettingsFileName, appSettings);
             ShellWindow.ApplyDesignSettings();
@@ -133,41 +118,6 @@ public class PreferencesViewModel : PropertyChangedBaseWithValidation
     {
         var colorSetting = ColorSettings.First(setting => setting.Name == name);
         return colorSetting.GetColor();
-    }
-
-    private void BrowsePythonDll()
-    {
-        var initialDirectory = GetInitialDirectory(PythonDllPath);
-        var dialog = new RadOpenFileDialog
-        {
-            Owner = Application.Current.MainWindow,
-            Multiselect = false,
-            Filter = "Python DLL (*.dll)|*.dll|All files (*.*)|*.*",
-            InitialDirectory = initialDirectory
-        };
-
-        FileDialogConfiguration.ConfigureFastFileDialog(dialog);
-        FileDialogConfiguration.PrepareFileDialog(dialog, initialDirectory);
-        dialog.ShowDialog();
-
-        if (dialog.DialogResult == true)
-        {
-            PythonDllPath = dialog.FileName;
-        }
-    }
-
-    private static string GetInitialDirectory(string filePath)
-    {
-        if (!string.IsNullOrWhiteSpace(filePath))
-        {
-            var directory = Path.GetDirectoryName(filePath);
-            if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
-            {
-                return directory;
-            }
-        }
-
-        return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
     }
 
     private static byte ParseColorComponent(string value, string propertyName)
@@ -196,6 +146,16 @@ public class ColorPreferenceViewModel : PropertyChangedBase
     }
 
     public string Name { get; }
+    public string DisplayName => Name switch
+    {
+        "LightThemeTextColor" => "Light Theme Text Color",
+        "LightThemeTextBoxBackgroundColor" => "Light Theme Text Box Background Color",
+        "LightThemeControlBackgroundColor" => "Light Theme Control Background Color",
+        "DarkThemeTextColor" => "Dark Theme Text Color",
+        "DarkThemeTextBoxBackgroundColor" => "Dark Theme Text Box Background Color",
+        "DarkThemeControlBackgroundColor" => "Dark Theme Control Background Color",
+        _ => Name
+    };
 
     public string Red
     {

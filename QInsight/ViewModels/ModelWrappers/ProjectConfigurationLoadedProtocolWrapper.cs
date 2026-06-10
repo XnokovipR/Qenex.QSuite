@@ -12,6 +12,13 @@ public class ProjectConfigurationLoadedProtocolWrapper(IProtocolBase protocol, b
     public IProtocolBase Protocol => protocol;
     public bool IsNew => isNew;
 
+    public string Label => string.IsNullOrWhiteSpace(protocol.Specification.Label)
+        ? protocol.Specification.Name
+        : protocol.Specification.Label;
+
+    public string Name => protocol.Specification.Name;
+    public string Version => protocol.Specification.Version?.ToString() ?? string.Empty;
+
     public string DisplayName => string.IsNullOrWhiteSpace(protocol.Specification.Label)
         ? protocol.Specification.Name
         : protocol.Specification.Label;

@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:Qenex.QInsight.Views"
 		xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
 		xmlns:converters="clr-namespace:Qenex.QInsight.Converters"
+		xmlns:behaviors="clr-namespace:Qenex.QInsight.Behaviors"
 		xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
 		xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
 		xmlns:inp="clr-namespace:Qenex.QSuite.Common.InpBindingManager;assembly=Qenex.QSuite.Common.InpBindingManager"
@@ -187,6 +188,11 @@
 										SmallImage="../Icons/Menu/OpenProject.png"
 										Command="{Binding RibbonImportDataLogCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 									<telerik:RadRibbonButton
+										Text="Stop loading"
+										Size="Large"
+										SmallImage="../Icons/Menu/Disconnect.png"
+										Command="{Binding RibbonCancelReplayDataLoadCommand}"/>
+									<telerik:RadRibbonButton
 										Text="Export"
 										Size="Large"
 										SmallImage="../Icons/Menu/SaveProjectAs.png"
@@ -262,6 +268,13 @@
 								SmallImage="../Icons/Menu/ScriptSettings.png"
 								Command="{Binding RibbonPythonInterpreterCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
+						<telerik:RadRibbonGroup Header="Watch">
+							<telerik:RadRibbonButton
+								Text="Variables"
+								Size="Large"
+								SmallImage="../Icons/SolutionExplorer/Variables.png"
+								Command="{Binding RibbonVariableWatchCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
 					
 					<!-- Options-->
@@ -270,15 +283,20 @@
 							<telerik:RadRibbonButton
 								Text="Save" 
 								Size="Large"
-								SmallImage="../Icons/QInsight.png"
+								SmallImage="../Icons/Menu/SaveLayout.png"
 								Command="{Binding RibbonSaveLayoutCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
-						<telerik:RadRibbonGroup Header="General">
+						<telerik:RadRibbonGroup Header="Preferences">
 							<telerik:RadRibbonButton
-								Text="Preferences"
+								Text="Theme"
 								Size="Large"
-								SmallImage="../Icons/QInsight.png"
-								Command="{Binding RibbonPreferencesCommand}"/>
+								SmallImage="../Icons/Menu/Theme.png"
+								Command="{Binding RibbonThemePreferencesCommand}"/>
+							<telerik:RadRibbonButton
+								Text="General"
+								Size="Large"
+								SmallImage="../Icons/Menu/GeneralPreferences.png"
+								Command="{Binding RibbonGeneralPreferencesCommand}"/>
 						</telerik:RadRibbonGroup>
 					</telerik:RadRibbonTab>
 
@@ -300,6 +318,7 @@
 				Grid.Row="1"
 				CloseButtonPosition="InPaneAndGroup"
 				AllowDragReorder="True" 
+				behaviors:ActiveDocumentPaneHighlightBehavior.IsEnabled="True"
 				PanesSource="{Binding ViewModels}">
 				
 				<telerik:EventToCommandBehavior.EventBindings>

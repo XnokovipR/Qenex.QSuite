@@ -1,174 +1,65 @@
 # Qenex.QSuite
 
 ## Scope
-
-This file applies to the entire Qenex.QSuite repository and all its projects.
+Applies to the entire Qenex.QSuite solution. More specific `AGENTS.md` files
+supplement and override this one within their directory scope.
 
 ## Purpose
+Qenex.QSuite is a modular, multi-project **C# (.NET 10)** solution for control,
+logging, and visualization of real-time data to/from electronic devices
+(ECUs, Raspberry Pi, Arduino, remote computers, …). It includes a **Python
+scripting engine** for automating data processing and device control.
 
-Qenex.QSuite is a multi-project C# solution for control, logging, and visualization of real-time data from and to electronic devices
-such as ECUs, Raspberry Pi, Arduino, remote computers and other similar systems.
+Runtime targets:
+- Console application on Windows/Linux/macOS (in the future also as a service).
+- WPF application on Windows — the `QInsight` project (visualization + device control).
 
-The solution also includes a scripting engine for automating operations. 
-It will allow users to create python scripts to automate operations, data processing, and device control.
-
-The Qenex.QSuite is designed to be modular, maintainable, and extensible.
-
-The repository contains projects for:
-
-- communication protocols
-- hardware drivers
-- logging systems
-- application modules
-- scripting
-- visualization
-- shared abstractions and infrastructure
-
-The solution can run:
-
-- as a console application on Windows, Linux, and macOS
-- in the future also as a service
-- as a WPF application on Windows (QInsight project)
-
-The WPF application (QInsight) is used for visualization of real-time data and control of connected devices.
-
-The console application is used for backend logic without UI, for example:
-
-- automated testing
-- data processing
-- headless operation
+## Critical rules (do not violate)
+- The existing code works and is non-trivial. **Do not change working behavior,
+  public contracts, or architecture without an explicit request.**
+- Prefer small, local, additive changes. **No broad cross-solution refactoring.**
+- Respect project boundaries: **do not move types between projects** and **do not
+  add new cross-project dependencies** without checking the existing dependency
+  direction. No circular dependencies.
+- Keep hardware-, protocol-, scripting-, logging-, UI-, and domain layers
+  separated unless a local `AGENTS.md` states otherwise.
+- Only touch the target project, its directly related shared libraries, and
+  explicitly referenced dependencies.
 
 ## Repository structure
+Each top-level directory holds one or more C# projects and may have its own `AGENTS.md`.
 
-Each top-level directory may contain one or more C# projects, subdirectories, and optionally its own `AGENTS.md`.
+- `Common` — shared primitives, abstractions, base types, utilities (incl. `PluginManager`).
+- `Controls` — WPF UI controls and visual components.
+- `Drivers` — hardware drivers, low-level communication, driver lifecycle.
+- `Helpers` — shared utility functions.
+- `LogSystems` — logging infrastructure (diagnostics, errors, runtime info).
+- `Modules` — application orchestration; integrates drivers, protocols, variables,
+  and project-config loading. Used by both console and WPF apps.
+- `Protocols` — communication protocol implementations.
+- `QInsight` — main WPF visualization and device-control application.
+- `Scripting` — Python scripting engine integration and script execution.
+- `Specifications` — shared specifications for protocols, devices, components.
+- `Variables` — communication variables and runtime data structures.
 
-Project-local `AGENTS.md` files supplement and override this root file within their directory scope.
-
-Top-level directories:
-
-- `Common`
-    - Shared primitives, abstractions, base types, and universal utilities.
-    - Includes infrastructure such as `PluginManager`.
-
-- `Controls`
-    - WPF UI controls and visual components.
-
-- `Drivers`
-    - Hardware drivers, low-level communication, hardware abstraction, and driver lifecycle logic.
-
-- `Helpers`
-    - Shared utility functions and implementation helpers.
-
-- `LogSystems`
-    - Logging infrastructure for diagnostics, errors, and runtime information.
-
-- `Modules`
-    - Main application orchestration layer.
-    - Integrates:
-        - drivers
-        - protocols
-        - variables
-        - project configuration loading
-    - Used by both console and WPF applications.
-
-- `Protocols`
-    - Communication protocol implementations.
-
-- `QInsight`
-    - Main WPF visualization and device-control application.
-
-- `Scripting`
-    - Python scripting engine integration and script execution infrastructure.
-
-- `Specifications`
-    - Shared specifications for protocols, devices, and related components.
-
-- `Variables`
-    - Communication variables and runtime data structures.
-
-## Repository boundaries
-
-This repository is a multi-project C# solution.
-
-Projects are intentionally separated by responsibility.
-
-- Do not move types between projects unless explicitly requested or clearly required by dependency direction.
-- Do not create new cross-project dependencies without checking existing dependency direction.
-- Avoid circular dependencies.
-- Prefer small and localized changes over broad refactoring.
-- Do not analyze or modify unrelated projects.
-
-Limit changes to:
-- the target project
-- directly related shared libraries
-- explicitly referenced dependencies
-
-Avoid broad cross-solution refactoring unless explicitly requested.
-
-Hardware-facing, protocol-facing, scripting, logging, UI, and domain modules should remain separated unless the relevant project-local `AGENTS.md` states otherwise.
-
-## AGENTS.md hierarchy
-
-This root `AGENTS.md` contains only global rules and repository structure information.
-
-Before modifying code:
-- always check for a more specific `AGENTS.md`
-- check both the target directory and project directory
-
-More specific `AGENTS.md` files supplement and override rules from parent directories within their scope.
-
-## Agent precedence
-
-When editing files, apply instructions in this order:
-
+## AGENTS.md hierarchy & precedence
+Apply instructions in this order (more specific wins):
 1. Explicit user request.
-2. Nearest `AGENTS.md` in the file's directory or parent directories.
+2. Nearest `AGENTS.md` (target directory, then parent directories).
 3. This root `AGENTS.md`.
 4. Existing code style and patterns.
 
-If instructions conflict, follow the more specific instruction. Ask for clarification only when the conflict cannot be resolved safely.
+Before modifying code, check for a more specific `AGENTS.md` in the target and
+project directories. Resolve conflicts toward the more specific rule; ask only
+when a conflict cannot be resolved safely.
 
-## Code continuity rules
-
-Generated or modified code must follow the existing code structure, style, naming, architecture, and design logic.
-
-Before suggesting or changing code:
-
-- Inspect nearby existing classes, interfaces, methods, and tests.
-- Reuse existing abstractions, patterns, helper classes, factories, converters, and naming conventions.
-- Prefer extending the current design over introducing a new parallel design.
-- Do not introduce new architectural patterns, frameworks, dependency injection styles, or abstractions unless explicitly requested.
-- Avoid unnecessary refactoring.
-- Prefer minimal and localized changes.
-- Do not replace established architecture unless explicitly requested.
-- Keep changes consistent with surrounding projects and modules.
-- When adding new code, place it where similar functionality already exists.
-- Avoid creating duplicate utilities, helpers, converters, or abstractions when equivalent functionality already exists.
-
-## General C# rules
-
-Use modern C# already used by the project, but do not introduce newer language features unless the target framework 
-and existing project style clearly support them.
-
-Write clean, maintainable code following principles already used by the solution:
-- SOLID principles
-- dependency injection
-- established design patterns
-- separation of responsibilities
-
-Follow existing conventions for:
-- namespaces
-- file layout
-- nullable annotations
-- access modifiers
-- async naming
-- dependency injection style
-- logging style
-- exception handling
-- test structure
-
-Do not:
-- reformat unrelated code
-- perform mechanical cleanup outside the requested scope
-- introduce speculative abstractions
-- add interfaces, factories, base classes, or generic layers without immediate concrete need
+## Conventions
+- Match the structure, naming, and design of nearby code; reuse existing
+  abstractions, helpers, converters, and patterns instead of adding parallel ones.
+- Namespaces: `Qenex.QSuite.<Category>.<Project>`; file-scoped namespaces;
+  nullable enabled; implicit usings.
+- Follow existing conventions for access modifiers, async naming, DI style,
+  logging, and exception handling.
+- Use the modern C# already used in the project; do not introduce newer language
+  features unless the target framework and surrounding style clearly support them.
+- Do not reformat unrelated code or do mechanical cleanup outside the requested scope.

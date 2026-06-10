@@ -27,6 +27,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private const string FileDataReplayDriverName = "FileDataReplayDriver";
     private const string DataLogReplayProtocolName = "DataLogReplayProtocol";
     private const string SimulationDriverName = "SimulDataDriver";
+    private const string TcpClientDriverName = "TcpClientDriver";
 
     private readonly EventAggregator? eventAggregator;
     private readonly IModuleBase module;
@@ -166,6 +167,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         RemoveDriverCommand = new RelayCommand<object>(_ => RemoveDriver(), _ => SelectedDriver != null);
         AddProtocolCommand = new RelayCommand<object>(_ => AddProtocol(), _ => CanAddProtocol());
         RemoveProtocolCommand = new RelayCommand<object>(_ => RemoveProtocol(), _ => SelectedProtocol != null);
+        SelectDriverCommand = new RelayCommand<object>(SelectDriver);
         AddVariableCommand = new RelayCommand<object>(_ => AddVariable(), _ => CanAddVariable());
         RemoveVariableCommand = new RelayCommand<object>(_ => RemoveVariable(), _ => SelectedVariable != null);
         AddVariableToSourceCommand = new RelayCommand<object>(_ => AddVariableToSource(), _ => CanAddVariableToSource());
@@ -207,6 +209,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public RelayCommand<object> RemoveDriverCommand { get; }
     public RelayCommand<object> AddProtocolCommand { get; }
     public RelayCommand<object> RemoveProtocolCommand { get; }
+    public RelayCommand<object> SelectDriverCommand { get; }
     public RelayCommand<object> AddVariableCommand { get; }
     public RelayCommand<object> RemoveVariableCommand { get; }
     public RelayCommand<object> AddVariableToSourceCommand { get; }
@@ -780,6 +783,14 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         NotifyHasChangesChanged();
     }
 
+    private void SelectDriver(object? parameter)
+    {
+        if (parameter is ProjectConfigurationDriverWrapper driver)
+        {
+            SelectedDriver = driver;
+        }
+    }
+
     private IDriverBase CreateDriver(PluginDetails plugin)
     {
         var pluginLoader = new PluginLoader();
@@ -791,6 +802,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         driver.RawSettings = string.Empty;
         driver.RawEncryptedSettings = string.Empty;
         driver.IsEnabled = !driver.Specification.Name.Equals(FileDataReplayDriverName, StringComparison.OrdinalIgnoreCase);
+        if (driver is DriverBase driverBase && module is ModuleBase moduleBase)
+        {
+            driverBase.Logger = moduleBase.Logger;
+        }
 
         if (driver.Specification.Name.Equals(FileDataLoggerDriverName, StringComparison.OrdinalIgnoreCase))
         {
@@ -805,6 +820,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         else if (driver.Specification.Name.Equals(SimulationDriverName, StringComparison.OrdinalIgnoreCase))
         {
             driver.RawSettings = "periodes=20";
+        }
+        else if (driver.Specification.Name.Equals(TcpClientDriverName, StringComparison.OrdinalIgnoreCase))
+        {
+            driver.RawSettings = "ip=127.0.0.1;port=5000;connectionTimeoutMs=5000;reconnectTimeMs=1000;numberOfReconnections=3";
         }
 
         driver.SetConfiguration();

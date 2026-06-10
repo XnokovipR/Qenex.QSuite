@@ -15,7 +15,9 @@ public class DataLogReplayProtocolVariableSpecification : ProtVariableSpecificat
     {
         return new DataLogReplayProtocolVariableSpecification
         {
-            CommParams = commParams
+            CommParams = commParams.Contains("commParams=", StringComparison.OrdinalIgnoreCase)
+                ? string.Empty
+                : commParams
         };
     }
 }

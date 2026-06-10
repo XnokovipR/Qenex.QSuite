@@ -9,6 +9,7 @@ using Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QInsight.Views;
 using Qenex.QSuite.Controls.Control;
+using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
@@ -34,12 +35,14 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
 
         IVariableBase variable;
         IProtocolVariable? protocolVariable = null;
-        if (source.DataContext is ProtocolVariableWrapper protocolVariableWrapper)
+        /*if (source.DataContext is ProtocolVariableWrapper protocolVariableWrapper)
         {
             protocolVariable = protocolVariableWrapper.ProtocolVariable;
             variable = protocolVariable.Variable;
         }
-        else if (source.DataContext is VariableSeWrapper varWrapper)
+        else */
+        // only variables can be dragged 
+        if (source.DataContext is VariableSeWrapper varWrapper)
         {
             variable = varWrapper.Variable;
         }
@@ -50,6 +53,11 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
 
         if (sender is not RadTreeView treeView) return;
         if (treeView.DataContext is not SolutionExplorerViewModel vm) return;
+
+        if (protocolVariable != null && IsNonLiveSourceProtocolVariable(vm.ProjectModules, protocolVariable))
+        {
+            protocolVariable = null;
+        }
 
         protocolVariable ??= FindProtocolVariable(vm.ProjectModules, variable);
         if (protocolVariable == null)
@@ -131,15 +139,27 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
 
     private static IProtocolVariable? FindProtocolVariable(IEnumerable<IViewableItem> items, IVariableBase variable)
     {
+        return FindProtocolVariable(items, variable, false);
+    }
+
+    private static IProtocolVariable? FindProtocolVariable(
+        IEnumerable<IViewableItem> items,
+        IVariableBase variable,
+        bool isNonLiveSourceDriverBranch)
+    {
         foreach (var item in items)
         {
-            if (item is ProtocolVariableWrapper protocolVariableWrapper
+            var nextIsNonLiveSourceDriverBranch = isNonLiveSourceDriverBranch
+                                                  || item is DriverSeWrapper { Driver: IProtocolVariableSinkDriver or IReplayDriver };
+
+            if (!nextIsNonLiveSourceDriverBranch
+                && item is ProtocolVariableWrapper protocolVariableWrapper
                 && IsSameVariable(protocolVariableWrapper.ProtocolVariable.Variable, variable))
             {
                 return protocolVariableWrapper.ProtocolVariable;
             }
 
-            var protocolVariable = FindProtocolVariable(item.Children, variable);
+            var protocolVariable = FindProtocolVariable(item.Children, variable, nextIsNonLiveSourceDriverBranch);
             if (protocolVariable != null)
             {
                 return protocolVariable;
@@ -147,6 +167,36 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         }
 
         return null;
+    }
+
+    private static bool IsNonLiveSourceProtocolVariable(IEnumerable<IViewableItem> items, IProtocolVariable protocolVariable)
+    {
+        return IsNonLiveSourceProtocolVariable(items, protocolVariable, false);
+    }
+
+    private static bool IsNonLiveSourceProtocolVariable(
+        IEnumerable<IViewableItem> items,
+        IProtocolVariable protocolVariable,
+        bool isNonLiveSourceDriverBranch)
+    {
+        foreach (var item in items)
+        {
+            var nextIsNonLiveSourceDriverBranch = isNonLiveSourceDriverBranch
+                                                  || item is DriverSeWrapper { Driver: IProtocolVariableSinkDriver or IReplayDriver };
+
+            if (item is ProtocolVariableWrapper protocolVariableWrapper
+                && ReferenceEquals(protocolVariableWrapper.ProtocolVariable, protocolVariable))
+            {
+                return nextIsNonLiveSourceDriverBranch;
+            }
+
+            if (IsNonLiveSourceProtocolVariable(item.Children, protocolVariable, nextIsNonLiveSourceDriverBranch))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool IsSameVariable(IVariableBase left, IVariableBase right)

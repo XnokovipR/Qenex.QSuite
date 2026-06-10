@@ -13,6 +13,8 @@ namespace Qenex.QSuite.Controls.Control;
 [DataContract]
 public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlBase
 {
+	private bool isRun;
+
 	protected ControlBase()
 	{
 		Width = MinWidth;
@@ -86,7 +88,31 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 	}
 	
 	[DataMember]
-	public bool IsRun { get; set { field = value; OnPropertyChanged(); } }
+	public bool IsRun
+	{
+		get => isRun;
+		set
+		{
+			if (isRun == value)
+			{
+				return;
+			}
+
+			var wasRun = isRun;
+			isRun = value;
+			OnPropertyChanged();
+			OnIsRunChanged(wasRun, isRun);
+
+			if (!wasRun && isRun)
+			{
+				OnEditToRun();
+			}
+			else if (wasRun && !isRun)
+			{
+				OnRunToEdit();
+			}
+		}
+	}
 	[IgnoreDataMember]
 	public ObservableCollection<IVariableBase> Variables { get; set { field = value; OnPropertyChanged(); } }
 
@@ -118,6 +144,18 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 
 	public abstract Task UpdateVariableValueAsync(IVariableBase variable);
 	public abstract void BindVariable(IVariableBase protVariable);
+
+	protected virtual void OnIsRunChanged(bool wasRun, bool isRun)
+	{
+	}
+
+	protected virtual void OnEditToRun()
+	{
+	}
+
+	protected virtual void OnRunToEdit()
+	{
+	}
 
 	public virtual void RefreshVariableBinding(IVariableBase variable)
 	{

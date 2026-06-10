@@ -115,6 +115,12 @@
     <Resource Include="Icons\Menu\SaveProject.png" />
     <None Remove="Icons\Menu\SaveProjectAs.png" />
     <Resource Include="Icons\Menu\SaveProjectAs.png" />
+    <None Remove="Icons\Menu\SaveLayout.png" />
+    <Resource Include="Icons\Menu\SaveLayout.png" />
+    <None Remove="Icons\Menu\Theme.png" />
+    <Resource Include="Icons\Menu\Theme.png" />
+    <None Remove="Icons\Menu\GeneralPreferences.png" />
+    <Resource Include="Icons\Menu\GeneralPreferences.png" />
   </ItemGroup>
 
   <ItemGroup>
