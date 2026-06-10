@@ -18,6 +18,7 @@ public abstract class ModuleBase : IModuleBase
 {
     private readonly List<(IProtocolVariable ProtocolVariable, Func<IProtocolVariable, Task> Handler)> onValueChangedScriptSubscriptions = [];
     private readonly List<(IProtocolVariable ProtocolVariable, Func<IProtocolVariable, Task> Handler)> protocolVariableSinkSubscriptions = [];
+    private readonly List<(IProtocolVariable ProtocolVariable, Func<IProtocolVariable, Task> Handler)> protocolVariableCommandSubscriptions = [];
 
     #region Constructors
 
@@ -259,6 +260,7 @@ public abstract class ModuleBase : IModuleBase
 
         await Task.WhenAll(sinkDrivers.Select(driver => driver.StartAsync(ct)));
         SubscribeProtocolVariableSinkDrivers(sourceDrivers, sinkDrivers);
+        SubscribeProtocolVariableCommandDrivers(sourceDrivers, ct);
         await Task.WhenAll(sourceDrivers.Select(driver => driver.StartAsync(ct)));
     }
 
@@ -275,6 +277,7 @@ public abstract class ModuleBase : IModuleBase
 
         Scripting.RequestStop();
         await Task.WhenAll(sourceDrivers.Select(driver => driver.StopAsync(ct)));
+        UnsubscribeProtocolVariableCommandDrivers();
         UnsubscribeProtocolVariableSinkDrivers();
         await Task.WhenAll(sinkDrivers.Select(driver => driver.StopAsync(ct)));
         await Scripting.DisposeSharedScopeAsync(ct);
@@ -363,6 +366,54 @@ public abstract class ModuleBase : IModuleBase
         }
 
         protocolVariableSinkSubscriptions.Clear();
+    }
+
+    private void SubscribeProtocolVariableCommandDrivers(IEnumerable<IDriverBase> sourceDrivers, CancellationToken ct)
+    {
+        UnsubscribeProtocolVariableCommandDrivers();
+
+        foreach (var driver in sourceDrivers)
+        {
+            if (driver is not IProtocolVariableCommandDriver commandDriver)
+            {
+                continue;
+            }
+
+            var commandVariables = driver
+                .Protocols
+                .SelectMany(protocol => protocol.Variables)
+                .Where(protocolVariable => protocolVariable.IsCommunicated)
+                .Where(commandDriver.CanSendCommand)
+                .ToList();
+
+            foreach (var protocolVariable in commandVariables)
+            {
+                Func<IProtocolVariable, Task> handler = async changedProtocolVariable =>
+                {
+                    try
+                    {
+                        await commandDriver.OnProtocolVariableCommandAsync(changedProtocolVariable, ct);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger?.Log(LogLevel.Warn, $"Protocol variable command could not be sent: {e.Message}", e);
+                    }
+                };
+
+                protocolVariable.SubscribeAsyncValueChanged(handler);
+                protocolVariableCommandSubscriptions.Add((protocolVariable, handler));
+            }
+        }
+    }
+
+    private void UnsubscribeProtocolVariableCommandDrivers()
+    {
+        foreach (var subscription in protocolVariableCommandSubscriptions)
+        {
+            subscription.ProtocolVariable.UnsubscribeAsyncValueChanged(subscription.Handler);
+        }
+
+        protocolVariableCommandSubscriptions.Clear();
     }
     
 }

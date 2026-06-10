@@ -28,6 +28,7 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
     private string commParam;
     private bool isCommunicated;
     private bool isFileLogEnabled;
+    private Dictionary<string, string> additionalCommParameters = new(StringComparer.OrdinalIgnoreCase);
     private string selectedVariableEventName = string.Empty;
     private CommDirection selectedDirection = CommDirection.Read;
     private int multiplier = 1;
@@ -351,6 +352,9 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
         communicationId = parameters.TryGetValue("id", out var id)
             ? id
             : string.Empty;
+        additionalCommParameters = parameters
+            .Where(parameter => !IsKnownCommunicationField(parameter.Key))
+            .ToDictionary(parameter => parameter.Key, parameter => parameter.Value, StringComparer.OrdinalIgnoreCase);
 
         OnPropertyChanged(nameof(SelectedVariableEventName));
         OnPropertyChanged(nameof(SelectedDirection));
@@ -372,8 +376,17 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
 
         parameters.Add($"multiplier=\"{Multiplier}\"");
         parameters.Add($"id=\"{CommunicationId}\"");
+        parameters.AddRange(additionalCommParameters.Select(parameter => $"{parameter.Key}=\"{parameter.Value}\""));
         commParam = string.Join(";", parameters);
         OnPropertyChanged(nameof(CommParam));
+    }
+
+    private static bool IsKnownCommunicationField(string name)
+    {
+        return name.Equals("direction", StringComparison.OrdinalIgnoreCase)
+               || name.Equals("eventRef", StringComparison.OrdinalIgnoreCase)
+               || name.Equals("multiplier", StringComparison.OrdinalIgnoreCase)
+               || name.Equals("id", StringComparison.OrdinalIgnoreCase);
     }
 }
 
@@ -394,6 +407,8 @@ public sealed record ProjectConfigurationProtocolOption(
 
 public static class ProjectConfigurationProtocolVariableFactory
 {
+    private const string PiZeroJsonProtocolName = "PiZeroJsonProtocol";
+
     public static IProtocolVariable CreateProtocolVariable(
         IProtocolBase protocol,
         IVariableBase variable,
@@ -474,6 +489,19 @@ public static class ProjectConfigurationProtocolVariableFactory
         parameters.Add("multiplier=\"1\"");
         parameters.Add($"id=\"{variable.Name}\"");
         return string.Join(";", parameters);
+    }
+
+    public static string CreateDefaultCommParam(IProtocolBase protocol, IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
+    {
+        if (protocol.Specification.Name.Equals(PiZeroJsonProtocolName, StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Join(";",
+                "direction=\"read\"",
+                "multiplier=\"1\"",
+                $"id=\"{variable.Name}\"");
+        }
+
+        return CreateDefaultCommParam(variable, variableEvents);
     }
 
     public static Dictionary<string, string> ParseCommParam(string commParam)

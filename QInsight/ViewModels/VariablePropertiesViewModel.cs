@@ -83,6 +83,7 @@ public class VariablePropertiesViewModel : PropertyChangedBaseWithValidation, IP
 
         if (variable is ScalarVariable scalarVariable)
         {
+            properties.Add(Create("Values", "Value", () => scalarVariable.Values.GetValue(), SetVariableValue, getIsReadOnly: IsValueReadOnly));
             properties.Add(Create("Scalar", "Size", () => scalarVariable.Size, value => scalarVariable.Size = Parse<int>(value)));
             properties.Add(Create(
                 "Values",
@@ -99,6 +100,10 @@ public class VariablePropertiesViewModel : PropertyChangedBaseWithValidation, IP
                 value => SetPresentation(scalarVariable, value),
                 presentations.Select(presentation => presentation.Name).Prepend(string.Empty)));
         }
+        else if (variable is StringVariable stringVariable)
+        {
+            properties.Add(Create("Values", "Value", () => stringVariable.Values, SetVariableValue, getIsReadOnly: IsValueReadOnly));
+        }
 
         return properties;
     }
@@ -108,14 +113,41 @@ public class VariablePropertiesViewModel : PropertyChangedBaseWithValidation, IP
         string name,
         Func<object?> getValue,
         Action<string> setValue,
-        IEnumerable<string>? options = null)
+        IEnumerable<string>? options = null,
+        Func<bool>? getIsReadOnly = null)
     {
-        return new EditablePropertyWrapper(group, name, getValue, setValue, RefreshVariableProperties, options, IsPropertyReadOnly);
+        return new EditablePropertyWrapper(group, name, getValue, setValue, RefreshVariableProperties, options, getIsReadOnly ?? IsPropertyReadOnly);
     }
 
     private bool IsPropertyReadOnly()
     {
         return isReadOnly || !getIsEditVariableEnabled();
+    }
+
+    private bool IsValueReadOnly()
+    {
+        if (protocolVariable == null)
+        {
+            return IsPropertyReadOnly();
+        }
+
+        return !IsProtocolVariableWriteEnabled();
+    }
+
+    private bool IsProtocolVariableWriteEnabled()
+    {
+        if (protocolVariable == null)
+        {
+            return false;
+        }
+
+        var directionProperty = protocolVariable.ProtocolVariableSpecification.GetType().GetProperty("Direction");
+        if (directionProperty?.GetValue(protocolVariable.ProtocolVariableSpecification) is not CommDirection direction)
+        {
+            return false;
+        }
+
+        return direction is CommDirection.Write or CommDirection.ReadWrite;
     }
 
     private void RefreshVariableProperties()
