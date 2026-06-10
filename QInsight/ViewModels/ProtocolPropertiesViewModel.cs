@@ -21,6 +21,7 @@ public class ProtocolPropertiesViewModel : PropertyChangedBaseWithValidation, IP
     public string Company => protocol.Specification.Company ?? string.Empty;
     public string CreatedOn => protocol.Specification.CreatedOn.ToString("yyyy/MM/dd");
     public bool IsEnabled => protocol.IsEnabled;
-    public bool IsStarted => protocol.IsStarted;
+    public string State => protocol.State.ToString();
+    public string StateMessage => protocol.StateMessage ?? string.Empty;
     public int VariableCount => protocol.Variables.Count;
 }

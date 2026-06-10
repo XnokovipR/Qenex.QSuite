@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Specifications.Specification;
@@ -46,14 +47,20 @@ public class ZeroMqClientDriver : DriverBase
 
     public override async Task StartAsync(CancellationToken ct = default)
     {
-        if (!IsEnabled) return;
+        if (!IsEnabled)
+        {
+            SetState(CommunicationState.Disabled);
+            return;
+        }
         
+        SetState(CommunicationState.Starting);
         exitRequested = false;
         await RunLoopAsync(ct);
     }
 
     public override Task StopAsync(CancellationToken ct = default)
     {
+        SetState(CommunicationState.Stopping);
         exitRequested = true;
         return Task.CompletedTask;
     }
@@ -85,7 +92,7 @@ public class ZeroMqClientDriver : DriverBase
     {
         await Task.Run(async () =>
         {
-            IsStarted = true;
+            SetState(CommunicationState.Running);
             while (!ct.IsCancellationRequested && !exitRequested)
             {
                 // Do something
@@ -94,7 +101,7 @@ public class ZeroMqClientDriver : DriverBase
                 //RaiseOnDataReceive("ddd");
             }
             
-            IsStarted = false;
+            SetState(CommunicationState.Stopped);
         }, ct);
         exitRequested = false;
     }

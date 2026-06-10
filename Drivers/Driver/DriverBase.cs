@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
@@ -31,7 +32,9 @@ public abstract class DriverBase : IDriverBase
     public string RawEncryptedSettings { get; set; } = string.Empty;
     public bool IsEnabled { get; set; }
     
-    public bool IsStarted { get; protected set; } = false;
+    public CommunicationState State { get; private set; } = CommunicationState.Stopped;
+    public string? StateMessage { get; private set; }
+    public event EventHandler<CommunicationStateChangedEventArgs>? StateChanged;
     
     public ISpecification Specification { get; init; } = null!;
     
@@ -40,6 +43,19 @@ public abstract class DriverBase : IDriverBase
     #endregion
 
     public abstract void SetConfiguration();
+
+    protected void SetState(CommunicationState state, string? message = null)
+    {
+        if (State == state && StateMessage == message)
+        {
+            return;
+        }
+
+        var previousState = State;
+        State = state;
+        StateMessage = message;
+        StateChanged?.Invoke(this, new CommunicationStateChangedEventArgs(previousState, state, message));
+    }
 
     #region Protocols
 

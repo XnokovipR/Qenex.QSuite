@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reflection;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
 using Qenex.QSuite.Variables.QVariables;
@@ -53,13 +54,13 @@ public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
 
     public override Task StartAsync(CancellationToken ct = default)
     {
-        IsStarted = IsEnabled;
+        SetState(IsEnabled ? CommunicationState.Running : CommunicationState.Disabled);
         return Task.CompletedTask;
     }
 
     public override Task StopAsync(CancellationToken ct = default)
     {
-        IsStarted = false;
+        SetState(CommunicationState.Stopped);
         return Task.CompletedTask;
     }
 
@@ -69,7 +70,7 @@ public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
 
     public override Task AddReceivedDataToQueueAsync(IEnumerable<DataLogRecord> data, CancellationToken ct = default)
     {
-        return IsStarted ? ProcessReceivedDataAsync(data, ct) : Task.CompletedTask;
+        return State == CommunicationState.Running ? ProcessReceivedDataAsync(data, ct) : Task.CompletedTask;
     }
 
     protected override void ProcessReceivedData(IEnumerable<DataLogRecord> data)

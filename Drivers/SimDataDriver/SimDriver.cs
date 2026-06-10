@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
@@ -63,13 +64,20 @@ public class SimDriver : DriverBase
 
     public override async Task StartAsync(CancellationToken ct = default)
     {
-        if (!IsEnabled) return;
+        if (!IsEnabled)
+        {
+            SetState(CommunicationState.Disabled);
+            return;
+        }
+
+        SetState(CommunicationState.Starting);
         exitRequested = false;
         _ = RunLoopAsync(ct);
     }
 
     public override Task StopAsync(CancellationToken ct = default)
     {
+        SetState(CommunicationState.Stopping);
         exitRequested = true;
         return Task.CompletedTask;
     }
@@ -124,7 +132,7 @@ public class SimDriver : DriverBase
                 _ = protocol.StartAsync(ct);
             }
             
-            IsStarted = true;
+            SetState(CommunicationState.Running);
             while (!ct.IsCancellationRequested && !exitRequested)
             {
                 await ProcessReceivedDataAsync(receivedVariables, ct);
@@ -136,7 +144,7 @@ public class SimDriver : DriverBase
                 _ = protocol.StopAsync(ct);
             }
             
-            IsStarted = false;
+            SetState(CommunicationState.Stopped);
         }, ct);
         exitRequested = false;
     } 

@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using NetMQ;
 using NetMQ.Sockets;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Specifications.Specification;
@@ -52,10 +53,15 @@ public class ZeroMqServerDriver : DriverBase
 
     public override async Task StartAsync(CancellationToken ct = default)
     {
-        if (!IsEnabled) return;
+        if (!IsEnabled)
+        {
+            SetState(CommunicationState.Disabled);
+            return;
+        }
 
         try
         {
+            SetState(CommunicationState.Starting);
             sendSocket = new ResponseSocket();
             
             receiveSocket = new RequestSocket();
@@ -70,6 +76,7 @@ public class ZeroMqServerDriver : DriverBase
         }
         catch (Exception e)
         {
+            SetState(CommunicationState.Faulted, e.Message);
             Logger?.Log(LogLevel.Error, "ZeroMqServerDriver failed to start.", e);
         }
     }
@@ -78,10 +85,13 @@ public class ZeroMqServerDriver : DriverBase
     {
         try
         {
+            SetState(CommunicationState.Stopping);
             poller.Stop();
+            SetState(CommunicationState.Stopped);
         }
         catch (Exception e)
         {
+            SetState(CommunicationState.Faulted, e.Message);
             Logger?.Log(LogLevel.Error, "ZeroMqServerDriver failed to stop.", e);
         }
         
@@ -116,11 +126,11 @@ public class ZeroMqServerDriver : DriverBase
     {
         await Task.Run(() =>
         {
-            IsStarted = true;
+            SetState(CommunicationState.Running);
 
             poller.Run();
             
-            IsStarted = false;
+            SetState(CommunicationState.Stopped);
         }, ct);
     }
 

@@ -21,7 +21,8 @@ public class DriverPropertiesViewModel : PropertyChangedBaseWithValidation, IPro
     public string Company => driver.Specification.Company ?? string.Empty;
     public string CreatedOn => driver.Specification.CreatedOn.ToString("yyyy/MM/dd");
     public bool IsEnabled => driver.IsEnabled;
-    public bool IsStarted => driver.IsStarted;
+    public string State => driver.State.ToString();
+    public string StateMessage => driver.StateMessage ?? string.Empty;
     public int ProtocolCount => driver.Protocols.Count;
 
     public void RefreshDriver()
@@ -34,7 +35,8 @@ public class DriverPropertiesViewModel : PropertyChangedBaseWithValidation, IPro
         OnPropertyChanged(nameof(Company));
         OnPropertyChanged(nameof(CreatedOn));
         OnPropertyChanged(nameof(IsEnabled));
-        OnPropertyChanged(nameof(IsStarted));
+        OnPropertyChanged(nameof(State));
+        OnPropertyChanged(nameof(StateMessage));
         OnPropertyChanged(nameof(ProtocolCount));
     }
 }

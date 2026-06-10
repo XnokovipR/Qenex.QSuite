@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using MessagePack;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
@@ -132,9 +133,11 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
     {
         if (!IsEnabled)
         {
+            SetState(CommunicationState.Disabled);
             return Task.CompletedTask;
         }
 
+        SetState(CommunicationState.Starting);
         foreach (var protocol in Protocols)
         {
             _ = protocol.StartAsync(ct);
@@ -148,6 +151,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
 
     public override async Task StopAsync(CancellationToken ct = default)
     {
+        SetState(CommunicationState.Stopping);
         Resume();
         replayCancellation?.Cancel();
         if (replayTask != null)
@@ -197,7 +201,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
     {
         lock (replayStateLock)
         {
-            if (!IsStarted || isPaused)
+            if (State != CommunicationState.Running || isPaused)
             {
                 return;
             }
@@ -323,7 +327,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
 
     private async Task RunReplayAsync(CancellationToken ct)
     {
-        IsStarted = true;
+        SetState(CommunicationState.Running);
         var completedNaturally = false;
         try
         {
@@ -351,7 +355,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
         }
         finally
         {
-            IsStarted = false;
+            SetState(CommunicationState.Stopped);
         }
 
         if (!completedNaturally)
@@ -459,7 +463,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
     {
         lock (replayStateLock)
         {
-            if (!IsStarted && replayRecordIndex == 0)
+            if (State != CommunicationState.Running && replayRecordIndex == 0)
             {
                 replayRecords = replayRecords
                     .OrderBy(GetRecordTimestampUtcTicks)
@@ -469,7 +473,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
             if (replayRecords.Count > 0)
             {
                 replayFirstTimestampUtcTicks = GetRecordTimestampUtcTicks(replayRecords[0]);
-                if (!IsStarted && replayRecordIndex == 0)
+                if (State != CommunicationState.Running && replayRecordIndex == 0)
                 {
                     replayCurrentTimestampUtcTicks = replayFirstTimestampUtcTicks;
                     CurrentTime = TimeSpan.Zero;

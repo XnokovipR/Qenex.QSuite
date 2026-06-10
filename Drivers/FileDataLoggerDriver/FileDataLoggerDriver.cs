@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using MessagePack;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
@@ -76,7 +77,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 
     public async Task OnProtocolVariableValueChangedAsync(IProtocolVariable sourceVariable)
     {
-        if (!IsStarted || logStream == null)
+        if (State != CommunicationState.Running || logStream == null)
         {
             return;
         }
@@ -105,8 +106,13 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 
     public override Task StartAsync(CancellationToken ct = default)
     {
-        if (!IsEnabled) return Task.CompletedTask;
+        if (!IsEnabled)
+        {
+            SetState(CommunicationState.Disabled);
+            return Task.CompletedTask;
+        }
 
+        SetState(CommunicationState.Starting);
         var timestampedLogFilePath = CreateTimestampedLogFilePath(logFilePath, DataLogFileName, DateTime.Now);
         var directory = Path.GetDirectoryName(timestampedLogFilePath);
         if (!string.IsNullOrWhiteSpace(directory))
@@ -121,12 +127,13 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             FileShare.Read,
             bufferSize: 4096,
             useAsync: true);
-        IsStarted = true;
+        SetState(CommunicationState.Running);
         return Task.CompletedTask;
     }
 
     public override async Task StopAsync(CancellationToken ct = default)
     {
+        SetState(CommunicationState.Stopping);
         if (logStream != null)
         {
             await fileLock.WaitAsync(ct);
@@ -142,7 +149,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             }
         }
 
-        IsStarted = false;
+        SetState(CommunicationState.Stopped);
     }
 
     public override void Dispose()

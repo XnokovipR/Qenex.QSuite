@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
@@ -73,13 +74,13 @@ public class PiZeroJsonProtocol : ProtocolBase<string>, IProtocolVariableCommand
     public override Task StartAsync(CancellationToken ct = default)
     {
         ResetRemoteTimestampMapping();
-        IsStarted = IsEnabled;
+        SetState(IsEnabled ? CommunicationState.Running : CommunicationState.Disabled);
         return Task.CompletedTask;
     }
 
     public override Task StopAsync(CancellationToken ct = default)
     {
-        IsStarted = false;
+        SetState(CommunicationState.Stopped);
         ResetRemoteTimestampMapping();
         return Task.CompletedTask;
     }
@@ -90,7 +91,7 @@ public class PiZeroJsonProtocol : ProtocolBase<string>, IProtocolVariableCommand
 
     public override Task AddReceivedDataToQueueAsync(IEnumerable<string> data, CancellationToken ct = default)
     {
-        return IsStarted ? ProcessReceivedDataAsync(data, ct) : Task.CompletedTask;
+        return State == CommunicationState.Running ? ProcessReceivedDataAsync(data, ct) : Task.CompletedTask;
     }
 
     public bool CanEncodeCommand(IProtocolVariable protocolVariable)

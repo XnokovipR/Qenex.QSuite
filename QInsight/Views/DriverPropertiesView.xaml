@@ -26,6 +26,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <q:QTextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,10,5" Text="Label" FontWeight="SemiBold" />
@@ -44,9 +45,11 @@
         <q:QTextBlock Grid.Row="6" Grid.Column="1" Margin="0,0,0,5" Text="{Binding CreatedOn}" TextWrapping="Wrap" />
         <q:QTextBlock Grid.Row="7" Grid.Column="0" Margin="0,0,10,5" Text="Enabled" FontWeight="SemiBold" />
         <q:QTextBlock Grid.Row="7" Grid.Column="1" Margin="0,0,0,5" Text="{Binding IsEnabled}" TextWrapping="Wrap" />
-        <q:QTextBlock Grid.Row="8" Grid.Column="0" Margin="0,0,10,5" Text="Started" FontWeight="SemiBold" />
-        <q:QTextBlock Grid.Row="8" Grid.Column="1" Margin="0,0,0,5" Text="{Binding IsStarted}" TextWrapping="Wrap" />
-        <q:QTextBlock Grid.Row="9" Grid.Column="0" Margin="0,0,10,0" Text="Protocols" FontWeight="SemiBold" />
-        <q:QTextBlock Grid.Row="9" Grid.Column="1" Text="{Binding ProtocolCount}" TextWrapping="Wrap" />
+        <q:QTextBlock Grid.Row="8" Grid.Column="0" Margin="0,0,10,5" Text="State" FontWeight="SemiBold" />
+        <q:QTextBlock Grid.Row="8" Grid.Column="1" Margin="0,0,0,5" Text="{Binding State}" TextWrapping="Wrap" />
+        <q:QTextBlock Grid.Row="9" Grid.Column="0" Margin="0,0,10,5" Text="Message" FontWeight="SemiBold" />
+        <q:QTextBlock Grid.Row="9" Grid.Column="1" Margin="0,0,0,5" Text="{Binding StateMessage}" TextWrapping="Wrap" />
+        <q:QTextBlock Grid.Row="10" Grid.Column="0" Margin="0,0,10,0" Text="Protocols" FontWeight="SemiBold" />
+        <q:QTextBlock Grid.Row="10" Grid.Column="1" Text="{Binding ProtocolCount}" TextWrapping="Wrap" />
     </Grid>
 </UserControl>

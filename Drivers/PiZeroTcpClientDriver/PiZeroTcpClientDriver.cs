@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
@@ -62,11 +63,18 @@ public class PiZeroTcpClientDriver : DriverBase, IProtocolVariableCommandDriver
 
     public override Task StartAsync(CancellationToken ct = default)
     {
-        if (!IsEnabled || runTask is { IsCompleted: false })
+        if (!IsEnabled)
+        {
+            SetState(CommunicationState.Disabled);
+            return Task.CompletedTask;
+        }
+
+        if (runTask is { IsCompleted: false })
         {
             return Task.CompletedTask;
         }
 
+        SetState(CommunicationState.Starting);
         driverCancellation?.Dispose();
         driverCancellation = CancellationTokenSource.CreateLinkedTokenSource(ct);
         runTask = RunLoopAsync(driverCancellation.Token);
@@ -75,6 +83,7 @@ public class PiZeroTcpClientDriver : DriverBase, IProtocolVariableCommandDriver
 
     public override async Task StopAsync(CancellationToken ct = default)
     {
+        SetState(CommunicationState.Stopping);
         driverCancellation?.Cancel();
         CloseConnection();
 
@@ -97,7 +106,7 @@ public class PiZeroTcpClientDriver : DriverBase, IProtocolVariableCommandDriver
         runTask = null;
         driverCancellation?.Dispose();
         driverCancellation = null;
-        IsStarted = false;
+        SetState(CommunicationState.Stopped);
     }
 
     public override void Dispose()
@@ -176,7 +185,7 @@ public class PiZeroTcpClientDriver : DriverBase, IProtocolVariableCommandDriver
                     await protocol.StartAsync(ct);
                 }
 
-                IsStarted = true;
+                SetState(CommunicationState.Running);
                 Logger?.Log(LogLevel.Info, $"Pi Zero TCP client connected to {host}:{port}.");
                 await ReadLoopAsync(ct);
             }
@@ -194,7 +203,7 @@ public class PiZeroTcpClientDriver : DriverBase, IProtocolVariableCommandDriver
             }
             finally
             {
-                IsStarted = false;
+                SetState(CommunicationState.Starting);
                 CloseConnection();
                 foreach (var protocol in Protocols)
                 {

@@ -26,7 +26,9 @@ public abstract class ProtocolBase<T> : IProtocolBase
     
     public bool IsEnabled { get; set; }
     
-    public bool IsStarted { get; protected set; } = false;
+    public CommunicationState State { get; private set; } = CommunicationState.Stopped;
+    public string? StateMessage { get; private set; }
+    public event EventHandler<CommunicationStateChangedEventArgs>? StateChanged;
     
     // ReSharper disable once MemberCanBePrivate.Global
     protected ILogger? Logger { get; set; }
@@ -43,6 +45,19 @@ public abstract class ProtocolBase<T> : IProtocolBase
 
     #region Configuration
     public abstract void SetConfiguration();
+
+    protected void SetState(CommunicationState state, string? message = null)
+    {
+        if (State == state && StateMessage == message)
+        {
+            return;
+        }
+
+        var previousState = State;
+        State = state;
+        StateMessage = message;
+        StateChanged?.Invoke(this, new CommunicationStateChangedEventArgs(previousState, state, message));
+    }
     
     #endregion
 

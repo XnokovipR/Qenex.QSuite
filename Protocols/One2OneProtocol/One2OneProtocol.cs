@@ -1,4 +1,5 @@
 using System.Reflection;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
 using Qenex.QSuite.Variables.QVariables;
@@ -64,13 +65,13 @@ public class One2OneProtocol : ProtocolBase<IProtocolVariable>, IProtocolVariabl
 
     public override Task StartAsync(CancellationToken ct = default)
     {
-        IsStarted = IsEnabled;
+        SetState(IsEnabled ? CommunicationState.Running : CommunicationState.Disabled);
         return Task.CompletedTask;
     }
 
     public override Task StopAsync(CancellationToken ct = default)
     {
-        IsStarted = false;
+        SetState(CommunicationState.Stopped);
         return Task.CompletedTask;
     }
 

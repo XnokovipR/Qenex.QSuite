@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Specifications.ComponentSpecification;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
@@ -44,7 +45,9 @@ public abstract class ModuleBase : IModuleBase
     
     public bool IsEnabled { get; set; } = false;
     
-    public bool IsStarted { get; set; } = false;
+    public CommunicationState State { get; private set; } = CommunicationState.Stopped;
+    public string? StateMessage { get; private set; }
+    public event EventHandler<CommunicationStateChangedEventArgs>? StateChanged;
     
     public ISpecification Specification { get; protected init; }
     
@@ -248,6 +251,7 @@ public abstract class ModuleBase : IModuleBase
 
     public virtual async Task StartAsync(CancellationToken ct = default)
     {
+        SetState(CommunicationState.Starting);
         await Scripting.InitializeSharedScopeAsync(Variables);
         SubscribeOnValueChangedScriptTriggers();
 
@@ -262,10 +266,12 @@ public abstract class ModuleBase : IModuleBase
         SubscribeProtocolVariableSinkDrivers(sourceDrivers, sinkDrivers);
         SubscribeProtocolVariableCommandDrivers(sourceDrivers, ct);
         await Task.WhenAll(sourceDrivers.Select(driver => driver.StartAsync(ct)));
+        SetState(CommunicationState.Running);
     }
 
     public virtual async Task StopAsync(CancellationToken ct = default)
     {
+        SetState(CommunicationState.Stopping);
         UnsubscribeOnValueChangedScriptTriggers();
 
         var sinkDrivers = Drivers
@@ -285,6 +291,8 @@ public abstract class ModuleBase : IModuleBase
         {
             Scripting = Scripting.CreateCleanContextForNextSession();
         }
+
+        SetState(CommunicationState.Stopped);
     }
 
     public virtual void Dispose()
@@ -296,6 +304,19 @@ public abstract class ModuleBase : IModuleBase
     }
 
     #endregion
+
+    protected void SetState(CommunicationState state, string? message = null)
+    {
+        if (State == state && StateMessage == message)
+        {
+            return;
+        }
+
+        var previousState = State;
+        State = state;
+        StateMessage = message;
+        StateChanged?.Invoke(this, new CommunicationStateChangedEventArgs(previousState, state, message));
+    }
 
     private void SubscribeOnValueChangedScriptTriggers()
     {

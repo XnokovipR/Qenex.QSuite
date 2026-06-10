@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Reflection;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
@@ -110,7 +111,13 @@ public class SimulDataProtocol : ProtocolBase<int>
 
     public override Task StartAsync(CancellationToken ct = default)
     {
-        if (!IsEnabled) return Task.CompletedTask;
+        if (!IsEnabled)
+        {
+            SetState(CommunicationState.Disabled);
+            return Task.CompletedTask;
+        }
+
+        SetState(CommunicationState.Starting);
         exitRequested = false;
         _ = RunLoopAsync(ct);
 
@@ -119,6 +126,7 @@ public class SimulDataProtocol : ProtocolBase<int>
 
     public override Task StopAsync(CancellationToken ct = default)
     {
+        SetState(CommunicationState.Stopping);
         exitRequested = true;
         return Task.CompletedTask;
     }
@@ -213,7 +221,7 @@ public class SimulDataProtocol : ProtocolBase<int>
     {
         _ = Task.Run(async () =>
         {
-            IsStarted = true;
+            SetState(CommunicationState.Running);
             while (!ct.IsCancellationRequested && !exitRequested)
             {
                 if (receivedDataQueue.Count > 0)
@@ -228,7 +236,7 @@ public class SimulDataProtocol : ProtocolBase<int>
 
             }
             
-            IsStarted = false;
+            SetState(CommunicationState.Stopped);
         }, ct);
         exitRequested = false;
 

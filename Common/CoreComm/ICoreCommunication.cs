@@ -6,7 +6,9 @@
 public interface ICoreCommunication : IDisposable
 {
     bool IsEnabled { get; set; }
-    bool IsStarted { get; }
+    CommunicationState State { get; }
+    string? StateMessage { get; }
+    event EventHandler<CommunicationStateChangedEventArgs>? StateChanged;
     
     Task StartAsync(CancellationToken cancellationToken = default);
     Task StopAsync(CancellationToken cancellationToken = default);
