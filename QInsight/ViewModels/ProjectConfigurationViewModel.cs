@@ -303,6 +303,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             }
 
             field = value;
+            ErrorMessage = string.Empty;
             OnPropertyChanged();
             RemoveVariableCommand?.OnCanExecuteChanged();
             AddVariableToSourceCommand?.OnCanExecuteChanged();
