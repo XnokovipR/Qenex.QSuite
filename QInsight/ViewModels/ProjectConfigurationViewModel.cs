@@ -1630,6 +1630,12 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         try
         {
             ErrorMessage = string.Empty;
+            if (addedVariables.Contains(SelectedVariable))
+            {
+                ErrorMessage = "Variable must be applied first. Click Apply to create the variable, then assign it to a driver/protocol.";
+                return;
+            }
+
             if (SelectedSourceOption.Protocol.Variables.Any(variable => variable.Variable.Id == SelectedVariable.Variable.Id))
             {
                 ErrorMessage = "Variable is already assigned to the selected source protocol.";
@@ -1662,7 +1668,9 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
     private bool CanAddVariableToSource()
     {
-        return SelectedVariable != null && SelectedSourceOption != null;
+        return SelectedVariable != null
+               && SelectedSourceOption != null
+               && !addedVariables.Contains(SelectedVariable);
     }
 
     private void RemoveCommunicatedVariable()
@@ -1936,6 +1944,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         RemoveProtocolCommand.OnCanExecuteChanged();
         AddVariableCommand.OnCanExecuteChanged();
         RemoveVariableCommand.OnCanExecuteChanged();
+        AddVariableToSourceCommand.OnCanExecuteChanged();
         RemoveConversionCommand.OnCanExecuteChanged();
         AddPresentationCommand.OnCanExecuteChanged();
         RemovePresentationCommand.OnCanExecuteChanged();
