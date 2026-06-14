@@ -165,6 +165,12 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 		}
 	}
 
+	/// <summary>
+	/// Public query for whether this control uses the given variable (runtime binding
+	/// or persisted reference). Used to prevent deleting a variable that is still in use.
+	/// </summary>
+	public bool IsVariableUsed(IVariableBase variable) => IsVariableBound(variable);
+
 	protected bool IsVariableBound(IVariableBase variable)
 	{
 		return FindBoundVariable(variable) != null

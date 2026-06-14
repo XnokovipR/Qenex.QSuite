@@ -1167,6 +1167,13 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             return;
         }
 
+        var usages = QueryVariableUsage(SelectedVariable.Variable);
+        if (usages.Count > 0)
+        {
+            ErrorMessage = BuildVariableInUseMessage(SelectedVariable, usages);
+            return;
+        }
+
         var variable = SelectedVariable;
         foreach (var communicatedVariable in CommunicatedVariables
                      .Where(communicatedVariable => communicatedVariable.Variable.Id == variable.Id)
@@ -1185,6 +1192,31 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
         SelectedVariable = Variables.FirstOrDefault();
         NotifyHasChangesChanged();
+    }
+
+    private List<VariableUsage> QueryVariableUsage(IVariableBase variable)
+    {
+        var query = new VariableUsageQuery { Variable = variable };
+        eventAggregator?.Publish(query);
+        return query.Usages;
+    }
+
+    private static string BuildVariableInUseMessage(
+        ProjectConfigurationVariableWrapper variable,
+        IReadOnlyCollection<VariableUsage> usages)
+    {
+        var workspaces = string.Join(
+            Environment.NewLine,
+            usages
+                .Select(usage => usage.WorkspaceName)
+                .Distinct()
+                .Select(name => $"  • {name}"));
+
+        return $"Variable '{variable.DisplayName}' cannot be deleted because it is still used in the following workspaces:"
+               + Environment.NewLine
+               + workspaces
+               + Environment.NewLine
+               + "Remove it from these workspaces first, then delete the variable.";
     }
 
     private int CreateUniqueVariableId()

@@ -52,6 +52,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
         {
 	        RefreshControlVariableBindings(msg.Variable);
         });
+        EventAggregator.SubscribeAction<VariableUsageQuery>(CollectVariableUsage);
     }
 
     #endregion
@@ -369,6 +370,21 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 	    {
 		    control.RefreshVariableBinding(variable);
 		    SynchronizeSavedVariableBindings(control);
+	    }
+    }
+
+    private void CollectVariableUsage(VariableUsageQuery query)
+    {
+	    foreach (var control in GetWorkspaceControls())
+	    {
+		    if (control.IsVariableUsed(query.Variable))
+		    {
+			    query.Usages.Add(new VariableUsage
+			    {
+				    WorkspaceName = WinTitle,
+				    ControlLabel = $"{control.Label} (Id {control.Id})"
+			    });
+		    }
 	    }
     }
 
