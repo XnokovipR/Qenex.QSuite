@@ -15,6 +15,7 @@ using Qenex.QLibs.QUI;
 using Qenex.QLibs.QUI.TelerikDocking;
 using Qenex.QLibs.QUI.Wpf;
 using Qenex.QSuite.Common.PluginManager;
+using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
@@ -233,7 +234,12 @@ public partial class ShellWindowModel
             pluginLoader = new PluginLoader(logger);
             driverPlugins = pluginLoader.GetPluginDetails<IDriverBase>("./Drivers");
             protocolPlugins = pluginLoader.GetPluginDetails<IProtocolBase>("./Protocols");
-            
+            // Controls se nacitaji dynamicky jako plugin (pilot: SignalControl); slozka nemusi existovat (napr. nic nezkopirovano)
+            controlPlugins = Directory.Exists("./Controls")
+                ? pluginLoader.GetPluginDetails<IControlBase>("./Controls")
+                : [];
+            controlsViewModel.SetControlPlugins(controlPlugins);
+
             // process app arguments
             var cmdArgs = Environment.GetCommandLineArgs();
             if (cmdArgs.Length == 2)

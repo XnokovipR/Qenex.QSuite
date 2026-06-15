@@ -2,6 +2,7 @@
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Specifications.ComponentSpecification;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
 
@@ -10,7 +11,7 @@ namespace Qenex.QSuite.Controls.Control;
 /// <summary>
 /// Base interface for all controls which are used in workspaces.
 /// </summary>
-public interface IControlBase
+public interface IControlBase : IComponentSpecification
 {
 
 	#region Properties

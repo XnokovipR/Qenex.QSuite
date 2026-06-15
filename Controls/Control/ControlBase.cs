@@ -4,7 +4,9 @@ using System.Runtime.Serialization;
 using Qenex.QLibs.QUI;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Reflection;
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Specifications.Specification;
 using Qenex.QSuite.Variables.QVariables;
 using Telerik.Windows.Controls;
 
@@ -25,7 +27,21 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 	}
 
 	#region Properties
-	
+
+	/// <summary>
+	/// Component specification used for plugin discovery (PluginLoader). Built lazily
+	/// from the control's own metadata so derived (abstract) members are available.
+	/// </summary>
+	[IgnoreDataMember]
+	public ISpecification Specification =>
+		field ??= new SpecificationBase
+		{
+			Name = ControlName,
+			Label = Label,
+			Description = Description,
+			Version = GetType().Assembly.GetName().Version ?? new Version(1, 0, 0, 0)
+		};
+
 	[DataMember]
 	public int Id { get; set; }
 	

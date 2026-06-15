@@ -13,8 +13,6 @@ using Qenex.QSuite.LogSystems.LogSystem;
 using Telerik.Windows.Controls;
 using Telerik.Windows.Controls.ColorEditor.ColorSchemas;
 using Telerik.Windows.Controls.Diagrams;
-using Qenex.QSuite.Controls.SignalControl.ViewModels;
-using Qenex.QSuite.Controls.SignalControl.Views;
 using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
@@ -167,12 +165,17 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
      public void AddControlToDiagram(IControlBase iControl, double x, double y)
      {
-	     var viewTypeName = iControl.GetType().AssemblyQualifiedName?.Replace("Model", string.Empty);
+	     var controlType = iControl.GetType();
+	     var viewTypeName = controlType.AssemblyQualifiedName?.Replace("Model", string.Empty);
 	     if (viewTypeName == null)
 	     {
 		     return;
 	     }
-	     var viewType = Type.GetType(viewTypeName);
+
+	     // Plugin controls (nactene pres Assembly.LoadFrom) nemusi byt dohledatelne pres Type.GetType,
+	     // proto fallback na assembly daneho controlu (View je ve stejne assembly jako ViewModel).
+	     var viewType = Type.GetType(viewTypeName)
+		     ?? controlType.Assembly.GetType(controlType.FullName!.Replace("Model", string.Empty));
 
 	     if (viewType == null)
 	     {

@@ -33,7 +33,8 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	private PluginLoader pluginLoader;
 	private List<PluginDetails> driverPlugins = null!;
 	private List<PluginDetails> protocolPlugins = null!;
-	
+	private List<PluginDetails> controlPlugins = null!;
+
 	// Project
 	private RealProjectData realProjectData;
 	private bool isProjectMade;

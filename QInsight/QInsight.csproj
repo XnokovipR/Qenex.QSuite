@@ -128,7 +128,7 @@
     <ProjectReference Include="..\Common\WpfComm\WpfComm.csproj" />
     <ProjectReference Include="..\Controls\DerivedWinControls\DerivedWinControls.csproj" />
     <ProjectReference Include="..\Controls\GraphControl\GraphControl.csproj" />
-    <ProjectReference Include="..\Controls\SignalControl\SignalControl.csproj" />
+    <!-- SignalControl se nacita dynamicky jako plugin ze slozky .\Controls (pilot), proto bez ProjectReference. -->
     <ProjectReference Include="..\Helpers\ProjectFile\ProjectFile.csproj" />
     <ProjectReference Include="..\LogSystems\LogSystem\LogSystem.csproj" />
     <ProjectReference Include="..\Modules\ModuleXmlHandler\ModuleXmlHandler.csproj" />

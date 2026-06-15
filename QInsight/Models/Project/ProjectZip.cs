@@ -1,10 +1,10 @@
 using System.IO;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Xml.Serialization;
 using Qenex.QLibs.XmlInOut;
-using Qenex.QSuite.Controls.GraphControl.ViewModels;
-using Qenex.QSuite.Controls.SignalControl.ViewModels;
+using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.ModuleXmlHandler;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
@@ -227,13 +227,28 @@ public class ProjectZip
         }
     }
 
+    // Known-types pro DataContract serializaci workspace. Controls se nacitaji jako pluginy,
+    // proto je zjistujeme dynamicky z prave nactenych assembly (vsechny ControlBase potomky)
+    // misto pevneho seznamu typeof(...). Plugin assembly jsou nactene jiz pri startu (toolbox).
     private static IEnumerable<Type> GetKnownControlTypes()
     {
-        return
-        [
-            typeof(GraphControlViewModel),
-            typeof(SignalControlViewModel)
-        ];
+        return AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(GetLoadableTypes)
+            .Where(type => typeof(ControlBase).IsAssignableFrom(type)
+                           && type is { IsClass: true, IsAbstract: false })
+            .ToList();
+    }
+
+    private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+    {
+        try
+        {
+            return assembly.GetTypes();
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            return ex.Types.Where(type => type != null)!;
+        }
     }
 
 }
