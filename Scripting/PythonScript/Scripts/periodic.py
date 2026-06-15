@@ -1,5 +1,5 @@
-oiltemp_val = OilTemp.Value
-oilpressure_val = OilPressure.Value
+oiltemp_val = OilTemp.RawValue
+oilpressure_val = OilPressure.RawValue
 
 with postgres_connection.cursor() as cursor:
 	insert_variable_value(cursor, oil_temp_id, oiltemp_val)

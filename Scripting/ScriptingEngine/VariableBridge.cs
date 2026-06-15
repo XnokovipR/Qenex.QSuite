@@ -8,11 +8,25 @@ public class VariableBridge(IVariableBase variable)
 {
     public string Name => variable.Name;
     public int Id => variable.Id;
-    public object Value
+
+    /// <summary>
+    /// Syrova hodnota z dratu (raw) - cteni i zapis. Drive se jmenovala Value;
+    /// prejmenovano kvuli jednoznacnosti vuci EngValue (viz value model Raw/Eng/Presentation).
+    /// </summary>
+    public object RawValue
     {
         get => variable.GetValue();
         set => variable.SetValue(ConvertValueForVariable(value));
     }
+
+    /// <summary>
+    /// Engineering hodnota = Conversion(raw). Pro skalarni promennou (Linear: raw*Mult+Offset,
+    /// jinak = raw); pro ostatni typy raw jako double. Zatim read-only (zapis pres inverzni
+    /// konverzi je soucasti budouciho zapisoveho smeru).
+    /// </summary>
+    public double EngValue => variable is ScalarVariable scalar
+        ? scalar.GetEngValue()
+        : ToDouble(variable.GetValue());
 
     public override string ToString() => variable.GetValue().ToString() ?? "null";
 
@@ -40,5 +54,18 @@ public class VariableBridge(IVariableBase variable)
         }
 
         return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+    }
+
+    private static double ToDouble(object? value)
+    {
+        if (value == null) return 0;
+        try
+        {
+            return Convert.ToDouble(value, CultureInfo.InvariantCulture);
+        }
+        catch
+        {
+            return 0;
+        }
     }
 }
