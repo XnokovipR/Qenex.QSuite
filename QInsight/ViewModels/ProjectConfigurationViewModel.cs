@@ -26,6 +26,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private const string FileDataLoggerDriverName = "FileDataLoggerDriver";
     private const string FileDataReplayDriverName = "FileDataReplayDriver";
     private const string DataLogReplayProtocolName = "DataLogReplayProtocol";
+    private const string SinkProtocolName = "One2OneProtocol";
     private const string SimulationDriverName = "SimulDataDriver";
     private const string TcpClientDriverName = "TcpClientDriver";
 
@@ -968,6 +969,38 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         replayDriver.AddProtocol(replayProtocol);
     }
 
+    // FileDataLogger potrebuje sink protokol (One2OneProtocol), do ktereho se pridavaji logovane
+    // promenne - bez nej se "Log to FileDataLogger" po Apply neulozi (a logovani nefunguje).
+    // Pridava se automaticky (analogicky k AddReplayProtocol u replay driveru); self-heal i pro
+    // drivery pridane drive bez sink protokolu.
+    private void EnsureSinkProtocol(IDriverBase fileLogDriver)
+    {
+        if (fileLogDriver.Protocols.Any(protocol => protocol is IProtocolVariableSinkProtocol))
+        {
+            return;
+        }
+
+        var sinkProtocolPlugin = protocolPlugins.FirstOrDefault(plugin =>
+            plugin.Name.Equals(SinkProtocolName, StringComparison.OrdinalIgnoreCase));
+        if (sinkProtocolPlugin == null)
+        {
+            return;
+        }
+
+        var pluginLoader = new PluginLoader();
+        var sinkProtocol = pluginLoader.LoadPlugin<IProtocolBase>(sinkProtocolPlugin.PathName);
+        if (sinkProtocol == null)
+        {
+            return;
+        }
+
+        sinkProtocol.IsEnabled = true;
+        sinkProtocol.RawSettings = string.Empty;
+        sinkProtocol.RawEncryptedSettings = string.Empty;
+        sinkProtocol.SetConfiguration();
+        fileLogDriver.AddProtocol(sinkProtocol);
+    }
+
     private int CreateUniqueDriverId()
     {
         var usedIds = Drivers
@@ -1731,6 +1764,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         var fileLogDriver = drivers.FirstOrDefault(IsFileLogDriver);
         if (fileLogDriver != null)
         {
+            EnsureSinkProtocol(fileLogDriver);
             SynchronizeSinkDriverVariables(fileLogDriver, loggedVariables);
         }
 

@@ -111,7 +111,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             SetState(CommunicationState.Disabled);
             return Task.CompletedTask;
         }
-        if (State != CommunicationState.Running) return Task.CompletedTask;
+        if (State == CommunicationState.Running) return Task.CompletedTask;
 
 
         SetState(CommunicationState.Starting);
