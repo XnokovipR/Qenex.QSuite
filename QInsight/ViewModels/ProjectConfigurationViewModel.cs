@@ -1629,11 +1629,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     {
         foreach (var communicatedVariable in CommunicatedVariables)
         {
-            if (IsRemovedScriptReference(communicatedVariable.SelectedScriptFileName, removedScript))
-            {
-                communicatedVariable.SelectedScriptFileName = string.Empty;
-                communicatedVariable.ScriptAdditionalInfo = string.Empty;
-            }
+            communicatedVariable.ClearTriggersForScript(removedScript.FileName, removedScript.OriginalFileName);
         }
     }
 
@@ -1743,7 +1739,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             SourceOptions,
             GetConfigurationVariableEvents(),
             Scripts,
-            onValueChangedScriptTriggers.FirstOrDefault(trigger => trigger.VariableId == protocolVariable.Variable.Id),
+            onValueChangedScriptTriggers.Where(trigger => trigger.VariableId == protocolVariable.Variable.Id),
             IsFileLogEnabled(protocolVariable.Variable),
             () => Events.Select(variableEvent => variableEvent.Name));
     }

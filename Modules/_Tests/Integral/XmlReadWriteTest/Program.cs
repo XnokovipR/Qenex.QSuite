@@ -10,6 +10,8 @@ using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.UnifModule;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.QVariables.Values;
+using Qenex.QSuite.Variables.ValueConversion;
+using Qenex.QSuite.Variables.ValuePresentation;
 using System.Xml.Serialization;
 
 namespace Qenex.QSuite.Modules.Tests.XmlReadWriteTest;
@@ -22,6 +24,7 @@ class Program
         try
         {
             await VerifyOnValueChangedScriptTriggerAsync();
+            await VerifyOnValueChangedTriggerModesAsync();
             VerifyVariableScriptReferenceXmlRoundTrip();
             VerifyScriptExecutionPropertiesXmlRoundTrip();
             
@@ -108,6 +111,151 @@ class Program
         context.AddOnValueChangedScriptTrigger(2, script.FileName, "threshold=0");
         await context.HandleVariableValueChangedAsync(stringVariable);
         Assert(executedCount == 1, "Non-numeric OnValueChanged values must be skipped.");
+    }
+
+    private static async Task VerifyOnValueChangedTriggerModesAsync()
+    {
+        // Above: hranove (edge) nad RAW. Threshold 50.
+        {
+            var (context, script, count) = CreateOnValueChangedContext();
+            context.AddOnValueChangedScriptTrigger(1, script.FileName, "mode=above;threshold=50");
+            var variable = new ScalarVariable { Id = 1, Name = "P", Values = new Values<int> { Value = 40 } };
+
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 0, "above: first sample only seeds the state.");
+
+            variable.SetValue(60);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 1, "above: crossing the threshold upwards fires once.");
+
+            variable.SetValue(70);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 1, "above: staying above must not refire (edge).");
+
+            variable.SetValue(30);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 1, "above: dropping below must not fire.");
+
+            variable.SetValue(55);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 2, "above: re-crossing fires again.");
+        }
+
+        // Below: hranove nad RAW. Threshold 10.
+        {
+            var (context, script, count) = CreateOnValueChangedContext();
+            context.AddOnValueChangedScriptTrigger(1, script.FileName, "mode=below;threshold=10");
+            var variable = new ScalarVariable { Id = 1, Name = "P", Values = new Values<int> { Value = 40 } };
+
+            await context.HandleVariableValueChangedAsync(variable);
+            variable.SetValue(5);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 1, "below: crossing the threshold downwards fires once.");
+
+            variable.SetValue(3);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 1, "below: staying below must not refire (edge).");
+
+            variable.SetValue(20);
+            await context.HandleVariableValueChangedAsync(variable);
+            variable.SetValue(8);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 2, "below: re-crossing fires again.");
+        }
+
+        // Above s hysterezi: threshold 50, hysteresis 10 -> vypina az pod 40.
+        {
+            var (context, script, count) = CreateOnValueChangedContext();
+            context.AddOnValueChangedScriptTrigger(1, script.FileName, "mode=above;threshold=50;hysteresis=10");
+            var variable = new ScalarVariable { Id = 1, Name = "P", Values = new Values<int> { Value = 40 } };
+
+            await context.HandleVariableValueChangedAsync(variable);
+            variable.SetValue(60);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 1, "hysteresis: crossing above fires once.");
+
+            variable.SetValue(45);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 1, "hysteresis: dip to 45 (above T-H=40) stays active, no refire.");
+
+            variable.SetValue(55);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 1, "hysteresis: bounce back to 55 must not refire (still armed).");
+
+            variable.SetValue(38);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 1, "hysteresis: dropping below T-H=40 releases without firing.");
+
+            variable.SetValue(52);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 2, "hysteresis: re-crossing above after release fires again.");
+        }
+
+        // Eng source: Linear konverze eng = raw + 5000; mez nad ENG (raw zustava maly).
+        {
+            var (context, script, count) = CreateOnValueChangedContext();
+            context.AddOnValueChangedScriptTrigger(1, script.FileName, "mode=above;threshold=5050;source=eng");
+            var variable = new ScalarVariable
+            {
+                Id = 1,
+                Name = "P",
+                Values = new Values<int>
+                {
+                    Value = 10,
+                    ValPresentation = new Presentation
+                    {
+                        Conversion = new LinearValConversion { Multiplier = 1, Offset = 5000 }
+                    }
+                }
+            };
+
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 0, "eng above: eng 5010 below threshold seeds only.");
+
+            variable.SetValue(60);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 1, "eng above: eng 5060 crosses 5050 (raw 60 alone would not).");
+        }
+
+        // Vice triggeru na jedne promenne: below 10 a soucasne above 55.
+        {
+            var (context, script, count) = CreateOnValueChangedContext();
+            context.AddOnValueChangedScriptTrigger(1, script.FileName, "mode=below;threshold=10");
+            context.AddOnValueChangedScriptTrigger(1, script.FileName, "mode=above;threshold=55");
+            var variable = new ScalarVariable { Id = 1, Name = "P", Values = new Values<int> { Value = 30 } };
+
+            await context.HandleVariableValueChangedAsync(variable);
+            variable.SetValue(5);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 1, "multi: below trigger fires.");
+
+            variable.SetValue(60);
+            await context.HandleVariableValueChangedAsync(variable);
+            Assert(count() == 2, "multi: above trigger fires independently.");
+        }
+    }
+
+    private static (ScriptingContext Context, IScriptBase Script, Func<int> ExecutedCount) CreateOnValueChangedContext()
+    {
+        var context = new ScriptingContext(new ScriptEngineSettings());
+        var script = new Qenex.QSuite.Scripting.PythonScript.PyScript
+        {
+            FileName = "trigger.py",
+            ExecutionMode = ScriptExecutionMode.OnValueChanged,
+            IsEnabled = true
+        };
+        context.AddScript(script);
+
+        var executedCount = 0;
+        context.ScriptExecuted += (_, e) =>
+        {
+            if (ReferenceEquals(e.Script, script))
+            {
+                executedCount++;
+            }
+        };
+
+        return (context, script, () => executedCount);
     }
 
     private static void VerifyVariableScriptReferenceXmlRoundTrip()

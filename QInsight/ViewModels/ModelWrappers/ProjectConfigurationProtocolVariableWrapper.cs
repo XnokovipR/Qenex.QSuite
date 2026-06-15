@@ -1,5 +1,7 @@
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Reflection;
+using System.Windows.Input;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Protocols.Protocol;
@@ -12,19 +14,18 @@ namespace Qenex.QInsight.ViewModels.ModelWrappers;
 
 public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
 {
-    private const string DefaultScriptAdditionalInfo = "threshold=1000.0";
+    private const string DefaultTriggerThreshold = "1000";
+    private const string DefaultTriggerHysteresis = "0";
     private readonly IEnumerable<ProjectConfigurationProtocolOption> sourceOptions;
     private readonly IEnumerable<IVarEvent> variableEvents;
     private readonly Func<IEnumerable<string>>? variableEventOptionsProvider;
     private readonly IEnumerable<ProjectConfigurationScriptWrapper> scripts;
-    private readonly OnValueChangedScriptTrigger? originalScriptTrigger;
     private ProjectConfigurationProtocolOption originalSource;
     private ProjectConfigurationProtocolOption selectedSource;
     private string originalCommParam;
     private bool originalIsCommunicated;
     private bool originalIsFileLogEnabled;
-    private string originalSelectedScriptFileName;
-    private string originalScriptAdditionalInfo;
+    private List<(string Script, string AdditionalInfo)> originalTriggers;
     private string commParam;
     private bool isCommunicated;
     private bool isFileLogEnabled;
@@ -33,8 +34,6 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
     private CommDirection selectedDirection = CommDirection.Read;
     private int multiplier = 1;
     private string communicationId = string.Empty;
-    private string selectedScriptFileName = string.Empty;
-    private string scriptAdditionalInfo = string.Empty;
 
     public ProjectConfigurationProtocolVariableWrapper(
         IProtocolVariable protocolVariable,
@@ -42,7 +41,7 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
         IEnumerable<ProjectConfigurationProtocolOption> sourceOptions,
         IEnumerable<IVarEvent> variableEvents,
         IEnumerable<ProjectConfigurationScriptWrapper> scripts,
-        OnValueChangedScriptTrigger? scriptTrigger,
+        IEnumerable<OnValueChangedScriptTrigger> scriptTriggers,
         bool isFileLogEnabled,
         Func<IEnumerable<string>>? variableEventOptionsProvider = null)
     {
@@ -53,17 +52,19 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
         this.variableEvents = variableEvents;
         this.variableEventOptionsProvider = variableEventOptionsProvider;
         this.scripts = scripts;
-        originalScriptTrigger = scriptTrigger;
         originalCommParam = ProjectConfigurationProtocolVariableFactory.GetCommParam(protocolVariable.ProtocolVariableSpecification);
         originalIsCommunicated = protocolVariable.IsCommunicated;
         originalIsFileLogEnabled = isFileLogEnabled;
-        originalSelectedScriptFileName = scriptTrigger?.ScriptFileName ?? string.Empty;
-        originalScriptAdditionalInfo = scriptTrigger?.AdditionalInfo ?? string.Empty;
         commParam = originalCommParam;
         isCommunicated = originalIsCommunicated;
         this.isFileLogEnabled = originalIsFileLogEnabled;
-        selectedScriptFileName = originalSelectedScriptFileName;
-        scriptAdditionalInfo = originalScriptAdditionalInfo;
+
+        Triggers = new ObservableCollection<OnValueChangedTriggerWrapper>(
+            scriptTriggers.Select(trigger => OnValueChangedTriggerWrapper.FromTrigger(trigger, () => ScriptOptions, NotifyTriggersChanged)));
+        originalTriggers = SnapshotTriggers();
+        AddTriggerCommand = new RelayCommand<object>(_ => AddTrigger());
+        RemoveTriggerCommand = new RelayCommand<OnValueChangedTriggerWrapper>(RemoveTrigger);
+
         ReadCommunicationFieldsFromCommParam();
     }
 
@@ -217,48 +218,16 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
         }
     }
 
-    public string SelectedScriptFileName
-    {
-        get => selectedScriptFileName;
-        set
-        {
-            if (selectedScriptFileName == value)
-            {
-                return;
-            }
-
-            selectedScriptFileName = value;
-            ScriptAdditionalInfo = string.IsNullOrWhiteSpace(selectedScriptFileName)
-                ? string.Empty
-                : DefaultScriptAdditionalInfo;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasChanges));
-        }
-    }
-
-    public string ScriptAdditionalInfo
-    {
-        get => scriptAdditionalInfo;
-        set
-        {
-            if (scriptAdditionalInfo == value)
-            {
-                return;
-            }
-
-            scriptAdditionalInfo = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(HasChanges));
-        }
-    }
+    public ObservableCollection<OnValueChangedTriggerWrapper> Triggers { get; }
+    public ICommand AddTriggerCommand { get; }
+    public ICommand RemoveTriggerCommand { get; }
 
     public bool HasChanges =>
         SelectedSource != originalSource
         || CommParam != originalCommParam
         || IsCommunicated != originalIsCommunicated
         || IsFileLogEnabled != originalIsFileLogEnabled
-        || SelectedScriptFileName != originalSelectedScriptFileName
-        || ScriptAdditionalInfo != originalScriptAdditionalInfo;
+        || !TriggerSignatures(SnapshotTriggers()).SequenceEqual(TriggerSignatures(originalTriggers));
 
     public void ApplyChanges()
     {
@@ -283,8 +252,7 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
         originalCommParam = CommParam;
         originalIsCommunicated = IsCommunicated;
         originalIsFileLogEnabled = IsFileLogEnabled;
-        originalSelectedScriptFileName = SelectedScriptFileName;
-        originalScriptAdditionalInfo = ScriptAdditionalInfo;
+        originalTriggers = SnapshotTriggers();
         OnPropertyChanged(nameof(DisplayName));
         OnPropertyChanged(nameof(SourceText));
         OnPropertyChanged(nameof(HasChanges));
@@ -296,32 +264,103 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
         CommParam = originalCommParam;
         IsCommunicated = originalIsCommunicated;
         IsFileLogEnabled = originalIsFileLogEnabled;
-        SelectedScriptFileName = originalSelectedScriptFileName;
-        ScriptAdditionalInfo = originalScriptAdditionalInfo;
+        RestoreTriggers(originalTriggers);
         OnPropertyChanged(nameof(HasChanges));
     }
 
     public void ApplyScriptTrigger(IList<OnValueChangedScriptTrigger> triggers)
     {
-        if (originalScriptTrigger != null)
-        {
-            triggers.Remove(originalScriptTrigger);
-        }
-
         foreach (var trigger in triggers.Where(trigger => trigger.VariableId == Variable.Id).ToList())
         {
             triggers.Remove(trigger);
         }
 
-        if (IsCommunicated && !string.IsNullOrWhiteSpace(SelectedScriptFileName))
+        if (!IsCommunicated)
         {
-            triggers.Add(new OnValueChangedScriptTrigger(Variable.Id, SelectedScriptFileName, ScriptAdditionalInfo));
+            return;
         }
+
+        foreach (var row in Triggers.Where(row => !string.IsNullOrWhiteSpace(row.SelectedScriptFileName)))
+        {
+            triggers.Add(new OnValueChangedScriptTrigger(Variable.Id, row.SelectedScriptFileName, row.BuildAdditionalInfo()));
+        }
+    }
+
+    /// <summary>Odebere radky triggeru, ktere odkazuji na smazany skript.</summary>
+    public void ClearTriggersForScript(params string[] scriptFileNames)
+    {
+        foreach (var row in Triggers
+                     .Where(row => scriptFileNames.Any(name => !string.IsNullOrWhiteSpace(name) && row.ReferencesScript(name)))
+                     .ToList())
+        {
+            Triggers.Remove(row);
+        }
+
+        NotifyTriggersChanged();
     }
 
     public void RefreshScriptOptions()
     {
         OnPropertyChanged(nameof(ScriptOptions));
+        foreach (var row in Triggers)
+        {
+            row.RefreshScriptOptions();
+        }
+    }
+
+    private void AddTrigger()
+    {
+        var defaultScript = ScriptOptions.FirstOrDefault(option => !string.IsNullOrWhiteSpace(option)) ?? string.Empty;
+        Triggers.Add(new OnValueChangedTriggerWrapper(
+            defaultScript,
+            TriggerValueSource.Raw,
+            TriggerConditionMode.Delta,
+            DefaultTriggerThreshold,
+            DefaultTriggerHysteresis,
+            () => ScriptOptions,
+            NotifyTriggersChanged));
+        NotifyTriggersChanged();
+    }
+
+    private void RemoveTrigger(OnValueChangedTriggerWrapper? row)
+    {
+        if (row == null)
+        {
+            return;
+        }
+
+        Triggers.Remove(row);
+        NotifyTriggersChanged();
+    }
+
+    private void NotifyTriggersChanged()
+    {
+        OnPropertyChanged(nameof(HasChanges));
+    }
+
+    private List<(string Script, string AdditionalInfo)> SnapshotTriggers()
+    {
+        return Triggers.Select(row => (row.SelectedScriptFileName, row.BuildAdditionalInfo())).ToList();
+    }
+
+    private void RestoreTriggers(IEnumerable<(string Script, string AdditionalInfo)> snapshot)
+    {
+        Triggers.Clear();
+        foreach (var trigger in snapshot)
+        {
+            Triggers.Add(OnValueChangedTriggerWrapper.FromTrigger(
+                new OnValueChangedScriptTrigger(Variable.Id, trigger.Script, trigger.AdditionalInfo),
+                () => ScriptOptions,
+                NotifyTriggersChanged));
+        }
+    }
+
+    private static List<string> TriggerSignatures(IEnumerable<(string Script, string AdditionalInfo)> snapshot)
+    {
+        return snapshot
+            .Select(trigger => $"{trigger.Script}|{trigger.AdditionalInfo}")
+            .OrderBy(signature => signature, StringComparer.Ordinal)
+            .ToList();
     }
 
     public void RefreshVariableEventOptions()

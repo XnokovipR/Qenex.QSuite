@@ -714,30 +714,91 @@
                             Margin="0,0,0,6"
                             Text="{Binding SelectedCommunicatedVariable.CommParam, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
 
-                        <q:QTextBlock
+                        <StackPanel
                             Grid.Row="6"
                             Grid.Column="0"
-                            Margin="0,0,10,6"
-                            VerticalAlignment="Center"
-                            Text="On-change script"/>
-                        <telerik:RadComboBox
-                            Grid.Row="6"
-                            Grid.Column="1"
-                            Margin="0,0,0,6"
-                            ItemsSource="{Binding SelectedCommunicatedVariable.ScriptOptions}"
-                            SelectedItem="{Binding SelectedCommunicatedVariable.SelectedScriptFileName, Mode=TwoWay}"/>
-
-                        <q:QTextBlock
-                            Grid.Row="7"
-                            Grid.Column="0"
-                            Margin="0,0,10,6"
-                            VerticalAlignment="Center"
-                            Text="Script params"/>
-                        <q:QTextBox
-                            Grid.Row="7"
-                            Grid.Column="1"
-                            Margin="0,0,0,6"
-                            Text="{Binding SelectedCommunicatedVariable.ScriptAdditionalInfo, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                            Grid.ColumnSpan="2"
+                            Margin="0,0,0,6">
+                            <q:QTextBlock Margin="0,0,0,4" Text="On-change triggers"/>
+                            <Grid Margin="0,0,0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="32"/>
+                                </Grid.ColumnDefinitions>
+                                <q:QTextBlock Grid.Column="0" Margin="0,0,4,0" Text="Script"/>
+                                <q:QTextBlock Grid.Column="1" Margin="0,0,4,0" Text="Source"/>
+                                <q:QTextBlock Grid.Column="2" Margin="0,0,4,0" Text="Mode"/>
+                                <q:QTextBlock Grid.Column="3" Margin="0,0,4,0" Text="Threshold"/>
+                                <q:QTextBlock Grid.Column="4" Margin="0,0,4,0" Text="Hysteresis"/>
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding SelectedCommunicatedVariable.Triggers}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type wrappers:OnValueChangedTriggerWrapper}">
+                                        <Grid Margin="0,0,0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="70"/>
+                                                <ColumnDefinition Width="80"/>
+                                                <ColumnDefinition Width="70"/>
+                                                <ColumnDefinition Width="70"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <telerik:RadComboBox
+                                                Grid.Column="0"
+                                                Margin="0,0,4,0"
+                                                ItemsSource="{Binding ScriptOptions}"
+                                                SelectedItem="{Binding SelectedScriptFileName, Mode=TwoWay}"/>
+                                            <telerik:RadComboBox
+                                                Grid.Column="1"
+                                                Margin="0,0,4,0"
+                                                ItemsSource="{Binding SourceOptions}"
+                                                SelectedItem="{Binding Source, Mode=TwoWay}"/>
+                                            <telerik:RadComboBox
+                                                Grid.Column="2"
+                                                Margin="0,0,4,0"
+                                                ItemsSource="{Binding ModeOptions}"
+                                                SelectedItem="{Binding Mode, Mode=TwoWay}"/>
+                                            <q:QTextBox
+                                                Grid.Column="3"
+                                                Margin="0,0,4,0"
+                                                Text="{Binding Threshold, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                                            <q:QTextBox
+                                                Grid.Column="4"
+                                                Margin="0,0,4,0"
+                                                ToolTipService.ToolTip="Hysteresis band (Above/Below only)"
+                                                Text="{Binding Hysteresis, Mode=TwoWay, UpdateSourceTrigger=LostFocus}">
+                                                <q:QTextBox.Style>
+                                                    <Style TargetType="{x:Type q:QTextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Mode}" Value="Delta">
+                                                                <Setter Property="Visibility" Value="Hidden"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </q:QTextBox.Style>
+                                            </q:QTextBox>
+                                            <telerik:RadButton
+                                                Grid.Column="5"
+                                                MinWidth="28"
+                                                Content="✕"
+                                                ToolTipService.ToolTip="Remove trigger"
+                                                Command="{Binding DataContext.SelectedCommunicatedVariable.RemoveTriggerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <telerik:RadButton
+                                HorizontalAlignment="Left"
+                                MinWidth="82"
+                                Margin="0,2,0,0"
+                                Content="Add trigger"
+                                Command="{Binding SelectedCommunicatedVariable.AddTriggerCommand}"/>
+                        </StackPanel>
 
                         <CheckBox
                             Grid.Row="8"

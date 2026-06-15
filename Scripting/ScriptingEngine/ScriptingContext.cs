@@ -26,7 +26,7 @@ public class ScriptingContext
     private readonly HashSet<IScriptBase> scheduledScripts = [];
     private readonly HashSet<IScriptBase> interruptedScripts = [];
     private readonly HashSet<IScriptBase> notifiedInterruptedScripts = [];
-    private readonly Dictionary<int, double> lastOnValueChangedValues = [];
+    private readonly Dictionary<OnValueChangedScriptTrigger, OnValueChangedTriggerRuntimeState> onValueChangedTriggerStates = [];
     private readonly Dictionary<string, ScriptCallOverloadState> scriptOverloadStates = [];
     private CancellationTokenSource activeExecutionCts = new();
     private bool isStopping;
@@ -81,7 +81,10 @@ public class ScriptingContext
 
         EnsurePythonRuntimeInitialized();
         VariableBindings.Clear();
-        lastOnValueChangedValues.Clear();
+        lock (onValueChangedStateLock)
+        {
+            onValueChangedTriggerStates.Clear();
+        }
         ClearScriptOverloadState();
         
         var variablesById = variables.ToDictionary(v => v.Id);
@@ -319,8 +322,56 @@ if "__qenex_interactive_console" not in globals():
 
     public async Task HandleVariableValueChangedAsync(IVariableBase variable)
     {
-        var value = variable.GetValue();
-        await HandleVariableValueChangedAsync(variable.Id, variable.Name, value);
+        if (isStopping)
+        {
+            return;
+        }
+
+        var triggers = GetOnValueChangedScriptTriggers(variable.Id).ToList();
+        if (triggers.Count == 0)
+        {
+            return;
+        }
+
+        var rawObject = variable.GetValue();
+        if (!TryConvertToDouble(rawObject, out var rawValue))
+        {
+            logger?.Log(LogLevel.Warn, $"OnValueChanged script trigger for variable \"{variable.Name}\" skipped because value \"{rawObject}\" is not numeric.");
+            return;
+        }
+
+        var engValue = variable is ScalarVariable scalar ? scalar.GetEngValue() : rawValue;
+
+        List<(OnValueChangedScriptTrigger Trigger, double OldValue, double NewValue, double Delta)> scriptExecutions = [];
+        lock (onValueChangedStateLock)
+        {
+            foreach (var trigger in triggers)
+            {
+                if (!OnValueChangedTriggerConfig.TryParse(trigger.AdditionalInfo, out var config, out var parseError))
+                {
+                    logger?.Log(LogLevel.Warn, $"OnValueChanged script \"{trigger.ScriptFileName}\" has invalid trigger settings ({parseError}).");
+                    continue;
+                }
+
+                var current = config.Source == TriggerValueSource.Eng ? engValue : rawValue;
+                var state = GetOnValueChangedTriggerState(trigger);
+
+                if (EvaluateOnValueChangedTrigger(config, state, current, out var oldValue, out var delta))
+                {
+                    scriptExecutions.Add((trigger, oldValue, current, delta));
+                }
+            }
+        }
+
+        foreach (var scriptExecution in scriptExecutions)
+        {
+            await ExecuteOnValueChangedScriptAsync(
+                scriptExecution.Trigger,
+                variable.Name,
+                scriptExecution.OldValue,
+                scriptExecution.NewValue,
+                scriptExecution.Delta);
+        }
     }
 
     private async Task ExecuteScriptsAsync(
@@ -493,57 +544,105 @@ if "__qenex_interactive_console" not in globals():
             : script.IsEnabled;
     }
 
-    private async Task HandleVariableValueChangedAsync(int variableId, string variableName, object value)
+    private OnValueChangedTriggerRuntimeState GetOnValueChangedTriggerState(OnValueChangedScriptTrigger trigger)
     {
-        if (isStopping)
+        if (!onValueChangedTriggerStates.TryGetValue(trigger, out var state))
         {
-            return;
+            state = new OnValueChangedTriggerRuntimeState();
+            onValueChangedTriggerStates[trigger] = state;
         }
 
-        if (!TryConvertToDouble(value, out var newValue))
+        return state;
+    }
+
+    /// <summary>
+    /// Vyhodnoti jeden trigger proti aktualni hodnote. Prvni vzorek jen inicializuje stav (nespousti).
+    /// Delta: |Xn - baseline| &gt; threshold (deadband od posledniho spusteni). Above/Below: hranove
+    /// (spusti se jen pri prechodu podminky z neplati -&gt; plati).
+    /// </summary>
+    private static bool EvaluateOnValueChangedTrigger(
+        OnValueChangedTriggerConfig config,
+        OnValueChangedTriggerRuntimeState state,
+        double current,
+        out double oldValue,
+        out double delta)
+    {
+        oldValue = state.Initialized ? state.LastSampleValue : current;
+        delta = Math.Abs(current - oldValue);
+
+        if (!state.Initialized)
         {
-            logger?.Log(LogLevel.Warn, $"OnValueChanged script trigger for variable \"{variableName}\" skipped because value \"{value}\" is not numeric.");
-            return;
+            state.Initialized = true;
+            state.Baseline = current;
+            state.LastSampleValue = current;
+            state.ConditionActive = config.Mode switch
+            {
+                TriggerConditionMode.Above => current > config.Threshold,
+                TriggerConditionMode.Below => current < config.Threshold,
+                _ => false
+            };
+            return false;
         }
 
-        List<(OnValueChangedScriptTrigger Trigger, double OldValue, double NewValue, double Delta)> scriptExecutions = [];
-        lock (onValueChangedStateLock)
+        bool fire;
+        switch (config.Mode)
         {
-            if (!lastOnValueChangedValues.TryGetValue(variableId, out var oldValue))
-            {
-                lastOnValueChangedValues[variableId] = newValue;
-                return;
-            }
-
-            // lastOnValueChangedValues[variableId] = newValue;
-            var delta = Math.Abs(newValue - oldValue);
-
-            foreach (var trigger in GetOnValueChangedScriptTriggers(variableId))
-            {
-                if (!TryGetOnValueChangedThreshold(trigger, out var threshold))
+            case TriggerConditionMode.Delta:
+                oldValue = state.Baseline;
+                delta = Math.Abs(current - state.Baseline);
+                fire = delta > config.Threshold;
+                if (fire)
                 {
-                    continue;
+                    state.Baseline = current;
                 }
 
-                if (delta <= threshold)
+                break;
+
+            case TriggerConditionMode.Above:
+                if (state.ConditionActive)
                 {
-                    continue;
+                    // Drz sepnute, dokud hodnota neklesne pod vypinaci mez (T - hystereze).
+                    state.ConditionActive = current > config.Threshold - config.Hysteresis;
+                    fire = false;
+                }
+                else if (current > config.Threshold)
+                {
+                    state.ConditionActive = true;
+                    fire = true;
+                }
+                else
+                {
+                    fire = false;
                 }
 
-                scriptExecutions.Add((trigger, oldValue, newValue, delta));
-                lastOnValueChangedValues[variableId] = newValue;
-            }
+                break;
+
+            case TriggerConditionMode.Below:
+                if (state.ConditionActive)
+                {
+                    // Drz sepnute, dokud hodnota nestoupne nad vypinaci mez (T + hystereze).
+                    state.ConditionActive = current < config.Threshold + config.Hysteresis;
+                    fire = false;
+                }
+                else if (current < config.Threshold)
+                {
+                    state.ConditionActive = true;
+                    fire = true;
+                }
+                else
+                {
+                    fire = false;
+                }
+
+                break;
+
+            default:
+                fire = false;
+                break;
         }
 
-        foreach (var scriptExecution in scriptExecutions)
-        {
-            await ExecuteOnValueChangedScriptAsync(
-                scriptExecution.Trigger,
-                variableName,
-                scriptExecution.OldValue,
-                scriptExecution.NewValue,
-                scriptExecution.Delta);
-        }
+        state.LastSampleValue = current;
+        return fire;
     }
 
     private async Task ExecuteOnValueChangedScriptAsync(
@@ -589,26 +688,6 @@ if "__qenex_interactive_console" not in globals():
                 observedCallPeriod.Value,
                 "OnValueChanged script");
         }
-    }
-
-    private bool TryGetOnValueChangedThreshold(OnValueChangedScriptTrigger trigger, out double threshold)
-    {
-        threshold = 0;
-        var settings = ParseAdditionalInfo(trigger.AdditionalInfo);
-
-        if (!settings.TryGetValue("threshold", out var thresholdText) || string.IsNullOrWhiteSpace(thresholdText))
-        {
-            return true;
-        }
-
-        if (double.TryParse(thresholdText, NumberStyles.Float, CultureInfo.InvariantCulture, out threshold))
-        {
-            threshold = Math.Abs(threshold);
-            return true;
-        }
-
-        logger?.Log(LogLevel.Warn, $"OnValueChanged script \"{trigger.ScriptFileName}\" has invalid threshold setting \"{thresholdText}\".");
-        return false;
     }
 
     private static bool TryConvertToDouble(object value, out double result)
@@ -1154,6 +1233,14 @@ if "__qenex_interactive_console" not in globals():
 }
 
 internal readonly record struct ScriptExecutionOptions(bool Blocking, TimeSpan? Timeout);
+
+internal sealed class OnValueChangedTriggerRuntimeState
+{
+    public bool Initialized { get; set; }
+    public double Baseline { get; set; }
+    public double LastSampleValue { get; set; }
+    public bool ConditionActive { get; set; }
+}
 
 internal sealed class ScriptCallOverloadState
 {
