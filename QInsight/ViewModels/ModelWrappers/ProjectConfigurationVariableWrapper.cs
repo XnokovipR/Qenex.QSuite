@@ -15,6 +15,8 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
     private VariableState originalState;
     private VariableState currentState;
 
+    private EditablePropertyWrapper? presentationProperty;
+
     public ProjectConfigurationVariableWrapper(IVariableBase variable, IEnumerable<IPresentation> presentations, bool isNew = false)
     {
         Variable = variable;
@@ -59,6 +61,11 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
         NotifyStateChanged();
     }
 
+    public void RefreshPresentationOptions(IEnumerable<string> presentationNames)
+    {
+        presentationProperty?.SetOptions(presentationNames.Prepend(string.Empty));
+    }
+
     private ObservableCollection<EditablePropertyWrapper> CreateProperties()
     {
         var properties = new ObservableCollection<EditablePropertyWrapper>
@@ -81,12 +88,13 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
                 ValuesGlobal.ValueDataTypeDict.Keys.Select(valueType => valueType.ToString())));
             properties.Add(Create("Values", "Value Size", () => currentState.ScalarState.ValueSize, value => UpdateScalarState(s => s with { ValueSize = Parse<int>(value) })));
             properties.Add(Create("Values", "Length", () => currentState.ScalarState.Length, value => UpdateScalarState(s => s with { Length = Parse<int>(value) })));
-            properties.Add(Create(
+            presentationProperty = Create(
                 "Values",
                 "Presentation",
                 () => currentState.ScalarState.PresentationName,
                 value => UpdateScalarState(s => s with { PresentationName = value }),
-                presentations.Select(presentation => presentation.Name).Prepend(string.Empty)));
+                presentations.Select(presentation => presentation.Name).Prepend(string.Empty));
+            properties.Add(presentationProperty);
         }
 
         foreach (var property in properties)

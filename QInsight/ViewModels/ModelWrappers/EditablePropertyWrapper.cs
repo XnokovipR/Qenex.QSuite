@@ -29,7 +29,7 @@ public class EditablePropertyWrapper(
 
     public string Group => group;
     public string Name => name;
-    public IReadOnlyList<string> Options { get; } = options?.ToList() ?? [];
+    public IReadOnlyList<string> Options { get; private set; } = options?.ToList() ?? [];
     public bool HasOptions => Options.Count > 0;
     public bool IsReadOnly => getIsReadOnly?.Invoke() ?? isReadOnly;
     public bool IsEditable => !IsReadOnly;
@@ -81,5 +81,12 @@ public class EditablePropertyWrapper(
     public void RefreshValue()
     {
         OnPropertyChanged(nameof(ValueText));
+    }
+
+    public void SetOptions(IEnumerable<string> newOptions)
+    {
+        Options = newOptions.ToList();
+        OnPropertyChanged(nameof(Options));
+        OnPropertyChanged(nameof(HasOptions));
     }
 }

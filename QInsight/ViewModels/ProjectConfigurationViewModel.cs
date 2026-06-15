@@ -557,6 +557,14 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
         addedConversions.Clear();
         removedConversions.Clear();
+
+        // Az ted (po Apply) maji vsechny convertery potvrzeny realny nazev (ApplyChanges
+        // propsalo currentState.Name do Conversion.Name) a addedConversions je prazdne.
+        // Teprve ted se nabidka converteru u prezentaci aktualizuje - pokryva pridani,
+        // prejmenovani i odebrani converteru najednou. Volame pred Apply prezentaci, aby
+        // GetConversion() pri jejich Apply nasel converter podle aktualniho nazvu.
+        RefreshPresentationConverterOptions();
+
         foreach (var presentation in Presentations)
         {
             presentation.ApplyChanges();
@@ -574,6 +582,13 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
         addedPresentations.Clear();
         removedPresentations.Clear();
+
+        // Az ted (po Apply) maji vsechny prezentace potvrzeny realny nazev (ApplyChanges
+        // propsalo currentState.Name do Presentation.Name) a addedPresentations je prazdne.
+        // Teprve ted se nabidka prezentaci u promennych aktualizuje - pokryva pridani,
+        // prejmenovani i odebrani prezentaci najednou.
+        RefreshVariablePresentationOptions();
+
         SynchronizeRenamedEventReferences();
         foreach (var variableEvent in Events)
         {
@@ -1325,6 +1340,9 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
 
         SelectedConversion = Conversions.FirstOrDefault();
+
+        RefreshPresentationConverterOptions();
+
         NotifyHasChangesChanged();
     }
 
@@ -1381,6 +1399,9 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         addedPresentations.Add(wrapper);
         SelectedPresentation = wrapper;
 
+        // Refresh nabidky prezentaci u promennych se NEdela zde - nove pridana prezentace
+        // ma zatim jen placeholder nazev (CreateUniquePresentationName) a neni potvrzena.
+        // Do nabidky u promennych se dostane az po Apply (viz ApplyChanges).
         NotifyHasChangesChanged();
     }
 
@@ -1417,6 +1438,9 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
 
         SelectedPresentation = Presentations.FirstOrDefault();
+
+        RefreshVariablePresentationOptions();
+
         NotifyHasChangesChanged();
     }
 
@@ -1909,6 +1933,37 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         foreach (var communicatedVariable in CommunicatedVariables)
         {
             communicatedVariable.RefreshVariableEventOptions();
+        }
+    }
+
+    private void RefreshVariablePresentationOptions()
+    {
+        // Do nabidky u promennych patri jen POTVRZENE prezentace. Nove pridana a jeste
+        // nepotvrzena prezentace (stale v addedPresentations) ma placeholder nazev a do
+        // nabidky se dostane az po Apply.
+        var presentationNames = Presentations
+            .Where(presentation => !addedPresentations.Contains(presentation))
+            .Select(presentation => presentation.Name)
+            .ToList();
+        foreach (var variable in Variables)
+        {
+            variable.RefreshPresentationOptions(presentationNames);
+        }
+    }
+
+    private void RefreshPresentationConverterOptions()
+    {
+        // Do nabidky converteru u prezentaci patri jen POTVRZENE convertery. Nove pridany
+        // a jeste nepotvrzeny converter (stale v addedConversions) ma placeholder nazev a do
+        // nabidky se dostane az po Apply. Predavame objekty (ne jen nazvy), aby prezentace
+        // mela pro Apply aktualni seznam i po prejmenovani/odebrani converteru.
+        var converters = Conversions
+            .Where(conversion => !addedConversions.Contains(conversion))
+            .Select(conversion => conversion.Conversion)
+            .ToList();
+        foreach (var presentation in Presentations)
+        {
+            presentation.RefreshConverterOptions(converters);
         }
     }
 

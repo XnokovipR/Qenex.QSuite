@@ -8,8 +8,10 @@ namespace Qenex.QInsight.ViewModels.ModelWrappers;
 
 public class ProjectConfigurationPresentationWrapper : PropertyChangedBase
 {
-    private readonly IEnumerable<IValConversion> conversions;
     private readonly List<EditablePropertyWrapper> editableProperties = [];
+
+    private List<IValConversion> conversions;
+    private EditablePropertyWrapper? conversionProperty;
 
     private PresentationState originalState;
     private PresentationState currentState;
@@ -20,7 +22,7 @@ public class ProjectConfigurationPresentationWrapper : PropertyChangedBase
         bool isNew = false)
     {
         Presentation = presentation;
-        this.conversions = conversions;
+        this.conversions = conversions.ToList();
         IsNew = isNew;
         originalState = PresentationState.FromPresentation(presentation);
         currentState = originalState;
@@ -57,6 +59,14 @@ public class ProjectConfigurationPresentationWrapper : PropertyChangedBase
         NotifyStateChanged();
     }
 
+    public void RefreshConverterOptions(IEnumerable<IValConversion> converters)
+    {
+        // Aktualizujeme i interni seznam objektu - GetConversion() podle nej resi vyber
+        // pri Apply, takze po prejmenovani/odebrani converteru musi byt aktualni.
+        conversions = converters.ToList();
+        conversionProperty?.SetOptions(conversions.Select(conversion => conversion.Name));
+    }
+
     private ObservableCollection<EditablePropertyWrapper> CreateProperties()
     {
         var properties = new ObservableCollection<EditablePropertyWrapper>
@@ -66,14 +76,16 @@ public class ProjectConfigurationPresentationWrapper : PropertyChangedBase
             Create("Presentation", "Min", () => currentState.Min, value => UpdateState(currentState with { Min = Parse<double>(value) })),
             Create("Presentation", "Max", () => currentState.Max, value => UpdateState(currentState with { Max = Parse<double>(value) })),
             Create("Presentation", "Print Format", () => currentState.PrintFormat, value => UpdateState(currentState with { PrintFormat = value })),
-            Create("Presentation", "Unit", () => currentState.Unit, value => UpdateState(currentState with { Unit = value })),
-            Create(
-                "Presentation",
-                "Conversion",
-                () => currentState.ConversionName,
-                value => UpdateState(currentState with { ConversionName = value }),
-                conversions.Select(conversion => conversion.Name))
+            Create("Presentation", "Unit", () => currentState.Unit, value => UpdateState(currentState with { Unit = value }))
         };
+
+        conversionProperty = Create(
+            "Presentation",
+            "Conversion",
+            () => currentState.ConversionName,
+            value => UpdateState(currentState with { ConversionName = value }),
+            conversions.Select(conversion => conversion.Name));
+        properties.Add(conversionProperty);
 
         foreach (var property in properties)
         {
