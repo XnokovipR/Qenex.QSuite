@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AssemblyName>Qenex.QSuite.Controls.GaugeControl</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Controls.GaugeControl</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Common\WpfComm\WpfComm.csproj" />
+      <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
+      <ProjectReference Include="..\Control\Control.csproj" />
+      <ProjectReference Include="..\DerivedWinControls\DerivedWinControls.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.10" />
+      <PackageReference Include="Telerik.Windows.Controls.for.Wpf" Version="2026.1.415" />
+      <PackageReference Include="Telerik.Windows.Controls.DataVisualization.for.Wpf" Version="2026.1.415" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Resource Include="Icons\Gauge.png" />
+    </ItemGroup>
+
+    <!-- Plugin deploy: zkopiruj control DLL do QInsight\...\Controls (nacita se dynamicky, ne pres ProjectReference) -->
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\Controls\&quot;" />
+    </Target>
+
+</Project>

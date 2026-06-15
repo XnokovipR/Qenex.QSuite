@@ -1,0 +1,149 @@
+<UserControl x:Class="Qenex.QSuite.Controls.GaugeControl.Views.GaugeControlView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:conv="clr-namespace:Qenex.QSuite.Controls.GaugeControl.Converters"
+             xmlns:vm="clr-namespace:Qenex.QSuite.Controls.GaugeControl.ViewModels"
+             xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
+             mc:Ignorable="d"
+             d:DesignHeight="220" d:DesignWidth="200"
+             d:DataContext="{d:DesignInstance vm:GaugeControlViewModel, IsDesignTimeCreatable=False}"
+             Background="Transparent">
+
+	<UserControl.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/Qenex.QSuite.Controls.Control;component/Style/SharedStyles.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+			<conv:GaugeKindToVisibilityConverter x:Key="KindToVisibility"/>
+		</ResourceDictionary>
+	</UserControl.Resources>
+
+	<telerik:RadContextMenu.ContextMenu>
+		<telerik:RadContextMenu>
+			<telerik:RadMenuItem Header="Lock" IsCheckable="True" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
+		</telerik:RadContextMenu>
+	</telerik:RadContextMenu.ContextMenu>
+
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="Auto"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
+
+		<!-- Nastaveni controlu (typ, rozsah, 4 hladiny) -->
+		<telerik:RadExpander Grid.Row="0" Grid.Column="0" Style="{StaticResource SquareExpanderStyle}" HorizontalAlignment="Left">
+			<Grid Margin="5">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
+
+				<q:QTextBlock Grid.Row="0" Grid.Column="0" Text="Type:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<telerik:RadComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding AvailableKinds}"
+				                     SelectedItem="{Binding Kind, Mode=TwoWay}"
+				                     Margin="8,3,0,0" Width="130" HorizontalAlignment="Left"/>
+
+				<q:QTextBlock Grid.Row="1" Grid.Column="0" Text="Min:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Row="1" Grid.Column="1" Text="{Binding Minimum, Mode=TwoWay}"
+				            Margin="8,3,0,0" Width="70" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+				<q:QTextBlock Grid.Row="2" Grid.Column="0" Text="Max:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Row="2" Grid.Column="1" Text="{Binding Maximum, Mode=TwoWay}"
+				            Margin="8,3,0,0" Width="70" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+				<q:QTextBlock Grid.Row="3" Grid.Column="0" Text="Low Error:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Row="3" Grid.Column="1" Text="{Binding LowErrorLevel, Mode=TwoWay, TargetNullValue=''}"
+				            Margin="8,3,0,0" Width="70" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+				<q:QTextBlock Grid.Row="4" Grid.Column="0" Text="Low Warning:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Row="4" Grid.Column="1" Text="{Binding LowWarningLevel, Mode=TwoWay, TargetNullValue=''}"
+				            Margin="8,3,0,0" Width="70" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+				<q:QTextBlock Grid.Row="5" Grid.Column="0" Text="High Warning:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Row="5" Grid.Column="1" Text="{Binding HighWarningLevel, Mode=TwoWay, TargetNullValue=''}"
+				            Margin="8,3,0,0" Width="70" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+				<q:QTextBlock Grid.Row="6" Grid.Column="0" Text="High Error:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Row="6" Grid.Column="1" Text="{Binding HighErrorLevel, Mode=TwoWay, TargetNullValue=''}"
+				            Margin="8,3,0,0" Width="70" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+				<q:QTextBlock Grid.Row="7" Grid.Column="0" Text="Refresh [ms]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Row="7" Grid.Column="1" Text="{Binding RefreshTime, Mode=TwoWay}"
+				            Margin="8,3,0,0" Width="70" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+			</Grid>
+		</telerik:RadExpander>
+
+		<!-- Nazev navazane promenne -->
+		<q:QTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding VariableLabel, Mode=OneWay}"
+		              Margin="5,3,0,0" TextWrapping="NoWrap" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+
+		<!-- Gauge - prepina se podle Kind (jen jeden je viditelny). Viewbox proporcionalne
+		     zmensi cely gauge (vc. stupnice) do velikosti tile; ClipToBounds orizne pretok. -->
+		<Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ClipToBounds="True">
+
+			<Viewbox Stretch="Uniform" Margin="4"
+			         Visibility="{Binding Kind, Converter={StaticResource KindToVisibility}, ConverterParameter=Radial}">
+				<telerik:RadRadialGauge Width="200" Height="200">
+					<telerik:RadialScale x:Name="RadialScale"
+					                     Min="{Binding Minimum}" Max="{Binding Maximum}">
+						<telerik:RadialScale.Indicators>
+							<telerik:Needle Value="{Binding Value}"/>
+						</telerik:RadialScale.Indicators>
+					</telerik:RadialScale>
+				</telerik:RadRadialGauge>
+			</Viewbox>
+
+			<Viewbox Stretch="Uniform" Margin="4"
+			         Visibility="{Binding Kind, Converter={StaticResource KindToVisibility}, ConverterParameter=LinearVertical}">
+				<telerik:RadVerticalLinearGauge Width="120" Height="220">
+					<telerik:VerticalLinearScale x:Name="VerticalScale"
+					                             Min="{Binding Minimum}" Max="{Binding Maximum}">
+						<telerik:VerticalLinearScale.Indicators>
+							<telerik:BarIndicator Value="{Binding Value}"/>
+						</telerik:VerticalLinearScale.Indicators>
+					</telerik:VerticalLinearScale>
+				</telerik:RadVerticalLinearGauge>
+			</Viewbox>
+
+			<Viewbox Stretch="Uniform" Margin="4"
+			         Visibility="{Binding Kind, Converter={StaticResource KindToVisibility}, ConverterParameter=LinearHorizontal}">
+				<telerik:RadHorizontalLinearGauge Width="220" Height="120">
+					<telerik:HorizontalLinearScale x:Name="HorizontalScale"
+					                               Min="{Binding Minimum}" Max="{Binding Maximum}">
+						<telerik:HorizontalLinearScale.Indicators>
+							<telerik:BarIndicator Value="{Binding Value}"/>
+						</telerik:HorizontalLinearScale.Indicators>
+					</telerik:HorizontalLinearScale>
+				</telerik:RadHorizontalLinearGauge>
+			</Viewbox>
+
+		</Grid>
+
+		<!-- Aktualni hodnota + jednotka -->
+		<StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,3,0,0">
+			<q:QTextBlock Text="{Binding Value, Mode=OneWay, StringFormat={}{0:0.###}}"/>
+			<q:QTextBlock Text="[" Margin="6,0,3,0"/>
+			<q:QTextBlock Text="{Binding VariableUnit, Mode=OneWay}"/>
+			<q:QTextBlock Text="]" Margin="3,0,0,0"/>
+		</StackPanel>
+
+	</Grid>
+</UserControl>

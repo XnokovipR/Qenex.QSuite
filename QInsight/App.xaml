@@ -19,6 +19,7 @@
 				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.Navigation.xaml" />
 				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.RibbonView.xaml" />
 				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.FileDialogs.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.DataVisualization.xaml" />
 				<ResourceDictionary Source="pack://application:,,,/Telerik.Windows.Themes.Windows11;component/Themes/Telerik.Windows.Controls.xaml" />
 			</ResourceDictionary.MergedDictionaries>
 			<Style TargetType="qui:QRadPane" BasedOn="{StaticResource RadPaneStyle}" />
