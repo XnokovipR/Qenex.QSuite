@@ -3,7 +3,6 @@ using Qenex.QLibs.QUI;
 using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Controls.Control;
 using Telerik.Windows.Controls;
-using Qenex.QSuite.Controls.GraphControl.ViewModels;
 using System.Windows.Media;
 using Qenex.QInsight.Views;
 
@@ -82,10 +81,7 @@ public class ControlsViewModel : ViewModelBase
 
         Controls.Clear();
 
-        // GraphControl zatim staticky (pilot - migruje se na plugin az ve 2. kole).
-        Controls.Add(new GraphControlViewModel());
-
-        // Plugin controls (pilot: SignalControl) nacitane dynamicky ze slozky .\Controls.
+        // Vsechny controls (Graph, Signal, ...) se nacitaji dynamicky jako plugin ze slozky .\Controls.
         foreach (var plugin in controlPlugins)
         {
             if (pluginLoader.LoadPlugin<IControlBase>(plugin.PathName) is { } instance)

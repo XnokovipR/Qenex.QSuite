@@ -24,7 +24,7 @@ using Telerik.Windows.Controls.FileDialogs;
 namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
 [DataContract]
-public class GraphControlViewModel : ControlBase, IHasMousePosition
+public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialogAwareControl, IVariableReferenceProvider
 {
     #region Const
 
@@ -170,6 +170,19 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition
 
     [IgnoreDataMember]
     public Action<string>? SaveDialogDirectoryChanged { get; set; }
+
+    /// <summary>
+    /// Reference na promenne navazane v grafu (ChartVariableBindings + ChartVariables),
+    /// nad ramec ControlBase.Variables/LinkedVariables. Pouziva host pri zjistovani pouziti promenne.
+    /// </summary>
+    public IEnumerable<string> GetAdditionalVariableReferences()
+    {
+        var references = ChartVariableBindings.Select(binding => binding.VariableReference).ToList();
+        references.AddRange(ChartVariables
+            .Where(chartVariable => chartVariable.Variable != null)
+            .Select(chartVariable => GetVariableReference(chartVariable.Variable)));
+        return references;
+    }
 
     [DataMember]
     public int ChartTimeSpan { get; set { if (value < 1) value = 1; field = value; OnPropertyChanged(); } } = 10;

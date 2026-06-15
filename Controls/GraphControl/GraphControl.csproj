@@ -38,4 +38,9 @@
       <Resource Include="Icons\GraphControl.png" />
     </ItemGroup>
 
+    <!-- Plugin deploy: zkopiruj control DLL do QInsight\...\Controls (nacita se dynamicky, ne pres ProjectReference) -->
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\Controls\&quot;" />
+    </Target>
+
 </Project>

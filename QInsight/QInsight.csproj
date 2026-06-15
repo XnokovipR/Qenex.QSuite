@@ -34,6 +34,7 @@
     <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.10" />
     <PackageReference Include="Qenex.QLibs.QUI.TelerikDocking" Version="1.0.18" />
     <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.7" />
+    <PackageReference Include="ScottPlot.WPF" Version="5.1.58" />
     <PackageReference Include="Telerik.Licensing" Version="1.8.2" />
     <PackageReference Include="Telerik.Windows.Controls.Chart.Direct2D.for.Wpf" Version="2026.1.415" />
     <PackageReference Include="Telerik.Windows.Controls.Diagrams.Extensions.for.Wpf" Version="2026.1.415" />
@@ -126,9 +127,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Common\InpBindingManager\InpBindingManager.csproj" />
     <ProjectReference Include="..\Common\WpfComm\WpfComm.csproj" />
+    <ProjectReference Include="..\Controls\Control\Control.csproj" />
     <ProjectReference Include="..\Controls\DerivedWinControls\DerivedWinControls.csproj" />
-    <ProjectReference Include="..\Controls\GraphControl\GraphControl.csproj" />
-    <!-- SignalControl se nacita dynamicky jako plugin ze slozky .\Controls (pilot), proto bez ProjectReference. -->
+    <!-- Control = sdileny kontrakt (IControlBase/ControlBase), referencuje se primo.
+         Konkretni controls (GraphControl, SignalControl, ...) se nacitaji dynamicky jako plugin ze slozky .\Controls, proto bez ProjectReference.
+         ScottPlot.WPF je tu jen kvuli zavislostem GraphControlu (vc. nativnich SkiaSharp) - aby zustaly v base dir a plugin si je nasel. -->
     <ProjectReference Include="..\Helpers\ProjectFile\ProjectFile.csproj" />
     <ProjectReference Include="..\LogSystems\LogSystem\LogSystem.csproj" />
     <ProjectReference Include="..\Modules\ModuleXmlHandler\ModuleXmlHandler.csproj" />

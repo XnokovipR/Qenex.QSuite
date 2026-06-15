@@ -8,7 +8,6 @@ using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Views;
 using Telerik.Windows.Diagrams.Core;
 using Qenex.QLibs.QUI;
-using Qenex.QSuite.Controls.GraphControl.ViewModels;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Telerik.Windows.Controls;
 using Telerik.Windows.Controls.ColorEditor.ColorSchemas;
@@ -261,14 +260,14 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     private void ConfigureControl(IControlBase controlVm)
     {
-	    if (controlVm is not GraphControlViewModel graphControl)
+	    if (controlVm is not IFileDialogAwareControl dialogAwareControl)
 	    {
 		    return;
 	    }
 
-	    graphControl.ConfigureSaveFileDialog = ConfigureGraphControlSaveDialog;
-	    graphControl.SaveDialogInitialDirectoryProvider = GraphControlSaveDialogInitialDirectoryProvider;
-	    graphControl.SaveDialogDirectoryChanged = GraphControlSaveDialogDirectoryChanged;
+	    dialogAwareControl.ConfigureSaveFileDialog = ConfigureGraphControlSaveDialog;
+	    dialogAwareControl.SaveDialogInitialDirectoryProvider = GraphControlSaveDialogInitialDirectoryProvider;
+	    dialogAwareControl.SaveDialogDirectoryChanged = GraphControlSaveDialogDirectoryChanged;
     }
 
     public void BindLoadedControlVariables(IEnumerable<IProtocolVariable> protocolVariables)
@@ -434,12 +433,9 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 	    var references = control.LinkedVariables.ToList();
 	    references.AddRange(control.Variables.Select(ControlBase.GetVariableReference));
 
-	    if (control is GraphControlViewModel graphControl)
+	    if (control is IVariableReferenceProvider referenceProvider)
 	    {
-		    references.AddRange(graphControl.ChartVariableBindings.Select(binding => binding.VariableReference));
-		    references.AddRange(graphControl.ChartVariables
-			    .Where(chartVariable => chartVariable.Variable != null)
-			    .Select(chartVariable => ControlBase.GetVariableReference(chartVariable.Variable)));
+		    references.AddRange(referenceProvider.GetAdditionalVariableReferences());
 	    }
 
 	    return references
