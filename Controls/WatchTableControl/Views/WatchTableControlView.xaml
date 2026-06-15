@@ -1,0 +1,73 @@
+<UserControl x:Class="Qenex.QSuite.Controls.WatchTableControl.Views.WatchTableControlView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:vm="clr-namespace:Qenex.QSuite.Controls.WatchTableControl.ViewModels"
+             xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
+             mc:Ignorable="d"
+             d:DesignHeight="180" d:DesignWidth="280"
+             d:DataContext="{d:DesignInstance vm:WatchTableControlViewModel, IsDesignTimeCreatable=False}"
+             Background="Transparent">
+
+	<UserControl.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/Qenex.QSuite.Controls.Control;component/Style/SharedStyles.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</UserControl.Resources>
+
+	<telerik:RadContextMenu.ContextMenu>
+		<telerik:RadContextMenu>
+			<telerik:RadMenuItem Header="Remove" Command="{Binding RemoveSelectedCommand}"/>
+			<telerik:RadMenuItem Header="Columns">
+				<telerik:RadMenuItem x:Name="ColNameItem" Header="Name" IsCheckable="True" Tag="Name" Click="OnColumnVisibilityClick"/>
+				<telerik:RadMenuItem x:Name="ColValueItem" Header="Value" IsCheckable="True" Tag="Value" Click="OnColumnVisibilityClick"/>
+				<telerik:RadMenuItem x:Name="ColUnitItem" Header="Unit" IsCheckable="True" Tag="Unit" Click="OnColumnVisibilityClick"/>
+				<telerik:RadMenuItem x:Name="ColTimeItem" Header="Time" IsCheckable="True" Tag="Time" Click="OnColumnVisibilityClick"/>
+			</telerik:RadMenuItem>
+			<telerik:RadMenuItem Header="Lock" IsCheckable="True" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
+		</telerik:RadContextMenu>
+	</telerik:RadContextMenu.ContextMenu>
+
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!-- Nastaveni -->
+		<telerik:RadExpander Grid.Row="0" Style="{StaticResource SquareExpanderStyle}" HorizontalAlignment="Left">
+			<Grid Margin="5">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="Auto"/>
+				</Grid.ColumnDefinitions>
+				<q:QTextBlock Grid.Column="0" Text="Refresh [ms]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Column="1" Text="{Binding RefreshTime, Mode=TwoWay}"
+				            Margin="8,3,0,0" Width="60" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+			</Grid>
+		</telerik:RadExpander>
+
+		<!-- Tabulka napojenych promennych -->
+		<telerik:RadGridView Grid.Row="1" x:Name="VariablesGrid"
+		                     ItemsSource="{Binding Rows}"
+		                     SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+		                     AutoGenerateColumns="False"
+		                     IsReadOnly="True"
+		                     CanUserFreezeColumns="False"
+		                     CanUserReorderColumns="True"
+		                     ShowGroupPanel="False"
+		                     RowIndicatorVisibility="Collapsed">
+			<telerik:RadGridView.Columns>
+				<telerik:GridViewDataColumn UniqueName="Name" Header="Name" DataMemberBinding="{Binding Name}" Width="*"/>
+				<telerik:GridViewDataColumn UniqueName="Value" Header="Value" DataMemberBinding="{Binding Value}" Width="Auto"/>
+				<telerik:GridViewDataColumn UniqueName="Unit" Header="Unit" DataMemberBinding="{Binding Unit}" Width="Auto"/>
+				<telerik:GridViewDataColumn UniqueName="Time" Header="Time" DataMemberBinding="{Binding Time, StringFormat='HH:mm:ss.fff'}" Width="Auto"/>
+			</telerik:RadGridView.Columns>
+		</telerik:RadGridView>
+
+	</Grid>
+</UserControl>
