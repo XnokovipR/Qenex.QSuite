@@ -204,7 +204,7 @@ public class SimulDataProtocol : ProtocolBase<int>
             }
             else if (scalarVariable.Values is Values<byte> byteValues)
             {
-                byteValues.Value = (byte)rnd.Next(0, 255);
+                byteValues.Value = (byte)rnd.Next(0, 4);
             }
             
             protVars.Add(simpleProtVariable);

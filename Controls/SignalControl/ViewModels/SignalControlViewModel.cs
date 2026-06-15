@@ -73,7 +73,7 @@ public class SignalControlViewModel : ControlBase
     {
 	    var dataValue = protVariable switch
 	    {
-		    ScalarVariable scVar => scVar.Values.ToString(),
+		    ScalarVariable scVar => scVar.GetPresentationText(),
 		    StringVariable stVar => stVar.Values
 	    };
 	    

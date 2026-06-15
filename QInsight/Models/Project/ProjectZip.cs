@@ -228,11 +228,14 @@ public class ProjectZip
     }
 
     // Known-types pro DataContract serializaci workspace. Controls se nacitaji jako pluginy,
-    // proto je zjistujeme dynamicky z prave nactenych assembly (vsechny ControlBase potomky)
+    // proto je zjistujeme dynamicky z nactenych control assembly (vsechny ControlBase potomky)
     // misto pevneho seznamu typeof(...). Plugin assembly jsou nactene jiz pri startu (toolbox).
+    // Scanujeme JEN Qenex control assembly - ne cely AppDomain (jine assembly, napr. s chybejici
+    // zavislosti Microsoft.Web.WebView2.Core, by pri GetTypes() hazely vyjimku).
     private static IEnumerable<Type> GetKnownControlTypes()
     {
         return AppDomain.CurrentDomain.GetAssemblies()
+            .Where(assembly => assembly.GetName().Name?.StartsWith("Qenex.QSuite.Controls", StringComparison.Ordinal) == true)
             .SelectMany(GetLoadableTypes)
             .Where(type => typeof(ControlBase).IsAssignableFrom(type)
                            && type is { IsClass: true, IsAbstract: false })
@@ -248,6 +251,10 @@ public class ProjectZip
         catch (ReflectionTypeLoadException ex)
         {
             return ex.Types.Where(type => type != null)!;
+        }
+        catch
+        {
+            return [];
         }
     }
 

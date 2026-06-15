@@ -111,7 +111,7 @@ public class WatchTableControlViewModel : ControlBase
 	{
 		var raw = protVariable switch
 		{
-			ScalarVariable scalar => scalar.Values.ToString(),
+			ScalarVariable scalar => scalar.GetPresentationText(),
 			StringVariable str => str.Values,
 			_ => null
 		};

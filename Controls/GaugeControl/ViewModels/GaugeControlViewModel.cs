@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.Serialization;
 using System.Windows;
 using Qenex.QSuite.Common.WpfComm;
@@ -205,21 +206,24 @@ public class GaugeControlViewModel : ControlBase
 
 	public override async Task UpdateVariableValueAsync(IVariableBase protVariable)
 	{
-		var raw = protVariable switch
+		double engValue;
+		switch (protVariable)
 		{
-			ScalarVariable scalar => scalar.Values.ToString(),
-			StringVariable str => str.Values,
-			_ => null
-		};
+			case ScalarVariable scalar:
+				engValue = scalar.GetEngValue();
+				break;
+			case StringVariable str when double.TryParse(str.Values, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed):
+				engValue = parsed;
+				break;
+			default:
+				return;
+		}
 
-		if (raw == null) return;
 		if (protVariable.Timestamp < previousUpdateTime) previousUpdateTime = DateTime.MinValue;
 		if ((protVariable.Timestamp - previousUpdateTime).TotalMilliseconds < RefreshTime) return;
 		previousUpdateTime = protVariable.Timestamp;
 
-		if (!double.TryParse(raw, out var doubleValue)) return;
-
-		_ = Application.Current.Dispatcher.BeginInvoke(() => Value = doubleValue);
+		_ = Application.Current.Dispatcher.BeginInvoke(() => Value = engValue);
 	}
 
 	[OnDeserialized]

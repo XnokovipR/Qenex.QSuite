@@ -263,7 +263,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
             lastUpdateTime = DateTime.MinValue;
         }
 
-        var val = ConvertValueToDouble(scalarVariable);
+        var val = scalarVariable.GetEngValue();
         var xVal = (timestamp - baseTime).TotalSeconds;
 
         if (chartVariable.XDateTimeVal.Count > 0)
@@ -661,19 +661,6 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
         }
     }
 
-    private double ConvertValueToDouble(ScalarVariable scalarVariable)
-    {
-        return scalarVariable.Values switch
-        {
-            Values<int> vi => Convert.ToDouble(vi.Value),
-            Values<double> vd => vd.Value,
-            Values<float> vf => Convert.ToDouble(vf.Value),
-            Values<bool> vf => Convert.ToDouble(vf.Value),
-            Values<byte> vf => Convert.ToDouble(vf.Value),
-            _ => throw new InvalidCastException("Unsupported variable type")
-        };
-    }
-    
     private void DisplayCursorBasedOnMouseMove(MouseEventArgs e)
     {
         if (!IsCrossEnabled) return;
