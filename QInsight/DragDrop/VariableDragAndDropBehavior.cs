@@ -26,7 +26,6 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
         base.OnAttached();
         DragDropManager.AddDragInitializeHandler(AssociatedObject, OnDragInitialized);
         DragDropManager.AddGiveFeedbackHandler(AssociatedObject, OnGiveFeedback);
-        DragDropManager.AddDragDropCompletedHandler(this.AssociatedObject, OnDropComleted);
     }
     
     private void OnDragInitialized(object sender, DragInitializeEventArgs e)
@@ -104,37 +103,6 @@ public class VariableDragAndDropBehavior : Behavior<ItemsControl>
     {
         e.SetCursor(IsOverValidTarget ? Cursors.Hand : Cursors.No);
         e.Handled = true;
-    }
-    
-    private void OnDropComleted(object sender, DragDropCompletedEventArgs e)
-    {
-        try
-        {
-            var protVariable = (IProtocolVariable)DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedProtocolVariable");
-            if (DragDropPayloadManager.GetDataFromObject(e.Data, "ChosenControl") is not IControlBase chosenControl)
-            {
-                return;
-            }
-
-            // Data notification
-            protVariable?.SubscribeAsyncValueChanged(async _ =>
-            {
-                if (protVariable.Variable is ScalarVariable sv)
-                {
-                    //Console.WriteLine($"x- Variable {sv.Label} changed to {sv.Values}");
-                    
-//#error chosenControl can be null here, need to investigate
-                    await chosenControl.UpdateVariableValueAsync(sv);
-                }
-            });
-
-            e.Handled = true;
-        }
-        catch (NullReferenceException)
-        {
-            // ignore
-        }
-        
     }
 
     private static IProtocolVariable? FindProtocolVariable(IEnumerable<IViewableItem> items, IVariableBase variable)

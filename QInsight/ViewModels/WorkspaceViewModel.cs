@@ -1,4 +1,4 @@
-﻿using System.Runtime.Serialization;
+using System.Runtime.Serialization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -33,7 +33,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     private bool isViewLoaded;
     private List<ControlBase> controlsToLoad = [];
     private List<IProtocolVariable> activeProtocolVariables = [];
-    private readonly List<(IProtocolVariable ProtocolVariable, Func<IProtocolVariable, Task> Handler)> loadedVariableSubscriptions = [];
+    private readonly List<(ControlBase Control, IProtocolVariable ProtocolVariable, Func<IProtocolVariable, Task> Handler)> loadedVariableSubscriptions = [];
 
     #endregion
     
@@ -286,22 +286,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 			    if (protocolVariable != null)
 			    {
 				    control.BindVariable(protocolVariable.Variable);
-				    Func<IProtocolVariable, Task> handler = changedProtocolVariable =>
-				    {
-					    var variableSnapshot = CreateVariableSnapshot(changedProtocolVariable.Variable);
-					    if (Application.Current?.Dispatcher == null || Application.Current.Dispatcher.CheckAccess())
-					    {
-						    return control.UpdateVariableValueAsync(variableSnapshot);
-					    }
-
-					    return Application.Current.Dispatcher
-						    .InvokeAsync(() => control.UpdateVariableValueAsync(variableSnapshot))
-						    .Task
-						    .Unwrap();
-				    };
-
-				    protocolVariable.SubscribeAsyncValueChanged(handler);
-				    loadedVariableSubscriptions.Add((protocolVariable, handler));
+				    SubscribeControlVariable(control, protocolVariable);
 			    }
 		    }
 	    }
@@ -460,6 +445,49 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
 	    loadedVariableSubscriptions.Clear();
     }
+
+    private void SubscribeControlVariable(ControlBase control, IProtocolVariable protocolVariable)
+    {
+	    if (loadedVariableSubscriptions.Any(s =>
+		    ReferenceEquals(s.Control, control) && ReferenceEquals(s.ProtocolVariable, protocolVariable)))
+	    {
+		    return;
+	    }
+
+	    Func<IProtocolVariable, Task> handler = changedProtocolVariable =>
+	    {
+		    var variableSnapshot = CreateVariableSnapshot(changedProtocolVariable.Variable);
+		    if (Application.Current?.Dispatcher == null || Application.Current.Dispatcher.CheckAccess())
+		    {
+			    return control.UpdateVariableValueAsync(variableSnapshot);
+		    }
+
+		    return Application.Current.Dispatcher
+			    .InvokeAsync(() => control.UpdateVariableValueAsync(variableSnapshot))
+			    .Task
+			    .Unwrap();
+	    };
+
+	    protocolVariable.SubscribeAsyncValueChanged(handler);
+	    loadedVariableSubscriptions.Add((control, protocolVariable, handler));
+    }
+
+    /// <summary>
+    /// Unsubscribes and drops this control's value subscriptions whose variable is no longer
+    /// bound to the control (e.g. a single-variable control that replaced its variable).
+    /// </summary>
+    private void PruneControlSubscriptions(ControlBase control)
+    {
+	    var currentReferences = GetControlVariableReferences(control).ToHashSet();
+	    foreach (var subscription in loadedVariableSubscriptions
+			    .Where(s => ReferenceEquals(s.Control, control)
+			        && !currentReferences.Contains(ControlBase.GetVariableReference(s.ProtocolVariable.Variable)))
+			    .ToList())
+	    {
+		    subscription.ProtocolVariable.UnsubscribeAsyncValueChanged(subscription.Handler);
+		    loadedVariableSubscriptions.Remove(subscription);
+	    }
+    }
     
     private void OnVariableDragOver(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
     {
@@ -479,16 +507,19 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     
     private void OnVariableDrop(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
     {
-	    var variable = DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
-	    if (variable is not IVariableBase varBase) return;
-    
+	    if (DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedProtocolVariable") is not IProtocolVariable protocolVariable) return;
+
 	    if (sender is not RadDiagramShape shape) return;
 	    if (shape.Content is not UserControl uc) return;
-	    if (uc.DataContext is not IControlBase control) return;
-	    
-	    control.BindVariable(varBase);
+	    if (uc.DataContext is not ControlBase control) return;
+
+	    // Bind first (single-variable controls replace, multi-variable add), then make the host-owned
+	    // subscriptions match: drop the ones the control no longer holds, subscribe the dropped one.
+	    control.BindVariable(protocolVariable.Variable);
+	    PruneControlSubscriptions(control);
+	    SubscribeControlVariable(control, protocolVariable);
+
 	    VariableDragAndDropBehavior.IsOverValidTarget = false;
-	    DragDropPayloadManager.SetData(e.Data, "ChosenControl", control);
 	    e.Handled = true;
     }
 

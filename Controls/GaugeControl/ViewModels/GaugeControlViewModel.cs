@@ -179,12 +179,16 @@ public class GaugeControlViewModel : ControlBase
 
 	public override void BindVariable(IVariableBase protVariable)
 	{
-		RememberVariableBinding(protVariable);
 		if (Variables.Any(v => v.Equals(protVariable)))
 		{
 			return;
 		}
 
+		// Single-variable control: replace the previous variable (host unsubscribes the old).
+		Variables.Clear();
+		LinkedVariables.Clear();
+
+		RememberVariableBinding(protVariable);
 		Variables.Add(protVariable);
 		VariableLabel = protVariable.Label;
 		VariableUnit = protVariable is ScalarVariable variable ? variable.Values.ValPresentation.Unit : string.Empty;
