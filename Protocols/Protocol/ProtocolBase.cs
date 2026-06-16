@@ -81,7 +81,13 @@ public abstract class ProtocolBase<T> : IProtocolBase
             highestId++;
             protocolVariable.Variable.Id = highestId;
         }
-        
+
+        // Diagnostika: aby ProtocolVariable mohla logovat tiše polykané výjimky odběratelů.
+        if (protocolVariable is ProtocolVariable concreteProtocolVariable)
+        {
+            concreteProtocolVariable.Logger = Logger;
+        }
+
         Variables.Add(protocolVariable);
     }
     

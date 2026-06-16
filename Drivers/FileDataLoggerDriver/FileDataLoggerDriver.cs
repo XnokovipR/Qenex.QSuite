@@ -26,6 +26,12 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
     private FileStream? logStream;
     private Task? writerTask;
 
+    // Diagnostika: hlášení, když logger přestane / zase začne zapisovat (pro hledání mezer v záznamu).
+    private readonly object skipReportLock = new();
+    private bool isSkipping;
+    private long skippedWhileSkipping;
+    private string? currentSkipReason;
+
     public FileDataLoggerDriver()
     {
         Specification = new SpecificationBase
@@ -93,15 +99,96 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 
     public Task OnProtocolVariableValueChangedAsync(IProtocolVariable sourceVariable)
     {
-        if (State != CommunicationState.Running || logStream == null || !CanSubscribe(sourceVariable))
+        // Driver je záměrně vypnutý (typicky během replaye / když logování není zapnuté) —
+        // logování se neočekává, takže žádné hlášení o "výpadku" (jinak falešný poplach).
+        if (!IsEnabled || State == CommunicationState.Disabled)
         {
             return Task.CompletedTask;
         }
 
-        var record = CreateRecord(sourceVariable);
-        BufferRecord(record);
-        waitHandle.Set();
+        var skipReason = GetSkipReason(sourceVariable);
+        if (skipReason != null)
+        {
+            ReportSkip(skipReason);
+            return Task.CompletedTask;
+        }
+
+        ReportLoggingResumed();
+
+        try
+        {
+            var record = CreateRecord(sourceVariable);
+            BufferRecord(record);
+            waitHandle.Set();
+        }
+        catch (Exception e)
+        {
+            Logger?.Log(
+                LogLevel.Error,
+                $"FileDataLogger failed to buffer a record for '{sourceVariable.Variable?.Name}': {e.Message}",
+                e);
+        }
+
         return Task.CompletedTask;
+    }
+
+    private string? GetSkipReason(IProtocolVariable sourceVariable)
+    {
+        if (State != CommunicationState.Running)
+        {
+            return $"driver state is {State} (not Running)";
+        }
+
+        if (logStream == null)
+        {
+            return "log stream is not open";
+        }
+
+        if (!CanSubscribe(sourceVariable))
+        {
+            return "no sink protocol can process this variable";
+        }
+
+        return null;
+    }
+
+    // Zaloguje POUZE přechod do/z přeskakování (ne každou hodnotu), aby šel z logu vyčíst
+    // přesný začátek a konec mezery v záznamu i počet nezalogovaných hodnot.
+    private void ReportSkip(string reason)
+    {
+        lock (skipReportLock)
+        {
+            if (!isSkipping)
+            {
+                isSkipping = true;
+                currentSkipReason = reason;
+                skippedWhileSkipping = 0;
+                Logger?.Log(
+                    LogLevel.Warn,
+                    $"FileDataLogger STOPPED recording — {reason}. Incoming values are NOT being logged.");
+            }
+
+            skippedWhileSkipping++;
+        }
+    }
+
+    private void ReportLoggingResumed()
+    {
+        lock (skipReportLock)
+        {
+            if (!isSkipping)
+            {
+                return;
+            }
+
+            Logger?.Log(
+                LogLevel.Warn,
+                $"FileDataLogger RESUMED recording after skipping {skippedWhileSkipping} value(s) "
+                + $"(reason was: {currentSkipReason}).");
+            isSkipping = false;
+            currentSkipReason = null;
+            skippedWhileSkipping = 0;
+        }
     }
 
     public override Task StartAsync(CancellationToken ct = default)
@@ -183,17 +270,28 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
     {
         await Task.Run(async () =>
         {
-            while (!exitRequested || HasPendingRecords())
+            try
             {
-                var record = TryTakeWritableRecord();
-                if (record != null)
+                while (!exitRequested || HasPendingRecords())
                 {
-                    await WriteRecordAsync(record);
+                    var record = TryTakeWritableRecord();
+                    if (record != null)
+                    {
+                        await WriteRecordAsync(record);
+                    }
+                    else
+                    {
+                        waitHandle.WaitOne(TimeSpan.FromMilliseconds(20));
+                    }
                 }
-                else
-                {
-                    waitHandle.WaitOne(TimeSpan.FromMilliseconds(20));
-                }
+            }
+            catch (Exception e)
+            {
+                // Pokud writer loop spadne, logování tiše skončí až do Stopu -> nahlásit.
+                Logger?.Log(
+                    LogLevel.Error,
+                    $"FileDataLogger writer loop terminated unexpectedly — recording has stopped: {e.Message}",
+                    e);
             }
         });
     }
@@ -279,6 +377,8 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
     {
         if (logStream == null)
         {
+            // Záznam už byl vyjmut z bufferu -> tady se tiše ztrácel. Nahlásit.
+            Logger?.Log(LogLevel.Warn, "FileDataLogger dropped a record because the log stream was closed.");
             return;
         }
 

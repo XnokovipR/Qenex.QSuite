@@ -1,4 +1,6 @@
-﻿using Qenex.QSuite.Specifications.ComponentSpecification;
+using System.Diagnostics;
+using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Specifications.ComponentSpecification;
 using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QSuite.Protocols.Protocol;
@@ -8,6 +10,10 @@ public class ProtocolVariable : IProtocolVariable
     public bool IsCommunicated { get; set; }
     public IVariableBase Variable { get; set; }
     public IProtVariableSpecification ProtocolVariableSpecification { get; set; }
+
+    // Diagnostika: výjimky odběratelů (graf, skripty, datalogger) se dříve tiše polykaly
+    // (catch {}), což skrývalo výpadky logování. Logger nastavuje protokol v ProtocolBase.AddVariable.
+    public ILogger? Logger { get; set; }
 
     public void NotifyValueChanged()
     {
@@ -23,8 +29,9 @@ public class ProtocolVariable : IProtocolVariable
             {
                 handler();
             }
-            catch
+            catch (Exception e)
             {
+                LogSubscriberException(nameof(NotifyValueChanged), e);
             }
         }
     }
@@ -37,7 +44,7 @@ public class ProtocolVariable : IProtocolVariable
     {
         OnValueChanged -= handler;
     }
-    
+
     public async Task NotifyValueChangedAsync()
     {
         var handlers = OnValueChangedAsync?.GetInvocationList();
@@ -69,8 +76,18 @@ public class ProtocolVariable : IProtocolVariable
         {
             await handler(this);
         }
-        catch
+        catch (Exception e)
         {
+            LogSubscriberException(nameof(NotifyValueChangedAsync), e);
         }
+    }
+
+    private void LogSubscriberException(string source, Exception e)
+    {
+        var message =
+            $"Value-changed subscriber threw in {source} for variable '{Variable?.Name}' (Id {Variable?.Id}): {e.Message}";
+        Logger?.Log(LogLevel.Error, message, e);
+        // Záchytná síť i tam, kde Logger není nastavený (viditelné v trace listeneru / debuggeru).
+        Trace.TraceError($"[ProtocolVariable] {message}{Environment.NewLine}{e}");
     }
 }
