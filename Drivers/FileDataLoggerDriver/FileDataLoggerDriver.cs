@@ -26,6 +26,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
     private FileStream? logStream;
     private Task? writerTask;
 
+    // TODO(datalog-gap diag): remove after root cause fixed.
     // Diagnostics: report when the logger stops / resumes recording (to locate gaps in the log).
     private readonly object skipReportLock = new();
     private bool isSkipping;
@@ -106,6 +107,8 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             return Task.CompletedTask;
         }
 
+        // TODO(datalog-gap diag): remove after root cause fixed — revert to the plain early-return
+        // (if State != Running || logStream == null || !CanSubscribe(sourceVariable) return).
         var skipReason = GetSkipReason(sourceVariable);
         if (skipReason != null)
         {
@@ -132,6 +135,8 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
         return Task.CompletedTask;
     }
 
+    // TODO(datalog-gap diag): remove this whole trio (GetSkipReason/ReportSkip/ReportLoggingResumed)
+    // and the skip-tracking fields after root cause fixed.
     private string? GetSkipReason(IProtocolVariable sourceVariable)
     {
         if (State != CommunicationState.Running)
