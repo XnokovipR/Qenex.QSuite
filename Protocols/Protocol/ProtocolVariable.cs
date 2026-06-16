@@ -11,8 +11,8 @@ public class ProtocolVariable : IProtocolVariable
     public IVariableBase Variable { get; set; }
     public IProtVariableSpecification ProtocolVariableSpecification { get; set; }
 
-    // Diagnostika: výjimky odběratelů (graf, skripty, datalogger) se dříve tiše polykaly
-    // (catch {}), což skrývalo výpadky logování. Logger nastavuje protokol v ProtocolBase.AddVariable.
+    // Diagnostics: subscriber exceptions (graph, scripts, data logger) used to be swallowed
+    // silently (catch {}), hiding logging dropouts. Logger is set by the protocol in ProtocolBase.AddVariable.
     public ILogger? Logger { get; set; }
 
     public void NotifyValueChanged()
@@ -87,7 +87,7 @@ public class ProtocolVariable : IProtocolVariable
         var message =
             $"Value-changed subscriber threw in {source} for variable '{Variable?.Name}' (Id {Variable?.Id}): {e.Message}";
         Logger?.Log(LogLevel.Error, message, e);
-        // Záchytná síť i tam, kde Logger není nastavený (viditelné v trace listeneru / debuggeru).
+        // Fallback for cases where Logger is not set (visible in a trace listener / debugger).
         Trace.TraceError($"[ProtocolVariable] {message}{Environment.NewLine}{e}");
     }
 }

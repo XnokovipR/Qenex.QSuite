@@ -26,7 +26,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
     private FileStream? logStream;
     private Task? writerTask;
 
-    // Diagnostika: hlášení, když logger přestane / zase začne zapisovat (pro hledání mezer v záznamu).
+    // Diagnostics: report when the logger stops / resumes recording (to locate gaps in the log).
     private readonly object skipReportLock = new();
     private bool isSkipping;
     private long skippedWhileSkipping;
@@ -99,8 +99,8 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 
     public Task OnProtocolVariableValueChangedAsync(IProtocolVariable sourceVariable)
     {
-        // Driver je záměrně vypnutý (typicky během replaye / když logování není zapnuté) —
-        // logování se neočekává, takže žádné hlášení o "výpadku" (jinak falešný poplach).
+        // Driver is intentionally off (typically during replay / when logging is not enabled) —
+        // recording is not expected, so do not report a "dropout" (would be a false alarm).
         if (!IsEnabled || State == CommunicationState.Disabled)
         {
             return Task.CompletedTask;
@@ -152,8 +152,8 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
         return null;
     }
 
-    // Zaloguje POUZE přechod do/z přeskakování (ne každou hodnotu), aby šel z logu vyčíst
-    // přesný začátek a konec mezery v záznamu i počet nezalogovaných hodnot.
+    // Logs ONLY the transition into/out of skipping (not every value), so the log reveals the
+    // exact start and end of a recording gap plus the number of values that were not logged.
     private void ReportSkip(string reason)
     {
         lock (skipReportLock)
@@ -287,7 +287,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             }
             catch (Exception e)
             {
-                // Pokud writer loop spadne, logování tiše skončí až do Stopu -> nahlásit.
+                // If the writer loop crashes, recording silently ends until Stop -> report it.
                 Logger?.Log(
                     LogLevel.Error,
                     $"FileDataLogger writer loop terminated unexpectedly — recording has stopped: {e.Message}",
@@ -377,7 +377,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
     {
         if (logStream == null)
         {
-            // Záznam už byl vyjmut z bufferu -> tady se tiše ztrácel. Nahlásit.
+            // The record was already removed from the buffer -> it used to be lost silently here. Report it.
             Logger?.Log(LogLevel.Warn, "FileDataLogger dropped a record because the log stream was closed.");
             return;
         }
