@@ -191,6 +191,12 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     {
 	    ConfigureControl(controlVm);
 
+	    if (controlVm is ControlBase controlBase)
+	    {
+		    controlBase.VariableBindingsChanged -= OnControlVariableBindingsChanged;
+		    controlBase.VariableBindingsChanged += OnControlVariableBindingsChanged;
+	    }
+
 	    var fgColor = ShellWindow.ForegroundColor;
 	    var bgColor = ShellWindow.BackgroundColor;
 	    var fontSize = ShellWindow.MainAppSettings.Design.FontSize;
@@ -488,6 +494,8 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 		    loadedVariableSubscriptions.Remove(subscription);
 	    }
     }
+
+    private void OnControlVariableBindingsChanged(ControlBase control) => PruneControlSubscriptions(control);
     
     private void OnVariableDragOver(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
     {

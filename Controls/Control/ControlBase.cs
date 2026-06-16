@@ -209,6 +209,15 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 		}
 	}
 
+	/// <summary>
+	/// Raised when the control changes its own variable bindings at runtime (e.g. the user
+	/// removed a variable), so the host can reconcile its value subscriptions.
+	/// </summary>
+	public event Action<ControlBase>? VariableBindingsChanged;
+
+	/// <summary>Notifies the host that this control's variable bindings changed.</summary>
+	protected void RaiseVariableBindingsChanged() => VariableBindingsChanged?.Invoke(this);
+
 	public static string GetVariableReference(IVariableBase variable)
 	{
 		return $"{variable.Id}|{variable.Namespace}|{variable.Name}";

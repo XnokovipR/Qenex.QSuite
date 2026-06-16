@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Globalization;
 using System.IO;
@@ -938,20 +938,30 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
     
     private void RemoveChartVariable(object parameter)
     {
-        if (SelectedChartVariable != null && SelectedChartVariable.ChartSignal != null)
+        var selected = SelectedChartVariable;
+        if (selected == null) return;
+
+        var index = ChartVariables.IndexOf(selected);
+        var removedVariable = selected.Variable;
+
+        if (selected.ChartSignal != null)
         {
-            var index = ChartVariables.IndexOf(SelectedChartVariable);
-            var cVar = SelectedChartVariable.Variable;
-            PlotControl.Plot.Remove(SelectedChartVariable.ChartSignal);
-            ChartVariables.Remove(SelectedChartVariable);
-            Variables.Remove(cVar);
-            RemoveChartVariableBinding(cVar);
-            if (ChartVariables.Count > 0)
-            {
-                SelectedChartVariable = ChartVariables[Math.Min(index, ChartVariables.Count - 1)];
-            }
-            PlotControl.Refresh();
+            PlotControl?.Plot.Remove(selected.ChartSignal);
         }
+
+        ChartVariables.Remove(selected);
+        if (removedVariable != null)
+        {
+            Variables.Remove(removedVariable);
+            RemoveChartVariableBinding(removedVariable);
+        }
+
+        SelectedChartVariable = ChartVariables.Count > 0
+            ? ChartVariables[Math.Min(index, ChartVariables.Count - 1)]
+            : null;
+
+        PlotControl?.Refresh();
+        RaiseVariableBindingsChanged();
     }
 
     private void RemoveChartVariableBinding(IVariableBase variable)

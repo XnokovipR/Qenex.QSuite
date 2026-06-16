@@ -146,6 +146,8 @@ public class WatchTableControlViewModel : ControlBase
 			Variables.Remove(variable);
 		}
 
+		RaiseVariableBindingsChanged();
+
 		SelectedRow = null;
 	}
 
