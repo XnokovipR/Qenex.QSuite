@@ -166,7 +166,11 @@
 	                            Command="{Binding RibbonDisconnectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
 						<telerik:RadRibbonGroup x:Name="ReplayDataGroup"
+						                        DefaultVariant="Large"
 						                        Width="{Binding ActualWidth, ElementName=RibbonMenu, Converter={StaticResource ReplayTimelineWidthConverter}}">
+							<telerik:RadRibbonGroup.Variants>
+								<telerik:GroupVariant Variant="Large" Priority="100" />
+							</telerik:RadRibbonGroup.Variants>
 							<telerik:RadRibbonGroup.Header>
 								<TextBlock Text="Replay data"
 								           Width="{Binding ActualWidth, ElementName=ReplayDataGroup, Converter={StaticResource ReplayDataContentWidthConverter}}"
