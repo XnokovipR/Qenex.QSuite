@@ -164,6 +164,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GaugeControl", "Controls\Ga
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WatchTableControl", "Controls\WatchTableControl\WatchTableControl.csproj", "{FC3F2C77-649B-4312-8DCC-0685532708A3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RawCanProtocol", "Protocols\RawCanProtocol\RawCanProtocol.csproj", "{7659B23A-20BC-48E3-815F-47CC6D126253}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -798,6 +800,18 @@ Global
 		{FC3F2C77-649B-4312-8DCC-0685532708A3}.Release|x64.Build.0 = Release|Any CPU
 		{FC3F2C77-649B-4312-8DCC-0685532708A3}.Release|x86.ActiveCfg = Release|Any CPU
 		{FC3F2C77-649B-4312-8DCC-0685532708A3}.Release|x86.Build.0 = Release|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Debug|x64.Build.0 = Debug|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Debug|x86.Build.0 = Debug|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Release|x64.ActiveCfg = Release|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Release|x64.Build.0 = Release|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Release|x86.ActiveCfg = Release|Any CPU
+		{7659B23A-20BC-48E3-815F-47CC6D126253}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -867,6 +881,7 @@ Global
 		{536DCD0C-169A-464B-8749-060B49E32F63} = {2F390566-E2DF-4D8B-93D9-FEEC53923D27}
 		{6F670C8F-B68C-4275-8360-93484DFBED9C} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
 		{FC3F2C77-649B-4312-8DCC-0685532708A3} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
+		{7659B23A-20BC-48E3-815F-47CC6D126253} = {2F390566-E2DF-4D8B-93D9-FEEC53923D27}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {30000164-E084-4EF1-818A-1B98829BA5EA}
