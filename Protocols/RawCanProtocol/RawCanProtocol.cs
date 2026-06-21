@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Reflection;
 using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.LogSystems.LogSystem;
@@ -5,14 +6,16 @@ using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.VariableEvents;
+using ValueDataType = Qenex.QSuite.Variables.QVariables.Values.ValuesGlobal.ValueDataType;
 
 namespace Qenex.QSuite.Protocols.RawCanProtocol;
 
 /// <summary>
 /// Simple receive-only protocol over a CAN driver. Each variable is addressed by an 11-bit standard
-/// CAN identifier; an incoming frame with a matching id updates that variable's raw value (the first
-/// up to 4 data bytes as a little-endian uint32). No J1939 parsing — raw monitoring only.
-/// Extended (29-bit) frames are ignored by this protocol.
+/// CAN identifier; an incoming frame with a matching id updates that variable's raw value, decoded
+/// from the frame bytes according to the variable's type (byte/sbyte, short/ushort, int/uint,
+/// long/ulong, float, double), a configurable byte offset and byte order. No J1939 parsing — raw
+/// monitoring only. Extended (29-bit) frames are ignored by this protocol.
 /// </summary>
 public class RawCanProtocol : ProtocolBase<CanFrame>
 {
@@ -48,7 +51,7 @@ public class RawCanProtocol : ProtocolBase<CanFrame>
 
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent variableEvent, string id)
     {
-        return CreateProtocolVariable(variable, $"address=\"{id}\"", true);
+        return CreateProtocolVariable(variable, $"canId=\"{id}\"", true);
     }
 
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents, string commParams, bool isCommunicated)
@@ -130,7 +133,7 @@ public class RawCanProtocol : ProtocolBase<CanFrame>
                     continue;
                 }
 
-                if (TrySetRawValue(scalarVariable, frame))
+                if (TrySetRawValue(scalarVariable, frame, spec))
                 {
                     updated.Add(protocolVariable);
                 }
@@ -140,29 +143,61 @@ public class RawCanProtocol : ProtocolBase<CanFrame>
         return updated;
     }
 
-    // Raw value = first up to 4 data bytes as a little-endian uint32 (shorter frames are zero-padded).
-    private bool TrySetRawValue(ScalarVariable scalarVariable, CanFrame frame)
+    // Builds the variable's raw value from the frame bytes according to the variable's type, the
+    // configured offset and byte order. Missing bytes (short frame / offset past the end) are zero-padded.
+    private bool TrySetRawValue(ScalarVariable scalarVariable, CanFrame frame, RawCanProtocolVariableSpecification spec)
     {
-        uint value = 0;
-        var count = Math.Min(frame.Data.Length, 4);
-        for (var i = 0; i < count; i++)
-        {
-            value |= (uint)frame.Data[i] << (8 * i);
-        }
-
-        try
-        {
-            scalarVariable.SetValue(value);
-            scalarVariable.Timestamp = DateTime.UtcNow;
-            return true;
-        }
-        catch (InvalidCastException)
+        var valueType = scalarVariable.Values.ValueType;
+        var size = SizeOf(valueType);
+        if (size == 0)
         {
             Logger?.Log(LogLevel.Warn,
-                $"RawCanProtocol: variable '{scalarVariable.Name}' (id 0x{frame.CanId:X3}) must be of type UInt (uint32).");
+                $"RawCanProtocol: variable '{scalarVariable.Name}' (id 0x{frame.CanId:X3}) has unsupported type {valueType}.");
             return false;
         }
+
+        // Collect the value's bytes starting at the offset; normalize to little-endian for the readers below.
+        Span<byte> buffer = stackalloc byte[8];
+        for (var i = 0; i < size; i++)
+        {
+            var index = spec.Offset + i;
+            buffer[i] = index < frame.Data.Length ? frame.Data[index] : (byte)0;
+        }
+
+        if (spec.ByteOrder == RawCanByteOrder.BigEndian)
+        {
+            buffer[..size].Reverse();
+        }
+
+        object value = valueType switch
+        {
+            ValueDataType.Byte => buffer[0],
+            ValueDataType.SByte => (sbyte)buffer[0],
+            ValueDataType.UShort => BinaryPrimitives.ReadUInt16LittleEndian(buffer),
+            ValueDataType.Short => BinaryPrimitives.ReadInt16LittleEndian(buffer),
+            ValueDataType.UInt => BinaryPrimitives.ReadUInt32LittleEndian(buffer),
+            ValueDataType.Int => BinaryPrimitives.ReadInt32LittleEndian(buffer),
+            ValueDataType.ULong => BinaryPrimitives.ReadUInt64LittleEndian(buffer),
+            ValueDataType.Long => BinaryPrimitives.ReadInt64LittleEndian(buffer),
+            ValueDataType.Float => BinaryPrimitives.ReadSingleLittleEndian(buffer),
+            ValueDataType.Double => BinaryPrimitives.ReadDoubleLittleEndian(buffer),
+            _ => null!
+        };
+
+        scalarVariable.SetValue(value);
+        scalarVariable.Timestamp = DateTime.UtcNow;
+        return true;
     }
+
+    // Byte width of a scalar value type; 0 for types this protocol cannot map from raw CAN bytes.
+    private static int SizeOf(ValueDataType valueType) => valueType switch
+    {
+        ValueDataType.Byte or ValueDataType.SByte => 1,
+        ValueDataType.UShort or ValueDataType.Short => 2,
+        ValueDataType.UInt or ValueDataType.Int or ValueDataType.Float => 4,
+        ValueDataType.ULong or ValueDataType.Long or ValueDataType.Double => 8,
+        _ => 0
+    };
 
     #endregion
 }
