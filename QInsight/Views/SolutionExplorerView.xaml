@@ -56,9 +56,17 @@
                 <HierarchicalDataTemplate DataType="{x:Type viewableItem:IViewableItem}" ItemsSource="{Binding Children}">
                     <StackPanel Orientation="Horizontal" Margin="-10,-4,0,-4"
                                 Tag="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=telerik:RadTreeView}, Path=DataContext}">
-                        <Image Source="{Binding Icon}"
-                               RenderOptions.BitmapScalingMode="Fant"
-                               Stretch="Fill" Width="24" Height="24"/>
+                        <Grid Width="24" Height="24">
+                            <Image Source="{Binding Icon}"
+                                   RenderOptions.BitmapScalingMode="Fant"
+                                   Stretch="Fill" Width="24" Height="24"/>
+                            <!-- Badge: variable is bound to a driver/protocol (collapsed for items without the property). -->
+                            <Ellipse Width="5" Height="5"
+                                     HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                     Margin="0,0,5,6"
+                                     Fill="#1E88E5" Stroke="#1E88E5" StrokeThickness="0.8"
+                                     Visibility="{Binding BadgeVisibility, FallbackValue=Collapsed}"/>
+                        </Grid>
                         <TextBlock VerticalAlignment="Center" Text="{Binding Label, Mode=TwoWay}" FontWeight="{Binding LabelWeight}"/>
                         <StackPanel.ToolTip>
                             <ToolTip Visibility="{Binding ToolTipVisibility}">

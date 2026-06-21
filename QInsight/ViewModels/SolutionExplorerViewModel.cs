@@ -144,8 +144,9 @@ public class SolutionExplorerViewModel : ViewModelBase
         CreateDriverWrappers(projectWrapper.Children, realPrjData.Module.Drivers);
         
         CreateVariableEventWrapper(projectWrapper.Children, realPrjData.Module.VarEvents);
-        
-        CreateVariableWrapper(projectWrapper.Children, realPrjData.Module.Variables);
+
+        var communicatedVariableIds = GetCommunicatedVariableIds(realPrjData.Module.Drivers);
+        CreateVariableWrapper(projectWrapper.Children, realPrjData.Module.Variables, communicatedVariableIds);
 
         CreatePresentationWrapper(projectWrapper.Children, realPrjData.Module.Presentations);
         
@@ -173,21 +174,38 @@ public class SolutionExplorerViewModel : ViewModelBase
         }
     }
     
-    private void CreateVariableWrapper(ObservableCollection<IViewableItem> children, IList<IVariableBase> variables)
+    // Ids of variables assigned to any driver/protocol; such variables can be bound to a Control and are
+    // badged in the Solution Explorer to set them apart from variables that are not bound to any source.
+    private static HashSet<int> GetCommunicatedVariableIds(IList<IDriverBase> drivers)
+    {
+        return drivers
+            .SelectMany(driver => driver.Protocols)
+            .SelectMany(protocol => protocol.Variables)
+            .Select(protocolVariable => protocolVariable.Variable.Id)
+            .ToHashSet();
+    }
+
+    private void CreateVariableWrapper(
+        ObservableCollection<IViewableItem> children,
+        IList<IVariableBase> variables,
+        HashSet<int> communicatedVariableIds)
     {
         // Add variables node
         var variablesNode = new NodeSeWrapper(NodeSeWrapper.NodeType.Variables);
         variablesNode.CustomTags!["Variables"] = variables;
         children.Add(variablesNode);
-        
+
         // Add variables
         foreach (var variable in variables)
         {
-            CreateVariableInNamespace(variablesNode.Children, variable);
+            CreateVariableInNamespace(variablesNode.Children, variable, communicatedVariableIds);
         }
     }
 
-    private void CreateVariableInNamespace(ObservableCollection<IViewableItem> variablesNode, IVariableBase variable)
+    private void CreateVariableInNamespace(
+        ObservableCollection<IViewableItem> variablesNode,
+        IVariableBase variable,
+        HashSet<int> communicatedVariableIds)
     {
         var tempVariablesNode = variablesNode;
         var namespaces = variable.Namespace.Split('/').Skip(1).ToArray();
@@ -215,7 +233,7 @@ public class SolutionExplorerViewModel : ViewModelBase
                 tempVariablesNode = existingNamespace.Children;
             }
         }
-        var variableWrapper = new VariableSeWrapper(variable);
+        var variableWrapper = new VariableSeWrapper(variable, communicatedVariableIds.Contains(variable.Id));
         tempVariablesNode.Add(variableWrapper);
         
     }

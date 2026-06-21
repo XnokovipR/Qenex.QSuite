@@ -13,9 +13,10 @@ namespace Qenex.QInsight.ViewModels.SolutionExplorerWrappers;
 
 public class VariableSeWrapper : PropertyChangedBase, IViewableItem
 {
-    public VariableSeWrapper(IVariableBase variable)
+    public VariableSeWrapper(IVariableBase variable, bool isBoundToSource = false)
     {
         Variable = variable;
+        IsBoundToSource = isBoundToSource;
     }
     #region UI Properties
     
@@ -26,7 +27,13 @@ public class VariableSeWrapper : PropertyChangedBase, IViewableItem
     }
 
     public IVariableBase Variable { get; set; }
-    
+
+    // True when the variable is assigned to a driver/protocol (i.e. it can be bound to a Control).
+    // Drives the badge overlay on the Solution Explorer icon.
+    public bool IsBoundToSource { get; }
+
+    public Visibility BadgeVisibility => IsBoundToSource ? Visibility.Visible : Visibility.Collapsed;
+
     public FontWeight LabelWeight => FontWeights.Normal;
 
     public Visibility ToolTipVisibility => Visibility.Visible;
@@ -50,6 +57,8 @@ public class VariableSeWrapper : PropertyChangedBase, IViewableItem
         sb.Append($"Name\t{Variable.Name}");
         sb.Append(Environment.NewLine);
         sb.Append($"Descr.\t{Variable.Description}");
+        sb.Append(Environment.NewLine);
+        sb.Append($"Source\t{(IsBoundToSource ? "bound to driver/protocol" : "not bound")}");
         sb.Append(Environment.NewLine);
 
         if (Variable is ScalarVariable scalarVariable)
