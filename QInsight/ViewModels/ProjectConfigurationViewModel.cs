@@ -1254,18 +1254,15 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         ProjectConfigurationVariableWrapper variable,
         IReadOnlyCollection<VariableUsage> usages)
     {
-        var workspaces = string.Join(
+        var lines = string.Join(
             Environment.NewLine,
-            usages
-                .Select(usage => usage.WorkspaceName)
-                .Distinct()
-                .Select(name => $"  • {name}"));
+            usages.Select(usage => $"  • [{usage.WorkspaceName}] {usage.ControlLabel}"));
 
-        return $"Variable '{variable.DisplayName}' cannot be deleted because it is still used in the following workspaces:"
+        return $"Variable '{variable.DisplayName}' cannot be deleted because it is still used:"
                + Environment.NewLine
-               + workspaces
+               + lines
                + Environment.NewLine
-               + "Remove it from these workspaces first, then delete the variable.";
+               + "Remove it from these controls first, then delete the variable.";
     }
 
     private int CreateUniqueVariableId()

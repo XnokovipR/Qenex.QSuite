@@ -45,11 +45,15 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
         BackgroundColor = ShellWindow.IsDarkTheme ? DarkBackgroundColor : LightBackgroundColor;
         //WorkspaceViewLoadedCommand = new RelayCommand<UserControl>(OnWorkspaceViewLoaded);
         WorkspaceViewLoadedCommand = new RelayCommand<RadDiagram>(OnWorkspaceViewLoaded);
-        EventAggregator.SubscribeAction<VariablePropertiesChangedMsg>(msg =>
-        {
-	        RefreshControlVariableBindings(msg.Variable);
-        });
+        EventAggregator.SubscribeAction<VariablePropertiesChangedMsg>(OnVariablePropertiesChanged);
         EventAggregator.SubscribeAction<VariableUsageQuery>(CollectVariableUsage);
+    }
+
+    // Named handler (not a lambda) so it can be unsubscribed in Clean() — otherwise a closed/reloaded
+    // workspace stays subscribed and keeps answering queries from its stale state (zombie workspace).
+    private void OnVariablePropertiesChanged(VariablePropertiesChangedMsg msg)
+    {
+        RefreshControlVariableBindings(msg.Variable);
     }
 
     #endregion
@@ -355,6 +359,11 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     {
 	    UnsubscribeLoadedControlVariables();
 	    activeProtocolVariables.Clear();
+
+	    // Release EventAggregator subscriptions taken in the constructor; without this a removed
+	    // workspace lingers as a subscriber (zombie) and still answers VariableUsageQuery from stale state.
+	    EventAggregator.UnsubscribeAction<VariablePropertiesChangedMsg>(OnVariablePropertiesChanged);
+	    EventAggregator.UnsubscribeAction<VariableUsageQuery>(CollectVariableUsage);
     }
 
     private void RefreshControlVariableBindings(IVariableBase variable)
@@ -374,8 +383,8 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 		    {
 			    query.Usages.Add(new VariableUsage
 			    {
-				    WorkspaceName = WinTitle,
-				    ControlLabel = $"{control.Label} (Id {control.Id})"
+				    WorkspaceName = string.IsNullOrWhiteSpace(WinTitle) ? (string.IsNullOrWhiteSpace(Name) ? "(unnamed workspace)" : Name) : WinTitle,
+				    ControlLabel = $"{control.GetType().Name} '{control.Label}' (Id {control.Id}) [source={(isViewLoaded ? "diagram" : "controlsToLoad/not-opened")}; refs={string.Join(", ", GetControlVariableReferences(control).Where(r => ControlBase.IsVariableReferenceMatch(r, query.Variable)))}]"
 			    });
 		    }
 	    }
@@ -383,8 +392,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     public override Task CleanAsync(CancellationToken ct = default)
     {
-	    UnsubscribeLoadedControlVariables();
-	    activeProtocolVariables.Clear();
+	    Clean();
 	    return Task.CompletedTask;
     }
 
@@ -409,14 +417,14 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     private IEnumerable<ControlBase> GetWorkspaceControls()
     {
-	    if (!isViewLoaded)
-	    {
-		    return controlsToLoad;
-	    }
+	    var controls = isViewLoaded
+		    ? controlsToLoad.Concat(GetDiagramControls().Select(item => item.Control))
+		    : controlsToLoad;
 
-	    return controlsToLoad
-		    .Concat(GetDiagramControls().Select(item => item.Control))
-		    .Distinct();
+	    // Dedup by logical control identity (type + Id), not reference: the same control can appear as
+	    // separate instances across controlsToLoad/diagram (or as duplicate diagram shapes), and reference
+	    // equality would let those slip through and be counted/reported multiple times.
+	    return controls.DistinctBy(control => (control.GetType(), control.Id));
     }
 
     private static IEnumerable<string> GetControlVariableReferences(ControlBase control)

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.QVariables.Values;
@@ -79,14 +80,13 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
 
         if (currentState.ScalarState != null)
         {
-            properties.Add(Create("Scalar", "Size", () => currentState.ScalarState.Size, value => UpdateScalarState(s => s with { Size = Parse<int>(value) })));
+            // Size and Value Size are not editable: they are derived from Data Type and Length on apply.
             properties.Add(Create(
                 "Values",
                 "Data Type",
                 () => currentState.ScalarState.ValueType,
                 value => UpdateScalarState(s => s with { ValueType = Parse<ValuesGlobal.ValueDataType>(value) }),
                 ValuesGlobal.ValueDataTypeDict.Keys.Select(valueType => valueType.ToString())));
-            properties.Add(Create("Values", "Value Size", () => currentState.ScalarState.ValueSize, value => UpdateScalarState(s => s with { ValueSize = Parse<int>(value) })));
             properties.Add(Create("Values", "Length", () => currentState.ScalarState.Length, value => UpdateScalarState(s => s with { Length = Parse<int>(value) })));
             presentationProperty = Create(
                 "Values",
@@ -148,8 +148,6 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
 
     private void ApplyScalarState(ScalarVariable scalarVariable, ScalarVariableState state)
     {
-        scalarVariable.Size = state.Size;
-
         if (scalarVariable.Values.ValueType != state.ValueType)
         {
             var currentValue = scalarVariable.Values.GetValue();
@@ -166,8 +164,13 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
             scalarVariable.Values = newValues;
         }
 
-        scalarVariable.Values.Size = state.ValueSize;
         scalarVariable.Values.Length = state.Length;
+
+        // Size and Value Size are derived (not user-entered) and stored on the variable / serialized to
+        // XML from here: value size = byte width of the type, total size = value size * element count.
+        scalarVariable.Values.Size = GetValueSize(state.ValueType);
+        scalarVariable.Size = scalarVariable.Values.Size * Math.Max(state.Length, 1);
+
         scalarVariable.Values.ValPresentation = string.IsNullOrWhiteSpace(state.PresentationName)
             ? null!
             : presentations.First(presentation => presentation.Name.Equals(state.PresentationName, StringComparison.OrdinalIgnoreCase));
@@ -215,6 +218,12 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
         return Type.GetType(typeName) ?? throw new InvalidOperationException($"Type \"{typeName}\" was not found.");
     }
 
+    // Byte width of a single value of the given type, derived from the type itself (String has none).
+    private static int GetValueSize(ValuesGlobal.ValueDataType valueType)
+    {
+        return valueType == ValuesGlobal.ValueDataType.String ? 0 : Marshal.SizeOf(GetSystemType(valueType));
+    }
+
     private sealed record VariableState(
         int Id,
         string Namespace,
@@ -238,18 +247,14 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
     }
 
     private sealed record ScalarVariableState(
-        int Size,
         ValuesGlobal.ValueDataType ValueType,
-        int ValueSize,
         int Length,
         string PresentationName)
     {
         public static ScalarVariableState FromScalarVariable(ScalarVariable scalarVariable)
         {
             return new ScalarVariableState(
-                scalarVariable.Size,
                 scalarVariable.Values.ValueType,
-                scalarVariable.Values.Size,
                 scalarVariable.Values.Length,
                 scalarVariable.Values.ValPresentation?.Name ?? string.Empty);
         }
