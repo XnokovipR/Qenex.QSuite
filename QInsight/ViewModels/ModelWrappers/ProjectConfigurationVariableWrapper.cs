@@ -154,7 +154,15 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
         {
             var currentValue = scalarVariable.Values.GetValue();
             var newValues = ValuesGlobal.CreateInstance(state.ValueType);
-            newValues.SetValue(ConvertTo(Convert.ToString(currentValue, CultureInfo.InvariantCulture) ?? string.Empty, GetSystemType(state.ValueType)));
+
+            // Migrate the existing value to the new type; if it does not fit (e.g. a large uint32
+            // switched to ushort) keep the new type's default rather than crashing on overflow.
+            if (TryConvertTo(Convert.ToString(currentValue, CultureInfo.InvariantCulture) ?? string.Empty,
+                    GetSystemType(state.ValueType), out var convertedValue))
+            {
+                newValues.SetValue(convertedValue);
+            }
+
             scalarVariable.Values = newValues;
         }
 
@@ -183,6 +191,22 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
         }
 
         return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+    }
+
+    // Best-effort conversion used when changing a variable's data type: returns false instead of
+    // throwing when the value cannot be represented in the target type (overflow / bad format).
+    private static bool TryConvertTo(string value, Type targetType, out object converted)
+    {
+        try
+        {
+            converted = ConvertTo(value, targetType);
+            return true;
+        }
+        catch (Exception exception) when (exception is OverflowException or FormatException or InvalidCastException)
+        {
+            converted = null!;
+            return false;
+        }
     }
 
     private static Type GetSystemType(ValuesGlobal.ValueDataType valueType)
