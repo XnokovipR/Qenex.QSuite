@@ -170,9 +170,9 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         RemoveProtocolCommand = new RelayCommand<object>(_ => RemoveProtocol(), _ => SelectedProtocol != null);
         SelectDriverCommand = new RelayCommand<object>(SelectDriver);
         AddVariableCommand = new RelayCommand<object>(_ => AddVariable(), _ => CanAddVariable());
-        RemoveVariableCommand = new RelayCommand<object>(_ => RemoveVariable(), _ => SelectedVariable != null);
+        RemoveVariableCommand = new RelayCommand<object>(_ => RemoveVariable(), _ => CanRemoveVariable());
         AddVariableToSourceCommand = new RelayCommand<object>(_ => AddVariableToSource(), _ => CanAddVariableToSource());
-        RemoveCommunicatedVariableCommand = new RelayCommand<object>(_ => RemoveCommunicatedVariable(), _ => SelectedCommunicatedVariable != null);
+        RemoveCommunicatedVariableCommand = new RelayCommand<object>(_ => RemoveCommunicatedVariable(), _ => CanRemoveCommunicatedVariable());
         SelectScriptCommand = new RelayCommand<object>(SelectScript);
         AddConversionCommand = new RelayCommand<object>(_ => AddConversion());
         RemoveConversionCommand = new RelayCommand<object>(_ => RemoveConversion(), _ => SelectedConversion != null);
@@ -1243,6 +1243,18 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         NotifyHasChangesChanged();
     }
 
+    // A variable still assigned to a driver/protocol must not be deletable: remove it from the source
+    // (left arrow) first. The "-" button stays disabled while the variable is communicated anywhere.
+    private bool CanRemoveVariable()
+    {
+        return SelectedVariable != null && !IsVariableAssignedToSource(SelectedVariable);
+    }
+
+    private bool IsVariableAssignedToSource(ProjectConfigurationVariableWrapper variable)
+    {
+        return CommunicatedVariables.Any(communicated => communicated.Variable.Id == variable.Id);
+    }
+
     private List<VariableUsage> QueryVariableUsage(IVariableBase variable)
     {
         var query = new VariableUsageQuery { Variable = variable };
@@ -1708,6 +1720,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             CommunicatedVariables.Add(wrapper);
             addedCommunicatedVariables.Add(wrapper);
             SelectedCommunicatedVariable = wrapper;
+            RemoveVariableCommand?.OnCanExecuteChanged();
             NotifyHasChangesChanged();
         }
         catch (Exception e)
@@ -1733,6 +1746,15 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         RemoveCommunicatedVariable(SelectedCommunicatedVariable);
     }
 
+    // A communicated variable bound to a Control must not be detachable from its driver/protocol: that
+    // would break the control's binding. The left arrow stays disabled until the variable is removed
+    // from every control that uses it.
+    private bool CanRemoveCommunicatedVariable()
+    {
+        return SelectedCommunicatedVariable != null
+               && QueryVariableUsage(SelectedCommunicatedVariable.Variable).Count == 0;
+    }
+
     private void RemoveCommunicatedVariable(ProjectConfigurationProtocolVariableWrapper communicatedVariable)
     {
         communicatedVariable.PropertyChanged -= OnCommunicatedVariablePropertyChanged;
@@ -1747,6 +1769,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
 
         SelectedCommunicatedVariable = CommunicatedVariables.FirstOrDefault();
+        RemoveVariableCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
     }
 
