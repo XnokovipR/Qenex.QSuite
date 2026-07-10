@@ -24,6 +24,7 @@
 		<converters:RibbonRemainingWidthConverter x:Key="ReplayDataContentWidthConverter"
 		                                          ReservedWidth="32"
 		                                          MinWidth="520"/>
+		<BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
 	</Window.Resources>
 	
 	<Window.DataContext>
@@ -306,9 +307,16 @@
 
                     <!-- Ribbon Menu - Help -->
                     <telerik:RadRibbonTab Header="Help" x:Name="HelpTab">
+                        <telerik:RadRibbonGroup Header="License">
+                            <telerik:RadRibbonButton
+	                            Text="License"
+	                            Size="Large"
+	                            SmallImage="../Icons/Menu/License.png"
+	                            Command="{Binding RibbonLicenseCommand}"/>
+                        </telerik:RadRibbonGroup>
                         <telerik:RadRibbonGroup Header="Documentation">
                             <telerik:RadRibbonButton
-	                            Text="About" 
+	                            Text="About"
 	                            Size="Large"
 	                            SmallImage="../Icons/QInsight.png"
 	                            Command="{Binding RibbonAboutAppCommand}"/>
@@ -317,7 +325,19 @@
                 </telerik:RadRibbonView.Items>
 			</telerik:RadRibbonView>
 
-			<telerik:RadDocking 
+			<!-- Free-license badge: top-right corner of the ribbon row, directly below the
+			     window close button (the native title bar cannot host WPF content). -->
+			<q:QTextBlock Grid.Row="0"
+			              HorizontalAlignment="Right"
+			              VerticalAlignment="Top"
+			              Margin="0,6,10,0"
+			              FontWeight="SemiBold"
+			              Foreground="DarkOrange"
+			              IsHitTestVisible="False"
+			              Text="FREE NON-COMMERCIAL LICENCE"
+			              Visibility="{Binding IsFreeLicense, Converter={StaticResource BoolToVisibility}}"/>
+
+			<telerik:RadDocking
 				x:Name="RadDocking"
 				Grid.Row="1"
 				CloseButtonPosition="InPaneAndGroup"

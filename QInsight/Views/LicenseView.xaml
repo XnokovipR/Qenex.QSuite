@@ -1,0 +1,104 @@
+<UserControl x:Class="Qenex.QInsight.Views.LicenseView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
+             xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
+             mc:Ignorable="d"
+             MinWidth="560"
+             d:DataContext="{d:DesignInstance vm:LicenseViewModel, IsDesignTimeCreatable=False}">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type q:QTextBox}" BasedOn="{StaticResource {x:Type TextBox}}"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+    </UserControl.Resources>
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- License status -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <q:QTextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,12,4" Text="Status" FontWeight="Bold"/>
+            <q:QTextBlock Grid.Row="0" Grid.Column="1" Margin="0,0,0,4" Text="{Binding StatusText}" FontWeight="Bold"/>
+
+            <q:QTextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,12,4" Text="Tier"
+                          Visibility="{Binding HasLicenseInfo, Converter={StaticResource BoolToVisibility}}"/>
+            <q:QTextBlock Grid.Row="1" Grid.Column="1" Margin="0,0,0,4" Text="{Binding TierText}"
+                          Visibility="{Binding HasLicenseInfo, Converter={StaticResource BoolToVisibility}}"/>
+
+            <q:QTextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,12,4" Text="Subscription ends"
+                          Visibility="{Binding HasLicenseInfo, Converter={StaticResource BoolToVisibility}}"/>
+            <q:QTextBlock Grid.Row="2" Grid.Column="1" Margin="0,0,0,4" Text="{Binding SubscriptionEndsText}"
+                          Visibility="{Binding HasLicenseInfo, Converter={StaticResource BoolToVisibility}}"/>
+
+            <q:QTextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,12,4" Text="Token valid until"
+                          Visibility="{Binding HasLicenseInfo, Converter={StaticResource BoolToVisibility}}"/>
+            <q:QTextBlock Grid.Row="3" Grid.Column="1" Margin="0,0,0,4" Text="{Binding TokenValidUntilText}"
+                          Visibility="{Binding HasLicenseInfo, Converter={StaticResource BoolToVisibility}}"/>
+
+            <q:QTextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,12,4" Text="This machine"/>
+            <q:QTextBlock Grid.Row="4" Grid.Column="1" Margin="0,0,0,4" Text="{Binding MachineText}"/>
+        </Grid>
+
+        <!-- Free tier notice -->
+        <q:QTextBlock Grid.Row="1"
+                      Margin="0,4,0,0"
+                      Text="Free tier — personal/non-commercial use only."
+                      FontStyle="Italic"
+                      Visibility="{Binding IsFreeTier, Converter={StaticResource BoolToVisibility}}"/>
+
+        <!-- License key entry -->
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <q:QTextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Text="License key"/>
+            <q:QTextBox Grid.Column="1" Margin="0,0,6,0" VerticalAlignment="Center"
+                        FontFamily="Consolas"
+                        Text="{Binding LicenseKeyInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            <telerik:RadButton Grid.Column="2" MinWidth="80" Content="Activate" Command="{Binding ActivateCommand}"/>
+        </Grid>
+        <!-- Key format hint -->
+        <q:QTextBlock Grid.Row="3"
+                      Margin="162,4,0,0"
+                      Text="Format: QNX-XXXX-XXXX-XXXX-XXXX (from your account at account.qenex.net)"
+                      Opacity="0.7"/>
+
+        <!-- Busy / error -->
+        <StackPanel Grid.Row="4" Margin="0,8,0,0">
+            <q:QTextBlock Text="Contacting license server…"
+                          Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}"/>
+            <q:QTextBlock Foreground="Tomato"
+                          Text="{Binding ErrorMessage}"
+                          TextWrapping="Wrap"
+                          Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <telerik:RadButton MinWidth="80" Content="Close" Command="{Binding CloseCommand}"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

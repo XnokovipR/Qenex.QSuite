@@ -8,6 +8,7 @@ using System.Xml.Linq;
 using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Helpers;
+using Qenex.QInsight.Licensing;
 using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QInsight.Views;
@@ -107,6 +108,7 @@ public partial class ShellWindowModel
     
     public RelayCommand<RadDocking> RibbonPythonInterpreterCommand { get; set; }
     public RelayCommand<RadDocking> RibbonVariableWatchCommand { get; set; }
+    public RelayCommand<object> RibbonLicenseCommand { get; set; }
     public RelayCommand<object> RibbonAboutAppCommand { get; set; }
 
     #endregion
@@ -170,6 +172,8 @@ public partial class ShellWindowModel
         RibbonPythonInterpreterCommand = new RelayCommand<RadDocking>(OpenPythonInterpreter);
         RibbonVariableWatchCommand = new RelayCommand<RadDocking>(OpenVariableWatch);
         
+        RibbonLicenseCommand = new RelayCommand<object>(_ => OpenLicenseDialog());
+
         RibbonAboutAppCommand = new RelayCommand<object>((o) =>
         {
             var aboutViewModel = new AboutAppViewModel();
@@ -262,6 +266,7 @@ public partial class ShellWindowModel
     {
         try
         {
+            licenseService.Dispose();
             AppSettings.SaveAppSettingsToFile("QInsightAppSettings.xml", ShellWindow.MainAppSettings);
         }
         catch (Exception e)
@@ -396,6 +401,28 @@ public partial class ShellWindowModel
 
         preferencesViewModel.SetParentWindow(preferencesDialog);
         preferencesDialog.ShowDialog();
+    }
+
+    private void OpenLicenseDialog()
+    {
+        var licenseViewModel = new LicenseViewModel(licenseService, logger);
+        var licenseView = new LicenseView
+        {
+            DataContext = licenseViewModel
+        };
+
+        var licenseDialog = new RadWindow
+        {
+            Owner = Application.Current.MainWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Header = "QInsight License",
+            ResizeMode = ResizeMode.NoResize,
+            Content = licenseView,
+            CanClose = false
+        };
+
+        licenseViewModel.SetParentWindow(licenseDialog);
+        licenseDialog.ShowDialog();
     }
 
     private void OpenGeneralPreferences()
@@ -1172,6 +1199,19 @@ public partial class ShellWindowModel
 
     private async Task ConnectAsync(object obj)
     {
+        // Licensing guard: runtime start requires a valid license token (defense in depth
+        // next to CanConnectRuntime; intentionally not a shared helper).
+        if (!licenseService.IsRuntimeAllowed)
+        {
+            logger.Log(LogLevel.Warn, "Runtime start blocked: no valid license.");
+            RadWindow.Alert(new DialogParameters
+            {
+                Header = "License Required",
+                Content = "A valid license is required to start measurement.\nOpen Help -> License to enter your license key."
+            });
+            return;
+        }
+
         if (!isProjectMade || realProjectData?.Module == null)
         {
             logger.Log(LogLevel.Warn, "No project opened for runtime.");
@@ -1294,6 +1334,19 @@ public partial class ShellWindowModel
 
     private async Task ReplayAsync(object obj)
     {
+        // Licensing guard: replay requires a valid license token (defense in depth next to
+        // CanStartReplay; intentionally not a shared helper).
+        if (!licenseService.IsRuntimeAllowed)
+        {
+            logger.Log(LogLevel.Warn, "Replay start blocked: no valid license.");
+            RadWindow.Alert(new DialogParameters
+            {
+                Header = "License Required",
+                Content = "A valid license is required to start replay.\nOpen Help -> License to enter your license key."
+            });
+            return;
+        }
+
         if (!isProjectMade)
         {
             logger.Log(LogLevel.Warn, "No project opened for replay.");
@@ -2122,6 +2175,12 @@ public partial class ShellWindowModel
         RibbonGeneralPreferencesCommand.OnCanExecuteChanged();
     }
 
+    private void NotifyLicenseDependentCommands()
+    {
+        RibbonConnectCommand.OnCanExecuteChanged();
+        RibbonReplayCommand.OnCanExecuteChanged();
+    }
+
     private void NotifyRuntimeCommandsCanExecuteChanged()
     {
         RibbonConnectCommand.OnCanExecuteChanged();
@@ -2157,7 +2216,8 @@ public partial class ShellWindowModel
 
     private bool CanConnectRuntime()
     {
-        return canConnectRuntime && isProjectMade && realProjectData?.Module != null;
+        return canConnectRuntime && isProjectMade && realProjectData?.Module != null
+               && licenseService.IsRuntimeAllowed;
     }
 
     private bool CanImportDataLog()
@@ -2193,6 +2253,7 @@ public partial class ShellWindowModel
     private bool CanStartReplay()
     {
         if (!canReplay ||
+            !licenseService.IsRuntimeAllowed ||
             !isProjectMade ||
             !isReplayDataLogImported ||
             string.IsNullOrWhiteSpace(replayDataLogFilePath) ||

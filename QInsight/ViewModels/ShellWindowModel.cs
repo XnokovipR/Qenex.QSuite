@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using Qenex.QInsight.AppConfig;
+using Qenex.QInsight.Licensing;
 using Qenex.QInsight.Models.Project;
 using Qenex.QInsight.Views;
 using Qenex.QSuite.Common.PluginManager;
@@ -28,6 +29,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 
 	private readonly EventAggregator eventAggregator;
 	private readonly Logger logger;
+	private readonly LicenseService licenseService;
 	
 	// Plugins
 	private PluginLoader pluginLoader;
@@ -60,11 +62,20 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	{
 		eventAggregator = new EventAggregator();
 		logger = new Logger(LogLevel.Trace);
+		licenseService = new LicenseService(logger);
 		ViewModels = [];
-		
+
 		CreateViewModels();
 		CreateCommands();
 		SubscribeEventAggregatorMessages();
+
+		licenseService.StateChanged += (_, _) =>
+		{
+			NotifyLicenseDependentCommands();
+			UpdateLicenseBadge();
+		};
+		licenseService.Initialize();
+		UpdateLicenseBadge();
 	}
 
 	#endregion
@@ -180,6 +191,14 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		set { field = value; OnPropertyChanged(); }
 	} = AppTitle;
 
+	/// <summary>Shows the "FREE NON-COMMERCIAL LICENCE" badge in the top-right corner
+	/// of the main window while a Free-tier license is active.</summary>
+	public bool IsFreeLicense
+	{
+		get;
+		set { field = value; OnPropertyChanged(); }
+	}
+
 	public LogsViewModel LogsViewModel
 	{
 		get;
@@ -226,6 +245,11 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	private void SetDefaultPropertiesView()
 	{
 		propertiesViewModel.SelectedViewModel = new EmptyPropertiesViewModel(eventAggregator);
+	}
+
+	private void UpdateLicenseBadge()
+	{
+		IsFreeLicense = licenseService.Status == LicenseStatus.Valid && licenseService.IsFreeTier;
 	}
 
 	private void SetProjectWindowTitle(string? projectFilePath)
