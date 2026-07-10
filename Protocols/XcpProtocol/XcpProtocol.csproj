@@ -14,6 +14,11 @@
     <ItemGroup>
       <ProjectReference Include="..\..\Variables\VariableEvents\VariableEvents.csproj" />
       <ProjectReference Include="..\Protocol\Protocol.csproj" />
+      <ProjectReference Include="..\..\Common\CoreComm\CoreComm.csproj" />
     </ItemGroup>
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\Protocols\&quot;&#xA;" />
+    </Target>
 
 </Project>

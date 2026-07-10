@@ -10,7 +10,7 @@ using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.PeakCanDriver;
 
-public class CanDriver : DriverBase
+public class CanDriver : DriverBase, IProtocolVariableCommandDriver
 {
     #region Fields
 
@@ -218,6 +218,13 @@ public class CanDriver : DriverBase
 
             foreach (var protocol in Protocols)
             {
+                // The bus is usable from here on: give transmitting protocols (e.g. an XCP master)
+                // their TX path before they start.
+                if (protocol is ITransportProtocol<CanFrame> transportProtocol)
+                {
+                    transportProtocol.SetTransmitter((frame, token) => SendAsync(frame, token));
+                }
+
                 await protocol.StartAsync(ct);
             }
 
@@ -252,6 +259,11 @@ public class CanDriver : DriverBase
             foreach (var protocol in Protocols)
             {
                 await protocol.StopAsync(CancellationToken.None);
+
+                if (protocol is ITransportProtocol<CanFrame> transportProtocol)
+                {
+                    transportProtocol.SetTransmitter(null);
+                }
             }
 
             Disconnect();
@@ -365,6 +377,30 @@ public class CanDriver : DriverBase
     {
         Send(data);
         return Task.CompletedTask;
+    }
+
+    // Operator writes: the module wires variable value-changed notifications to this driver
+    // (IProtocolVariableCommandDriver); the driver delegates to the owning protocol, which executes
+    // the write as a protocol transaction (e.g. XCP SET_MTA + DOWNLOAD) over this driver's TX path.
+    public bool CanSendCommand(IProtocolVariable protocolVariable)
+    {
+        return Protocols
+            .OfType<IProtocolVariableWriteProtocol>()
+            .Any(protocol => protocol.CanWriteVariable(protocolVariable));
+    }
+
+    public async Task OnProtocolVariableCommandAsync(IProtocolVariable protocolVariable, CancellationToken ct = default)
+    {
+        foreach (var protocol in Protocols.OfType<IProtocolVariableWriteProtocol>())
+        {
+            if (!protocol.CanWriteVariable(protocolVariable))
+            {
+                continue;
+            }
+
+            await protocol.WriteVariableAsync(protocolVariable, ct);
+            return;
+        }
     }
 
     private void SendFrame(CanFrame frame)
