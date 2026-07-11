@@ -10,11 +10,15 @@ using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.Protocols.JsonSignalProtocol;
 
-public class JsonSignalProtocol : ProtocolBase<string>
+public class JsonSignalProtocol : ProtocolBase<byte[]>
 {
     private volatile bool exitRequested;
     private readonly EventWaitHandle waitHandle;
     private readonly ConcurrentQueue<string> receivedDataQueue;
+    // Byte→text decoding and line splitting are this protocol's job — the hosting driver only
+    // transports byte chunks. The framer is stateful (partial lines, split UTF-8 sequences).
+    private readonly TextLineFramer lineFramer = new();
+    private readonly Lock framerLock = new();
     private DateTime? sourceTimeBaseUtc;
     private double? lastSourceTimeSeconds;
 
@@ -27,7 +31,7 @@ public class JsonSignalProtocol : ProtocolBase<string>
         {
             Name = "JsonSignalProtocol",
             Label = "JSON Signal Protocol",
-            Description = "Processes newline-delimited JSON signal messages into protocol variable values.",
+            Description = "Decodes newline-delimited JSON signal messages from raw byte chunks into protocol variable values.",
             CreatedOn = new DateTime(2026, 6, 1),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",
@@ -69,6 +73,10 @@ public class JsonSignalProtocol : ProtocolBase<string>
         exitRequested = false;
         sourceTimeBaseUtc = null;
         lastSourceTimeSeconds = null;
+        lock (framerLock)
+        {
+            lineFramer.Reset();
+        }
         _ = RunLoopAsync(ct);
         return Task.CompletedTask;
     }
@@ -85,9 +93,9 @@ public class JsonSignalProtocol : ProtocolBase<string>
         waitHandle.Dispose();
     }
 
-    public override Task AddReceivedDataToQueueAsync(IEnumerable<string> data, CancellationToken ct = default)
+    public override Task AddReceivedDataToQueueAsync(IEnumerable<byte[]> data, CancellationToken ct = default)
     {
-        foreach (var line in data)
+        foreach (var line in ToLines(data))
         {
             receivedDataQueue.Enqueue(line);
         }
@@ -96,19 +104,19 @@ public class JsonSignalProtocol : ProtocolBase<string>
         return Task.CompletedTask;
     }
 
-    protected override void ProcessReceivedData(IEnumerable<string> data)
+    protected override void ProcessReceivedData(IEnumerable<byte[]> data)
     {
-        foreach (var line in data)
+        foreach (var line in ToLines(data))
         {
             var protocolVariable = ApplyMessage(line);
             protocolVariable?.NotifyValueChanged();
         }
     }
 
-    protected override async Task ProcessReceivedDataAsync(IEnumerable<string> data, CancellationToken ct = default)
+    protected override async Task ProcessReceivedDataAsync(IEnumerable<byte[]> data, CancellationToken ct = default)
     {
         var notifyTasks = new List<Task>();
-        foreach (var line in data)
+        foreach (var line in ToLines(data))
         {
             ct.ThrowIfCancellationRequested();
             var protocolVariable = ApplyMessage(line);
@@ -121,17 +129,31 @@ public class JsonSignalProtocol : ProtocolBase<string>
         await Task.WhenAll(notifyTasks);
     }
 
-    protected override IEnumerable<string> Encode(IEnumerable<IProtocolVariable> protocolVariables)
+    protected override IEnumerable<byte[]> Encode(IEnumerable<IProtocolVariable> protocolVariables)
     {
         throw new NotSupportedException("JSON signal protocol does not encode outgoing data.");
     }
 
-    protected override IEnumerable<IProtocolVariable> Decode(IEnumerable<string> data)
+    protected override IEnumerable<IProtocolVariable> Decode(IEnumerable<byte[]> data)
     {
-        return data
+        return ToLines(data)
             .Select(ApplyMessage)
             .Where(variable => variable != null)
             .Cast<IProtocolVariable>();
+    }
+
+    private List<string> ToLines(IEnumerable<byte[]> chunks)
+    {
+        var lines = new List<string>();
+        lock (framerLock)
+        {
+            foreach (var chunk in chunks)
+            {
+                lines.AddRange(lineFramer.Append(chunk));
+            }
+        }
+
+        return lines;
     }
 
     private async Task RunLoopAsync(CancellationToken ct)
@@ -144,7 +166,11 @@ public class JsonSignalProtocol : ProtocolBase<string>
                 if (receivedDataQueue.Count > 0)
                 {
                     receivedDataQueue.TryDequeue(out var line);
-                    await ProcessReceivedDataAsync(new List<string> { line! }, ct);
+                    var protocolVariable = ApplyMessage(line!);
+                    if (protocolVariable != null)
+                    {
+                        await protocolVariable.NotifyValueChangedAsync();
+                    }
                 }
                 else
                 {

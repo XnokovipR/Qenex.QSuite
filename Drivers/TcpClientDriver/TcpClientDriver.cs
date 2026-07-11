@@ -8,17 +8,30 @@ using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.TcpClientDriver;
 
-public class TcpClientDriver : DriverBase
+/// <summary>
+/// Unified bidirectional TCP client driver: connects out to a server and transports raw byte
+/// chunks. Whether those bytes are text lines (JSON protocols decode them via TextLineFramer) or
+/// binary frames (Modbus TCP) is the protocol's concern — the driver carries bytes only.
+/// Received chunks are pushed to every ProtocolBase&lt;byte[]&gt; protocol, transmitting protocols
+/// get their TX path via ITransportProtocol&lt;byte[]&gt;, and operator writes are delegated to
+/// IProtocolVariableWriteProtocol implementations (same pattern as the CAN and serial drivers).
+/// Reconnects on failure; numberOfReconnections="0" retries forever.
+/// </summary>
+public class TcpClientDriver : DriverBase, IProtocolVariableCommandDriver
 {
     private string host = "127.0.0.1";
     private int port = 5000;
     private int connectionTimeoutMs = 5000;
     private int reconnectTimeMs = 1000;
     private int numberOfReconnections = 3;
+    private int idleTimeoutMs; // 0 = wait for data forever (request/response protocols like Modbus)
+
+    private TcpClient? tcpClient;
+    private NetworkStream? stream;
+    private readonly SemaphoreSlim writeLock = new(1, 1);
     private volatile bool exitRequested;
     private CancellationTokenSource? runCts;
     private Task? runTask;
-    private TcpClient? tcpClient;
 
     public TcpClientDriver()
     {
@@ -26,7 +39,7 @@ public class TcpClientDriver : DriverBase
         {
             Name = "TcpClientDriver",
             Label = "TCP Client Driver",
-            Description = "TCP client driver for receiving newline-delimited data from a TCP master.",
+            Description = "Bidirectional TCP client transporting raw byte chunks; framing/encoding is the protocol's job.",
             CreatedOn = new DateTime(2026, 6, 1),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",
@@ -34,6 +47,11 @@ public class TcpClientDriver : DriverBase
         };
     }
 
+    // Settings example: ip="127.0.0.1";port="5000";connectionTimeoutMs="5000";reconnectTimeMs="1000";
+    //                   numberOfReconnections="3" (0 = reconnect forever);idleTimeoutMs="5000"
+    // idleTimeoutMs > 0 reconnects when the server stays silent that long — dead-link detection for
+    // streaming protocols (JSON signals). Leave 0 for request/response protocols (Modbus TCP),
+    // where a quiet line is normal.
     public override void SetConfiguration()
     {
         var settings = ParseSettings(RawSettings);
@@ -42,7 +60,10 @@ public class TcpClientDriver : DriverBase
         connectionTimeoutMs = Math.Max(1, GetInt(settings, "connectionTimeout", GetInt(settings, "connectionTimeoutMs", connectionTimeoutMs)));
         reconnectTimeMs = Math.Max(1, GetInt(settings, "reconnectTime", GetInt(settings, "reconnectTimeMs", reconnectTimeMs)));
         numberOfReconnections = Math.Max(0, GetInt(settings, "numberOfReconnections", GetInt(settings, "reconnections", numberOfReconnections)));
+        idleTimeoutMs = Math.Max(0, GetInt(settings, "idleTimeoutMs", idleTimeoutMs));
     }
+
+    #region Driver control
 
     public override Task StartAsync(CancellationToken ct = default)
     {
@@ -51,7 +72,11 @@ public class TcpClientDriver : DriverBase
             SetState(CommunicationState.Stopped);
             return Task.CompletedTask;
         }
-        if (State == CommunicationState.Running) return Task.CompletedTask;
+
+        if (State == CommunicationState.Running || runTask is { IsCompleted: false })
+        {
+            return Task.CompletedTask;
+        }
 
         SetState(CommunicationState.Starting);
         exitRequested = false;
@@ -64,24 +89,26 @@ public class TcpClientDriver : DriverBase
     {
         SetState(CommunicationState.Stopping);
         exitRequested = true;
+
         if (runCts != null)
         {
             await runCts.CancelAsync();
         }
 
         CloseClient();
+
         if (runTask != null)
         {
             try
             {
-                await runTask.WaitAsync(TimeSpan.FromMilliseconds(connectionTimeoutMs), ct);
+                await runTask.WaitAsync(TimeSpan.FromSeconds(5), ct);
             }
             catch (OperationCanceledException)
             {
             }
             catch (TimeoutException)
             {
-                Logger?.Log(LogLevel.Warn, "TCP client driver did not stop before timeout.");
+                Logger?.Log(LogLevel.Warn, $"TCP client driver '{Label}' did not stop before timeout.");
             }
         }
 
@@ -96,47 +123,57 @@ public class TcpClientDriver : DriverBase
         runCts?.Dispose();
     }
 
-    public override void Send<T>(T data)
-    {
-        throw new NotSupportedException("TCP client driver does not send data.");
-    }
+    #endregion
 
-    public override Task SendAsync<T>(T data, CancellationToken ct = default)
-    {
-        throw new NotSupportedException("TCP client driver does not send data.");
-    }
+    #region Run loop
 
     private async Task RunLoopAsync(CancellationToken ct)
     {
-        foreach (var protocol in Protocols)
-        {
-            await protocol.StartAsync(ct);
-        }
-
-        SetState(CommunicationState.Running);
+        var protocolsStarted = false;
         var reconnectAttempt = 0;
-
         try
         {
             while (!ct.IsCancellationRequested && !exitRequested)
             {
                 try
                 {
-                    using var client = await ConnectAsync(ct);
-                    tcpClient = client;
-                    await ReadLinesAsync(client, () => reconnectAttempt = 0, ct);
+                    await ConnectAsync(ct);
+                    reconnectAttempt = 0;
+                    SetTransmitters(SendChunkAsync);
+
+                    if (!protocolsStarted)
+                    {
+                        foreach (var protocol in Protocols)
+                        {
+                            await protocol.StartAsync(ct);
+                        }
+
+                        protocolsStarted = true;
+                    }
+
+                    SetState(CommunicationState.Running, $"Connected to {host}:{port}.");
+                    await ReadLoopAsync(ct);
                 }
                 catch (OperationCanceledException) when (ct.IsCancellationRequested || exitRequested)
                 {
                     break;
                 }
-                catch (Exception e) when (e is SocketException or IOException or TimeoutException)
+                catch (Exception e) when (e is SocketException or IOException or TimeoutException or ObjectDisposedException)
                 {
-                    reconnectAttempt++;
-                    Logger?.Log(LogLevel.Warn, $"TCP client connection to {host}:{port} failed or timed out ({reconnectAttempt}/{numberOfReconnections}): {e.Message}");
-                    if (reconnectAttempt >= numberOfReconnections)
+                    if (ct.IsCancellationRequested || exitRequested)
                     {
-                        Logger?.Log(LogLevel.Error, $"TCP client driver reached maximum reconnection count ({numberOfReconnections}) and stopped.");
+                        break;
+                    }
+
+                    reconnectAttempt++;
+                    Logger?.Log(LogLevel.Warn,
+                        $"TCP client '{Label}' connection to {host}:{port} failed ({reconnectAttempt}{(numberOfReconnections > 0 ? $"/{numberOfReconnections}" : "")}): {e.Message}");
+                    SetState(CommunicationState.Faulted, $"{host}:{port}: {e.Message}");
+
+                    if (numberOfReconnections > 0 && reconnectAttempt >= numberOfReconnections)
+                    {
+                        Logger?.Log(LogLevel.Error,
+                            $"TCP client '{Label}' reached the maximum reconnection count ({numberOfReconnections}) and stopped.");
                         break;
                     }
 
@@ -144,15 +181,25 @@ public class TcpClientDriver : DriverBase
                 }
                 finally
                 {
+                    SetTransmitters(null);
                     CloseClient();
                 }
             }
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested || exitRequested)
+        {
+            // Normal stop.
+        }
         finally
         {
-            foreach (var protocol in Protocols)
+            if (protocolsStarted)
             {
-                await protocol.StopAsync(CancellationToken.None);
+                foreach (var protocol in Protocols)
+                {
+                    await protocol.StopAsync(CancellationToken.None);
+                }
+
+                SetTransmitters(null);
             }
 
             SetState(CommunicationState.Stopped);
@@ -160,14 +207,15 @@ public class TcpClientDriver : DriverBase
         }
     }
 
-    private async Task<TcpClient> ConnectAsync(CancellationToken ct)
+    private async Task ConnectAsync(CancellationToken ct)
     {
-        var client = new TcpClient();
+        var client = new TcpClient { NoDelay = true };
         try
         {
             await client.ConnectAsync(host, port, ct).AsTask().WaitAsync(TimeSpan.FromMilliseconds(connectionTimeoutMs), ct);
-            Logger?.Log(LogLevel.Info, $"TCP client connected to {host}:{port}.");
-            return client;
+            tcpClient = client;
+            stream = client.GetStream();
+            Logger?.Log(LogLevel.Info, $"TCP client '{Label}' connected to {host}:{port}.");
         }
         catch
         {
@@ -176,41 +224,111 @@ public class TcpClientDriver : DriverBase
         }
     }
 
-    private async Task ReadLinesAsync(TcpClient client, Action onLineReceived, CancellationToken ct)
+    private async Task ReadLoopAsync(CancellationToken ct)
     {
-        using var stream = client.GetStream();
-        using var reader = new StreamReader(stream);
+        var currentStream = stream ?? throw new InvalidOperationException("TCP client is not connected.");
+        var buffer = new byte[4096];
 
         while (!ct.IsCancellationRequested && !exitRequested)
         {
-            var line = await reader.ReadLineAsync(ct).AsTask().WaitAsync(TimeSpan.FromMilliseconds(connectionTimeoutMs), ct);
-            if (line == null)
+            var read = currentStream.ReadAsync(buffer, ct);
+            var bytesRead = idleTimeoutMs > 0
+                ? await read.AsTask().WaitAsync(TimeSpan.FromMilliseconds(idleTimeoutMs), ct)
+                : await read;
+            if (bytesRead == 0)
             {
-                throw new IOException("TCP master closed the connection.");
+                throw new IOException("The server closed the connection.");
             }
 
-            await ProcessReceivedDataAsync(line, ct);
-            onLineReceived();
+            var chunk = buffer.AsSpan(0, bytesRead).ToArray();
+            foreach (var protocol in Protocols)
+            {
+                if (protocol is ProtocolBase<byte[]> byteProtocol)
+                {
+                    await byteProtocol.AddReceivedDataToQueueAsync([chunk], ct);
+                }
+            }
         }
     }
 
-    private async Task ProcessReceivedDataAsync(string line, CancellationToken ct)
+    private void SetTransmitters(Func<byte[], CancellationToken, Task>? transmitter)
     {
         foreach (var protocol in Protocols)
         {
-            if (protocol is ProtocolBase<string> stringProtocol)
+            if (protocol is ITransportProtocol<byte[]> transportProtocol)
             {
-                await stringProtocol.AddReceivedDataToQueueAsync([line], ct);
+                transportProtocol.SetTransmitter(transmitter);
             }
         }
     }
 
     private void CloseClient()
     {
+        stream = null;
         tcpClient?.Close();
         tcpClient?.Dispose();
         tcpClient = null;
     }
+
+    #endregion
+
+    #region Communication
+
+    public override void Send<T>(T data)
+    {
+        SendAsync(data).GetAwaiter().GetResult();
+    }
+
+    public override async Task SendAsync<T>(T data, CancellationToken ct = default)
+    {
+        if (data is not byte[] bytes)
+        {
+            throw new NotSupportedException("TCP client driver can only send byte[] data.");
+        }
+
+        await SendChunkAsync(bytes, ct);
+    }
+
+    private async Task SendChunkAsync(byte[] bytes, CancellationToken ct)
+    {
+        var currentStream = stream ?? throw new InvalidOperationException("TCP client is not connected.");
+
+        await writeLock.WaitAsync(ct);
+        try
+        {
+            await currentStream.WriteAsync(bytes, ct);
+        }
+        finally
+        {
+            writeLock.Release();
+        }
+    }
+
+    // Operator writes: delegated to the owning protocol (same pattern as the CAN and serial drivers).
+    public bool CanSendCommand(IProtocolVariable protocolVariable)
+    {
+        return Protocols
+            .OfType<IProtocolVariableWriteProtocol>()
+            .Any(protocol => protocol.CanWriteVariable(protocolVariable));
+    }
+
+    public async Task OnProtocolVariableCommandAsync(IProtocolVariable protocolVariable, CancellationToken ct = default)
+    {
+        foreach (var protocol in Protocols.OfType<IProtocolVariableWriteProtocol>())
+        {
+            if (!protocol.CanWriteVariable(protocolVariable))
+            {
+                continue;
+            }
+
+            await protocol.WriteVariableAsync(protocolVariable, ct);
+            return;
+        }
+    }
+
+    #endregion
+
+    #region Configuration helpers
 
     private static Dictionary<string, string> ParseSettings(string rawSettings)
     {
@@ -218,10 +336,7 @@ public class TcpClientDriver : DriverBase
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(item => item.Split('=', 2, StringSplitOptions.TrimEntries))
             .Where(parts => parts.Length == 2)
-            .ToDictionary(
-                parts => parts[0],
-                parts => parts[1].Trim('"'),
-                StringComparer.OrdinalIgnoreCase);
+            .ToDictionary(parts => parts[0], parts => parts[1].Trim('"'), StringComparer.OrdinalIgnoreCase);
     }
 
     private static string GetString(IReadOnlyDictionary<string, string> settings, string key, string defaultValue)
@@ -237,4 +352,6 @@ public class TcpClientDriver : DriverBase
             ? parsedValue
             : defaultValue;
     }
+
+    #endregion
 }

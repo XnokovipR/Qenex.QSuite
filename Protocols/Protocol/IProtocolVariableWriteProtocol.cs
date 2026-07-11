@@ -1,10 +1,10 @@
 namespace Qenex.QSuite.Protocols.Protocol;
 
 /// <summary>
-/// A protocol that executes an operator write of a protocol variable as a protocol-level
-/// transaction (request/response over the driver's transport), as opposed to the fire-and-forget
-/// string commands of <see cref="IProtocolVariableCommandProtocol"/>. A driver implementing
-/// IProtocolVariableCommandDriver delegates the module's command notifications here.
+/// A protocol that executes an operator write of a protocol variable over the driver's transport —
+/// anything from a fire-and-forget command line (Pi Zero JSON) to a multi-frame acknowledged
+/// transaction (XCP, Modbus). A driver implementing IProtocolVariableCommandDriver delegates the
+/// module's command notifications here.
 /// </summary>
 public interface IProtocolVariableWriteProtocol
 {

@@ -1,0 +1,24 @@
+[Unit]
+Description=Configure CAN0 and run CAN random script
+After=local-fs.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/radek/scripts
+
+# Počká maximálně 30 sekund, než se objeví rozhraní can0
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 30); do [ -e /sys/class/net/can0 ] && exit 0; sleep 1; done; exit 1'
+
+# Ignoruje chybu, pokud už je can0 vypnuté
+ExecStartPre=-/usr/sbin/ip link set can0 down
+ExecStartPre=/usr/sbin/ip link set can0 type can bitrate 250000
+ExecStartPre=/usr/sbin/ip link set can0 up
+
+ExecStart=/usr/bin/python3 /home/radek/scripts/can_rnd.py
+
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

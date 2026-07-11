@@ -10,9 +10,14 @@ using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.Protocols.PiZeroJsonProtocol;
 
-public class PiZeroJsonProtocol : ProtocolBase<string>, IProtocolVariableCommandProtocol
+public class PiZeroJsonProtocol : ProtocolBase<byte[]>, ITransportProtocol<byte[]>, IProtocolVariableWriteProtocol
 {
     private readonly object timestampLock = new();
+    // Byte→text decoding and line splitting are this protocol's job — the hosting driver only
+    // transports byte chunks. The framer is stateful (partial lines, split UTF-8 sequences).
+    private readonly TextLineFramer lineFramer = new();
+    private readonly Lock framerLock = new();
+    private volatile Func<byte[], CancellationToken, Task>? transmitter;
     private DateTime? remoteTimestampBaseUtc;
     private double? firstRemoteSeconds;
     private double? lastRemoteSeconds;
@@ -71,9 +76,19 @@ public class PiZeroJsonProtocol : ProtocolBase<string>, IProtocolVariableCommand
         };
     }
 
+    /// <summary>Injected by the hosting driver (TCP client) while its connection is usable.</summary>
+    public void SetTransmitter(Func<byte[], CancellationToken, Task>? byteTransmitter)
+    {
+        transmitter = byteTransmitter;
+    }
+
     public override Task StartAsync(CancellationToken ct = default)
     {
         ResetRemoteTimestampMapping();
+        lock (framerLock)
+        {
+            lineFramer.Reset();
+        }
         SetState(IsEnabled ? CommunicationState.Running : CommunicationState.Disabled);
         return Task.CompletedTask;
     }
@@ -89,17 +104,36 @@ public class PiZeroJsonProtocol : ProtocolBase<string>, IProtocolVariableCommand
     {
     }
 
-    public override Task AddReceivedDataToQueueAsync(IEnumerable<string> data, CancellationToken ct = default)
+    public override Task AddReceivedDataToQueueAsync(IEnumerable<byte[]> data, CancellationToken ct = default)
     {
         return State == CommunicationState.Running ? ProcessReceivedDataAsync(data, ct) : Task.CompletedTask;
     }
 
-    public bool CanEncodeCommand(IProtocolVariable protocolVariable)
+    public bool CanWriteVariable(IProtocolVariable protocolVariable)
     {
-        return FindCommandVariable(protocolVariable) != null;
+        return Variables.Contains(protocolVariable) && FindCommandVariable(protocolVariable) != null;
     }
 
-    public string? EncodeCommand(IProtocolVariable protocolVariable)
+    /// <summary>Operator write: serializes the "set" command as one JSON line and transmits it.</summary>
+    public async Task WriteVariableAsync(IProtocolVariable protocolVariable, CancellationToken ct = default)
+    {
+        var command = EncodeCommand(protocolVariable);
+        if (command == null)
+        {
+            return;
+        }
+
+        var sendCommand = transmitter;
+        if (sendCommand == null)
+        {
+            Logger?.Log(LogLevel.Warn, "Pi Zero JSON protocol: command dropped — transport is not available.");
+            return;
+        }
+
+        await sendCommand(System.Text.Encoding.UTF8.GetBytes(command + "\n"), ct);
+    }
+
+    private string? EncodeCommand(IProtocolVariable protocolVariable)
     {
         var commandVariable = FindCommandVariable(protocolVariable);
         if (commandVariable?.ProtocolVariableSpecification is not PiZeroJsonProtocolVariableSpecification spec)
@@ -122,19 +156,19 @@ public class PiZeroJsonProtocol : ProtocolBase<string>, IProtocolVariableCommand
         return JsonSerializer.Serialize(command);
     }
 
-    protected override void ProcessReceivedData(IEnumerable<string> data)
+    protected override void ProcessReceivedData(IEnumerable<byte[]> data)
     {
-        foreach (var line in data)
+        foreach (var line in ToLines(data))
         {
             var protocolVariable = DecodeLine(line);
             protocolVariable?.NotifyValueChanged();
         }
     }
 
-    protected override async Task ProcessReceivedDataAsync(IEnumerable<string> data, CancellationToken ct = default)
+    protected override async Task ProcessReceivedDataAsync(IEnumerable<byte[]> data, CancellationToken ct = default)
     {
         var notifyTasks = new List<Task>();
-        foreach (var line in data)
+        foreach (var line in ToLines(data))
         {
             ct.ThrowIfCancellationRequested();
             var protocolVariable = DecodeLine(line);
@@ -147,20 +181,34 @@ public class PiZeroJsonProtocol : ProtocolBase<string>, IProtocolVariableCommand
         await Task.WhenAll(notifyTasks);
     }
 
-    protected override IEnumerable<string> Encode(IEnumerable<IProtocolVariable> protocolVariables)
+    protected override IEnumerable<byte[]> Encode(IEnumerable<IProtocolVariable> protocolVariables)
     {
         return protocolVariables
             .Select(EncodeCommand)
             .Where(command => command != null)
-            .Cast<string>();
+            .Select(command => System.Text.Encoding.UTF8.GetBytes(command + "\n"));
     }
 
-    protected override IEnumerable<IProtocolVariable> Decode(IEnumerable<string> data)
+    protected override IEnumerable<IProtocolVariable> Decode(IEnumerable<byte[]> data)
     {
-        return data
+        return ToLines(data)
             .Select(DecodeLine)
             .Where(variable => variable != null)
             .Cast<IProtocolVariable>();
+    }
+
+    private List<string> ToLines(IEnumerable<byte[]> chunks)
+    {
+        var lines = new List<string>();
+        lock (framerLock)
+        {
+            foreach (var chunk in chunks)
+            {
+                lines.AddRange(lineFramer.Append(chunk));
+            }
+        }
+
+        return lines;
     }
 
     private IProtocolVariable? DecodeLine(string line)
