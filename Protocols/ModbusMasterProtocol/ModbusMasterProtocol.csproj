@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.Protocols.ModbusMasterProtocol</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Protocols.ModbusMaster</RootNamespace>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <FileVersion>1.0.0.0</FileVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ModbusCore\ModbusCore.csproj" />
+      <ProjectReference Include="..\Protocol\Protocol.csproj" />
+      <ProjectReference Include="..\..\Variables\VariableEvents\VariableEvents.csproj" />
+    </ItemGroup>
+
+    <!-- The plugin goes to the scanned Protocols folder; the shared ModbusCore assembly goes to
+         the app base directory, where the PluginLoader's resolver fallback finds it. -->
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\Protocols\&quot;&#xA;xcopy /Y &quot;$(TargetDir)Qenex.QSuite.Protocols.ModbusCore.dll&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\&quot;&#xA;" />
+    </Target>
+
+</Project>

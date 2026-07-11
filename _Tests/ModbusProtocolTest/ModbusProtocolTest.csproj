@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.Tests.ModbusProtocolTest</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Tests.ModbusProtocolTest</RootNamespace>
+        <LangVersion>latestmajor</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Protocols\ModbusCore\ModbusCore.csproj" />
+      <ProjectReference Include="..\..\Protocols\ModbusMasterProtocol\ModbusMasterProtocol.csproj" />
+      <ProjectReference Include="..\..\Protocols\ModbusSlaveProtocol\ModbusSlaveProtocol.csproj" />
+      <ProjectReference Include="..\..\Drivers\TcpClientDriver\TcpClientDriver.csproj" />
+      <ProjectReference Include="..\..\Drivers\TcpServerDriver\TcpServerDriver.csproj" />
+    </ItemGroup>
+
+</Project>
