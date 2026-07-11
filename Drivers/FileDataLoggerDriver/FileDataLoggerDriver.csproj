@@ -20,8 +20,10 @@
       <PackageReference Include="MessagePack" Version="3.1.4" />
     </ItemGroup>
 
+    <!-- The plugin goes to the scanned Drivers folder; its NuGet dependencies go to the app base
+         directory, where the PluginLoader's resolver fallback finds them. -->
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\Drivers\&quot;&#xA;xcopy /Y &quot;$(TargetDir)MessagePack*.dll&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\Drivers\&quot;&#xA;xcopy /Y &quot;$(TargetDir)Microsoft.NET.StringTools.dll&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\Drivers\&quot;&#xA;" />
+      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\Drivers\&quot;&#xA;xcopy /Y &quot;$(TargetDir)MessagePack*.dll&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\&quot;&#xA;xcopy /Y &quot;$(TargetDir)Microsoft.NET.StringTools.dll&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\&quot;&#xA;" />
     </Target>
 
 </Project>

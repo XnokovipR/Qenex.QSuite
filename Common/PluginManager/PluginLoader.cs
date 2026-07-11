@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.Loader;
 using Qenex.QSuite.Specifications.ComponentSpecification;
 using Qenex.QSuite.LogSystems.LogSystem;
 
@@ -6,6 +7,19 @@ namespace Qenex.QSuite.Common.PluginManager;
 
 public class PluginLoader(ILogger? logger = null)
 {
+    static PluginLoader()
+    {
+        // Plugins live in subfolders (Drivers/, Protocols/, Controls/) but their NuGet and shared
+        // dependencies are deployed to the application base directory. The runtime only resolves
+        // assemblies from the app's deps.json and from the plugin's own folder, so this fallback
+        // probes the base directory for anything still unresolved.
+        AssemblyLoadContext.Default.Resolving += (context, assemblyName) =>
+        {
+            var candidate = Path.Combine(AppContext.BaseDirectory, assemblyName.Name + ".dll");
+            return File.Exists(candidate) ? context.LoadFromAssemblyPath(candidate) : null;
+        };
+    }
+
     public List<PluginDetails> GetPluginDetails<T>(string directoryPath)
     {
         if (!Directory.Exists(directoryPath))
