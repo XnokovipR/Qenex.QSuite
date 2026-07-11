@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.Drivers.SerialPortDriver</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Drivers.SerialPortDriver</RootNamespace>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <FileVersion>1.0.0.0</FileVersion>
+        <!-- Plugin: NuGet dependencies (System.IO.Ports) must land in the output folder. -->
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Driver\Driver.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="System.IO.Ports" Version="10.0.0" />
+    </ItemGroup>
+
+    <!-- The plugin goes to the scanned Drivers folder; System.IO.Ports goes to the app base
+         directory (Windows runtime build wins when present), where the PluginLoader's resolver
+         fallback finds it. -->
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\Drivers\&quot;&#xA;if exist &quot;$(TargetDir)System.IO.Ports.dll&quot; xcopy /Y &quot;$(TargetDir)System.IO.Ports.dll&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\&quot;&#xA;if exist &quot;$(TargetDir)runtimes\win\lib\net10.0\System.IO.Ports.dll&quot; xcopy /Y &quot;$(TargetDir)runtimes\win\lib\net10.0\System.IO.Ports.dll&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\&quot;&#xA;" />
+    </Target>
+
+</Project>

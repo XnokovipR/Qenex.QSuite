@@ -1,0 +1,413 @@
+using System.IO.Ports;
+using System.Reflection;
+using Qenex.QSuite.Common.CoreComm;
+using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Specifications.Specification;
+
+namespace Qenex.QSuite.Drivers.SerialPortDriver;
+
+/// <summary>
+/// Classic serial COM port driver (native port or a virtual one from an RS-485/USB converter).
+/// Transports raw byte chunks: received data is pushed to every ProtocolBase&lt;byte[]&gt; protocol
+/// (framing — e.g. Modbus RTU — is the protocol's job), transmitting protocols get their TX path
+/// via ITransportProtocol&lt;byte[]&gt;, and operator writes are delegated to
+/// IProtocolVariableWriteProtocol implementations (same pattern as the CAN driver).
+/// One driver instance = one COM port. Reopens the port automatically after failures (USB unplug).
+/// </summary>
+public class SerialDriver : DriverBase, IProtocolVariableCommandDriver
+{
+    private string portName = string.Empty;
+    private int baudRate = 9600;
+    private int dataBits = 8;
+    private Parity parity = Parity.None;
+    private StopBits stopBits = StopBits.One;
+    private Handshake handshake = Handshake.None;
+    private int reconnectTimeMs = 2000;
+
+    private SerialPort? serialPort;
+    private readonly SemaphoreSlim writeLock = new(1, 1);
+    private volatile bool exitRequested;
+    private CancellationTokenSource? runCts;
+    private Task? runTask;
+
+    public SerialDriver()
+    {
+        Specification = new SpecificationBase
+        {
+            Name = "SerialPortDriver",
+            Label = "Serial Port Driver",
+            Description = "Serial COM port driver transporting raw byte chunks (e.g. for Modbus RTU).",
+            CreatedOn = new DateTime(2026, 7, 10),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Author = "Qenex",
+            Company = "QENEX Ltd."
+        };
+    }
+
+    // Settings example: port="COM3";baudRate="19200";dataBits="8";parity="even";stopBits="1";
+    //                   handshake="none";reconnectTimeMs="2000"
+    public override void SetConfiguration()
+    {
+        var settings = ParseSettings(RawSettings);
+
+        portName = GetString(settings, "port", GetString(settings, "portName", portName));
+        baudRate = GetInt(settings, "baudRate", baudRate);
+        dataBits = GetInt(settings, "dataBits", dataBits);
+        reconnectTimeMs = Math.Max(100, GetInt(settings, "reconnectTimeMs", reconnectTimeMs));
+
+        parity = GetString(settings, "parity", "none").ToLowerInvariant() switch
+        {
+            "none" => Parity.None,
+            "even" => Parity.Even,
+            "odd" => Parity.Odd,
+            "mark" => Parity.Mark,
+            "space" => Parity.Space,
+            var other => LogInvalid("parity", other, Parity.None)
+        };
+
+        stopBits = GetString(settings, "stopBits", "1") switch
+        {
+            "1" => StopBits.One,
+            "1.5" => StopBits.OnePointFive,
+            "2" => StopBits.Two,
+            var other => LogInvalid("stopBits", other, StopBits.One)
+        };
+
+        handshake = GetString(settings, "handshake", "none").ToLowerInvariant() switch
+        {
+            "none" => Handshake.None,
+            "rts" => Handshake.RequestToSend,
+            "xonxoff" => Handshake.XOnXOff,
+            "rtsxonxoff" => Handshake.RequestToSendXOnXOff,
+            var other => LogInvalid("handshake", other, Handshake.None)
+        };
+
+        if (string.IsNullOrWhiteSpace(portName))
+        {
+            Logger?.Log(LogLevel.Error, "Serial port driver: mandatory setting 'port' is missing.");
+        }
+    }
+
+    private T LogInvalid<T>(string key, string value, T fallback)
+    {
+        Logger?.Log(LogLevel.Warn, $"Serial port driver: invalid setting {key}='{value}'; using {fallback}.");
+        return fallback;
+    }
+
+    #region Driver control
+
+    public override Task StartAsync(CancellationToken ct = default)
+    {
+        if (!IsEnabled)
+        {
+            SetState(CommunicationState.Stopped);
+            return Task.CompletedTask;
+        }
+
+        if (State == CommunicationState.Running || runTask is { IsCompleted: false })
+        {
+            return Task.CompletedTask;
+        }
+
+        if (string.IsNullOrWhiteSpace(portName))
+        {
+            SetState(CommunicationState.Faulted, "Serial port is not configured (setting 'port').");
+            return Task.CompletedTask;
+        }
+
+        SetState(CommunicationState.Starting);
+        exitRequested = false;
+        runCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        runTask = RunLoopAsync(runCts.Token);
+        return Task.CompletedTask;
+    }
+
+    public override async Task StopAsync(CancellationToken ct = default)
+    {
+        SetState(CommunicationState.Stopping);
+        exitRequested = true;
+
+        if (runCts != null)
+        {
+            await runCts.CancelAsync();
+        }
+
+        // Closing the port aborts a pending BaseStream read (SerialPort reads do not honor
+        // cancellation tokens reliably).
+        ClosePort();
+
+        if (runTask != null)
+        {
+            try
+            {
+                await runTask.WaitAsync(TimeSpan.FromSeconds(5), ct);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (TimeoutException)
+            {
+                Logger?.Log(LogLevel.Warn, $"Serial port driver '{Label}' did not stop before timeout.");
+            }
+        }
+
+        runCts?.Dispose();
+        runCts = null;
+        runTask = null;
+    }
+
+    public override void Dispose()
+    {
+        ClosePort();
+        runCts?.Dispose();
+    }
+
+    #endregion
+
+    #region Run loop
+
+    private async Task RunLoopAsync(CancellationToken ct)
+    {
+        var protocolsStarted = false;
+        try
+        {
+            while (!ct.IsCancellationRequested && !exitRequested)
+            {
+                try
+                {
+                    OpenPort();
+                    SetTransmitters(SendChunkAsync);
+
+                    if (!protocolsStarted)
+                    {
+                        foreach (var protocol in Protocols)
+                        {
+                            await protocol.StartAsync(ct);
+                        }
+
+                        protocolsStarted = true;
+                    }
+
+                    SetState(CommunicationState.Running,
+                        $"{portName} @ {baudRate} bit/s, {dataBits}{ParityLetter()}{StopBitsText()}");
+                    await ReadLoopAsync(ct);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested || exitRequested)
+                {
+                    break;
+                }
+                catch (Exception e)
+                {
+                    if (ct.IsCancellationRequested || exitRequested)
+                    {
+                        break;
+                    }
+
+                    Logger?.Log(LogLevel.Warn,
+                        $"Serial port driver '{Label}' ({portName}) failed: {e.Message} Reopening in {reconnectTimeMs} ms.");
+                    SetState(CommunicationState.Faulted, $"{portName}: {e.Message}");
+                    await Task.Delay(reconnectTimeMs, ct);
+                }
+                finally
+                {
+                    SetTransmitters(null);
+                    ClosePort();
+                }
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested || exitRequested)
+        {
+            // Normal stop.
+        }
+        finally
+        {
+            if (protocolsStarted)
+            {
+                foreach (var protocol in Protocols)
+                {
+                    await protocol.StopAsync(CancellationToken.None);
+                }
+
+                SetTransmitters(null);
+            }
+
+            SetState(CommunicationState.Stopped);
+            exitRequested = false;
+        }
+    }
+
+    private void OpenPort()
+    {
+        var port = new SerialPort(portName, baudRate, parity, dataBits, stopBits)
+        {
+            Handshake = handshake,
+            ReadTimeout = SerialPort.InfiniteTimeout,
+            WriteTimeout = 2000
+        };
+        port.Open();
+        serialPort = port;
+        Logger?.Log(LogLevel.Info,
+            $"Serial port driver '{Label}' opened {portName} ({baudRate} bit/s, {dataBits}{ParityLetter()}{StopBitsText()}).");
+    }
+
+    private async Task ReadLoopAsync(CancellationToken ct)
+    {
+        var port = serialPort ?? throw new InvalidOperationException("Serial port is not open.");
+        var buffer = new byte[4096];
+
+        while (!ct.IsCancellationRequested && !exitRequested)
+        {
+            var bytesRead = await port.BaseStream.ReadAsync(buffer, ct);
+            if (bytesRead == 0)
+            {
+                throw new IOException("Serial port stream ended.");
+            }
+
+            var chunk = buffer.AsSpan(0, bytesRead).ToArray();
+            foreach (var protocol in Protocols)
+            {
+                if (protocol is ProtocolBase<byte[]> byteProtocol)
+                {
+                    await byteProtocol.AddReceivedDataToQueueAsync([chunk], ct);
+                }
+            }
+        }
+    }
+
+    private void SetTransmitters(Func<byte[], CancellationToken, Task>? transmitter)
+    {
+        foreach (var protocol in Protocols)
+        {
+            if (protocol is ITransportProtocol<byte[]> transportProtocol)
+            {
+                transportProtocol.SetTransmitter(transmitter);
+            }
+        }
+    }
+
+    private void ClosePort()
+    {
+        var port = serialPort;
+        serialPort = null;
+        if (port == null)
+        {
+            return;
+        }
+
+        try
+        {
+            port.Close();
+            port.Dispose();
+        }
+        catch (Exception e)
+        {
+            Logger?.Log(LogLevel.Warn, $"Serial port driver '{Label}' close returned: {e.Message}");
+        }
+    }
+
+    private string ParityLetter() => parity switch
+    {
+        Parity.Even => "E",
+        Parity.Odd => "O",
+        Parity.Mark => "M",
+        Parity.Space => "S",
+        _ => "N"
+    };
+
+    private string StopBitsText() => stopBits switch
+    {
+        StopBits.OnePointFive => "1.5",
+        StopBits.Two => "2",
+        _ => "1"
+    };
+
+    #endregion
+
+    #region Communication
+
+    public override void Send<T>(T data)
+    {
+        SendAsync(data).GetAwaiter().GetResult();
+    }
+
+    public override async Task SendAsync<T>(T data, CancellationToken ct = default)
+    {
+        if (data is not byte[] bytes)
+        {
+            throw new NotSupportedException("Serial port driver can only send byte[] data.");
+        }
+
+        await SendChunkAsync(bytes, ct);
+    }
+
+    private async Task SendChunkAsync(byte[] bytes, CancellationToken ct)
+    {
+        var port = serialPort ?? throw new InvalidOperationException("Serial port is not open.");
+
+        await writeLock.WaitAsync(ct);
+        try
+        {
+            await port.BaseStream.WriteAsync(bytes, ct);
+            await port.BaseStream.FlushAsync(ct);
+        }
+        finally
+        {
+            writeLock.Release();
+        }
+    }
+
+    // Operator writes: the module wires variable value-changed notifications to this driver;
+    // the driver delegates to the owning protocol, which executes the write as a protocol
+    // transaction (e.g. Modbus SET + echo) over this driver's TX path.
+    public bool CanSendCommand(IProtocolVariable protocolVariable)
+    {
+        return Protocols
+            .OfType<IProtocolVariableWriteProtocol>()
+            .Any(protocol => protocol.CanWriteVariable(protocolVariable));
+    }
+
+    public async Task OnProtocolVariableCommandAsync(IProtocolVariable protocolVariable, CancellationToken ct = default)
+    {
+        foreach (var protocol in Protocols.OfType<IProtocolVariableWriteProtocol>())
+        {
+            if (!protocol.CanWriteVariable(protocolVariable))
+            {
+                continue;
+            }
+
+            await protocol.WriteVariableAsync(protocolVariable, ct);
+            return;
+        }
+    }
+
+    #endregion
+
+    #region Configuration helpers
+
+    private static Dictionary<string, string> ParseSettings(string rawSettings)
+    {
+        return rawSettings
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(item => item.Split('=', 2, StringSplitOptions.TrimEntries))
+            .Where(parts => parts.Length == 2)
+            .ToDictionary(parts => parts[0], parts => parts[1].Trim('"'), StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string GetString(IReadOnlyDictionary<string, string> settings, string key, string defaultValue)
+    {
+        return settings.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+            ? value
+            : defaultValue;
+    }
+
+    private static int GetInt(IReadOnlyDictionary<string, string> settings, string key, int defaultValue)
+    {
+        return settings.TryGetValue(key, out var value) && int.TryParse(value, out var parsedValue)
+            ? parsedValue
+            : defaultValue;
+    }
+
+    #endregion
+}
