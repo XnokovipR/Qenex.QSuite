@@ -575,6 +575,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <q:QTextBlock
@@ -616,10 +617,28 @@
 
                     <q:QTextBlock
                         Grid.Row="3"
+                        Margin="0,8,0,0"
+                        Foreground="DarkOrange"
+                        TextWrapping="Wrap"
+                        Text="{Binding CommunicatedSignalsWarning}">
+                        <q:QTextBlock.Style>
+                            <Style TargetType="{x:Type q:QTextBlock}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasCommunicatedSignalsWarning}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </q:QTextBlock.Style>
+                    </q:QTextBlock>
+
+                    <q:QTextBlock
+                        Grid.Row="4"
                         Margin="0,8,0,6"
                         FontWeight="SemiBold"
                         Text="Communication detail"/>
-                    <Grid Grid.Row="4">
+                    <Grid Grid.Row="5">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>

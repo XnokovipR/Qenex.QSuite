@@ -10,12 +10,15 @@ public class LicenseViewModel : PropertyChangedBaseWithValidation
 {
     private readonly LicenseService licenseService;
     private readonly Logger logger;
+    private readonly Func<int>? communicatedSignalCountProvider;
     private RadWindow? parentWindow;
 
-    public LicenseViewModel(LicenseService licenseService, Logger logger)
+    public LicenseViewModel(LicenseService licenseService, Logger logger,
+        Func<int>? communicatedSignalCountProvider = null)
     {
         this.licenseService = licenseService;
         this.logger = logger;
+        this.communicatedSignalCountProvider = communicatedSignalCountProvider;
 
         ActivateCommand = new RelayCommandAsync<object>(ActivateAsync, _ => CanActivate());
         CloseCommand = new RelayCommand<object>(_ => parentWindow?.Close());
@@ -111,6 +114,19 @@ public class LicenseViewModel : PropertyChangedBaseWithValidation
 
     public string MachineText => Environment.MachineName;
 
+    /// <summary>True when the Free-tier communicated-signal counter should be shown.</summary>
+    public bool ShowCommunicatedSignals
+    {
+        get;
+        private set { field = value; OnPropertyChanged(); }
+    }
+
+    public string CommunicatedSignalsText
+    {
+        get;
+        private set { field = value; OnPropertyChanged(); }
+    } = string.Empty;
+
     public RelayCommandAsync<object> ActivateCommand { get; }
     public RelayCommand<object> CloseCommand { get; }
 
@@ -179,6 +195,12 @@ public class LicenseViewModel : PropertyChangedBaseWithValidation
             : string.Empty;
         TokenValidUntilText = claims is not null
             ? $"{claims.ExpiresAtUtc.ToLocalTime():g} (renewed automatically while online)"
+            : string.Empty;
+
+        ShowCommunicatedSignals = communicatedSignalCountProvider is not null
+                                  && CommunicatedSignals.GetLimit(licenseService) is not null;
+        CommunicatedSignalsText = ShowCommunicatedSignals
+            ? $"{communicatedSignalCountProvider!()} / {CommunicatedSignals.GetLimit(licenseService)}"
             : string.Empty;
     }
 

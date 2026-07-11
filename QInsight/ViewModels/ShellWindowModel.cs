@@ -199,6 +199,22 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		set { field = value; OnPropertyChanged(); }
 	}
 
+	/// <summary>Badge text; with a project open it includes the communicated-signal
+	/// counter (e.g. "FREE NON-COMMERCIAL LICENCE · 12/10 signals").</summary>
+	public string LicenseBadgeText
+	{
+		get;
+		set { field = value; OnPropertyChanged(); }
+	} = FreeLicenseBadgeCaption;
+
+	/// <summary>True when the communicated-signal count exceeds the Free limit;
+	/// the badge turns red so the disabled Connect/Replay buttons explain themselves.</summary>
+	public bool IsLicenseBadgeAlert
+	{
+		get;
+		set { field = value; OnPropertyChanged(); }
+	}
+
 	public LogsViewModel LogsViewModel
 	{
 		get;
@@ -247,9 +263,25 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		propertiesViewModel.SelectedViewModel = new EmptyPropertiesViewModel(eventAggregator);
 	}
 
+	private const string FreeLicenseBadgeCaption = "FREE NON-COMMERCIAL LICENCE";
+
 	private void UpdateLicenseBadge()
 	{
 		IsFreeLicense = licenseService.Status == LicenseStatus.Valid && licenseService.IsFreeTier;
+
+		if (!IsFreeLicense
+			|| CommunicatedSignals.GetLimit(licenseService) is not { } signalLimit
+			|| !isProjectMade
+			|| realProjectData?.Module == null)
+		{
+			LicenseBadgeText = FreeLicenseBadgeCaption;
+			IsLicenseBadgeAlert = false;
+			return;
+		}
+
+		var communicatedCount = CommunicatedSignals.Count(realProjectData.Module);
+		LicenseBadgeText = $"{FreeLicenseBadgeCaption} · {communicatedCount}/{signalLimit} signals";
+		IsLicenseBadgeAlert = communicatedCount > signalLimit;
 	}
 
 	private void SetProjectWindowTitle(string? projectFilePath)

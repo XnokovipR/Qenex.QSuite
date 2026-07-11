@@ -36,6 +36,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <q:QTextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,12,4" Text="Status" FontWeight="Bold"/>
@@ -58,6 +59,11 @@
 
             <q:QTextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,12,4" Text="This machine"/>
             <q:QTextBlock Grid.Row="4" Grid.Column="1" Margin="0,0,0,4" Text="{Binding MachineText}"/>
+
+            <q:QTextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,12,4" Text="Communicated signals"
+                          Visibility="{Binding ShowCommunicatedSignals, Converter={StaticResource BoolToVisibility}}"/>
+            <q:QTextBlock Grid.Row="5" Grid.Column="1" Margin="0,0,0,4" Text="{Binding CommunicatedSignalsText}"
+                          Visibility="{Binding ShowCommunicatedSignals, Converter={StaticResource BoolToVisibility}}"/>
         </Grid>
 
         <!-- Free tier notice -->

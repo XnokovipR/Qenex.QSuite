@@ -326,16 +326,27 @@
 			</telerik:RadRibbonView>
 
 			<!-- Free-license badge: top-right corner of the ribbon row, directly below the
-			     window close button (the native title bar cannot host WPF content). -->
+			     window close button (the native title bar cannot host WPF content).
+			     With a project open it shows the communicated-signal counter; red = over limit. -->
 			<q:QTextBlock Grid.Row="0"
 			              HorizontalAlignment="Right"
 			              VerticalAlignment="Top"
 			              Margin="0,6,10,0"
 			              FontWeight="SemiBold"
-			              Foreground="DarkOrange"
 			              IsHitTestVisible="False"
-			              Text="FREE NON-COMMERCIAL LICENCE"
-			              Visibility="{Binding IsFreeLicense, Converter={StaticResource BoolToVisibility}}"/>
+			              Text="{Binding LicenseBadgeText}"
+			              Visibility="{Binding IsFreeLicense, Converter={StaticResource BoolToVisibility}}">
+				<q:QTextBlock.Style>
+					<Style TargetType="{x:Type q:QTextBlock}">
+						<Setter Property="Foreground" Value="DarkOrange"/>
+						<Style.Triggers>
+							<DataTrigger Binding="{Binding IsLicenseBadgeAlert}" Value="True">
+								<Setter Property="Foreground" Value="Red"/>
+							</DataTrigger>
+						</Style.Triggers>
+					</Style>
+				</q:QTextBlock.Style>
+			</q:QTextBlock>
 
 			<telerik:RadDocking
 				x:Name="RadDocking"

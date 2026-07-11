@@ -5,7 +5,13 @@ using System.Text;
 using System.Text.Json;
 using Qenex.Licensing;
 using Qenex.QInsight.Licensing;
+using Qenex.QSuite.Common.CoreComm;
+using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Specifications.Specification;
+using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QInsight.Tests.LicensingTest;
 
@@ -31,6 +37,9 @@ internal static class Program
         Heartbeat_NotActivated_DisablesLicenseWithoutReactivating();
         StoredKeyWithoutToken_IsNotLicensedButKeepsKey();
         LicenseStore_CorruptFile_ReturnsNull();
+        FreeTier_HasCommunicatedSignalLimit();
+        NonFreeTierOrNoLicense_HasNoCommunicatedSignalLimit();
+        CommunicatedSignals_CountsOnlyCommunicatedVariablesAcrossDriversAndProtocols();
 
         Console.WriteLine(failures == 0 ? "ALL TESTS PASSED" : $"{failures} TEST(S) FAILED");
         return failures == 0 ? 0 : 1;
@@ -202,6 +211,78 @@ internal static class Program
         Check(harness.Service.LicenseKey == "QNX-ABCD-EFGH-JKLM-NPQR", "key-only store -> key available for prefill");
     }
 
+    private static void FreeTier_HasCommunicatedSignalLimit()
+    {
+        var keys = LicenseToken.CreateKeyPair();
+        using var harness = new Harness(keys.PublicKeyPem);
+        harness.StoreToken(keys.PrivateKeyPem, MakeClaims() with { Tier = "Free" });
+        harness.Service.LoadStoredLicense();
+
+        var limit = CommunicatedSignals.GetLimit(harness.Service);
+
+        Check(limit == LicensingConstants.FreeMaxCommunicatedSignals, "Free tier -> communicated signal limit applies");
+        Check(LicensingConstants.FreeMaxCommunicatedSignals == 10, "Free tier limit is 10");
+        Check(11 > limit, "11 communicated signals exceed the Free limit");
+        Check(!(10 > limit), "10 communicated signals fit the Free limit");
+        Check(CommunicatedSignals.BuildOverLimitMessage(11, 10)
+              == "Free license: the project has 11 communicated signals, the limit is 10.",
+            "over-limit message names count and limit");
+    }
+
+    private static void NonFreeTierOrNoLicense_HasNoCommunicatedSignalLimit()
+    {
+        var keys = LicenseToken.CreateKeyPair();
+        using var licensedHarness = new Harness(keys.PublicKeyPem);
+        licensedHarness.StoreToken(keys.PrivateKeyPem, MakeClaims());
+        licensedHarness.Service.LoadStoredLicense();
+
+        Check(CommunicatedSignals.GetLimit(licensedHarness.Service) is null, "Professional tier -> no signal limit");
+
+        using var unlicensedHarness = new Harness(keys.PublicKeyPem);
+        unlicensedHarness.Service.LoadStoredLicense();
+
+        Check(CommunicatedSignals.GetLimit(unlicensedHarness.Service) is null,
+            "no license -> no signal limit (runtime is blocked by the license guard itself)");
+    }
+
+    private static void CommunicatedSignals_CountsOnlyCommunicatedVariablesAcrossDriversAndProtocols()
+    {
+        var protocolA = new FakeProtocol();
+        protocolA.Variables.Add(new ProtocolVariable { IsCommunicated = true });
+        protocolA.Variables.Add(new ProtocolVariable { IsCommunicated = false });
+        var protocolB = new FakeProtocol();
+        protocolB.Variables.Add(new ProtocolVariable { IsCommunicated = true });
+        var driverWithTwoProtocols = new FakeDriver(protocolA, protocolB);
+
+        var protocolC = new FakeProtocol();
+        protocolC.Variables.Add(new ProtocolVariable { IsCommunicated = true });
+        protocolC.Variables.Add(new ProtocolVariable { IsCommunicated = false });
+        var secondDriver = new FakeDriver(protocolC);
+
+        Check(CommunicatedSignals.Count(new IDriverBase[] { driverWithTwoProtocols, secondDriver }) == 3,
+            "count spans all drivers and protocols and counts only IsCommunicated");
+        Check(CommunicatedSignals.Count(new IDriverBase[] { new FakeDriver() }) == 0, "driver without protocols -> 0");
+        Check(CommunicatedSignals.Count((IEnumerable<IDriverBase>?)null) == 0, "no drivers -> 0");
+
+        // Data-logger and replay drivers mirror project variables as their own protocol
+        // variables (isCommunicated=true) — they must not consume the Free-tier limit.
+        var loggerProtocol = new FakeProtocol();
+        loggerProtocol.Variables.Add(new ProtocolVariable { IsCommunicated = true });
+        loggerProtocol.Variables.Add(new ProtocolVariable { IsCommunicated = true });
+        var replayProtocol = new FakeProtocol();
+        replayProtocol.Variables.Add(new ProtocolVariable { IsCommunicated = true });
+        replayProtocol.Variables.Add(new ProtocolVariable { IsCommunicated = true });
+        var project = new IDriverBase[]
+        {
+            driverWithTwoProtocols,
+            new FakeSinkDriver(loggerProtocol),
+            new FakeReplayDriver(replayProtocol)
+        };
+
+        Check(CommunicatedSignals.Count(project) == 2,
+            "sink (logger) and replay drivers are excluded from the count");
+    }
+
     private static void LicenseStore_CorruptFile_ReturnsNull()
     {
         var path = Path.Combine(Path.GetTempPath(), $"qinsight-license-test-{Guid.NewGuid():N}.json");
@@ -296,6 +377,80 @@ internal static class Program
             httpClient.Dispose();
             File.Delete(storePath);
         }
+    }
+
+    /// <summary>Minimal driver/protocol graph for CommunicatedSignals.Count; only Protocols
+    /// and Variables matter, the rest of the interfaces is inert.</summary>
+    private class FakeDriver(params IProtocolBase[] protocols) : IDriverBase
+    {
+        public int Id { get; set; }
+        public string Label { get; set; } = string.Empty;
+        public string RawSettings { get; set; } = string.Empty;
+        public string RawEncryptedSettings { get; set; } = string.Empty;
+        public IList<IProtocolBase> Protocols { get; init; } = protocols.ToList();
+        public bool IsEnabled { get; set; }
+        public CommunicationState State => default;
+        public string? StateMessage => null;
+        public event EventHandler<CommunicationStateChangedEventArgs>? StateChanged { add { } remove { } }
+        public ISpecification Specification => null!;
+        public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public void Dispose() { }
+        public void SetConfiguration() { }
+        public void AddProtocol(IProtocolBase protocol) => Protocols.Add(protocol);
+        public void AddProtocols(IEnumerable<IProtocolBase> newProtocols) { }
+        public void RemoveProtocol(IProtocolBase protocol) { }
+        public void RemoveProtocol(string protocolName) { }
+        public void Send<T>(T data) { }
+        public Task SendAsync<T>(T data, CancellationToken ct = default) => Task.CompletedTask;
+    }
+
+    /// <summary>Data-logger-like driver: consumes protocol variables, does not communicate.</summary>
+    private sealed class FakeSinkDriver(params IProtocolBase[] protocols)
+        : FakeDriver(protocols), IProtocolVariableSinkDriver
+    {
+        public bool CanSubscribe(IProtocolVariable sourceVariable) => false;
+        public Task OnProtocolVariableValueChangedAsync(IProtocolVariable sourceVariable) => Task.CompletedTask;
+    }
+
+    private sealed class FakeReplayDriver(params IProtocolBase[] protocols)
+        : FakeDriver(protocols), IReplayDriver
+    {
+        public event EventHandler? ReplayCompleted { add { } remove { } }
+        public event EventHandler<ReplayProgressChangedEventArgs>? ReplayProgressChanged { add { } remove { } }
+        public TimeSpan CurrentTime => TimeSpan.Zero;
+        public TimeSpan Duration => TimeSpan.Zero;
+        public bool IsPaused => false;
+        public bool IsDataLoaded => false;
+        public bool IsDataLoading => false;
+        public void StartLoadingData(CancellationToken ct = default) { }
+        public void CancelLoadingData() { }
+        public void Pause() { }
+        public void Resume() { }
+        public Task SeekAsync(TimeSpan position, CancellationToken ct = default) => Task.CompletedTask;
+    }
+
+    private sealed class FakeProtocol : IProtocolBase
+    {
+        public int Id { get; set; }
+        public IList<IProtocolVariable> Variables { get; set; } = [];
+        public string RawSettings { get; set; } = string.Empty;
+        public string RawEncryptedSettings { get; set; } = string.Empty;
+        public bool IsEnabled { get; set; }
+        public CommunicationState State => default;
+        public string? StateMessage => null;
+        public event EventHandler<CommunicationStateChangedEventArgs>? StateChanged { add { } remove { } }
+        public ISpecification Specification => null!;
+        public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public void Dispose() { }
+        public void SetConfiguration() { }
+        public IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated) => null;
+        public IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent variableEvent, string id) => null;
+        public IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents, string commParams, bool isCommunicated) => null;
+        public void AddVariable(IProtocolVariable protocolVariable) => Variables.Add(protocolVariable);
+        public void RemoveProtocolVariable(IProtocolVariable variable) { }
+        public void RemoveProtocolVariable(string variableName) { }
     }
 
     private sealed class FakeHttpHandler : HttpMessageHandler

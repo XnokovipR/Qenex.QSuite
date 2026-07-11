@@ -353,7 +353,8 @@ public partial class ShellWindowModel
             realProjectData.Module.Presentations,
             realProjectData.Module.VarEvents,
             realProjectData.Module.Scripting.OnValueChangedScriptTriggers,
-            realProjectData.Module.Scripting.Scripts);
+            realProjectData.Module.Scripting.Scripts,
+            CommunicatedSignals.GetLimit(licenseService));
         projectConfigurationViewModel.SelectSection(selectedSection);
 
         var projectConfigurationView = new ProjectConfigurationView()
@@ -376,6 +377,11 @@ public partial class ShellWindowModel
 
         projectConfigurationViewModel.SetParentWindow(projectConfigurationDialog);
         projectConfigurationDialog.ShowDialog();
+
+        // The communicated-signal count may have changed; re-query the Free-tier limit guards
+        // and refresh the badge counter.
+        NotifyLicenseDependentCommands();
+        UpdateLicenseBadge();
     }
 
     private void OpenThemePreferences()
@@ -405,7 +411,8 @@ public partial class ShellWindowModel
 
     private void OpenLicenseDialog()
     {
-        var licenseViewModel = new LicenseViewModel(licenseService, logger);
+        var licenseViewModel = new LicenseViewModel(licenseService, logger,
+            () => CommunicatedSignals.Count(realProjectData?.Module));
         var licenseView = new LicenseView
         {
             DataContext = licenseViewModel
@@ -1212,6 +1219,25 @@ public partial class ShellWindowModel
             return;
         }
 
+        // Free-tier guard: limited number of communicated signals (defense in depth next to
+        // CanConnectRuntime; the comparison is intentionally inline, not a shared helper).
+        if (CommunicatedSignals.GetLimit(licenseService) is { } connectSignalLimit)
+        {
+            var communicatedCount = CommunicatedSignals.Count(realProjectData?.Module);
+            if (communicatedCount > connectSignalLimit)
+            {
+                logger.Log(LogLevel.Warn,
+                    $"Runtime start blocked: {communicatedCount} communicated signals exceed the Free license limit of {connectSignalLimit}.");
+                RadWindow.Alert(new DialogParameters
+                {
+                    Header = "Free License Limit",
+                    Content = CommunicatedSignals.BuildOverLimitMessage(communicatedCount, connectSignalLimit)
+                              + "\nUncheck 'Communicated' on some variables in Project Configuration -> Variables."
+                });
+                return;
+            }
+        }
+
         if (!isProjectMade || realProjectData?.Module == null)
         {
             logger.Log(LogLevel.Warn, "No project opened for runtime.");
@@ -1345,6 +1371,25 @@ public partial class ShellWindowModel
                 Content = "A valid license is required to start replay.\nOpen Help -> License to enter your license key."
             });
             return;
+        }
+
+        // Free-tier guard: limited number of communicated signals (defense in depth next to
+        // CanStartReplay; the comparison is intentionally inline, not a shared helper).
+        if (CommunicatedSignals.GetLimit(licenseService) is { } replaySignalLimit)
+        {
+            var communicatedCount = CommunicatedSignals.Count(realProjectData?.Module);
+            if (communicatedCount > replaySignalLimit)
+            {
+                logger.Log(LogLevel.Warn,
+                    $"Replay start blocked: {communicatedCount} communicated signals exceed the Free license limit of {replaySignalLimit}.");
+                RadWindow.Alert(new DialogParameters
+                {
+                    Header = "Free License Limit",
+                    Content = CommunicatedSignals.BuildOverLimitMessage(communicatedCount, replaySignalLimit)
+                              + "\nUncheck 'Communicated' on some variables in Project Configuration -> Variables."
+                });
+                return;
+            }
         }
 
         if (!isProjectMade)
@@ -2137,6 +2182,27 @@ public partial class ShellWindowModel
         isProjectMade = isMade;
         NotifyProjectCommandsCanExecuteChanged();
         NotifyRuntimeCommandsCanExecuteChanged();
+        UpdateLicenseBadge();
+        LogCommunicatedSignalsOverLimit();
+    }
+
+    /// <summary>Free-tier limit: make an over-limit project visible right when it is opened —
+    /// the greyed-out Connect/Replay buttons alone do not explain themselves.</summary>
+    private void LogCommunicatedSignalsOverLimit()
+    {
+        if (!isProjectMade || CommunicatedSignals.GetLimit(licenseService) is not { } signalLimit)
+        {
+            return;
+        }
+
+        var communicatedCount = CommunicatedSignals.Count(realProjectData?.Module);
+        if (communicatedCount > signalLimit)
+        {
+            logger.Log(LogLevel.Warn,
+                $"Project has {communicatedCount} communicated signals, the Free license limit is {signalLimit} — "
+                + "runtime and replay are disabled. Uncheck 'Communicated' on some variables in "
+                + "Project Configuration -> Variables.");
+        }
     }
 
     private void SetRuntimeCommandStates(bool runtimeStarted, bool replayStarted = false)
@@ -2217,7 +2283,16 @@ public partial class ShellWindowModel
     private bool CanConnectRuntime()
     {
         return canConnectRuntime && isProjectMade && realProjectData?.Module != null
-               && licenseService.IsRuntimeAllowed;
+               && licenseService.IsRuntimeAllowed
+               && !IsCommunicatedSignalsOverLimit();
+    }
+
+    /// <summary>Free-tier communicated-signal limit for command greying only; the blocking
+    /// checks in ConnectAsync/ReplayAsync are separate inline comparisons on purpose.</summary>
+    private bool IsCommunicatedSignalsOverLimit()
+    {
+        return CommunicatedSignals.GetLimit(licenseService) is { } signalLimit
+               && CommunicatedSignals.Count(realProjectData?.Module) > signalLimit;
     }
 
     private bool CanImportDataLog()
@@ -2254,6 +2329,7 @@ public partial class ShellWindowModel
     {
         if (!canReplay ||
             !licenseService.IsRuntimeAllowed ||
+            IsCommunicatedSignalsOverLimit() ||
             !isProjectMade ||
             !isReplayDataLogImported ||
             string.IsNullOrWhiteSpace(replayDataLogFilePath) ||

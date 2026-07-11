@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Qenex.QInsight.EventAggregatorMsgs;
+using Qenex.QInsight.Licensing;
 using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Common.PluginManager;
@@ -31,6 +32,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private const string TcpClientDriverName = "TcpClientDriver";
 
     private readonly EventAggregator? eventAggregator;
+    private readonly int? communicatedSignalsLimit;
     private readonly IModuleBase module;
     private readonly IList<IDriverBase> drivers;
     private readonly IEnumerable<PluginDetails> driverPlugins;
@@ -75,8 +77,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         IEnumerable<IPresentation> presentations,
         IEnumerable<IVarEvent> variableEvents,
         IList<OnValueChangedScriptTrigger> onValueChangedScriptTriggers,
-        IList<IScriptBase> scripts)
+        IList<IScriptBase> scripts,
+        int? communicatedSignalsLimit = null)
     {
+        this.communicatedSignalsLimit = communicatedSignalsLimit;
         this.eventAggregator = eventAggregator;
         this.module = module;
         this.drivers = drivers as IList<IDriverBase> ?? drivers.ToList();
@@ -201,6 +205,20 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public ObservableCollection<ProjectConfigurationPresentationWrapper> Presentations { get; }
     public ObservableCollection<ProjectConfigurationEventWrapper> Events { get; }
     public ObservableCollection<ProjectConfigurationProtocolVariableWrapper> CommunicatedVariables { get; }
+
+    /// <summary>Free-tier warning: the edited state exceeds the communicated-signal limit.
+    /// Editing stays allowed; only the runtime start is blocked (ShellWindowModel guards).</summary>
+    public bool HasCommunicatedSignalsWarning =>
+        communicatedSignalsLimit is { } limit
+        && CommunicatedVariables.Count(variable => variable.IsCommunicated) > limit;
+
+    public string CommunicatedSignalsWarning =>
+        communicatedSignalsLimit is { } limit
+            ? CommunicatedSignals.BuildOverLimitMessage(
+                  CommunicatedVariables.Count(variable => variable.IsCommunicated), limit)
+              + " Runtime will not start until some variables stop being communicated."
+            : string.Empty;
+
     public ObservableCollection<ProjectConfigurationProtocolOption> SourceOptions { get; }
     public ObservableCollection<ProjectConfigurationScriptWrapper> Scripts { get; }
     public IEnumerable<EnumMemberViewModel> ExecutionModes { get; } = EnumDataSource.FromType<ScriptExecutionMode>();
@@ -840,7 +858,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
         else if (driver.Specification.Name.Equals(TcpClientDriverName, StringComparison.OrdinalIgnoreCase))
         {
-            driver.RawSettings = "ip=127.0.0.1;port=5000;connectionTimeoutMs=5000;reconnectTimeMs=1000;numberOfReconnections=3";
+            // idleTimeoutMs keeps the historical behavior for streaming (JSON) sources: a silent
+            // server drops the connection and reconnects. Clear it (0) for request/response
+            // protocols such as Modbus TCP, where a quiet line is normal.
+            driver.RawSettings = "ip=127.0.0.1;port=5000;connectionTimeoutMs=5000;reconnectTimeMs=1000;numberOfReconnections=3;idleTimeoutMs=5000";
         }
 
         driver.SetConfiguration();
@@ -1722,6 +1743,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             SelectedCommunicatedVariable = wrapper;
             RemoveVariableCommand?.OnCanExecuteChanged();
             NotifyHasChangesChanged();
+            NotifyCommunicatedSignalsWarningChanged();
         }
         catch (Exception e)
         {
@@ -1771,6 +1793,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         SelectedCommunicatedVariable = CommunicatedVariables.FirstOrDefault();
         RemoveVariableCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
+        NotifyCommunicatedSignalsWarningChanged();
     }
 
     private ProjectConfigurationProtocolVariableWrapper CreateCommunicatedVariableWrapper(
@@ -1879,10 +1902,8 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
     private static bool IsSourceDriver(IDriverBase driver)
     {
-        return driver is not IProtocolVariableSinkDriver
-               && driver is not IReplayDriver
-               && !IsFileLogDriver(driver)
-               && !IsReplayDriver(driver);
+        // Shared with the Free-tier signal counting so the limit and this page always agree.
+        return CommunicatedSignals.IsCommunicationDriver(driver);
     }
 
     private static bool IsFileLogDriver(IDriverBase driver)
@@ -2031,12 +2052,24 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
     private void OnCommunicatedVariablePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(ProjectConfigurationProtocolVariableWrapper.IsCommunicated))
+        {
+            NotifyCommunicatedSignalsWarningChanged();
+            return;
+        }
+
         if (e.PropertyName != nameof(ProjectConfigurationProtocolVariableWrapper.HasChanges))
         {
             return;
         }
 
         NotifyHasChangesChanged();
+    }
+
+    private void NotifyCommunicatedSignalsWarningChanged()
+    {
+        OnPropertyChanged(nameof(HasCommunicatedSignalsWarning));
+        OnPropertyChanged(nameof(CommunicatedSignalsWarning));
     }
 
     private void NotifyHasChangesChanged()
