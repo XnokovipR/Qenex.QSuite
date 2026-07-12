@@ -103,6 +103,28 @@ public class ProjectConfigurationConversionWrapper : PropertyChangedBase
         NotifyStateChanged();
     }
 
+    /// <summary>
+    /// Builds a standalone conversion from the wrapper's CURRENT (possibly not yet applied)
+    /// state, so pending edits are included. Used for copying and for XML export.
+    /// </summary>
+    public IValConversion CreateConversionSnapshot(string name)
+    {
+        var snapshot = CreateConversion(name, currentState.ConversionType);
+        if (snapshot is LinearValConversion linearConversion && currentState.LinearState != null)
+        {
+            linearConversion.Multiplier = currentState.LinearState.Multiplier;
+            linearConversion.Offset = currentState.LinearState.Offset;
+        }
+        else if (snapshot is EnumValConversion enumConversion && currentState.EnumState != null)
+        {
+            enumConversion.Enums = currentState.EnumState.Values
+                .Select(value => new EnumType { Name = value.Name, Value = value.Value })
+                .ToList();
+        }
+
+        return snapshot;
+    }
+
     private void RebuildProperties()
     {
         editableProperties.Clear();

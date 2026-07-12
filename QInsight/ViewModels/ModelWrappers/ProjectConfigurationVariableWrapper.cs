@@ -33,6 +33,7 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
 
     public ObservableCollection<EditablePropertyWrapper> Properties { get; }
     public int Id => currentState.Id;
+    public string Name => currentState.Name;
 
     public string DisplayName => $"{currentState.Label} ({currentState.Id})";
 
@@ -65,6 +66,39 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
     public void RefreshPresentationOptions(IEnumerable<string> presentationNames)
     {
         presentationProperty?.SetOptions(presentationNames.Prepend(string.Empty));
+    }
+
+    /// <summary>
+    /// Builds a standalone variable from the wrapper's CURRENT (possibly not yet applied)
+    /// state, so pending edits are included. Used for copying a variable and for XML export.
+    /// </summary>
+    public IVariableBase CreateVariableSnapshot(int id, string name)
+    {
+        IVariableBase snapshot;
+        if (Variable is ScalarVariable && currentState.ScalarState != null)
+        {
+            var scalarSnapshot = new ScalarVariable
+            {
+                Values = ValuesGlobal.CreateInstance(currentState.ScalarState.ValueType)
+            };
+            ApplyScalarState(scalarSnapshot, currentState.ScalarState);
+            snapshot = scalarSnapshot;
+        }
+        else if (Variable is StringVariable stringVariable)
+        {
+            snapshot = new StringVariable { Values = stringVariable.Values ?? string.Empty };
+        }
+        else
+        {
+            throw new NotSupportedException($"Variable type {Variable.GetType().Name} cannot be copied.");
+        }
+
+        snapshot.Id = id;
+        snapshot.Namespace = currentState.Namespace;
+        snapshot.Name = name;
+        snapshot.Label = currentState.Label;
+        snapshot.Description = currentState.Description;
+        return snapshot;
     }
 
     private ObservableCollection<EditablePropertyWrapper> CreateProperties()

@@ -1,10 +1,17 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Windows;
 using Qenex.QInsight.EventAggregatorMsgs;
+using Qenex.QInsight.Helpers;
 using Qenex.QInsight.Licensing;
 using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QLibs.QUI;
+using Qenex.QLibs.XmlInOut;
 using Qenex.QSuite.Common.PluginManager;
+using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.ModuleXmlHandler;
+using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Modules.Module;
@@ -18,6 +25,7 @@ using Qenex.QSuite.Variables.ValueConversion;
 using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.VariableEvents;
 using Telerik.Windows.Controls;
+using Telerik.Windows.Controls.FileDialogs;
 using Telerik.Windows.Data;
 
 namespace Qenex.QInsight.ViewModels;
@@ -30,6 +38,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private const string SinkProtocolName = "One2OneProtocol";
     private const string SimulationDriverName = "SimulDataDriver";
     private const string TcpClientDriverName = "TcpClientDriver";
+    private const string XmlFileFilter = "QInsight XML files (*.xml)|*.xml|All files (*.*)|*.*";
 
     private readonly EventAggregator? eventAggregator;
     private readonly int? communicatedSignalsLimit;
@@ -60,6 +69,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private readonly List<ProjectConfigurationScriptWrapper> addedScripts = [];
     private readonly List<ProjectConfigurationScriptWrapper> removedScripts = [];
     private RadWindow? parentWindow;
+    private string? lastXmlDialogDirectory;
 
     public ProjectConfigurationViewModel()
         : this(null, new UnifiedModuleFactory().Create(new ScriptEngineSettings(), null), [], [], [], [], [], [], [], [], [])
@@ -175,17 +185,32 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         SelectDriverCommand = new RelayCommand<object>(SelectDriver);
         AddVariableCommand = new RelayCommand<object>(_ => AddVariable(), _ => CanAddVariable());
         RemoveVariableCommand = new RelayCommand<object>(_ => RemoveVariable(), _ => CanRemoveVariable());
+        CopyVariableCommand = new RelayCommand<object>(_ => CopyVariable(), _ => SelectedVariable != null);
+        ExportVariablesCommand = new RelayCommand<object>(_ => ExportVariables(), _ => Variables.Count > 0);
+        ImportVariablesCommand = new RelayCommand<object>(_ => ImportVariables());
         AddVariableToSourceCommand = new RelayCommand<object>(_ => AddVariableToSource(), _ => CanAddVariableToSource());
         RemoveCommunicatedVariableCommand = new RelayCommand<object>(_ => RemoveCommunicatedVariable(), _ => CanRemoveCommunicatedVariable());
         SelectScriptCommand = new RelayCommand<object>(SelectScript);
         AddConversionCommand = new RelayCommand<object>(_ => AddConversion());
         RemoveConversionCommand = new RelayCommand<object>(_ => RemoveConversion(), _ => SelectedConversion != null);
+        CopyConversionCommand = new RelayCommand<object>(_ => CopyConversion(), _ => SelectedConversion != null);
+        ExportConversionsCommand = new RelayCommand<object>(_ => ExportConversions(), _ => Conversions.Count > 0);
+        ImportConversionsCommand = new RelayCommand<object>(_ => ImportConversions());
         AddPresentationCommand = new RelayCommand<object>(_ => AddPresentation(), _ => CanAddPresentation());
         RemovePresentationCommand = new RelayCommand<object>(_ => RemovePresentation(), _ => CanRemovePresentation());
+        CopyPresentationCommand = new RelayCommand<object>(_ => CopyPresentation(), _ => SelectedPresentation != null);
+        ExportPresentationsCommand = new RelayCommand<object>(_ => ExportPresentations(), _ => Presentations.Count > 0);
+        ImportPresentationsCommand = new RelayCommand<object>(_ => ImportPresentations());
         AddEventCommand = new RelayCommand<object>(_ => AddEvent());
         RemoveEventCommand = new RelayCommand<object>(_ => RemoveEvent(), _ => CanRemoveEvent());
+        CopyEventCommand = new RelayCommand<object>(_ => CopyEvent(), _ => SelectedEvent != null);
+        ExportEventsCommand = new RelayCommand<object>(_ => ExportEvents(), _ => Events.Count > 0);
+        ImportEventsCommand = new RelayCommand<object>(_ => ImportEvents());
         AddScriptCommand = new RelayCommand<object>(_ => AddScript());
         RemoveScriptCommand = new RelayCommand<object>(_ => RemoveScript(), _ => SelectedScript != null);
+        ExportScriptCommand = new RelayCommand<object>(_ => ExportSelectedScript(), _ => SelectedScript != null);
+        ExportAllScriptsCommand = new RelayCommand<object>(_ => ExportAllScripts(), _ => Scripts.Count > 0);
+        ImportScriptsCommand = new RelayCommand<object>(_ => ImportScripts());
         EnsureInitialVariableSelections();
         SelectedDriver = Drivers.FirstOrDefault();
         SelectedConversion = Conversions.FirstOrDefault();
@@ -231,17 +256,32 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public RelayCommand<object> SelectDriverCommand { get; }
     public RelayCommand<object> AddVariableCommand { get; }
     public RelayCommand<object> RemoveVariableCommand { get; }
+    public RelayCommand<object> CopyVariableCommand { get; }
+    public RelayCommand<object> ExportVariablesCommand { get; }
+    public RelayCommand<object> ImportVariablesCommand { get; }
     public RelayCommand<object> AddVariableToSourceCommand { get; }
     public RelayCommand<object> RemoveCommunicatedVariableCommand { get; }
     public RelayCommand<object> SelectScriptCommand { get; }
     public RelayCommand<object> AddConversionCommand { get; }
     public RelayCommand<object> RemoveConversionCommand { get; }
+    public RelayCommand<object> CopyConversionCommand { get; }
+    public RelayCommand<object> ExportConversionsCommand { get; }
+    public RelayCommand<object> ImportConversionsCommand { get; }
     public RelayCommand<object> AddPresentationCommand { get; }
     public RelayCommand<object> RemovePresentationCommand { get; }
+    public RelayCommand<object> CopyPresentationCommand { get; }
+    public RelayCommand<object> ExportPresentationsCommand { get; }
+    public RelayCommand<object> ImportPresentationsCommand { get; }
     public RelayCommand<object> AddEventCommand { get; }
     public RelayCommand<object> RemoveEventCommand { get; }
+    public RelayCommand<object> CopyEventCommand { get; }
+    public RelayCommand<object> ExportEventsCommand { get; }
+    public RelayCommand<object> ImportEventsCommand { get; }
     public RelayCommand<object> AddScriptCommand { get; }
     public RelayCommand<object> RemoveScriptCommand { get; }
+    public RelayCommand<object> ExportScriptCommand { get; }
+    public RelayCommand<object> ExportAllScriptsCommand { get; }
+    public RelayCommand<object> ImportScriptsCommand { get; }
 
     public ProjectConfigurationDriverWrapper? SelectedDriver
     {
@@ -326,6 +366,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             OnPropertyChanged();
             RemoveVariableCommand?.OnCanExecuteChanged();
             AddVariableToSourceCommand?.OnCanExecuteChanged();
+            CopyVariableCommand?.OnCanExecuteChanged();
         }
     }
 
@@ -358,6 +399,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             field = value;
             OnPropertyChanged();
             RemoveScriptCommand?.OnCanExecuteChanged();
+            ExportScriptCommand?.OnCanExecuteChanged();
         }
     }
 
@@ -374,6 +416,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             field = value;
             OnPropertyChanged();
             RemoveConversionCommand?.OnCanExecuteChanged();
+            CopyConversionCommand?.OnCanExecuteChanged();
         }
     }
 
@@ -391,6 +434,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             ErrorMessage = string.Empty;
             OnPropertyChanged();
             RemovePresentationCommand?.OnCanExecuteChanged();
+            CopyPresentationCommand?.OnCanExecuteChanged();
         }
     }
 
@@ -408,6 +452,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             ErrorMessage = string.Empty;
             OnPropertyChanged();
             RemoveEventCommand?.OnCanExecuteChanged();
+            CopyEventCommand?.OnCanExecuteChanged();
         }
     }
 
@@ -478,6 +523,9 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             }
 
             field = value;
+            // The message strip relates to an action taken in the current section —
+            // switching to another section must not leave it lit.
+            ErrorMessage = string.Empty;
             OnPropertyChanged();
             OnPropertyChanged(nameof(SelectedSection));
             if (field.Section == ProjectConfigurationSection.Variables)
@@ -512,6 +560,17 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private void ApplyChanges()
     {
         ErrorMessage = string.Empty;
+
+        // Names are how components reference each other (presentation -> conversion,
+        // variable -> presentation, communicated variable -> event/script), so duplicates
+        // or blanks must never be applied — whether they came from a rename, copy or import.
+        var validationProblems = ValidateNamesBeforeApply();
+        if (validationProblems.Count > 0)
+        {
+            ReportValidationProblems(validationProblems);
+            return;
+        }
+
         try
         {
             Project.MarkModifiedNow();
@@ -1213,6 +1272,16 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             Size = values.Size,
             Values = values
         };
+        AddVariableWrapper(variable);
+    }
+
+    private bool CanAddVariable()
+    {
+        return Presentations.Count > 0;
+    }
+
+    private void AddVariableWrapper(IVariableBase variable)
+    {
         var wrapper = new ProjectConfigurationVariableWrapper(
             variable,
             Presentations.Select(presentation => presentation.Presentation),
@@ -1222,12 +1291,268 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         addedVariables.Add(wrapper);
         SelectedVariable = wrapper;
 
+        ExportVariablesCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
     }
 
-    private bool CanAddVariable()
+    private void CopyVariable()
     {
-        return Presentations.Count > 0;
+        if (SelectedVariable == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var copy = SelectedVariable.CreateVariableSnapshot(
+                CreateUniqueVariableId(),
+                MakeUniqueVariableName($"{SelectedVariable.Name}_copy"));
+            AddVariableWrapper(copy);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Variable could not be copied: {e.Message}";
+        }
+    }
+
+    private void ExportVariables()
+    {
+        // All variables are exported — only their definitions; protocol bindings are
+        // not part of a standalone variables file.
+        if (Variables.Count == 0)
+        {
+            ErrorMessage = "There are no variables to export.";
+            return;
+        }
+
+        if (!TryPickExportFile("variables.xml", out var filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            var snapshots = Variables
+                .Select(variable => variable.CreateVariableSnapshot(variable.Id, variable.Name))
+                .ToList();
+            var variablesFile = new XmlVariablesFile
+            {
+                Variables = XmlVariableMapper.ToXmlVariables(snapshots)
+            };
+            XmlInOut<XmlVariablesFile>.SaveToFile(filePath, variablesFile);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Variables could not be exported: {e.Message}";
+        }
+    }
+
+    private void ImportVariables()
+    {
+        if (!TryPickImportFile(out var filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            var variablesFile = XmlInOut<XmlVariablesFile>.LoadFromFile(filePath);
+            var xmlVariables = variablesFile.Variables ?? [];
+            if (xmlVariables.Count == 0)
+            {
+                ErrorMessage = "No variables were found in the selected file.";
+                return;
+            }
+
+            var existingNames = Variables
+                .Select(variable => variable.Name)
+                .Concat(variables.Select(variable => variable.Name))
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var presentationObjects = Presentations
+                .Select(presentation => presentation.Presentation)
+                .ToList();
+            // Exact match — the mapper resolves the presentation reference the same way.
+            var presentationNames = presentationObjects
+                .Select(presentation => presentation.Name)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToHashSet(StringComparer.Ordinal);
+
+            var skipped = new List<string>();
+            var importedCount = 0;
+            foreach (var xmlVariable in xmlVariables)
+            {
+                if (string.IsNullOrWhiteSpace(xmlVariable.Name))
+                {
+                    skipped.Add("(record without a name)");
+                    continue;
+                }
+
+                // An already existing variable must not be imported (no overwrite, no rename).
+                if (existingNames.Contains(xmlVariable.Name))
+                {
+                    skipped.Add($"{xmlVariable.Name} — already exists in the project");
+                    continue;
+                }
+
+                // A variable requiring a presentation the project does not have is not imported.
+                var presentationRef = (xmlVariable as XmlScalarVariable)?.Values?.PresentationReference?.Ref;
+                if (!string.IsNullOrEmpty(presentationRef) && !presentationNames.Contains(presentationRef))
+                {
+                    skipped.Add($"{xmlVariable.Name} — presentation \"{presentationRef}\" not found in the project");
+                    continue;
+                }
+
+                var variable = XmlVariableMapper.FromXmlVariables([xmlVariable], presentationObjects).FirstOrDefault();
+                if (variable == null)
+                {
+                    skipped.Add($"{xmlVariable.Name} — unsupported record type");
+                    continue;
+                }
+
+                variable.Id = CreateUniqueVariableId();
+                AddVariableWrapper(variable);
+                existingNames.Add(variable.Name);
+                importedCount++;
+            }
+
+            ReportImportResult("variables", importedCount, skipped);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Variables could not be imported: {e.Message}";
+        }
+    }
+
+    // Import results do not go to the footer message strip: a long skip list would
+    // inflate the footer and squeeze the section content. Every skipped item is written
+    // to the application log and a summary window is shown on top of the dialog.
+    private void ReportImportResult(string what, int importedCount, IReadOnlyCollection<string> skipped)
+    {
+        ErrorMessage = string.Empty;
+        if (skipped.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var item in skipped)
+        {
+            Logger?.Log(LogLevel.Warn, $"Import of {what}: skipped {item}");
+        }
+
+        ShowSummaryWindow("Import", $"Imported {importedCount} {what}, skipped {skipped.Count}:", skipped);
+    }
+
+    private void ShowSummaryWindow(string header, string headline, IReadOnlyCollection<string> items)
+    {
+        const int maxListedItems = 15;
+        var summary = headline
+            + Environment.NewLine + Environment.NewLine
+            + string.Join(Environment.NewLine, items.Take(maxListedItems).Select(item => $"• {item}"));
+        if (items.Count > maxListedItems)
+        {
+            summary += Environment.NewLine
+                + $"… and {items.Count - maxListedItems} more (see the application log).";
+        }
+
+        RadWindow.Alert(new DialogParameters
+        {
+            Header = header,
+            Content = summary,
+            Owner = App.Current.MainWindow,
+            DialogStartupLocation = WindowStartupLocation.CenterOwner
+        });
+    }
+
+    private ILogger? Logger => (module as ModuleBase)?.Logger;
+
+    private List<string> ValidateNamesBeforeApply()
+    {
+        var problems = new List<string>();
+
+        AddNameProblems(problems, "variable name", Variables.Select(variable => variable.Name));
+        AddNameProblems(problems, "conversion name", Conversions.Select(conversion => conversion.Name));
+        AddNameProblems(problems, "presentation name", Presentations.Select(presentation => presentation.Name));
+        AddNameProblems(problems, "event name", Events.Select(variableEvent => variableEvent.Name));
+        AddNameProblems(problems, "script file name", Scripts.Select(script => script.FileName));
+
+        problems.AddRange(Variables
+            .GroupBy(variable => variable.Id)
+            .Where(group => group.Count() > 1)
+            .Select(group => $"duplicate variable Id {group.Key}: "
+                + string.Join(", ", group.Select(variable => $"\"{variable.Name}\""))));
+
+        return problems;
+    }
+
+    private static void AddNameProblems(List<string> problems, string what, IEnumerable<string> names)
+    {
+        var nameList = names.ToList();
+        var blankCount = nameList.Count(string.IsNullOrWhiteSpace);
+        if (blankCount > 0)
+        {
+            problems.Add($"empty {what} ({blankCount}x)");
+        }
+
+        problems.AddRange(nameList
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .GroupBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => $"duplicate {what}: \"{group.Key}\" ({group.Count()}x)"));
+    }
+
+    private void ReportValidationProblems(IReadOnlyCollection<string> problems)
+    {
+        foreach (var problem in problems)
+        {
+            Logger?.Log(LogLevel.Warn, $"Project configuration cannot be applied: {problem}");
+        }
+
+        ShowSummaryWindow("Apply", "The configuration cannot be applied — fix the following first:", problems);
+    }
+
+    private bool TryPickExportFile(string defaultFileName, out string filePath)
+    {
+        var dialog = new RadSaveFileDialog
+        {
+            Owner = App.Current.MainWindow,
+            Filter = XmlFileFilter,
+            FileName = defaultFileName,
+            InitialDirectory = lastXmlDialogDirectory ?? string.Empty
+        };
+        FileDialogConfiguration.ConfigureFastFileDialog(dialog);
+        dialog.ShowDialog();
+        if (dialog.DialogResult != true)
+        {
+            filePath = string.Empty;
+            return false;
+        }
+
+        filePath = dialog.FileName;
+        lastXmlDialogDirectory = Path.GetDirectoryName(dialog.FileName);
+        return true;
+    }
+
+    private bool TryPickImportFile(out string filePath)
+    {
+        var dialog = new RadOpenFileDialog
+        {
+            Owner = App.Current.MainWindow,
+            Multiselect = false,
+            Filter = XmlFileFilter,
+            InitialDirectory = lastXmlDialogDirectory ?? string.Empty
+        };
+        FileDialogConfiguration.ConfigureFastFileDialog(dialog);
+        dialog.ShowDialog();
+        if (dialog.DialogResult != true)
+        {
+            filePath = string.Empty;
+            return false;
+        }
+
+        filePath = dialog.FileName;
+        lastXmlDialogDirectory = Path.GetDirectoryName(dialog.FileName);
+        return true;
     }
 
     private void RemoveVariable()
@@ -1261,6 +1586,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
 
         SelectedVariable = Variables.FirstOrDefault();
+        ExportVariablesCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
     }
 
@@ -1316,23 +1642,18 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
     private string CreateUniqueVariableName()
     {
-        const string baseName = "variable";
+        return MakeUniqueVariableName("variable");
+    }
 
+    private string MakeUniqueVariableName(string desiredName)
+    {
         var existingNames = Variables
-            .Select(variable => variable.Variable.Name)
+            .Select(variable => variable.Name)
             .Concat(variables.Select(variable => variable.Name))
             .Where(name => !string.IsNullOrWhiteSpace(name))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var name = baseName;
-        var index = 1;
-        while (existingNames.Contains(name))
-        {
-            name = $"{baseName}_{index}";
-            index++;
-        }
-
-        return name;
+        return MakeUniqueName(desiredName, existingNames);
     }
 
     private void AddConversion()
@@ -1340,13 +1661,127 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         var conversion = ProjectConfigurationConversionWrapper.CreateConversion(
             CreateUniqueConversionName(),
             ConversionsGlobal.ConversionType.Linear);
+        AddConversionWrapper(conversion);
+    }
+
+    private void AddConversionWrapper(IValConversion conversion)
+    {
         var wrapper = new ProjectConfigurationConversionWrapper(conversion, isNew: true);
         wrapper.PropertyChanged += OnConversionPropertyChanged;
         Conversions.Add(wrapper);
         addedConversions.Add(wrapper);
         SelectedConversion = wrapper;
 
+        ExportConversionsCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
+    }
+
+    private void CopyConversion()
+    {
+        if (SelectedConversion == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var copy = SelectedConversion.CreateConversionSnapshot(
+                MakeUniqueConversionName($"{SelectedConversion.Name}_copy"));
+            AddConversionWrapper(copy);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Conversion could not be copied: {e.Message}";
+        }
+    }
+
+    private void ExportConversions()
+    {
+        if (Conversions.Count == 0)
+        {
+            ErrorMessage = "There are no conversions to export.";
+            return;
+        }
+
+        if (!TryPickExportFile("conversions.xml", out var filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            var snapshots = Conversions
+                .Select(conversion => conversion.CreateConversionSnapshot(conversion.Name))
+                .ToList();
+            var conversionsFile = new XmlConversionsFile
+            {
+                Conversions = XmlComponentMapper.ToXmlConversions(snapshots)
+            };
+            XmlInOut<XmlConversionsFile>.SaveToFile(filePath, conversionsFile);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Conversions could not be exported: {e.Message}";
+        }
+    }
+
+    private void ImportConversions()
+    {
+        if (!TryPickImportFile(out var filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            var conversionsFile = XmlInOut<XmlConversionsFile>.LoadFromFile(filePath);
+            var xmlConversions = conversionsFile.Conversions ?? [];
+            if (xmlConversions.Count == 0)
+            {
+                ErrorMessage = "No conversions were found in the selected file.";
+                return;
+            }
+
+            var existingNames = Conversions
+                .Select(conversion => conversion.Name)
+                .Concat(conversions.Select(conversion => conversion.Name))
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var skipped = new List<string>();
+            var importedCount = 0;
+            foreach (var xmlConversion in xmlConversions)
+            {
+                if (string.IsNullOrWhiteSpace(xmlConversion.Name))
+                {
+                    skipped.Add("(record without a name)");
+                    continue;
+                }
+
+                if (existingNames.Contains(xmlConversion.Name))
+                {
+                    skipped.Add($"{xmlConversion.Name} — already exists in the project");
+                    continue;
+                }
+
+                var conversion = XmlComponentMapper.FromXmlConversions([xmlConversion]).FirstOrDefault();
+                if (conversion == null)
+                {
+                    skipped.Add($"{xmlConversion.Name} — unsupported record type");
+                    continue;
+                }
+
+                AddConversionWrapper(conversion);
+                existingNames.Add(conversion.Name);
+                importedCount++;
+            }
+
+            ReportImportResult("conversions", importedCount, skipped);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Conversions could not be imported: {e.Message}";
+        }
     }
 
     private void RemoveConversion()
@@ -1373,24 +1808,33 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
         RefreshPresentationConverterOptions();
 
+        ExportConversionsCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
     }
 
     private string CreateUniqueConversionName()
     {
-        const string baseName = "conversion";
+        return MakeUniqueConversionName("conversion");
+    }
 
+    private string MakeUniqueConversionName(string desiredName)
+    {
         var existingNames = Conversions
             .Select(conversion => conversion.Name)
             .Concat(conversions.Select(conversion => conversion.Name))
             .Where(name => !string.IsNullOrWhiteSpace(name))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var name = baseName;
+        return MakeUniqueName(desiredName, existingNames);
+    }
+
+    private static string MakeUniqueName(string desiredName, ISet<string> existingNames)
+    {
+        var name = desiredName;
         var index = 1;
         while (existingNames.Contains(name))
         {
-            name = $"{baseName}_{index}";
+            name = $"{desiredName}_{index}";
             index++;
         }
 
@@ -1423,6 +1867,11 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             Unit = string.Empty,
             Conversion = conversion
         };
+        AddPresentationWrapper(presentation);
+    }
+
+    private void AddPresentationWrapper(IPresentation presentation)
+    {
         var wrapper = CreatePresentationWrapper(presentation, isNew: true);
         wrapper.PropertyChanged += OnPresentationPropertyChanged;
         Presentations.Add(wrapper);
@@ -1430,9 +1879,125 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         SelectedPresentation = wrapper;
 
         // Refresh nabidky prezentaci u promennych se NEdela zde - nove pridana prezentace
-        // ma zatim jen placeholder nazev (CreateUniquePresentationName) a neni potvrzena.
-        // Do nabidky u promennych se dostane az po Apply (viz ApplyChanges).
+        // neni potvrzena. Do nabidky u promennych se dostane az po Apply (viz ApplyChanges).
+        ExportPresentationsCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
+    }
+
+    private void CopyPresentation()
+    {
+        if (SelectedPresentation == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var copy = SelectedPresentation.CreatePresentationSnapshot(
+                MakeUniquePresentationName($"{SelectedPresentation.Name}_copy"));
+            AddPresentationWrapper(copy);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Presentation could not be copied: {e.Message}";
+        }
+    }
+
+    private void ExportPresentations()
+    {
+        if (Presentations.Count == 0)
+        {
+            ErrorMessage = "There are no presentations to export.";
+            return;
+        }
+
+        if (!TryPickExportFile("presentations.xml", out var filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            var snapshots = Presentations
+                .Select(presentation => presentation.CreatePresentationSnapshot(presentation.Name))
+                .ToList();
+            var presentationsFile = new XmlPresentationsFile
+            {
+                Presentations = XmlComponentMapper.ToXmlPresentations(snapshots)
+            };
+            XmlInOut<XmlPresentationsFile>.SaveToFile(filePath, presentationsFile);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Presentations could not be exported: {e.Message}";
+        }
+    }
+
+    private void ImportPresentations()
+    {
+        if (!TryPickImportFile(out var filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            var presentationsFile = XmlInOut<XmlPresentationsFile>.LoadFromFile(filePath);
+            var xmlPresentations = presentationsFile.Presentations ?? [];
+            if (xmlPresentations.Count == 0)
+            {
+                ErrorMessage = "No presentations were found in the selected file.";
+                return;
+            }
+
+            var existingNames = Presentations
+                .Select(presentation => presentation.Name)
+                .Concat(presentations.Select(presentation => presentation.Name))
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            // Conversions are referenced by name and must already exist in the project —
+            // import conversions first if the file relies on them.
+            var conversionObjects = Conversions
+                .Select(conversion => conversion.Conversion)
+                .ToList();
+
+            var skipped = new List<string>();
+            var importedCount = 0;
+            foreach (var xmlPresentation in xmlPresentations)
+            {
+                if (string.IsNullOrWhiteSpace(xmlPresentation.Name))
+                {
+                    skipped.Add("(record without a name)");
+                    continue;
+                }
+
+                if (existingNames.Contains(xmlPresentation.Name))
+                {
+                    skipped.Add($"{xmlPresentation.Name} — already exists in the project");
+                    continue;
+                }
+
+                var presentation = XmlComponentMapper
+                    .FromXmlPresentations([xmlPresentation], conversionObjects)
+                    .FirstOrDefault();
+                if (presentation == null)
+                {
+                    skipped.Add($"{xmlPresentation.Name} — conversion "
+                        + $"\"{xmlPresentation.ConversionReference?.Ref}\" not found in the project");
+                    continue;
+                }
+
+                AddPresentationWrapper(presentation);
+                existingNames.Add(presentation.Name);
+                importedCount++;
+            }
+
+            ReportImportResult("presentations", importedCount, skipped);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Presentations could not be imported: {e.Message}";
+        }
     }
 
     private bool CanAddPresentation()
@@ -1471,6 +2036,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
         RefreshVariablePresentationOptions();
 
+        ExportPresentationsCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
     }
 
@@ -1488,23 +2054,18 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
     private string CreateUniquePresentationName()
     {
-        const string baseName = "presentation";
+        return MakeUniquePresentationName("presentation");
+    }
 
+    private string MakeUniquePresentationName(string desiredName)
+    {
         var existingNames = Presentations
             .Select(presentation => presentation.Name)
             .Concat(presentations.Select(presentation => presentation.Name))
             .Where(name => !string.IsNullOrWhiteSpace(name))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var name = baseName;
-        var index = 1;
-        while (existingNames.Contains(name))
-        {
-            name = $"{baseName}_{index}";
-            index++;
-        }
-
-        return name;
+        return MakeUniqueName(desiredName, existingNames);
     }
 
     private void AddEvent()
@@ -1512,6 +2073,11 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         var variableEvent = ProjectConfigurationEventWrapper.CreateEvent(
             CreateUniqueEventName(),
             EventsGlobal.VariableEventType.Periodic);
+        AddEventWrapper(variableEvent);
+    }
+
+    private void AddEventWrapper(IVarEvent variableEvent)
+    {
         var wrapper = new ProjectConfigurationEventWrapper(variableEvent, isNew: true);
         wrapper.PropertyChanged += OnEventPropertyChanged;
         Events.Add(wrapper);
@@ -1519,7 +2085,116 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         SelectedEvent = wrapper;
 
         RefreshCommunicatedVariableEventOptions();
+        ExportEventsCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
+    }
+
+    private void CopyEvent()
+    {
+        if (SelectedEvent == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var copy = SelectedEvent.CreateEventSnapshot(
+                MakeUniqueEventName($"{SelectedEvent.Name}_copy"));
+            AddEventWrapper(copy);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Event could not be copied: {e.Message}";
+        }
+    }
+
+    private void ExportEvents()
+    {
+        if (Events.Count == 0)
+        {
+            ErrorMessage = "There are no events to export.";
+            return;
+        }
+
+        if (!TryPickExportFile("events.xml", out var filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            var snapshots = Events
+                .Select(variableEvent => variableEvent.CreateEventSnapshot(variableEvent.Name))
+                .ToList();
+            var eventsFile = new XmlVarEventsFile
+            {
+                Events = XmlComponentMapper.ToXmlVarEvents(snapshots)
+            };
+            XmlInOut<XmlVarEventsFile>.SaveToFile(filePath, eventsFile);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Events could not be exported: {e.Message}";
+        }
+    }
+
+    private void ImportEvents()
+    {
+        if (!TryPickImportFile(out var filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            var eventsFile = XmlInOut<XmlVarEventsFile>.LoadFromFile(filePath);
+            var xmlEvents = eventsFile.Events ?? [];
+            if (xmlEvents.Count == 0)
+            {
+                ErrorMessage = "No events were found in the selected file.";
+                return;
+            }
+
+            var existingNames = Events
+                .Select(variableEvent => variableEvent.Name)
+                .Concat(variableEvents.Select(variableEvent => variableEvent.Name))
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var skipped = new List<string>();
+            var importedCount = 0;
+            foreach (var xmlEvent in xmlEvents)
+            {
+                if (string.IsNullOrWhiteSpace(xmlEvent.Name))
+                {
+                    skipped.Add("(record without a name)");
+                    continue;
+                }
+
+                if (existingNames.Contains(xmlEvent.Name))
+                {
+                    skipped.Add($"{xmlEvent.Name} — already exists in the project");
+                    continue;
+                }
+
+                var variableEvent = XmlComponentMapper.FromXmlVarEvents([xmlEvent]).FirstOrDefault();
+                if (variableEvent == null)
+                {
+                    skipped.Add($"{xmlEvent.Name} — unsupported record type");
+                    continue;
+                }
+
+                AddEventWrapper(variableEvent);
+                existingNames.Add(variableEvent.Name);
+                importedCount++;
+            }
+
+            ReportImportResult("events", importedCount, skipped);
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Events could not be imported: {e.Message}";
+        }
     }
 
     private void RemoveEvent()
@@ -1551,6 +2226,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
         SelectedEvent = Events.FirstOrDefault();
         RefreshCommunicatedVariableEventOptions();
+        ExportEventsCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
     }
 
@@ -1583,23 +2259,18 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
     private string CreateUniqueEventName()
     {
-        const string baseName = "event";
+        return MakeUniqueEventName("event");
+    }
 
+    private string MakeUniqueEventName(string desiredName)
+    {
         var existingNames = Events
             .Select(variableEvent => variableEvent.Name)
             .Concat(variableEvents.Select(variableEvent => variableEvent.Name))
             .Where(name => !string.IsNullOrWhiteSpace(name))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var name = baseName;
-        var index = 1;
-        while (existingNames.Contains(name))
-        {
-            name = $"{baseName}_{index}";
-            index++;
-        }
-
-        return name;
+        return MakeUniqueName(desiredName, existingNames);
     }
 
     private void AddScript()
@@ -1612,6 +2283,11 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             ExecutionMode = ScriptExecutionMode.Manual,
             Blocking = true
         };
+        AddScriptWrapper(script);
+    }
+
+    private void AddScriptWrapper(IScriptBase script)
+    {
         var wrapper = new ProjectConfigurationScriptWrapper(script, isNew: true);
         wrapper.PropertyChanged += OnScriptPropertyChanged;
         Scripts.Add(wrapper);
@@ -1619,7 +2295,172 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         SelectedScript = wrapper;
 
         RefreshCommunicatedVariableScriptOptions();
+        ExportAllScriptsCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
+    }
+
+    // Scripts are exported/imported as plain .py files — the script content is what
+    // matters; execution settings stay project-specific.
+    private void ExportSelectedScript()
+    {
+        if (SelectedScript == null)
+        {
+            return;
+        }
+
+        var defaultFileName = Path.GetFileName(SelectedScript.FileName);
+        if (string.IsNullOrWhiteSpace(defaultFileName))
+        {
+            ErrorMessage = "The selected script has no file name.";
+            return;
+        }
+
+        var dialog = new RadSaveFileDialog
+        {
+            Owner = App.Current.MainWindow,
+            Filter = "Python scripts (*.py)|*.py|All files (*.*)|*.*",
+            FileName = defaultFileName,
+            InitialDirectory = lastXmlDialogDirectory ?? string.Empty
+        };
+        FileDialogConfiguration.ConfigureFastFileDialog(dialog);
+        dialog.ShowDialog();
+        if (dialog.DialogResult != true)
+        {
+            return;
+        }
+
+        try
+        {
+            File.WriteAllText(dialog.FileName, SelectedScript.Script.Content ?? string.Empty);
+            lastXmlDialogDirectory = Path.GetDirectoryName(dialog.FileName);
+            Logger?.Log(LogLevel.Info, $"Exported script \"{defaultFileName}\" to \"{dialog.FileName}\".");
+        }
+        catch (Exception e)
+        {
+            ErrorMessage = $"Script could not be exported: {e.Message}";
+        }
+    }
+
+    private void ExportAllScripts()
+    {
+        if (Scripts.Count == 0)
+        {
+            ErrorMessage = "There are no scripts to export.";
+            return;
+        }
+
+        var dialog = new RadOpenFolderDialog
+        {
+            Owner = App.Current.MainWindow,
+            InitialDirectory = lastXmlDialogDirectory ?? string.Empty
+        };
+        FileDialogConfiguration.ConfigureFastFileDialog(dialog);
+        dialog.ShowDialog();
+        if (dialog.DialogResult != true || string.IsNullOrWhiteSpace(dialog.FileName))
+        {
+            return;
+        }
+
+        var directory = dialog.FileName;
+        lastXmlDialogDirectory = directory;
+
+        var failed = new List<string>();
+        var exportedCount = 0;
+        foreach (var script in Scripts)
+        {
+            var fileName = Path.GetFileName(script.FileName);
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                failed.Add("(script without a file name)");
+                continue;
+            }
+
+            try
+            {
+                File.WriteAllText(Path.Combine(directory, fileName), script.Script.Content ?? string.Empty);
+                exportedCount++;
+            }
+            catch (Exception e)
+            {
+                failed.Add($"{fileName} — {e.Message}");
+            }
+        }
+
+        Logger?.Log(LogLevel.Info, $"Exported {exportedCount} script(s) to \"{directory}\".");
+        if (failed.Count > 0)
+        {
+            foreach (var item in failed)
+            {
+                Logger?.Log(LogLevel.Warn, $"Export of scripts: {item}");
+            }
+
+            ShowSummaryWindow("Export", $"Exported {exportedCount} scripts, failed {failed.Count}:", failed);
+        }
+    }
+
+    private void ImportScripts()
+    {
+        var dialog = new RadOpenFileDialog
+        {
+            Owner = App.Current.MainWindow,
+            Multiselect = true,
+            Filter = "Python scripts (*.py)|*.py|All files (*.*)|*.*",
+            InitialDirectory = lastXmlDialogDirectory ?? string.Empty
+        };
+        FileDialogConfiguration.ConfigureFastFileDialog(dialog);
+        dialog.ShowDialog();
+        if (dialog.DialogResult != true)
+        {
+            return;
+        }
+
+        var filePaths = dialog.FileNames?.ToList() ?? [];
+        if (filePaths.Count == 0)
+        {
+            return;
+        }
+
+        lastXmlDialogDirectory = Path.GetDirectoryName(filePaths[0]);
+
+        var existingFileNames = Scripts
+            .Select(script => script.FileName)
+            .Concat(scripts.Select(script => script.FileName))
+            .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var skipped = new List<string>();
+        var importedCount = 0;
+        foreach (var filePath in filePaths)
+        {
+            var fileName = Path.GetFileName(filePath);
+            if (existingFileNames.Contains(fileName))
+            {
+                skipped.Add($"{fileName} — already exists in the project");
+                continue;
+            }
+
+            try
+            {
+                var script = new PyScript
+                {
+                    FileName = fileName,
+                    Content = File.ReadAllText(filePath),
+                    IsEnabled = true,
+                    IsReplayEnabled = false,
+                    ExecutionMode = ScriptExecutionMode.Manual,
+                    Blocking = true
+                };
+                AddScriptWrapper(script);
+                existingFileNames.Add(fileName);
+                importedCount++;
+            }
+            catch (Exception e)
+            {
+                skipped.Add($"{fileName} — {e.Message}");
+            }
+        }
+
+        ReportImportResult("scripts", importedCount, skipped);
     }
 
     private void SelectScript(object? parameter)
@@ -1654,13 +2495,23 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         SelectedScript = Scripts.FirstOrDefault();
 
         RefreshCommunicatedVariableScriptOptions();
+        ExportAllScriptsCommand?.OnCanExecuteChanged();
         NotifyHasChangesChanged();
     }
 
     private string CreateUniqueScriptFileName()
     {
-        const string baseName = "script";
-        const string extension = ".py";
+        return MakeUniqueScriptFileName("script.py");
+    }
+
+    private string MakeUniqueScriptFileName(string desiredFileName)
+    {
+        var baseName = Path.GetFileNameWithoutExtension(desiredFileName);
+        var extension = Path.GetExtension(desiredFileName);
+        if (string.IsNullOrWhiteSpace(extension))
+        {
+            extension = ".py";
+        }
 
         var existingNames = Scripts
             .Select(script => script.FileName)

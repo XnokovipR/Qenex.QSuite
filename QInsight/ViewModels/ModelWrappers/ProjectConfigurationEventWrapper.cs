@@ -74,6 +74,26 @@ public class ProjectConfigurationEventWrapper : PropertyChangedBase
         NotifyStateChanged();
     }
 
+    /// <summary>
+    /// Builds a standalone event from the wrapper's CURRENT (possibly not yet applied)
+    /// state, so pending edits are included. Used for copying and for XML export.
+    /// </summary>
+    public IVarEvent CreateEventSnapshot(string name)
+    {
+        var snapshot = CreateEvent(name, currentState.VariableEventType);
+        if (snapshot is PeriodicVarEvent periodicVarEvent && currentState.PeriodicState != null)
+        {
+            periodicVarEvent.Period = currentState.PeriodicState.Period;
+            periodicVarEvent.Unit = currentState.PeriodicState.Unit;
+        }
+        else if (snapshot is OnValueChangedVarEvent onValueChangedVarEvent && currentState.OnValueChangedState != null)
+        {
+            onValueChangedVarEvent.Threshold = currentState.OnValueChangedState.Threshold;
+        }
+
+        return snapshot;
+    }
+
     private void RebuildProperties()
     {
         editableProperties.Clear();

@@ -59,6 +59,25 @@ public class ProjectConfigurationPresentationWrapper : PropertyChangedBase
         NotifyStateChanged();
     }
 
+    /// <summary>
+    /// Builds a standalone presentation from the wrapper's CURRENT (possibly not yet applied)
+    /// state, so pending edits are included. The conversion is shared by reference.
+    /// Used for copying and for XML export.
+    /// </summary>
+    public IPresentation CreatePresentationSnapshot(string name)
+    {
+        return new Presentation
+        {
+            Name = name,
+            Label = currentState.Label,
+            Min = currentState.Min,
+            Max = currentState.Max,
+            PrintFormat = currentState.PrintFormat,
+            Unit = currentState.Unit,
+            Conversion = GetConversion()
+        };
+    }
+
     public void RefreshConverterOptions(IEnumerable<IValConversion> converters)
     {
         // Aktualizujeme i interni seznam objektu - GetConversion() podle nej resi vyber

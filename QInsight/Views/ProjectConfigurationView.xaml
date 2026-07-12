@@ -480,6 +480,27 @@
                         HorizontalAlignment="Right"
                         Orientation="Horizontal">
                         <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Padding="8,0"
+                            Command="{Binding ImportVariablesCommand}"
+                            Content="Import"
+                            ToolTip="Import variables from an XML file"/>
+                        <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,12,0"
+                            Padding="8,0"
+                            Command="{Binding ExportVariablesCommand}"
+                            Content="Export"
+                            ToolTip="Export all variables to an XML file (definitions only, without protocol bindings)"/>
+                        <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Padding="8,0"
+                            Command="{Binding CopyVariableCommand}"
+                            Content="Copy"
+                            ToolTip="Create a new variable as a copy of the selected one"/>
+                        <telerik:RadButton
                             Width="34"
                             Height="28"
                             Margin="0,0,6,0"
@@ -847,23 +868,6 @@
                             Margin="0,0,0,6"
                             Content="Log to FileDataLogger"
                             IsChecked="{Binding SelectedCommunicatedVariable.IsFileLogEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-
-                        <q:QTextBlock
-                            Grid.Row="10"
-                            Grid.ColumnSpan="2"
-                            Foreground="Tomato"
-                            Text="{Binding ErrorMessage}">
-                            <q:QTextBlock.Style>
-                                <Style TargetType="{x:Type q:QTextBlock}">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasError}" Value="True">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </q:QTextBlock.Style>
-                        </q:QTextBlock>
                     </Grid>
                 </Grid>
             </Grid>
@@ -905,6 +909,27 @@
                     <StackPanel
                         Grid.Column="1"
                         Orientation="Horizontal">
+                        <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Padding="8,0"
+                            Command="{Binding ImportConversionsCommand}"
+                            Content="Import"
+                            ToolTip="Import conversions from an XML file"/>
+                        <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,12,0"
+                            Padding="8,0"
+                            Command="{Binding ExportConversionsCommand}"
+                            Content="Export"
+                            ToolTip="Export all conversions to an XML file"/>
+                        <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Padding="8,0"
+                            Command="{Binding CopyConversionCommand}"
+                            Content="Copy"
+                            ToolTip="Create a new conversion as a copy of the selected one"/>
                         <telerik:RadButton
                             Width="34"
                             Height="28"
@@ -1091,6 +1116,27 @@
                         Grid.Column="1"
                         Orientation="Horizontal">
                         <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Padding="8,0"
+                            Command="{Binding ImportPresentationsCommand}"
+                            Content="Import"
+                            ToolTip="Import presentations from an XML file (their conversions must exist in the project)"/>
+                        <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,12,0"
+                            Padding="8,0"
+                            Command="{Binding ExportPresentationsCommand}"
+                            Content="Export"
+                            ToolTip="Export all presentations to an XML file"/>
+                        <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Padding="8,0"
+                            Command="{Binding CopyPresentationCommand}"
+                            Content="Copy"
+                            ToolTip="Create a new presentation as a copy of the selected one"/>
+                        <telerik:RadButton
                             Width="34"
                             Height="28"
                             Margin="0,0,6,0"
@@ -1201,6 +1247,27 @@
                         Grid.Column="1"
                         Orientation="Horizontal">
                         <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Padding="8,0"
+                            Command="{Binding ImportEventsCommand}"
+                            Content="Import"
+                            ToolTip="Import events from an XML file"/>
+                        <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,12,0"
+                            Padding="8,0"
+                            Command="{Binding ExportEventsCommand}"
+                            Content="Export"
+                            ToolTip="Export all events to an XML file"/>
+                        <telerik:RadButton
+                            Height="28"
+                            Margin="0,0,6,0"
+                            Padding="8,0"
+                            Command="{Binding CopyEventCommand}"
+                            Content="Copy"
+                            ToolTip="Create a new event as a copy of the selected one"/>
+                        <telerik:RadButton
                             Width="34"
                             Height="28"
                             Margin="0,0,6,0"
@@ -1297,6 +1364,27 @@
                     Margin="0,0,0,8"
                     HorizontalAlignment="Right"
                     Orientation="Horizontal">
+                    <telerik:RadButton
+                        Height="28"
+                        Margin="0,0,6,0"
+                        Padding="8,0"
+                        Command="{Binding ImportScriptsCommand}"
+                        Content="Import"
+                        ToolTip="Import scripts from .py files (multiple files can be selected)"/>
+                    <telerik:RadButton
+                        Height="28"
+                        Margin="0,0,6,0"
+                        Padding="8,0"
+                        Command="{Binding ExportScriptCommand}"
+                        Content="Export"
+                        ToolTip="Export the selected script as a .py file"/>
+                    <telerik:RadButton
+                        Height="28"
+                        Margin="0,0,12,0"
+                        Padding="8,0"
+                        Command="{Binding ExportAllScriptsCommand}"
+                        Content="Export All"
+                        ToolTip="Export all scripts as .py files into a selected folder"/>
                     <telerik:RadButton
                         Width="34"
                         Height="28"
@@ -1485,20 +1573,48 @@
                 Grid.ColumnSpan="2"
                 BorderBrush="{DynamicResource AppBorderBrush}"
                 BorderThickness="0,1,0,0">
-            <StackPanel
-                Margin="8"
-                HorizontalAlignment="Right"
-                Orientation="Horizontal">
-                <telerik:RadButton
-                    MinWidth="82"
-                    Margin="0,0,8,0"
-                    Content="Apply"
-                    Command="{Binding ApplyCommand}"/>
-                <telerik:RadButton
-                    MinWidth="82"
-                    Content="Cancel"
-                    Command="{Binding CancelCommand}"/>
-            </StackPanel>
+            <Grid Margin="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Shared message strip: import/remove results from every section show here. -->
+                <q:QTextBlock
+                    Grid.Column="0"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"
+                    Foreground="DarkOrange"
+                    TextWrapping="Wrap"
+                    Text="{Binding ErrorMessage}">
+                    <q:QTextBlock.Style>
+                        <Style TargetType="{x:Type q:QTextBlock}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasError}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </q:QTextBlock.Style>
+                </q:QTextBlock>
+
+                <StackPanel
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+                    <telerik:RadButton
+                        MinWidth="82"
+                        Margin="0,0,8,0"
+                        Content="Apply"
+                        Command="{Binding ApplyCommand}"/>
+                    <telerik:RadButton
+                        MinWidth="82"
+                        Content="Cancel"
+                        Command="{Binding CancelCommand}"/>
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>
