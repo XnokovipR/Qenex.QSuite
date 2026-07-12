@@ -35,6 +35,8 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
     private bool isDataLoaded;
     private bool isDataLoading;
     private volatile bool completeDataLoadOnCancellation;
+    private long lastLoadedTimestampUtcTicks;
+    private bool loadedRecordsOutOfOrder;
 
     public FileDataReplayDriver()
     {
@@ -357,6 +359,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
     {
         SetState(CommunicationState.Running);
         var completedNaturally = false;
+        var failed = false;
         try
         {
             await Task.Yield();
@@ -379,6 +382,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
         }
         catch (Exception e)
         {
+            failed = true;
             Logger?.Log(LogLevel.Error, $"Replay failed: {e.Message}", e);
         }
         finally
@@ -386,12 +390,17 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
             SetState(CommunicationState.Stopped);
         }
 
-        if (!completedNaturally)
+        // Raise ReplayCompleted on failure as well — the replay ended either way and the UI
+        // must not stay in the "playing" state forever. Only a user/host cancellation skips it.
+        if (!completedNaturally && !failed)
         {
             return;
         }
 
-        Logger?.Log(LogLevel.Info, "Replay reached end of data — raising ReplayCompleted.");
+        if (completedNaturally)
+        {
+            Logger?.Log(LogLevel.Info, "Replay reached end of data — raising ReplayCompleted.");
+        }
         try
         {
             ReplayCompleted?.Invoke(this, EventArgs.Empty);
@@ -469,6 +478,8 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
             lastDataLoadProgressTimestamp = 0;
             isDataLoaded = false;
             isDataLoading = true;
+            lastLoadedTimestampUtcTicks = 0;
+            loadedRecordsOutOfOrder = false;
         }
 
         RaiseReplayProgressChanged();
@@ -486,6 +497,14 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
 
             replayRecords.Add(record);
             var recordTimestampUtcTicks = GetRecordTimestampUtcTicks(record);
+            if (recordTimestampUtcTicks < lastLoadedTimestampUtcTicks)
+            {
+                loadedRecordsOutOfOrder = true;
+            }
+            else
+            {
+                lastLoadedTimestampUtcTicks = recordTimestampUtcTicks;
+            }
             Duration = recordTimestampUtcTicks > replayFirstTimestampUtcTicks
                 ? TimeSpan.FromTicks(recordTimestampUtcTicks - replayFirstTimestampUtcTicks)
                 : Duration;
@@ -509,6 +528,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
 
     private void CompleteReplayDataLoad()
     {
+        var reportOutOfOrder = false;
         lock (replayStateLock)
         {
             if (State != CommunicationState.Running && replayRecordIndex == 0)
@@ -516,6 +536,22 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
                 replayRecords = replayRecords
                     .OrderBy(GetRecordTimestampUtcTicks)
                     .ToList();
+                loadedRecordsOutOfOrder = false;
+            }
+            else if (loadedRecordsOutOfOrder && replayRecordIndex < replayRecords.Count)
+            {
+                // The file contained out-of-order records and replay is already consuming the
+                // list, so indexes of the played prefix must not shift — sort only the part
+                // that has not been replayed yet (keeps seek and pacing consistent from here on).
+                var unplayed = replayRecords
+                    .Skip(replayRecordIndex)
+                    .OrderBy(GetRecordTimestampUtcTicks)
+                    .ToList();
+                replayRecords = replayRecords
+                    .Take(replayRecordIndex)
+                    .Concat(unplayed)
+                    .ToList();
+                reportOutOfOrder = true;
             }
 
             if (replayRecords.Count > 0)
@@ -535,6 +571,14 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
 
             isDataLoaded = true;
             isDataLoading = false;
+        }
+
+        if (reportOutOfOrder)
+        {
+            Logger?.Log(
+                LogLevel.Warn,
+                $"Replay log file \"{Path.GetFileName(logFilePath)}\" contained out-of-order records; "
+                + "the not-yet-replayed part was re-sorted.");
         }
 
         replayRecordsAvailable.Release();
