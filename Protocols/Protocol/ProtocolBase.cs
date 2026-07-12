@@ -16,8 +16,8 @@ public abstract class ProtocolBase<T> : IProtocolBase
 
     public ProtocolBase(ILogger? logger = null)
     {
-        Logger = logger;
         Variables = new List<IProtocolVariable>();
+        Logger = logger;
     }
 
     #endregion
@@ -30,8 +30,25 @@ public abstract class ProtocolBase<T> : IProtocolBase
     public string? StateMessage { get; private set; }
     public event EventHandler<CommunicationStateChangedEventArgs>? StateChanged;
     
-    // ReSharper disable once MemberCanBePrivate.Global
-    protected ILogger? Logger { get; set; }
+    private ILogger? logger;
+
+    /// <summary>
+    /// Protocol-level logger. Setting it also flows to variables added earlier, so
+    /// diagnostics work regardless of whether variables were added before or after
+    /// the owning driver propagated its logger.
+    /// </summary>
+    public ILogger? Logger
+    {
+        get => logger;
+        set
+        {
+            logger = value;
+            foreach (var protocolVariable in Variables.OfType<ProtocolVariable>())
+            {
+                protocolVariable.Logger ??= value;
+            }
+        }
+    }
     
     public int Id { get; set; }
     

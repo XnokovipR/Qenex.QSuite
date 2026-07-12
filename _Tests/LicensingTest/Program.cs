@@ -436,6 +436,7 @@ internal static class Program
         public IList<IProtocolVariable> Variables { get; set; } = [];
         public string RawSettings { get; set; } = string.Empty;
         public string RawEncryptedSettings { get; set; } = string.Empty;
+        public ILogger? Logger { get; set; }
         public bool IsEnabled { get; set; }
         public CommunicationState State => default;
         public string? StateMessage => null;

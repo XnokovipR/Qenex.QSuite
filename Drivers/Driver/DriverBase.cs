@@ -79,10 +79,11 @@ public abstract class DriverBase : IDriverBase
             highestId++;
             protocol.Id = highestId;
         }
-        
+
+        protocol.Logger ??= Logger;
         Protocols.Add(protocol);
     }
-    
+
     public virtual void AddProtocols(IEnumerable<IProtocolBase> protocols)
     {
         var highestId = Protocols.Count > 0 ? Protocols.Max(x => x.Id) : 0;
@@ -105,7 +106,8 @@ public abstract class DriverBase : IDriverBase
                 highestId++;
                 protocol.Id = highestId;
             }
-            
+
+            protocol.Logger ??= Logger;
             Protocols.Add(protocol);
         }
     }

@@ -1,4 +1,5 @@
 ﻿using Qenex.QSuite.Common.CoreComm;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Specifications.ComponentSpecification;
 using Qenex.QSuite.Specifications.Specification;
 using Qenex.QSuite.Variables.QVariables;
@@ -22,6 +23,12 @@ public interface IProtocolBase: ICoreCommunication, IComponentSpecification
     IList<IProtocolVariable> Variables { get; set; }
     string RawSettings { get; set; }
     string RawEncryptedSettings { get; set; }
+
+    /// <summary>
+    /// Logger for protocol-level diagnostics (dropped records, conversion failures).
+    /// Propagated by the owning driver; setting it also flows to already-added variables.
+    /// </summary>
+    ILogger? Logger { get; set; }
     
     void SetConfiguration();
 
