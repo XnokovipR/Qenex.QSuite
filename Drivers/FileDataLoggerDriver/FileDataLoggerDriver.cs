@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using MessagePack;
@@ -14,6 +15,9 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
     private const string DataLogExtension = ".qilog";
     private const string TimestampFormat = "yyyyMMdd'_'HH'h'mm";
     private static readonly TimeSpan DefaultReorderBufferDelay = TimeSpan.FromMilliseconds(500);
+    // With flushOnWrite=false the FileStream buffers up to 4 KB in-process; flush when the
+    // writer goes idle so an application crash costs at most ~1 s of data, not the whole tail.
+    private static readonly TimeSpan IdleFlushInterval = TimeSpan.FromSeconds(1);
     private readonly object pendingRecordsLock = new();
     private readonly LinkedList<BufferedVariableLogRecord> pendingRecords = [];
     private readonly EventWaitHandle waitHandle = new AutoResetEvent(false);
@@ -25,6 +29,8 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
     private volatile bool exitRequested;
     private FileStream? logStream;
     private Task? writerTask;
+    private bool logStreamDirty;
+    private long lastIdleFlushTimestamp;
 
     // TODO(datalog-gap diag): remove after root cause fixed.
     // Diagnostics: report when the logger stops / resumes recording (to locate gaps in the log).
@@ -207,6 +213,11 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 
 
         SetState(CommunicationState.Starting);
+        foreach (var protocol in Protocols)
+        {
+            _ = protocol.StartAsync(ct);
+        }
+
         var timestampedLogFilePath = CreateTimestampedLogFilePath(logFilePath, DataLogFileName, DateTime.Now);
         var directory = Path.GetDirectoryName(timestampedLogFilePath);
         if (!string.IsNullOrWhiteSpace(directory))
@@ -225,6 +236,8 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 
         exitRequested = false;
         highestBufferedTimestampUtcTicks = 0;
+        logStreamDirty = false;
+        lastIdleFlushTimestamp = 0;
         writerTask = RunWriterLoopAsync();
         SetState(CommunicationState.Running);
         return Task.CompletedTask;
@@ -247,6 +260,11 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             await logStream.FlushAsync(ct);
             await logStream.DisposeAsync();
             logStream = null;
+        }
+
+        foreach (var protocol in Protocols)
+        {
+            await protocol.StopAsync(ct);
         }
 
         SetState(CommunicationState.Stopped);
@@ -286,6 +304,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
                     }
                     else
                     {
+                        await FlushIfDueAsync();
                         waitHandle.WaitOne(TimeSpan.FromMilliseconds(20));
                     }
                 }
@@ -394,10 +413,40 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             {
                 await logStream.FlushAsync();
             }
+            else
+            {
+                logStreamDirty = true;
+            }
         }
         catch (Exception e)
         {
             Logger?.Log(LogLevel.Error, $"Data log record could not be written: {e.Message}");
+        }
+    }
+
+    private async Task FlushIfDueAsync()
+    {
+        if (flushOnWrite || !logStreamDirty || logStream == null)
+        {
+            return;
+        }
+
+        var now = Stopwatch.GetTimestamp();
+        if (lastIdleFlushTimestamp != 0
+            && Stopwatch.GetElapsedTime(lastIdleFlushTimestamp, now) < IdleFlushInterval)
+        {
+            return;
+        }
+
+        lastIdleFlushTimestamp = now;
+        try
+        {
+            await logStream.FlushAsync();
+            logStreamDirty = false;
+        }
+        catch (Exception e)
+        {
+            Logger?.Log(LogLevel.Error, $"Data log flush failed: {e.Message}");
         }
     }
 
