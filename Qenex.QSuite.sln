@@ -186,6 +186,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonProtocolTest", "_Tests\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PiZeroJsonProtocol", "Protocols\PiZeroJsonProtocol\PiZeroJsonProtocol.csproj", "{039A53F7-6FE1-460D-8621-DF36E08F2FF5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataLogRoundTripTest", "_Tests\DataLogRoundTripTest\DataLogRoundTripTest.csproj", "{CF36539A-6893-4692-B52D-9FE12001AAE5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -952,6 +954,18 @@ Global
 		{039A53F7-6FE1-460D-8621-DF36E08F2FF5}.Release|x64.Build.0 = Release|Any CPU
 		{039A53F7-6FE1-460D-8621-DF36E08F2FF5}.Release|x86.ActiveCfg = Release|Any CPU
 		{039A53F7-6FE1-460D-8621-DF36E08F2FF5}.Release|x86.Build.0 = Release|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Debug|x64.Build.0 = Debug|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Debug|x86.Build.0 = Debug|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Release|x64.ActiveCfg = Release|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Release|x64.Build.0 = Release|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Release|x86.ActiveCfg = Release|Any CPU
+		{CF36539A-6893-4692-B52D-9FE12001AAE5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1032,6 +1046,7 @@ Global
 		{577CB403-89DB-4DE8-9D57-46371C4036ED} = {96190788-7C2A-4B67-90FA-516D7D9946CF}
 		{48AF1488-9F5F-4721-B08D-BD0277FDABAE} = {96190788-7C2A-4B67-90FA-516D7D9946CF}
 		{039A53F7-6FE1-460D-8621-DF36E08F2FF5} = {96190788-7C2A-4B67-90FA-516D7D9946CF}
+		{CF36539A-6893-4692-B52D-9FE12001AAE5} = {96190788-7C2A-4B67-90FA-516D7D9946CF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {30000164-E084-4EF1-818A-1B98829BA5EA}
