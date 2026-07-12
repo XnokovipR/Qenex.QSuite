@@ -8,6 +8,8 @@ public class ProjectConfigurationLoadedProtocolWrapper(IProtocolBase protocol, b
 {
     private bool originalIsEnabled = protocol.IsEnabled;
     private bool isEnabled = protocol.IsEnabled;
+    private string originalSettings = protocol.RawSettings;
+    private string settings = protocol.RawSettings;
 
     public IProtocolBase Protocol => protocol;
     public bool IsNew => isNew;
@@ -62,24 +64,66 @@ public class ProjectConfigurationLoadedProtocolWrapper(IProtocolBase protocol, b
         }
     }
 
-    public bool HasChanges => isEnabled != originalIsEnabled;
+    public string Settings
+    {
+        get => settings;
+        set
+        {
+            value ??= string.Empty;
+            if (settings == value)
+            {
+                return;
+            }
+
+            settings = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasChanges));
+        }
+    }
+
+    public bool HasChanges => isEnabled != originalIsEnabled || settings != originalSettings;
 
     public void ApplyChanges()
     {
         protocol.IsEnabled = isEnabled;
         originalIsEnabled = isEnabled;
+
+        if (settings != originalSettings)
+        {
+            // Same pattern as the driver wrapper: a protocol that rejects its settings
+            // (e.g. Modbus without 'mode') keeps its previous working configuration.
+            var previousSettings = protocol.RawSettings;
+            protocol.RawSettings = settings;
+            try
+            {
+                protocol.SetConfiguration();
+            }
+            catch
+            {
+                protocol.RawSettings = previousSettings;
+                protocol.SetConfiguration();
+                throw;
+            }
+            originalSettings = settings;
+        }
+
         OnPropertyChanged(nameof(HasChanges));
     }
 
     public void CancelChanges()
     {
-        if (isEnabled == originalIsEnabled)
+        if (isEnabled != originalIsEnabled)
         {
-            return;
+            isEnabled = originalIsEnabled;
+            OnPropertyChanged(nameof(IsEnabled));
         }
 
-        isEnabled = originalIsEnabled;
-        OnPropertyChanged(nameof(IsEnabled));
+        if (settings != originalSettings)
+        {
+            settings = originalSettings;
+            OnPropertyChanged(nameof(Settings));
+        }
+
         OnPropertyChanged(nameof(HasChanges));
     }
 }

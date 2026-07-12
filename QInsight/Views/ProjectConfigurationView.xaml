@@ -404,20 +404,36 @@
 
                         <q:QTextBlock
                             Grid.Row="0"
-                            Grid.ColumnSpan="2"
+                            Grid.Column="0"
+                            Margin="0,0,10,8"
+                            VerticalAlignment="Center"
+                            Text="Driver settings"/>
+                        <q:QTextBox
+                            Grid.Row="0"
+                            Grid.Column="1"
                             Margin="0,0,0,8"
-                            FontWeight="SemiBold"
-                            Text="Driver detail"/>
+                            Text="{Binding SelectedDriver.Settings, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+
                         <q:QTextBlock
                             Grid.Row="1"
                             Grid.Column="0"
                             Margin="0,0,10,0"
                             VerticalAlignment="Center"
-                            Text="Settings"/>
+                            Text="Protocol settings"/>
                         <q:QTextBox
                             Grid.Row="1"
                             Grid.Column="1"
-                            Text="{Binding SelectedDriver.Settings, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                            Text="{Binding SelectedProtocol.Settings, Mode=TwoWay, UpdateSourceTrigger=LostFocus}">
+                            <q:QTextBox.Style>
+                                <Style TargetType="{x:Type q:QTextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedProtocol}" Value="{x:Null}">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </q:QTextBox.Style>
+                        </q:QTextBox>
                     </Grid>
                 </Grid>
             </Grid>
