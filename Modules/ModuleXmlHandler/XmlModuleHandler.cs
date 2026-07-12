@@ -187,164 +187,27 @@ public class XmlModuleHandler
 
     private List<XmlPresentation> GetXmlPresentations(IEnumerable<IPresentation> presentations)
     {
-        return presentations.Select(presentation => new XmlPresentation
-        {
-            Name = presentation.Name,
-            Label = presentation.Label,
-            Min = presentation.Min,
-            Max = presentation.Max,
-            PrintFormat = presentation.PrintFormat,
-            Unit = presentation.Unit,
-            ConversionReference = new XmlConversionReference { Ref = presentation.Conversion.Name }
-        }).ToList();
+        return XmlComponentMapper.ToXmlPresentations(presentations);
     }
 
     private List<XmlConversion> GetXmlConversions(IEnumerable<IValConversion> conversions)
     {
-        var xmlConversions = new List<XmlConversion>();
-
-        foreach (var conversion in conversions)
-        {
-            if (conversion is LinearValConversion linearConversion)
-            {
-                xmlConversions.Add(new XmlLinearConversion
-                {
-                    Name = linearConversion.Name,
-                    Multiplier = linearConversion.Multiplier,
-                    Offset = linearConversion.Offset
-                });
-            }
-            else if (conversion is EnumValConversion enumConversion)
-            {
-                xmlConversions.Add(new XmlEnumConversion
-                {
-                    Name = enumConversion.Name,
-                    Enums = enumConversion.Enums.Select(e => new XmlEnum
-                    {
-                        Name = e.Name,
-                        Value = e.Value
-                    }).ToList()
-                });
-            }
-            else
-            {
-                logger?.Log(LogLevel.Warn, $"Conversion type {conversion.GetType()} is not supported.");
-            }
-        }
-
-        return xmlConversions;
+        return XmlComponentMapper.ToXmlConversions(conversions, logger);
     }
 
     private List<XmlVarEvent> GetXmlVarEvents(IEnumerable<IVarEvent> varEvents)
     {
-        var xmlVarEvents = new List<XmlVarEvent>();
-
-        foreach (var varEvent in varEvents)
-        {
-            if (varEvent is PeriodicVarEvent periodicVarEvent)
-            {
-                xmlVarEvents.Add(new PeriodicXmlVarEvent
-                {
-                    Name = periodicVarEvent.Name,
-                    Period = periodicVarEvent.Period,
-                    Unit = periodicVarEvent.Unit.ToString()
-                });
-            }
-            else if (varEvent is OnRequestVarEvent)
-            {
-                xmlVarEvents.Add(new OnRequestXmlVarEvent { Name = varEvent.Name });
-            }
-            else if (varEvent is OnValueChangedVarEvent onValueChangedVarEvent)
-            {
-                xmlVarEvents.Add(new OnValueChangedXmlVarEvent
-                {
-                    Name = onValueChangedVarEvent.Name,
-                    Threshold = onValueChangedVarEvent.Threshold
-                });
-            }
-            else
-            {
-                logger?.Log(LogLevel.Warn, $"Variable event type {varEvent.GetType()} is not supported.");
-            }
-        }
-
-        return xmlVarEvents;
+        return XmlComponentMapper.ToXmlVarEvents(varEvents, logger);
     }
 
     private List<XmlVariable> GetXmlVariables(IEnumerable<IVariableBase> variables)
     {
-        var xmlVariables = new List<XmlVariable>();
-
-        foreach (var variable in variables)
-        {
-            if (variable is ScalarVariable scalarVariable)
-            {
-                xmlVariables.Add(new XmlScalarVariable
-                {
-                    Id = scalarVariable.Id,
-                    Namespace = scalarVariable.Namespace,
-                    Name = scalarVariable.Name,
-                    Label = scalarVariable.Label,
-                    Description = scalarVariable.Description,
-                    Size = scalarVariable.Size,
-                    Values = new XmlValues
-                    {
-                        DataType = Enum.Parse<XmlValuesDataType>(scalarVariable.Values.ValueType.ToString()),
-                        Size = scalarVariable.Values.Size,
-                        Length = scalarVariable.Values.Length,
-                        PresentationReference = new XmlPresentationReference
-                        {
-                            Ref = scalarVariable.Values.ValPresentation.Name
-                        }
-                    }
-                });
-            }
-            else if (variable is StringVariable stringVariable)
-            {
-                xmlVariables.Add(new XmlStringVariable
-                {
-                    Id = stringVariable.Id,
-                    Namespace = stringVariable.Namespace,
-                    Name = stringVariable.Name,
-                    Label = stringVariable.Label,
-                    Description = stringVariable.Description
-                });
-            }
-            else
-            {
-                logger?.Log(LogLevel.Warn, $"Variable type {variable.GetType()} is not supported.");
-            }
-        }
-
-        return xmlVariables;
+        return XmlVariableMapper.ToXmlVariables(variables, logger);
     }
 
     private List<XmlScript> GetXmlScripts(IEnumerable<IScriptBase> scripts)
     {
-        var xmlScripts = new List<XmlScript>();
-
-        foreach (var script in scripts)
-        {
-            if (!Enum.TryParse<XmlScriptExecutionMode>(script.ExecutionMode.ToString(), out var executionMode))
-            {
-                logger?.Log(LogLevel.Warn, $"Script execution mode {script.ExecutionMode} is not supported by XML module.");
-                executionMode = XmlScriptExecutionMode.Manual;
-            }
-
-            xmlScripts.Add(new XmlScript
-            {
-                FileName = script.FileName,
-                Content = script.Content,
-                ExecutionMode = executionMode,
-                Blocking = script.Blocking,
-                TimeoutMs = script.TimeoutMs,
-                AdditionalInfo = RemoveScriptExecutionOptions(script.AdditionalInfo),
-                IsEnabled = script.IsEnabled,
-                IsReplayEnabled = script.IsReplayEnabled
-            });
-        }
-
-        return xmlScripts;
+        return XmlComponentMapper.ToXmlScripts(scripts, logger);
     }
 
     private string GetCommParam(IProtVariableSpecification specification)
@@ -403,269 +266,27 @@ public class XmlModuleHandler
 
     private List<IVariableBase> GetVariables(IEnumerable<IPresentation> presentations, IEnumerable<XmlVariable> xmlVariables, IEnumerable<IVarEvent> variableEvents)
     {
-        var variables = new List<IVariableBase>();
-        
-        foreach (var xmlVariable in xmlVariables)
-        {
-            if (!XmlModuleGlobal.TypeOfXmlVariable2VariableEnumDict.TryGetValue(xmlVariable.GetType(), out var variableType))
-            {
-                logger?.Log(LogLevel.Warn, $"Variable type {xmlVariable.GetType()} is not supported.");
-                continue;
-            }
-
-            try
-            {
-                var variable = VariablesGlobal.CreateInstance(variableType);
-                variable.Id = xmlVariable.Id;
-                variable.Namespace = xmlVariable.Namespace;
-                variable.Name = xmlVariable.Name;
-                variable.Label = xmlVariable.Label;
-                variable.Description = xmlVariable.Description;
-
-                if (variable is ScalarVariable scalarVariable && xmlVariable is XmlScalarVariable xmlScalarVariable)
-                {
-                    scalarVariable.Size = xmlScalarVariable.Size;
-                    scalarVariable.Values = CreateScalarValues(presentations, xmlScalarVariable.Values);
-                }
-                
-                variables.Add(variable);
-            }
-            catch (ArgumentException e)
-            {
-                logger?.Log(LogLevel.Error, $"Error creating variable {xmlVariable.Name}: {e.Message}.");
-            }
-            
-        }
-
-        return variables;
+        return XmlVariableMapper.FromXmlVariables(xmlVariables, presentations, logger);
     }
 
     private List<IVarEvent> GetVarEvents(IEnumerable<XmlVarEvent> xmlEvents)
     {
-        var varEvents = new List<IVarEvent>();
-
-        foreach (var xmlEvent in xmlEvents)
-        {
-            if (!XmlModuleGlobal.TypeOfXmlEvent2EventEnumDict.TryGetValue(xmlEvent.GetType(), out var varEventType))
-			{
-				logger?.Log(LogLevel.Warn, $"Variable event type {xmlEvent.GetType()} is not supported.");
-				continue;
-			}
-
-            try
-            {
-                var varEvent = EventsGlobal.CreateInstance(varEventType);
-                varEvent.Name = xmlEvent.Name;
-
-                if (varEvent is PeriodicVarEvent periodicVarEvent && xmlEvent is PeriodicXmlVarEvent xmlPeriodicEvent)
-                {
-                    periodicVarEvent.Period = xmlPeriodicEvent.Period;
-                    periodicVarEvent.Unit = Enum.Parse<TimeUnit>(xmlPeriodicEvent.Unit);
-                }
-                else if (varEvent is OnRequestVarEvent onRequestVarEvent)
-                {
-                }
-                else if (varEvent is OnValueChangedVarEvent onValueChangedVarEvent && xmlEvent is OnValueChangedXmlVarEvent xmlOnValueChangedEvent)
-                {
-                    onValueChangedVarEvent.Threshold = xmlOnValueChangedEvent.Threshold;
-                }
-                
-                varEvents.Add(varEvent);
-            }
-            catch (ArgumentException e)
-            {
-                logger?.Log(LogLevel.Error, $"Error creating variable {xmlEvent.Name}: {e.Message}.");
-            }
-        }
-
-        return varEvents;
+        return XmlComponentMapper.FromXmlVarEvents(xmlEvents, logger);
     }
 
     private List<IValConversion> GetConversions(IEnumerable<XmlConversion> xmlConversions)
     {
-        var conversions = new List<IValConversion>();
-        
-        foreach (var xmlConversion in xmlConversions)
-        {
-            if (!XmlModuleGlobal.TypeOfXmlConversion2ConversionEnumDict.TryGetValue(xmlConversion.GetType(), out var conversionType))
-            {
-                logger?.Log(LogLevel.Warn, $"Converion type {xmlConversion.GetType()} is not supported.");
-                continue;
-            }
-
-            try
-            {
-                var conversion = ConversionsGlobal.CreateInstance(conversionType);
-                conversion.Name = xmlConversion.Name;
-                
-                
-                if (conversion is LinearValConversion lc && xmlConversion is XmlLinearConversion xmllc)
-                {
-                    lc.Multiplier = xmllc.Multiplier;
-                    lc.Offset = xmllc.Offset;
-                }
-                else if (conversion is EnumValConversion ec && xmlConversion is XmlEnumConversion xmlec)
-                {
-                    ec.Enums = new List<EnumType>();
-                    xmlec.Enums.ForEach(e => ec.Enums.Add(new EnumType() {Name = e.Name, Value = e.Value}));
-                }
-                
-                conversions.Add(conversion);
-            }
-            catch (ArgumentException e)
-            {
-                logger?.Log(LogLevel.Error, $"Error creating conversion {xmlConversion.Name}: {e.Message}.");
-            }
-            
-        }
-
-        return conversions;
+        return XmlComponentMapper.FromXmlConversions(xmlConversions, logger);
     }
-    
+
     private List<IPresentation> GetPresentations(IList<IValConversion> conversions, IEnumerable<XmlPresentation> xmlPresentations)
     {
-        var presentations = new List<IPresentation>();
-        
-        foreach (var xmlPresentation in xmlPresentations)
-        {
-            try
-            {
-                var presentation = new Presentation
-                {
-                    Name = xmlPresentation.Name,
-                    Label = xmlPresentation.Label,
-                    Min = xmlPresentation.Min,
-                    Max = xmlPresentation.Max,
-                    Unit = xmlPresentation.Unit,
-                    Conversion = conversions.First(c => c.Name == xmlPresentation.ConversionReference.Ref)
-                };
-                
-                presentations.Add(presentation);
-            }
-            catch (ArgumentException e)
-            {
-                logger?.Log(LogLevel.Error, $"Error creating presentation {xmlPresentation.Name}: {e.Message}.");
-            }
-            
-        }
-        return presentations;
-    }
-    
-    private List<IScriptBase> GetScripts(IEnumerable<XmlScript> xmlPythonScripts) 
-    {
-        var scripts = new List<IScriptBase>();
-        
-        foreach (var xmlPythonScript in xmlPythonScripts)
-        {
-            var additionalInfo = ExtractScriptExecutionOptions(
-                xmlPythonScript.AdditionalInfo,
-                out var legacyBlocking,
-                out var legacyTimeoutMs);
-
-            var script = new PyScript
-            {
-                FileName = xmlPythonScript.FileName,
-                Content = xmlPythonScript.Content,
-				ExecutionMode = Enum.Parse<ScriptExecutionMode>(xmlPythonScript.ExecutionMode.ToString()),
-                Blocking = legacyBlocking ?? xmlPythonScript.Blocking,
-                TimeoutMs = legacyTimeoutMs ?? xmlPythonScript.TimeoutMs,
-                AdditionalInfo = additionalInfo,
-                IsEnabled = xmlPythonScript.IsEnabled,
-                IsReplayEnabled = xmlPythonScript.IsReplayEnabled
-			};
-
-            scripts.Add(script);
-        }
-        
-        return scripts;
+        return XmlComponentMapper.FromXmlPresentations(xmlPresentations, conversions, logger);
     }
 
-    private static string RemoveScriptExecutionOptions(string additionalInfo)
+    private List<IScriptBase> GetScripts(IEnumerable<XmlScript> xmlPythonScripts)
     {
-        return ExtractScriptExecutionOptions(additionalInfo, out _, out _);
-    }
-
-    private static string ExtractScriptExecutionOptions(string additionalInfo, out bool? blocking, out double? timeoutMs)
-    {
-        blocking = null;
-        timeoutMs = null;
-
-        if (string.IsNullOrWhiteSpace(additionalInfo))
-        {
-            return string.Empty;
-        }
-
-        var parameters = new List<string>();
-        var parts = additionalInfo.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        foreach (var part in parts)
-        {
-            var keyValue = part.Split('=', 2, StringSplitOptions.TrimEntries);
-            if (keyValue.Length != 2)
-            {
-                parameters.Add(part);
-                continue;
-            }
-
-            if (keyValue[0].Equals("blocking", StringComparison.OrdinalIgnoreCase))
-            {
-                if (TryParseBoolean(keyValue[1], out var parsedBlocking))
-                {
-                    blocking = parsedBlocking;
-                }
-
-                continue;
-            }
-
-            if (keyValue[0].Equals("timeout", StringComparison.OrdinalIgnoreCase))
-            {
-                if (double.TryParse(keyValue[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedTimeoutMs) &&
-                    parsedTimeoutMs >= 0)
-                {
-                    timeoutMs = parsedTimeoutMs;
-                }
-
-                continue;
-            }
-
-            parameters.Add(part);
-        }
-
-        return string.Join(";", parameters);
-    }
-
-    private static bool TryParseBoolean(string value, out bool result)
-    {
-        switch (value.Trim().ToLowerInvariant())
-        {
-            case "true":
-            case "1":
-            case "yes":
-            case "y":
-                result = true;
-                return true;
-            case "false":
-            case "0":
-            case "no":
-            case "n":
-                result = false;
-                return true;
-            default:
-                result = false;
-                return false;
-        }
-    }
-
-    private IValuesBase CreateScalarValues(IEnumerable<IPresentation> presentations, XmlValues xmlValues)
-    {
-        var values = ValuesGlobal.CreateInstance(Enum.Parse<ValuesGlobal.ValueDataType>(xmlValues.DataType.ToString()));
-        values.ValPresentation = presentations.FirstOrDefault(p => p.Name == xmlValues.PresentationReference.Ref);
-        if (values.ValPresentation == null)
-        {
-            logger?.Log(LogLevel.Error, $"Presentation \"{xmlValues.PresentationReference.Ref}\" not found.");
-        }
-        
-        return values;
+        return XmlComponentMapper.FromXmlScripts(xmlPythonScripts);
     }
 
     private List<IDriverBase> GetDrivers(IList<PluginDetails> driversDetails, IList<PluginDetails> protocolsdetails, IList<IVariableBase> variables, IList<IVarEvent> varEvents, ScriptingContext scripting, XmlModule xmlModule)
