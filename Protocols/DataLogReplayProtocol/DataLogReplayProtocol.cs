@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using Qenex.QSuite.Common.CoreComm;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
 using Qenex.QSuite.Variables.QVariables;
@@ -10,6 +11,12 @@ namespace Qenex.QSuite.Protocols.DataLogReplayProtocol;
 
 public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
 {
+    // One-shot warning guards so a whole missing signal is reported once, not per record.
+    private readonly object diagnosticsLock = new();
+    private readonly HashSet<string> reportedUnknownVariables = [];
+    private readonly HashSet<string> reportedFailedRecords = [];
+    private bool reportedDroppedWhileNotRunning;
+
     public DataLogReplayProtocol()
     {
         Specification = new SpecificationBase
@@ -54,6 +61,13 @@ public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
 
     public override Task StartAsync(CancellationToken ct = default)
     {
+        lock (diagnosticsLock)
+        {
+            reportedUnknownVariables.Clear();
+            reportedFailedRecords.Clear();
+            reportedDroppedWhileNotRunning = false;
+        }
+
         SetState(IsEnabled ? CommunicationState.Running : CommunicationState.Disabled);
         return Task.CompletedTask;
     }
@@ -70,14 +84,20 @@ public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
 
     public override Task AddReceivedDataToQueueAsync(IEnumerable<DataLogRecord> data, CancellationToken ct = default)
     {
-        return State == CommunicationState.Running ? ProcessReceivedDataAsync(data, ct) : Task.CompletedTask;
+        if (State == CommunicationState.Running)
+        {
+            return ProcessReceivedDataAsync(data, ct);
+        }
+
+        ReportDroppedWhileNotRunning();
+        return Task.CompletedTask;
     }
 
     protected override void ProcessReceivedData(IEnumerable<DataLogRecord> data)
     {
         foreach (var record in data)
         {
-            var protocolVariable = ApplyRecord(record);
+            var protocolVariable = ApplyRecordSafe(record);
             protocolVariable?.NotifyValueChanged();
         }
     }
@@ -88,7 +108,7 @@ public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
         foreach (var record in data)
         {
             ct.ThrowIfCancellationRequested();
-            var protocolVariable = ApplyRecord(record);
+            var protocolVariable = ApplyRecordSafe(record);
             if (protocolVariable != null)
             {
                 notifyTasks.Add(protocolVariable.NotifyValueChangedAsync());
@@ -106,9 +126,26 @@ public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
     protected override IEnumerable<IProtocolVariable> Decode(IEnumerable<DataLogRecord> data)
     {
         return data
-            .Select(ApplyRecord)
+            .Select(ApplyRecordSafe)
             .Where(variable => variable != null)
             .Cast<IProtocolVariable>();
+    }
+
+    /// <summary>
+    /// Applies a single record; a bad record (unknown variable, malformed value) is skipped
+    /// and reported once so the rest of the replay keeps running instead of dying mid-file.
+    /// </summary>
+    private IProtocolVariable? ApplyRecordSafe(DataLogRecord record)
+    {
+        try
+        {
+            return ApplyRecord(record);
+        }
+        catch (Exception e)
+        {
+            ReportFailedRecord(record, e);
+            return null;
+        }
     }
 
     private IProtocolVariable? ApplyRecord(DataLogRecord record)
@@ -116,6 +153,7 @@ public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
         var protocolVariable = FindProtocolVariable(record);
         if (protocolVariable == null)
         {
+            ReportUnknownVariable(record);
             return null;
         }
 
@@ -126,6 +164,59 @@ public class DataLogReplayProtocol : ProtocolBase<DataLogRecord>
         variable.SetValue(ConvertValue(record, variable));
 
         return protocolVariable;
+    }
+
+    private void ReportDroppedWhileNotRunning()
+    {
+        lock (diagnosticsLock)
+        {
+            if (reportedDroppedWhileNotRunning)
+            {
+                return;
+            }
+
+            reportedDroppedWhileNotRunning = true;
+        }
+
+        Logger?.Log(
+            LogLevel.Warn,
+            $"Data log replay protocol is not running (state {State}) — replayed records are being dropped.");
+    }
+
+    private void ReportUnknownVariable(DataLogRecord record)
+    {
+        var key = $"{record.VariableId}|{record.VariableNamespace}|{record.VariableName}";
+        lock (diagnosticsLock)
+        {
+            if (!reportedUnknownVariables.Add(key))
+            {
+                return;
+            }
+        }
+
+        Logger?.Log(
+            LogLevel.Warn,
+            $"Data log contains records for variable '{record.VariableName}' (Id {record.VariableId}, "
+            + $"namespace '{record.VariableNamespace}') which does not exist in this workspace — "
+            + "the whole signal is skipped during replay.");
+    }
+
+    private void ReportFailedRecord(DataLogRecord record, Exception e)
+    {
+        var key = $"{record.VariableId}|{record.VariableName}|{e.GetType().Name}";
+        lock (diagnosticsLock)
+        {
+            if (!reportedFailedRecords.Add(key))
+            {
+                return;
+            }
+        }
+
+        Logger?.Log(
+            LogLevel.Error,
+            $"Replay record for variable '{record.VariableName}' (Id {record.VariableId}) could not be "
+            + $"applied and was skipped (value '{record.Value}', type '{record.ValueType}'): {e.Message}",
+            e);
     }
 
     private IProtocolVariable? FindProtocolVariable(DataLogRecord record)
