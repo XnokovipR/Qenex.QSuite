@@ -50,7 +50,13 @@ public class ModbusSlaveProtocol : ProtocolBase<byte[]>, ITransportProtocol<byte
         catch (ArgumentException e)
         {
             configurationError = $"Invalid Modbus slave settings: {e.Message}";
-            Logger?.Log(LogLevel.Error, configurationError);
+
+            // A freshly added protocol arrives with empty settings — stay quiet until the user
+            // applies something. Connecting still fails properly (StartAsync goes Faulted).
+            if (!string.IsNullOrWhiteSpace(RawSettings))
+            {
+                Logger?.Log(LogLevel.Warn, configurationError);
+            }
         }
     }
 

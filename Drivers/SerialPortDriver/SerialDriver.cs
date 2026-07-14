@@ -84,9 +84,11 @@ public class SerialDriver : DriverBase, IProtocolVariableCommandDriver
             var other => LogInvalid("handshake", other, Handshake.None)
         };
 
-        if (string.IsNullOrWhiteSpace(portName))
+        // A freshly added driver arrives with empty settings — stay quiet until the user applies
+        // something. Connecting without a port still fails properly (StartAsync goes Faulted).
+        if (string.IsNullOrWhiteSpace(portName) && !string.IsNullOrWhiteSpace(RawSettings))
         {
-            Logger?.Log(LogLevel.Error, "Serial port driver: mandatory setting 'port' is missing.");
+            Logger?.Log(LogLevel.Warn, "Serial port driver: mandatory setting 'port' is missing.");
         }
     }
 

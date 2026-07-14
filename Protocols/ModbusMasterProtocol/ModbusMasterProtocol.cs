@@ -55,7 +55,13 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
         catch (ArgumentException e)
         {
             configurationError = $"Invalid Modbus master settings: {e.Message}";
-            Logger?.Log(LogLevel.Error, configurationError);
+
+            // A freshly added protocol arrives with empty settings — stay quiet until the user
+            // applies something. Connecting still fails properly (StartAsync goes Faulted).
+            if (!string.IsNullOrWhiteSpace(RawSettings))
+            {
+                Logger?.Log(LogLevel.Warn, configurationError);
+            }
         }
     }
 
