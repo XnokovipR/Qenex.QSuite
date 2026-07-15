@@ -249,7 +249,7 @@ public partial class ShellWindowModel
             if (cmdArgs.Length == 2)
             {
                 var projectFilePath = cmdArgs[1];
-                if (File.Exists(projectFilePath) && Path.GetExtension(projectFilePath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+                if (File.Exists(projectFilePath) && Path.GetExtension(projectFilePath).Equals(".qproj", StringComparison.OrdinalIgnoreCase))
                 {
                     await OpenProjectFileAsync(projectFilePath);
                 }
@@ -488,7 +488,7 @@ public partial class ShellWindowModel
     private async Task OpenProjectAsync(object obj)
     {
         var initialDirectory = GetInitialDialogDirectory(lastProjectDialogDirectory, currentProjectFilePath);
-        var dlg = openProjectDialog ??= CreateOpenFileDialog("QInsight project files (*.zip)|*.zip", initialDirectory);
+        var dlg = openProjectDialog ??= CreateOpenFileDialog("QInsight project files (*.qproj)|*.qproj", initialDirectory);
         PrepareFileDialog(dlg, initialDirectory);
 
         dlg.ShowDialog();
@@ -570,7 +570,7 @@ public partial class ShellWindowModel
         }
         
         var initialDirectory = GetInitialDialogDirectory(lastProjectDialogDirectory, currentProjectFilePath);
-        var dlg = saveProjectDialog ??= CreateSaveFileDialog("QInsight project files (*.zip)|*.zip", initialDirectory);
+        var dlg = saveProjectDialog ??= CreateSaveFileDialog("QInsight project files (*.qproj)|*.qproj", initialDirectory);
         PrepareFileDialog(dlg, initialDirectory);
 
         dlg.ShowDialog();
