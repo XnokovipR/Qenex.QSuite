@@ -50,6 +50,10 @@ public class CanDriver : DriverBase, IProtocolVariableCommandDriver
 
     #endregion
 
+    // deviceId is the PCAN_DEVICE_ID set in hardware (hex, 0..FF); 0x51 is only a placeholder the
+    // operator must replace with the actual device id. bitrate is in bit/s (see Bitrates map).
+    public override string DefaultRawSettings => "deviceId=0x51;bitrate=250000";
+
     public override void SetConfiguration()
     {
         var settings = ParseSettings(RawSettings);

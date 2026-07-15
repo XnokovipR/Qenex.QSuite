@@ -46,6 +46,10 @@ public class Xcp : ProtocolBase<CanFrame>, ITransportProtocol<CanFrame>, IProtoc
         };
     }
 
+    // masterId/slaveId are the CAN identifiers (hex, 0x prefix optional) and must differ — the
+    // 0x200/0x201 values are placeholders the operator replaces with the slave's actual ids.
+    public override string DefaultRawSettings => "masterId=0x200;slaveId=0x201;extendedIds=false;timeoutMs=1000";
+
     public override void SetConfiguration()
     {
         try

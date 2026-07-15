@@ -45,6 +45,10 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
         };
     }
 
+    // mode is mandatory: "rtu" for serial lines (CRC16), "tcp" for Modbus TCP (MBAP header),
+    // matching the driver the protocol is hosted on.
+    public override string DefaultRawSettings => "mode=rtu;unitId=1;timeoutMs=1000;retries=2";
+
     public override void SetConfiguration()
     {
         try

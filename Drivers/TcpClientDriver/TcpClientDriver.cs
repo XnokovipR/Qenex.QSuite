@@ -47,6 +47,12 @@ public class TcpClientDriver : DriverBase, IProtocolVariableCommandDriver
         };
     }
 
+    // idleTimeoutMs defaults to 5000 (streaming/JSON sources: a silent server means a dead link,
+    // so reconnect); set it to 0 for request/response protocols such as Modbus TCP, where a quiet
+    // line is normal.
+    public override string DefaultRawSettings =>
+        "ip=127.0.0.1;port=5000;connectionTimeoutMs=5000;reconnectTimeMs=1000;numberOfReconnections=3;idleTimeoutMs=5000";
+
     // Settings example: ip="127.0.0.1";port="5000";connectionTimeoutMs="5000";reconnectTimeMs="1000";
     //                   numberOfReconnections="3" (0 = reconnect forever);idleTimeoutMs="5000"
     // idleTimeoutMs > 0 reconnects when the server stays silent that long — dead-link detection for

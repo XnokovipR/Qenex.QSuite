@@ -41,6 +41,8 @@ public class SimDriver : DriverBase
 
     #region Configuration
 
+    public override string DefaultRawSettings => "periodes=20";
+
     public override void SetConfiguration()
     {
         settings = RawSettings;

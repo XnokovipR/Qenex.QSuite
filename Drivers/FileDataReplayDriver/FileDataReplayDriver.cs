@@ -91,6 +91,8 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
         }
     }
 
+    public override string DefaultRawSettings => "file=DataLogs\\values.qilog;mode=realtime;speed=1;loop=false";
+
     public override void SetConfiguration()
     {
         var settings = ParseSettings(RawSettings);

@@ -447,6 +447,9 @@ public sealed record ProjectConfigurationProtocolOption(
 public static class ProjectConfigurationProtocolVariableFactory
 {
     private const string PiZeroJsonProtocolName = "PiZeroJsonProtocol";
+    private const string ModbusMasterProtocolName = "ModbusMasterProtocol";
+    private const string ModbusSlaveProtocolName = "ModbusSlaveProtocol";
+    private const string XcpProtocolName = "XcpProtocol";
 
     public static IProtocolVariable CreateProtocolVariable(
         IProtocolBase protocol,
@@ -456,13 +459,15 @@ public static class ProjectConfigurationProtocolVariableFactory
         bool isCommunicated)
     {
         IProtocolVariable? protocolVariable = null;
+        string? firstError = null;
 
         try
         {
             protocolVariable = protocol.CreateProtocolVariable(variable, variableEvents, commParam, isCommunicated);
         }
-        catch
+        catch (Exception e)
         {
+            firstError = e.Message;
         }
 
         if (protocolVariable == null)
@@ -471,13 +476,18 @@ public static class ProjectConfigurationProtocolVariableFactory
             {
                 protocolVariable = protocol.CreateProtocolVariable(variable, commParam, isCommunicated);
             }
-            catch
+            catch (Exception e)
             {
+                firstError ??= e.Message;
             }
         }
 
+        // Surface the protocol's own reason (e.g. "Missing mandatory commParam 'address'.") —
+        // the generic message alone gives the user nothing to fix.
         return protocolVariable
-            ?? throw new InvalidOperationException($"Protocol variable for \"{variable.Name}\" could not be created by \"{protocol.Specification.Name}\".");
+            ?? throw new InvalidOperationException(
+                $"Protocol variable for \"{variable.Name}\" could not be created by \"{protocol.Specification.Name}\""
+                + (firstError == null ? "." : $": {firstError}"));
     }
 
     public static string GetCommParam(IProtVariableSpecification specification)
@@ -540,7 +550,47 @@ public static class ProjectConfigurationProtocolVariableFactory
                 $"id=\"{variable.Name}\"");
         }
 
+        // Modbus and XCP templates list every supported commParam explicitly so the user only
+        // edits values instead of discovering keys; address is mandatory with no sensible
+        // default, 0/0x0 is a placeholder to overwrite. dataType/size stay derived from the
+        // variable on purpose (an explicit value would break when the variable type changes).
+        if (protocol.Specification.Name.Equals(ModbusMasterProtocolName, StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Join(";",
+                "registerType=\"holdingRegister\"",
+                "address=\"0\"",
+                "wordOrder=\"big\"",
+                "direction=\"read\"",
+                $"eventRef=\"{GetDefaultEventName(variableEvents)}\"");
+        }
+
+        if (protocol.Specification.Name.Equals(ModbusSlaveProtocolName, StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Join(";",
+                "registerType=\"holdingRegister\"",
+                "address=\"0\"",
+                "wordOrder=\"big\"",
+                "direction=\"read\"");
+        }
+
+        if (protocol.Specification.Name.Equals(XcpProtocolName, StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Join(";",
+                "address=\"0x0\"",
+                "addressExtension=\"0\"",
+                "direction=\"read\"",
+                "multiplier=\"1\"",
+                $"eventRef=\"{GetDefaultEventName(variableEvents)}\"");
+        }
+
         return CreateDefaultCommParam(variable, variableEvents);
+    }
+
+    private static string GetDefaultEventName(IEnumerable<IVarEvent> variableEvents)
+    {
+        return variableEvents.FirstOrDefault(variableEvent => variableEvent is PeriodicVarEvent)?.Name
+               ?? variableEvents.FirstOrDefault()?.Name
+               ?? string.Empty;
     }
 
     public static Dictionary<string, string> ParseCommParam(string commParam)

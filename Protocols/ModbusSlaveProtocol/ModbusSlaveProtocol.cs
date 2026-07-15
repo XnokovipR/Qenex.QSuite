@@ -40,6 +40,10 @@ public class ModbusSlaveProtocol : ProtocolBase<byte[]>, ITransportProtocol<byte
         };
     }
 
+    // mode is mandatory ("rtu"/"tcp"). respondToAnyUnit defaults to true for TCP and false for RTU;
+    // it is listed explicitly here so the operator sees it.
+    public override string DefaultRawSettings => "mode=rtu;unitId=1;respondToAnyUnit=false";
+
     public override void SetConfiguration()
     {
         try

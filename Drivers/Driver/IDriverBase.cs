@@ -14,6 +14,14 @@ public interface IDriverBase : ICoreCommunication, IComponentSpecification
     string Label { get; set; }
     string RawSettings { get; set; }
     string RawEncryptedSettings { get; set; }
+
+    /// <summary>
+    /// Settings template pre-filled when the driver is added in Project Configuration: it lists
+    /// every parameter with a representative value so the operator can see exactly what can be
+    /// configured and only edits the values (empty means the driver has no settings).
+    /// </summary>
+    string DefaultRawSettings { get; }
+
     IList<IProtocolBase> Protocols { get; init; }
 
     #endregion

@@ -387,6 +387,7 @@ internal static class Program
         public string Label { get; set; } = string.Empty;
         public string RawSettings { get; set; } = string.Empty;
         public string RawEncryptedSettings { get; set; } = string.Empty;
+        public string DefaultRawSettings => string.Empty;
         public IList<IProtocolBase> Protocols { get; init; } = protocols.ToList();
         public bool IsEnabled { get; set; }
         public CommunicationState State => default;
@@ -436,6 +437,7 @@ internal static class Program
         public IList<IProtocolVariable> Variables { get; set; } = [];
         public string RawSettings { get; set; } = string.Empty;
         public string RawEncryptedSettings { get; set; } = string.Empty;
+        public string DefaultRawSettings => string.Empty;
         public ILogger? Logger { get; set; }
         public bool IsEnabled { get; set; }
         public CommunicationState State => default;

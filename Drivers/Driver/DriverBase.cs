@@ -30,6 +30,10 @@ public abstract class DriverBase : IDriverBase
     public string Label { get; set; } = null!;
     public string RawSettings { get; set; } = string.Empty;
     public string RawEncryptedSettings { get; set; } = string.Empty;
+
+    // Overridden by drivers that have settings; base returns empty (no settings to pre-fill).
+    public virtual string DefaultRawSettings => string.Empty;
+
     public bool IsEnabled { get; set; }
     
     public CommunicationState State { get; private set; } = CommunicationState.Stopped;

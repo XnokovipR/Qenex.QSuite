@@ -55,7 +55,10 @@ public abstract class ProtocolBase<T> : IProtocolBase
     public ISpecification Specification { get; set; }
     public string RawSettings { get; set; } = string.Empty;
     public string RawEncryptedSettings { get; set; } = string.Empty;
-    
+
+    // Overridden by protocols that have protocol-level settings; base returns empty.
+    public virtual string DefaultRawSettings => string.Empty;
+
     public IList<IProtocolVariable> Variables { get; set; }
 
     #endregion

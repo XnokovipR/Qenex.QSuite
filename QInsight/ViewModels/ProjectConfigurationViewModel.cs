@@ -36,8 +36,6 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private const string FileDataReplayDriverName = "FileDataReplayDriver";
     private const string DataLogReplayProtocolName = "DataLogReplayProtocol";
     private const string SinkProtocolName = "One2OneProtocol";
-    private const string SimulationDriverName = "SimulDataDriver";
-    private const string TcpClientDriverName = "TcpClientDriver";
     private const string XmlFileFilter = "QInsight XML files (*.xml)|*.xml|All files (*.*)|*.*";
 
     private readonly EventAggregator? eventAggregator;
@@ -893,7 +891,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
         driver.Id = CreateUniqueDriverId();
         driver.Label = driver.Specification.Label;
-        driver.RawSettings = string.Empty;
+        // Pre-fill the driver's own settings template (DefaultRawSettings) so the operator sees
+        // every parameter and only edits the values. No per-driver special-casing here — each
+        // driver owns its template.
+        driver.RawSettings = driver.DefaultRawSettings;
         driver.RawEncryptedSettings = string.Empty;
         driver.IsEnabled = !driver.Specification.Name.Equals(FileDataReplayDriverName, StringComparison.OrdinalIgnoreCase);
         if (driver is DriverBase driverBase && module is ModuleBase moduleBase)
@@ -901,26 +902,14 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             driverBase.Logger = moduleBase.Logger;
         }
 
+        // Friendlier instance labels for the auto-paired file logger / replay drivers.
         if (driver.Specification.Name.Equals(FileDataLoggerDriverName, StringComparison.OrdinalIgnoreCase))
         {
             driver.Label = "File data logger";
-            driver.RawSettings = "file=DataLogs;append=true;flushOnWrite=false";
         }
         else if (driver.Specification.Name.Equals(FileDataReplayDriverName, StringComparison.OrdinalIgnoreCase))
         {
             driver.Label = "File data replay";
-            driver.RawSettings = "file=DataLogs\\values.qilog;mode=realtime;speed=1;loop=false";
-        }
-        else if (driver.Specification.Name.Equals(SimulationDriverName, StringComparison.OrdinalIgnoreCase))
-        {
-            driver.RawSettings = "periodes=20";
-        }
-        else if (driver.Specification.Name.Equals(TcpClientDriverName, StringComparison.OrdinalIgnoreCase))
-        {
-            // idleTimeoutMs keeps the historical behavior for streaming (JSON) sources: a silent
-            // server drops the connection and reconnects. Clear it (0) for request/response
-            // protocols such as Modbus TCP, where a quiet line is normal.
-            driver.RawSettings = "ip=127.0.0.1;port=5000;connectionTimeoutMs=5000;reconnectTimeMs=1000;numberOfReconnections=3;idleTimeoutMs=5000";
         }
 
         driver.SetConfiguration();
@@ -1149,7 +1138,10 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             var protocol = pluginLoader.LoadPlugin<IProtocolBase>(SelectedProtocolPlugin.Plugin.PathName)
                            ?? throw new InvalidOperationException($"Protocol \"{SelectedProtocolPlugin.Plugin.Name}\" could not be loaded.");
             protocol.IsEnabled = true;
-            protocol.RawSettings = string.Empty;
+            // Pre-fill the protocol's own settings template (DefaultRawSettings) so the operator
+            // sees every parameter and only edits the values (empty for protocols configured purely
+            // through per-variable comm params).
+            protocol.RawSettings = protocol.DefaultRawSettings;
             protocol.RawEncryptedSettings = string.Empty;
             protocol.SetConfiguration();
 

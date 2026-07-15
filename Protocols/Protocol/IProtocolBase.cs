@@ -25,6 +25,14 @@ public interface IProtocolBase: ICoreCommunication, IComponentSpecification
     string RawEncryptedSettings { get; set; }
 
     /// <summary>
+    /// Settings template pre-filled when the protocol is added in Project Configuration: it lists
+    /// every parameter with a representative value so the operator can see exactly what can be
+    /// configured and only edits the values (empty means the protocol has no protocol-level
+    /// settings — its parameters are per-variable comm params instead).
+    /// </summary>
+    string DefaultRawSettings { get; }
+
+    /// <summary>
     /// Logger for protocol-level diagnostics (dropped records, conversion failures).
     /// Propagated by the owning driver; setting it also flows to already-added variables.
     /// </summary>

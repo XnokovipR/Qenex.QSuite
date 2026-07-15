@@ -43,6 +43,8 @@ public class TcpServer : DriverBase
         };
     }
 
+    public override string DefaultRawSettings => "bindAddress=0.0.0.0;port=502";
+
     // Settings example: bindAddress="0.0.0.0";port="502"
     public override void SetConfiguration()
     {

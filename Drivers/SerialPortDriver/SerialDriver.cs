@@ -46,6 +46,9 @@ public class SerialDriver : DriverBase, IProtocolVariableCommandDriver
         };
     }
 
+    public override string DefaultRawSettings =>
+        "port=COM1;baudRate=9600;dataBits=8;parity=none;stopBits=1;handshake=none;reconnectTimeMs=2000";
+
     // Settings example: port="COM3";baudRate="19200";dataBits="8";parity="even";stopBits="1";
     //                   handshake="none";reconnectTimeMs="2000"
     public override void SetConfiguration()

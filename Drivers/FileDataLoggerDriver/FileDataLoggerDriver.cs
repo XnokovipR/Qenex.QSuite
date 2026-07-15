@@ -55,6 +55,8 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 
     public string? DataLogFileName { get; set; }
 
+    public override string DefaultRawSettings => "file=DataLogs;append=true;flushOnWrite=false;reorderBufferMs=500";
+
     public override void SetConfiguration()
     {
         logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs");
