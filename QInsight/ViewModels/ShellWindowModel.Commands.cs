@@ -783,8 +783,22 @@ public partial class ShellWindowModel
             ConfigureGraphControlSaveDialog = FileDialogConfiguration.ConfigureFastFileDialog,
             GraphControlSaveDialogInitialDirectoryProvider = () =>
                 GetInitialDialogDirectory(lastGraphExportDialogDirectory, currentProjectFilePath),
-            GraphControlSaveDialogDirectoryChanged = directory => lastGraphExportDialogDirectory = directory
+            GraphControlSaveDialogDirectoryChanged = directory => lastGraphExportDialogDirectory = directory,
+            CanWriteProtocolVariable = CanWriteProtocolVariable
         };
+    }
+
+    /// <summary>
+    /// Zapisovatelnost promenne urcuje protokol (Modbus Direction, XCP calibration, ...);
+    /// protokol si ownership promenne kontroluje sam v CanWriteVariable.
+    /// </summary>
+    private bool CanWriteProtocolVariable(IProtocolVariable protocolVariable)
+    {
+        return realProjectData?.Module?.Drivers != null
+               && realProjectData.Module.Drivers
+                   .SelectMany(driver => driver.Protocols)
+                   .OfType<IProtocolVariableWriteProtocol>()
+                   .Any(protocol => protocol.CanWriteVariable(protocolVariable));
     }
 
     private async Task AddWorkspaceAsync(RadDocking docking)

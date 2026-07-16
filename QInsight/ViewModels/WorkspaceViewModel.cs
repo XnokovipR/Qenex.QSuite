@@ -75,6 +75,9 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     public Func<string?>? GraphControlSaveDialogInitialDirectoryProvider { get; set; }
     public Action<string>? GraphControlSaveDialogDirectoryChanged { get; set; }
 
+    /// <summary>Injektuje Shell: protokolova capability zapisu pro protocol variable.</summary>
+    public Func<IProtocolVariable, bool>? CanWriteProtocolVariable { get; set; }
+
     #endregion
     
     #region ViewModelBase implementation
@@ -270,14 +273,55 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     private void ConfigureControl(IControlBase controlVm)
     {
-	    if (controlVm is not IFileDialogAwareControl dialogAwareControl)
+	    if (controlVm is IFileDialogAwareControl dialogAwareControl)
 	    {
-		    return;
+		    dialogAwareControl.ConfigureSaveFileDialog = ConfigureGraphControlSaveDialog;
+		    dialogAwareControl.SaveDialogInitialDirectoryProvider = GraphControlSaveDialogInitialDirectoryProvider;
+		    dialogAwareControl.SaveDialogDirectoryChanged = GraphControlSaveDialogDirectoryChanged;
 	    }
 
-	    dialogAwareControl.ConfigureSaveFileDialog = ConfigureGraphControlSaveDialog;
-	    dialogAwareControl.SaveDialogInitialDirectoryProvider = GraphControlSaveDialogInitialDirectoryProvider;
-	    dialogAwareControl.SaveDialogDirectoryChanged = GraphControlSaveDialogDirectoryChanged;
+	    if (controlVm is IVariableWriteControl writeControl)
+	    {
+		    writeControl.CanWriteVariableProvider = variable =>
+			    ResolveProtocolVariable(variable) is { } protocolVariable
+			    && (CanWriteProtocolVariable?.Invoke(protocolVariable) ?? false);
+		    writeControl.WriteVariableEngValueAsync = WriteControlVariableEngValueAsync;
+		    writeControl.RefreshWriteCapability();
+	    }
+    }
+
+    /// <summary>
+    /// Najde zivou protocol variable pro promennou drzenou controlem. Primarne identitou
+    /// (controly dostavaji v BindVariable zivou promennou), fallback pres referenci
+    /// (namespace/name) pro pripad rebindu po vymene protokolu.
+    /// </summary>
+    private IProtocolVariable? ResolveProtocolVariable(IVariableBase? variable)
+    {
+	    if (variable == null)
+	    {
+		    return null;
+	    }
+
+	    var reference = ControlBase.GetVariableReference(variable);
+	    return activeProtocolVariables.FirstOrDefault(pv => ReferenceEquals(pv.Variable, variable))
+	           ?? activeProtocolVariables.FirstOrDefault(pv => ControlBase.IsVariableReferenceMatch(reference, pv.Variable));
+    }
+
+    private async Task<bool> WriteControlVariableEngValueAsync(IVariableBase variable, double engValue)
+    {
+	    var protocolVariable = ResolveProtocolVariable(variable);
+	    if (protocolVariable == null
+	        || CanWriteProtocolVariable?.Invoke(protocolVariable) != true
+	        || protocolVariable.Variable is not ScalarVariable scalarVariable
+	        || !scalarVariable.TrySetEngValue(engValue))
+	    {
+		    return false;
+	    }
+
+	    // Na notifikaci je prihlaseny command driver (zapis do zarizeni) i ctecí handlery
+	    // ostatnich controlu (okamzity feedback nove hodnoty)
+	    await protocolVariable.NotifyValueChangedAsync();
+	    return true;
     }
 
     public void BindLoadedControlVariables(IEnumerable<IProtocolVariable> protocolVariables)
@@ -299,6 +343,8 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 				    SubscribeControlVariable(control, protocolVariable);
 			    }
 		    }
+
+		    (control as IVariableWriteControl)?.RefreshWriteCapability();
 	    }
     }
 
@@ -534,6 +580,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 	    control.BindVariable(protocolVariable.Variable);
 	    PruneControlSubscriptions(control);
 	    SubscribeControlVariable(control, protocolVariable);
+	    (control as IVariableWriteControl)?.RefreshWriteCapability();
 
 	    VariableDragAndDropBehavior.IsOverValidTarget = false;
 	    e.Handled = true;

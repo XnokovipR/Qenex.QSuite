@@ -1,5 +1,7 @@
+using System.Globalization;
 using System.Runtime.Serialization;
 using System.Windows;
+using Qenex.QLibs.QUI;
 using Qenex.QSuite.Common.WpfComm;
 using Qenex.QSuite.Controls.Control;
 using System.Windows.Media.Imaging;
@@ -8,7 +10,7 @@ using Qenex.QSuite.Variables.QVariables;
 namespace Qenex.QSuite.Controls.SignalControl.ViewModels;
 
 [DataContract]
-public class SignalControlViewModel : ControlBase
+public class SignalControlViewModel : ControlBase, IVariableWriteControl
 {
 	private DateTime previousUpdateTime = DateTime.MinValue;
 	private double prevValue;
@@ -47,15 +49,117 @@ public class SignalControlViewModel : ControlBase
     
     [DataMember]
     public int DeathBendPercentage
-    { 
+    {
 	    get;
 	    set
 	    {
 		    if (value < 0) value = 0;
 		    field = value; OnPropertyChanged();
-	    } 
+	    }
     } = 5;
-    
+
+    #endregion
+
+    #region Write mode (IVariableWriteControl)
+
+    [IgnoreDataMember]
+    public Func<IVariableBase, bool>? CanWriteVariableProvider { get; set; }
+
+    [IgnoreDataMember]
+    public Func<IVariableBase, double, Task<bool>>? WriteVariableEngValueAsync { get; set; }
+
+    [DataMember]
+    public bool IsWriteMode
+    {
+	    get;
+	    set
+	    {
+		    field = value;
+		    OnPropertyChanged();
+		    OnPropertyChanged(nameof(IsWriteActive));
+		    if (value)
+		    {
+			    PrefillEditValue();
+		    }
+	    }
+    }
+
+    [IgnoreDataMember]
+    public bool CanWrite
+    {
+	    get;
+	    private set
+	    {
+		    field = value;
+		    OnPropertyChanged();
+		    OnPropertyChanged(nameof(IsWriteActive));
+	    }
+    }
+
+    [IgnoreDataMember]
+    public bool IsWriteActive => IsWriteMode && CanWrite;
+
+    [IgnoreDataMember]
+    public string EditValue { get; set { field = value; OnPropertyChanged(); IsWriteError = false; } }
+
+    [IgnoreDataMember]
+    public bool IsWriteError { get; set { field = value; OnPropertyChanged(); } }
+
+    // Lazy kvuli deserializaci (DataContractSerializer nevola konstruktor)
+    [IgnoreDataMember]
+    public RelayCommand<object> WriteValueCommand => field ??= new RelayCommand<object>(OnWriteValue);
+
+    public void RefreshWriteCapability()
+    {
+	    var variable = Variables?.FirstOrDefault();
+	    CanWrite = variable != null && (CanWriteVariableProvider?.Invoke(variable) ?? false);
+    }
+
+    private void OnWriteValue(object parameter)
+    {
+	    _ = WriteValueAsync();
+    }
+
+    private async Task WriteValueAsync()
+    {
+	    if (!IsWriteActive || !IsRun || WriteVariableEngValueAsync == null)
+	    {
+		    IsWriteError = true;
+		    return;
+	    }
+
+	    var variable = Variables?.FirstOrDefault();
+	    if (variable == null || !TryParseEditValue(out var engValue))
+	    {
+		    IsWriteError = true;
+		    return;
+	    }
+
+	    try
+	    {
+		    var written = await WriteVariableEngValueAsync(variable, engValue);
+		    IsWriteError = !written;
+	    }
+	    catch
+	    {
+		    IsWriteError = true;
+	    }
+    }
+
+    private bool TryParseEditValue(out double engValue)
+    {
+	    return double.TryParse((EditValue ?? string.Empty).Replace(',', '.'),
+		    NumberStyles.Float, CultureInfo.InvariantCulture, out engValue);
+    }
+
+    private void PrefillEditValue()
+    {
+	    EditValue = Variables?.FirstOrDefault() is ScalarVariable scalarVariable
+		    ? scalarVariable.GetEngValue().ToString(CultureInfo.InvariantCulture)
+		    : string.Empty;
+	    IsWriteError = false;
+    }
+
     #endregion
 
     #region Derived properties
@@ -71,6 +175,10 @@ public class SignalControlViewModel : ControlBase
 
     public override async Task UpdateVariableValueAsync(IVariableBase protVariable)
     {
+	    // Ve write rezimu se displej tohoto controlu zmrazi (komunikace bezi dal,
+	    // ostatni controly stejnou promennou zobrazuji normalne)
+	    if (IsWriteActive) return;
+
 	    var dataValue = protVariable switch
 	    {
 		    ScalarVariable scVar => scVar.GetPresentationText(),
@@ -118,6 +226,13 @@ public class SignalControlViewModel : ControlBase
 	    VariableValue = string.Empty;
 	    previousUpdateTime = DateTime.MinValue;
 	    prevValue = 0;
+
+	    // Zapisovatelnost se musi prehodnotit pri kazdem (re)bindu
+	    RefreshWriteCapability();
+	    if (IsWriteMode)
+	    {
+		    PrefillEditValue();
+	    }
     }
 
     public override void RefreshVariableBinding(IVariableBase variable)
@@ -150,6 +265,7 @@ public class SignalControlViewModel : ControlBase
 	    VariableUnit ??= string.Empty;
 	    Variables ??= [];
 	    LinkedVariables ??= [];
+	    EditValue ??= string.Empty;
     }
 
     #endregion
