@@ -26,7 +26,8 @@
                 <telerik:GridViewDataColumn Width="160" Header="Label" DataMemberBinding="{Binding Label}" IsReadOnly="True"/>
                 <telerik:GridViewDataColumn Width="160" Header="Name" DataMemberBinding="{Binding Name}" IsReadOnly="True"/>
                 <telerik:GridViewDataColumn Width="80" Header="Id" DataMemberBinding="{Binding Id}" IsReadOnly="True"/>
-                <telerik:GridViewDataColumn Width="*" Header="Value" DataMemberBinding="{Binding Value}" IsReadOnly="True"/>
+                <telerik:GridViewDataColumn Width="*" Header="Raw value" DataMemberBinding="{Binding Value}" IsReadOnly="True"/>
+                <telerik:GridViewDataColumn Width="*" Header="Eng. value" DataMemberBinding="{Binding EngValue}" IsReadOnly="True"/>
                 <telerik:GridViewDataColumn Width="90" Header="Logged" DataMemberBinding="{Binding Logged}" IsReadOnly="True"/>
             </telerik:RadGridView.Columns>
         </telerik:RadGridView>

@@ -145,11 +145,17 @@ public class VariableWatchItemViewModel : PropertyChangedBase
     public string Name => variable.Name;
     public int Id => variable.Id;
     public string Value => FormatValue(variable.GetValue());
+
+    public string EngValue => variable is ScalarVariable scalar
+        ? scalar.GetEngValue().ToString(CultureInfo.InvariantCulture)
+        : string.Empty;
+
     public bool Logged { get; }
 
     public void RefreshValue()
     {
         OnPropertyChanged(nameof(Value));
+        OnPropertyChanged(nameof(EngValue));
     }
 
     private static string FormatValue(object? value)
