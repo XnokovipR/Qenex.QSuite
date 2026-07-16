@@ -1,4 +1,5 @@
-﻿using ScottPlot;
+﻿using RtGraphControl.Models;
+using ScottPlot;
 using ScottPlot.AxisPanels;
 
 namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
@@ -31,17 +32,40 @@ public sealed class VerticalAxis : YAxisBase
         } 
     } = -10.0;
     
-    public double Maximum 
-    { 
+    public double Maximum
+    {
         get;
-        set 
+        set
         {
             field = value;
             Max = value;
             RefreshAction?.Invoke();
-        } 
+        }
     } = 10.0;
-    
 
+    public ScottPlot.Color ThemeForeColor { get; set; }
 
+    public System.Windows.Media.Color? AxisColor
+    {
+        get;
+        set
+        {
+            field = value;
+            ApplyColor();
+            RefreshAction?.Invoke();
+        }
+    }
+
+    public void ApplyColor()
+    {
+        var color = AxisColor?.ToScottPlotColor() ?? ThemeForeColor;
+
+        FrameLineStyle.Color = color;
+        MajorTickStyle.Color = color;
+        MinorTickStyle.Color = color;
+        TickLabelStyle.ForeColor = color;
+        TickLabelStyle.PointColor = color;
+        LabelFontColor = color;
+        LabelBorderColor = color;
+    }
 }

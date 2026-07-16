@@ -438,6 +438,11 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
 
         foreach (var axis in PlotControl.Plot.Axes.GetAxes())
         {
+            if (axis is VerticalAxis)
+            {
+                continue;
+            }
+
             axis.FrameLineStyle.Color = foregroundColor;
         }
         
@@ -621,16 +626,11 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
         foreach (var axis in VerticalAxes.OfType<VerticalAxis>())
         {
             axis.LabelBackgroundColor = backgroundColor;
-            axis.LabelFontColor = foregroundColor;
             axis.LabelFontSize = plotFontSize;
-            axis.LabelBorderColor = foregroundColor;
-            axis.TickLabelStyle.ForeColor = foregroundColor;
             axis.TickLabelStyle.BackgroundColor = backgroundColor;
             axis.TickLabelStyle.FontSize = axesFontSize;
-            axis.TickLabelStyle.PointColor = foregroundColor;
-            axis.MajorTickStyle.Color = foregroundColor;
-            axis.MinorTickStyle.Color = foregroundColor;
-            axis.FrameLineStyle.Color = foregroundColor;
+            axis.ThemeForeColor = foregroundColor;
+            axis.ApplyColor();
         }
     }
 
@@ -1009,32 +1009,28 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
             Name = string.IsNullOrWhiteSpace(axisBinding?.Name) ? $"Y->{index}" : axisBinding.Name,
             IsVisible = axisBinding?.IsVisible ?? true,
             IsAutoScale = axisBinding?.IsAutoScale ?? true,
+            ThemeForeColor = foregroundColor,
             LabelBackgroundColor = backgroundColor,
-            LabelFontColor = foregroundColor,
             LabelFontSize = plotFontSize,
-            LabelBorderColor = foregroundColor,
             TickLabelStyle = new LabelStyle()
             {
-                ForeColor = foregroundColor,
                 BackgroundColor = backgroundColor,
                 FontSize = axesFontSize,
-                PointColor = foregroundColor,
             },
 
-            MajorTickStyle = new TickMarkStyle()
-            {
-                Color = foregroundColor,
-            },
+            MajorTickStyle = new TickMarkStyle(),
             MinorTickStyle = new TickMarkStyle()
-            {
-                Color = foregroundColor,
-            },
-            FrameLineStyle =
-            {
-                Color = foregroundColor
-            }
         };
-        
+
+        if (axisBinding != null && axisBinding.TryGetAxisColor(out var axisColor))
+        {
+            newAxis.AxisColor = axisColor;
+        }
+        else
+        {
+            newAxis.ApplyColor();
+        }
+
         newAxis.RefreshAction = () =>
         {
             PlotControl.Refresh();
