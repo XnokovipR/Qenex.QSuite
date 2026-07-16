@@ -419,15 +419,8 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
         PlotControl.Plot.Axes.Top.TickLabelStyle.ForeColor = foregroundColor;
         PlotControl.Plot.Axes.Top.TickLabelStyle.BackgroundColor = backgroundColor; 
         
-        // Set left empty axis as default (frame line only, mirrors the right one)
+        // Set left empty axis as default (bare frame only - EmptyTickGenerator, see InitializeRuntimeState)
         PlotControl.Plot.Axes.Left.Label.IsVisible = false;
-        PlotControl.Plot.Axes.Left.Label.FontSize = plotFontSize;
-        PlotControl.Plot.Axes.Left.Label.Bold = false;
-        PlotControl.Plot.Axes.Left.TickLabelStyle.FontSize = axesFontSize;
-        PlotControl.Plot.Axes.Left.Label.ForeColor = foregroundColor;
-        PlotControl.Plot.Axes.Left.Label.BackgroundColor = backgroundColor;
-        PlotControl.Plot.Axes.Left.TickLabelStyle.ForeColor = foregroundColor;
-        PlotControl.Plot.Axes.Left.TickLabelStyle.BackgroundColor = backgroundColor;
 
         // Set right empty axis as default
         PlotControl.Plot.Axes.Right.Label.IsVisible = false;
@@ -498,9 +491,14 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
         PlotControl.UserInputProcessor.UserActionResponses.RemoveAll(
             x => x is ScottPlot.Interactivity.UserActionResponses.SingleClickContextMenu);
 
-        // Vychozi leva osa musi v plotu zustat (jako prazdna ramova cara, stejne jako prava):
-        // ScottPlot vyzaduje existenci aspon jedne osy s Edge=Left (Axes.Left) - kdyby uzivatel
-        // presunul vsechny osy doprava, render i GetCoordinates by spadly.
+        // Vychozi leva osa musi v plotu zustat (ScottPlot vyzaduje existenci Axes.Left -
+        // render/GetCoordinates by spadly, kdyby uzivatel presunul vsechny osy doprava).
+        // Zustava viditelna jako holy ramecek grafu: EmptyTickGenerator zaruci, ze nikdy
+        // nedostane ticky - render action AutoScaleUnsetAxes by jinak ose bez limitu
+        // nastavil -10..10 a vedle Y->0 by se vykreslila druha plnohodnotna osa.
+        PlotControl.Plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.EmptyTickGenerator();
+        // Prava vychozi osa: stejna pojistka (dnes ticky nema jen diky prazdnym limitum)
+        PlotControl.Plot.Axes.Right.TickGenerator = new ScottPlot.TickGenerators.EmptyTickGenerator();
     }
 
     [OnDeserialized]
