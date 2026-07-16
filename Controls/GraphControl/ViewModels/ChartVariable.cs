@@ -37,14 +37,22 @@ public class ChartVariable : PropertyChangedBase
     
     public SignalXY? ChartSignal { get; set { field = value; OnPropertyChanged(); } } = null!;
     
-    public int AxisIndex 
-    { 
+    public int AxisIndex
+    {
         get;
-        set 
+        set
         {
             field = ChangeAxisAction?.Invoke(value) ?? value;
             OnPropertyChanged();
-        } 
+            OnPropertyChanged(nameof(AxisNumber));
+        }
+    }
+
+    // 1-based cislo osy pro UI (interni AxisIndex zustava 0-based kvuli persistenci)
+    public int AxisNumber
+    {
+        get => AxisIndex + 1;
+        set => AxisIndex = value - 1;
     }
     
     public List<DateTime> XDateTimeVal { get; set; }

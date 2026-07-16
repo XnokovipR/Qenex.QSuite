@@ -14,7 +14,8 @@ public class RowIndexConverter : IMultiValueConverter  // not IValueConverter
         if (values[0] == null || values[1] is not IEnumerable items)
             return null;
 
-        int index = 0;
+        // Zobrazovane Id os je 1-based (interni indexy zustavaji 0-based)
+        int index = 1;
         foreach (var item in items)
         {
             if (ReferenceEquals(item, values[0]))

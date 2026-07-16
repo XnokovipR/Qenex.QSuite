@@ -78,6 +78,10 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
     [IgnoreDataMember]
     public IYAxis SelectedVerticalAxis { get; set { field = value; OnPropertyChanged(); } }
 
+    // 1-based cisla os pro comboboxy v UI (drzi se v AddAxis/RemoveAxis)
+    [IgnoreDataMember]
+    public ObservableCollection<int> AxisNumbers { get; set { field = value; OnPropertyChanged(); } } = [];
+
     [IgnoreDataMember]
     public ChartVariable SelectedChartVariable { get; set { field = value; OnPropertyChanged(); } }
 
@@ -415,6 +419,16 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
         PlotControl.Plot.Axes.Top.TickLabelStyle.ForeColor = foregroundColor;
         PlotControl.Plot.Axes.Top.TickLabelStyle.BackgroundColor = backgroundColor; 
         
+        // Set left empty axis as default (frame line only, mirrors the right one)
+        PlotControl.Plot.Axes.Left.Label.IsVisible = false;
+        PlotControl.Plot.Axes.Left.Label.FontSize = plotFontSize;
+        PlotControl.Plot.Axes.Left.Label.Bold = false;
+        PlotControl.Plot.Axes.Left.TickLabelStyle.FontSize = axesFontSize;
+        PlotControl.Plot.Axes.Left.Label.ForeColor = foregroundColor;
+        PlotControl.Plot.Axes.Left.Label.BackgroundColor = backgroundColor;
+        PlotControl.Plot.Axes.Left.TickLabelStyle.ForeColor = foregroundColor;
+        PlotControl.Plot.Axes.Left.TickLabelStyle.BackgroundColor = backgroundColor;
+
         // Set right empty axis as default
         PlotControl.Plot.Axes.Right.Label.IsVisible = false;
         PlotControl.Plot.Axes.Right.Label.FontSize = plotFontSize;
@@ -460,6 +474,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
         ChartVariableBindings ??= [];
         VerticalAxisBindings ??= [];
         VerticalAxes ??= [];
+        AxisNumbers ??= [];
         currentColorIndex = Math.Max(currentColorIndex, 0);
 
         MouseMoveCommand = new RelayCommand<MouseEventArgs>(DisplayCursorBasedOnMouseMove);
@@ -483,7 +498,9 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
         PlotControl.UserInputProcessor.UserActionResponses.RemoveAll(
             x => x is ScottPlot.Interactivity.UserActionResponses.SingleClickContextMenu);
 
-        PlotControl.Plot.Axes.Remove(Edge.Left);
+        // Vychozi leva osa musi v plotu zustat (jako prazdna ramova cara, stejne jako prava):
+        // ScottPlot vyzaduje existenci aspon jedne osy s Edge=Left (Axes.Left) - kdyby uzivatel
+        // presunul vsechny osy doprava, render i GetCoordinates by spadly.
     }
 
     [OnDeserialized]
@@ -599,13 +616,19 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
         if (VerticalAxisBindings.Count == 0)
         {
             AddAxis(Edge.Left, 0);
-            return;
+        }
+        else
+        {
+            for (var i = 0; i < VerticalAxisBindings.Count; i++)
+            {
+                AddAxis(VerticalAxisBindings[i], i);
+            }
         }
 
-        for (var i = 0; i < VerticalAxisBindings.Count; i++)
-        {
-            AddAxis(VerticalAxisBindings[i], i);
-        }
+        // Crosshair a annotation nesmi zustat bez os - jinak by je ScottPlot navazal na
+        // vychozi (ramovou) levou osu bez limitu a kreslily by se do NaN souradnic.
+        cross.Axes.YAxis = VerticalAxes[0];
+        annotation.Axes.YAxis = VerticalAxes[0];
     }
 
     private int GetValidVerticalAxisIndex(int axisIndex)
@@ -674,7 +697,9 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
     private void ActualizeCrosshairAndAnnotation(Point p)
     {
         Pixel mousePixel = new(p.X * PlotControl.DisplayScale, p.Y * PlotControl.DisplayScale);
-        Coordinates mouseCoordinates = PlotControl.Plot.GetCoordinates(mousePixel);
+        // Y explicitne v prostoru prvni uzivatelske osy - Axes.Left je ramova osa bez limitu
+        Coordinates mouseCoordinates = PlotControl.Plot.GetCoordinates(mousePixel,
+            yAxis: VerticalAxes.Count > 0 ? VerticalAxes[0] : null);
         var cursorX = GetCursorX(mouseCoordinates.X);
 
         cross.Position = new Coordinates(cursorX, mouseCoordinates.Y);
@@ -1038,6 +1063,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
 
         PlotControl.Plot.Axes.AddYAxis(newAxis);
         VerticalAxes.Add(newAxis);
+        AxisNumbers.Add(VerticalAxes.Count);
 
         newAxis.Minimum = axisBinding?.Minimum ?? -10.0;
         newAxis.Maximum = axisBinding?.Maximum ?? 10.0;
@@ -1055,6 +1081,18 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
             
             PlotControl.Plot.Axes.Remove(SelectedVerticalAxis);
             VerticalAxes.Remove(SelectedVerticalAxis);
+            if (AxisNumbers.Count > 0)
+            {
+                AxisNumbers.RemoveAt(AxisNumbers.Count - 1);
+            }
+
+            // Indexy os se posunuly - preváz signaly na platne osy (setter AxisIndex
+            // pres ChangeAxisAction zvaliduje index a znovu priradi ChartSignal.Axes.YAxis)
+            foreach (var chartVariable in ChartVariables)
+            {
+                chartVariable.AxisIndex = Math.Min(chartVariable.AxisIndex, VerticalAxes.Count - 1);
+            }
+
             if (VerticalAxes.Count > 0)
             {
                 SelectedVerticalAxis = VerticalAxes[Math.Min(index, VerticalAxes.Count - 1)];

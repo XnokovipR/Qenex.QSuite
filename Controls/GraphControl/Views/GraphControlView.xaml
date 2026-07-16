@@ -120,7 +120,15 @@
                                     </telerik:GridViewDataColumn.CellTemplate>
                                 </telerik:GridViewDataColumn>
                                 <telerik:GridViewDataColumn Header="Width" IsFilterable="False" DataMemberBinding="{Binding Path=LineWidth}" IsReadOnly="False"/>
-                                <telerik:GridViewDataColumn Header="Axis Id" IsFilterable="False" DataMemberBinding="{Binding Path=AxisIndex}" IsReadOnly="False"/>
+                                <telerik:GridViewDataColumn Header="Axis Id" IsFilterable="False">
+                                    <telerik:GridViewDataColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <telerik:RadComboBox
+                                                ItemsSource="{Binding DataContext.AxisNumbers, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
+                                                SelectedItem="{Binding AxisNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DataTemplate>
+                                    </telerik:GridViewDataColumn.CellTemplate>
+                                </telerik:GridViewDataColumn>
                             </telerik:RadGridView.Columns>
                         </telerik:RadGridView>
                     </telerik:RadTabItem>
@@ -156,6 +164,15 @@
                                         </DataTemplate>
                                     </telerik:GridViewColumn.CellTemplate>
                                 </telerik:GridViewColumn>
+                                <telerik:GridViewDataColumn Header="Side" IsFilterable="False">
+                                    <telerik:GridViewDataColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <telerik:RadComboBox
+                                                ItemsSource="{x:Static vm:VerticalAxis.AvailableEdges}"
+                                                SelectedItem="{Binding EdgeSelection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DataTemplate>
+                                    </telerik:GridViewDataColumn.CellTemplate>
+                                </telerik:GridViewDataColumn>
                                 <telerik:GridViewDataColumn Header="Visibility" IsFilterable="False" DataMemberBinding="{Binding Path=IsVisible}"/>
                                 <telerik:GridViewDataColumn Header="Color" IsFilterable="False">
                                     <telerik:GridViewDataColumn.CellTemplate>

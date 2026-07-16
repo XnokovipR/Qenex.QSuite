@@ -9,14 +9,29 @@ public sealed class VerticalAxis : YAxisBase
     public Action? RefreshAction;
     public VerticalAxis(Edge edge = Edge.Right)
     {
-        Edge = edge;
-        
+        this.edge = edge;
+
         TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic();
         LabelRotation = -90;
     }
-    
-    public override Edge Edge { get; }
-    
+
+    private Edge edge;
+
+    public override Edge Edge => edge;
+
+    // AxisBase.Edge je abstraktni get-only, binding z UI jde pres tuto property
+    public Edge EdgeSelection
+    {
+        get => edge;
+        set
+        {
+            edge = value;
+            RefreshAction?.Invoke();
+        }
+    }
+
+    public static IReadOnlyList<Edge> AvailableEdges { get; } = [Edge.Left, Edge.Right];
+
     public string Name { get; set; } = string.Empty;
     
     public bool IsAutoScale { get; set; } = true;
