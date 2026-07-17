@@ -10,11 +10,15 @@
 //   T5  XML round-trip of map / curve / value block shapes preserves the whole layout
 //   T6  layout validation rejects Y axis without X axis, String elements, empty sections
 //   T7  SetValue accepts only a byte[] of exactly Size bytes
+//   T8  Modbus byte<->register codec round-trips, including an odd byte count
+//   T9  Modbus variable specification for a matrix: register count, limits, bit-table rejection
+//   T10 pending write queue carries the edited bytes in FIFO order
 
 using System.Globalization;
 using System.Xml.Serialization;
 using Qenex.QSuite.ModuleXmlHandler;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
+using Qenex.QSuite.Protocols.Modbus;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.ValueConversion;
 using Qenex.QSuite.Variables.ValuePresentation;
@@ -29,6 +33,9 @@ RunTest("T4 presentation text per section PrintFormat", Test4_PresentationText);
 RunTest("T5 XML round-trip: map, curve, value block", Test5_XmlRoundTrip);
 RunTest("T6 layout validation", Test6_Validation);
 RunTest("T7 SetValue length check", Test7_SetValue);
+RunTest("T8 Modbus byte/register codec round-trip", Test8_ModbusByteCodec);
+RunTest("T9 Modbus matrix variable specification", Test9_ModbusMatrixSpec);
+RunTest("T10 pending write queue FIFO", Test10_PendingWriteQueue);
 
 Console.WriteLine();
 Console.WriteLine("==== SUMMARY ====");
@@ -237,6 +244,7 @@ static MatrixVariable MapVariable43B()
     map.Endianness = MatrixEndianness.Big;
     map.Data = new MatrixSection { DataType = ValueDataType.UShort, Presentation = presentations[2] };
     map.XAxis!.Presentation = presentations[0];
+    map.XAxis.Label = "Engine speed";
     map.YAxis!.Presentation = presentations[1];
 
     // curve: X axis only, no per-section overrides, no presentations
@@ -307,6 +315,8 @@ static MatrixVariable MapVariable43B()
         ("map data type ushort", map2.GetSectionDataType(MatrixSectionKind.Data) == ValueDataType.UShort),
         ("map X axis type falls back to byte", map2.GetSectionDataType(MatrixSectionKind.XAxis) == ValueDataType.Byte),
         ("map X presentation resolved", map2.XAxis?.Presentation?.Name == "Rpm"),
+        ("map X axis label kept", map2.XAxis?.Label == "Engine speed"),
+        ("map Y axis label empty", map2.YAxis?.Label == string.Empty),
         ("map Y presentation resolved", map2.YAxis?.Presentation?.Name == "Temperature"),
         ("map data presentation resolved", map2.Data.Presentation?.Name == "IgnitionAngle"),
         ("map description kept", map2.Description == "3x10 calibration map"),
@@ -359,6 +369,98 @@ static MatrixVariable MapVariable43B()
     }
 
     return (MapVariable43B().ValidateLayout() == null, "validation ok");
+}
+
+(bool, string) Test8_ModbusByteCodec()
+{
+    // even byte count round-trip
+    byte[] even = [0x01, 0x02, 0x03, 0x04];
+    var evenRegisters = ModbusRegisterCodec.EncodeBytes(even);
+    if (evenRegisters.Length != 2 || evenRegisters[0] != 0x0102 || evenRegisters[1] != 0x0304)
+    {
+        return (false, "even encode wrong (expected high byte first per register)");
+    }
+
+    if (!ModbusRegisterCodec.DecodeBytes(evenRegisters, 4).SequenceEqual(even))
+    {
+        return (false, "even decode round-trip failed");
+    }
+
+    // odd byte count: final register's low byte padded with zero, decode truncates it back
+    byte[] odd = [0xAA, 0xBB, 0xCC];
+    var oddRegisters = ModbusRegisterCodec.EncodeBytes(odd);
+    if (oddRegisters.Length != 2 || oddRegisters[1] != 0xCC00)
+    {
+        return (false, "odd encode wrong");
+    }
+
+    return (ModbusRegisterCodec.DecodeBytes(oddRegisters, 3).SequenceEqual(odd), "codec round-trips ok");
+}
+
+(bool, string) Test9_ModbusMatrixSpec()
+{
+    // 73 B map (axes byte, data ushort) -> 37 registers, valid readWrite spec
+    var map = MapVariable43B();
+    map.Data = new MatrixSection { DataType = ValueDataType.UShort };
+
+    var spec = ModbusVariableSpecification.Create(
+        "registerType=\"holdingRegister\";address=\"100\";direction=\"readWrite\";eventRef=\"poll\"",
+        [new Qenex.QSuite.Variables.VariableEvents.PeriodicVarEvent { Name = "poll", Period = 100 }],
+        map, requirePollEvent: true);
+
+    if (spec.MatrixByteCount != 73 || spec.RegisterCount != 37)
+    {
+        return (false, $"expected 73 B / 37 registers, got {spec.MatrixByteCount} B / {spec.RegisterCount}");
+    }
+
+    // bit table rejected
+    try
+    {
+        ModbusVariableSpecification.Create("registerType=\"coil\";address=\"0\";direction=\"write\"", null, map, false);
+        return (false, "matrix in a bit table was not rejected");
+    }
+    catch (ArgumentException)
+    {
+    }
+
+    // over the 123-register write limit rejected (124 registers = 248 B block)
+    var big = new MatrixVariable { Name = "Big", Data = new MatrixSection { Count = 248 } };
+    try
+    {
+        ModbusVariableSpecification.Create("address=\"0\";direction=\"write\"", null, big, false);
+        return (false, "248 B write matrix was not rejected");
+    }
+    catch (ArgumentException)
+    {
+    }
+
+    // ...but the same block is still readable (125-register read limit)
+    var readSpec = ModbusVariableSpecification.Create(
+        "address=\"0\";direction=\"read\";eventRef=\"poll\"",
+        [new Qenex.QSuite.Variables.VariableEvents.PeriodicVarEvent { Name = "poll", Period = 100 }],
+        big, requirePollEvent: true);
+
+    return (readSpec.RegisterCount == 124, "matrix specification ok");
+}
+
+(bool, string) Test10_PendingWriteQueue()
+{
+    var variable = MapVariable43B();
+
+    variable.EnqueuePendingWrite(new MatrixWriteRequest(13, [0x11]));
+    variable.EnqueuePendingWrite(new MatrixWriteRequest(0, [0x22]));
+
+    if (!variable.TryDequeuePendingWrite(out var first) || first.ByteOffset != 13 || first.Bytes[0] != 0x11)
+    {
+        return (false, "first dequeued request wrong");
+    }
+
+    if (!variable.TryDequeuePendingWrite(out var second) || second.ByteOffset != 0)
+    {
+        return (false, "second dequeued request wrong");
+    }
+
+    return (!variable.TryDequeuePendingWrite(out _), "pending write queue ok");
 }
 
 (bool, string) Test7_SetValue()

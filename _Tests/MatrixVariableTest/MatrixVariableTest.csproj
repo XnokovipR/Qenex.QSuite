@@ -15,6 +15,7 @@
         <ProjectReference Include="..\..\Variables\ValuePresentation\ValuePresentation.csproj" />
         <ProjectReference Include="..\..\Variables\ValueConversion\ValueConversion.csproj" />
         <ProjectReference Include="..\..\Modules\ModuleXmlHandler\ModuleXmlHandler.csproj" />
+        <ProjectReference Include="..\..\Protocols\ModbusCore\ModbusCore.csproj" />
     </ItemGroup>
 
 </Project>
