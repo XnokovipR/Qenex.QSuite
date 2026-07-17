@@ -144,12 +144,15 @@
 										        Width="{Binding DataContext.CellWidth, RelativeSource={RelativeSource AncestorType=UserControl}}">
 											<Grid>
 												<!-- Zadny lokalni Style: prebil by implicitni theme styl QText* prvku
-												     registrovany v ShellWindow.Resources (barvy tematu) -->
-												<q:QTextBlock x:Name="DisplayText" Text="{Binding Text}" TextAlignment="Right"
-												              Margin="3,1"
-												              Visibility="{Binding DataContext.IsWriteActive,
-												                           RelativeSource={RelativeSource AncestorType=UserControl},
-												                           Converter={StaticResource TrueToCollapsed}}"/>
+												     registrovany v ShellWindow.Resources (barvy tematu).
+												     Display je read-only QTextBox jako u SignalControlu: QTextBlock
+												     (potomek TextBlocku) by uvnitr DataTemplate implicitni styl
+												     z ShellWindow nedostal a text by nemel barvy tematu. -->
+												<q:QTextBox x:Name="DisplayText" Text="{Binding Text, Mode=OneWay}" TextAlignment="Right"
+												            IsReadOnly="True"
+												            Visibility="{Binding DataContext.IsWriteActive,
+												                         RelativeSource={RelativeSource AncestorType=UserControl},
+												                         Converter={StaticResource TrueToCollapsed}}"/>
 												<q:QTextBox x:Name="EditText" Text="{Binding EditText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
 												            TextAlignment="Right"
 												            Visibility="{Binding DataContext.IsWriteActive,
