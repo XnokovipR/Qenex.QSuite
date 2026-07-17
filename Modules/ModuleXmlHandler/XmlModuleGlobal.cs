@@ -10,6 +10,7 @@ public class XmlModuleGlobal
     public static readonly Dictionary<Type, VariablesGlobal.VariableType> TypeOfXmlVariable2VariableEnumDict = new Dictionary<Type, VariablesGlobal.VariableType>()
     {
         { typeof(XmlScalarVariable), VariablesGlobal.VariableType.Scalar },
+        { typeof(XmlMatrixVariable), VariablesGlobal.VariableType.Matrix },
         { typeof(XmlStringVariable), VariablesGlobal.VariableType.String }
     };
 

@@ -11,10 +11,11 @@ namespace Qenex.QSuite.Variables.QVariables;
 public class VariablesGlobal
 {
     /// <summary>
-    /// Enumerable of variable types.
+    /// Enumerable of variable types. Matrix covers value block (no axis), curve (X axis)
+    /// and map (X + Y axes) shapes; the shape is given by which axes are present.
     /// </summary>
-    public enum VariableType { Undefined = 0, Scalar, Curve, Map, Array, String }
-    
+    public enum VariableType { Undefined = 0, Scalar, Matrix, String }
+
     /// <summary>
     /// Dictionary of variable types and their corresponding string representation.
     /// </summary>
@@ -22,10 +23,8 @@ public class VariablesGlobal
     {
         { VariableType.Scalar, "Qenex.QSuite.Variables.QVariables.ScalarVariable" },
         { VariableType.String, "Qenex.QSuite.Variables.QVariables.StringVariable" },
-        { VariableType.Array, "Qenex.QSuite.Variables.QVariables.ArrayVariable" },
-        { VariableType.Curve, "Qenex.QSuite.Variables.QVariables.CurveVariable" },
-        { VariableType.Map, "Qenex.QSuite.Variables.QVariables.MapVariable" }
-    };  
+        { VariableType.Matrix, "Qenex.QSuite.Variables.QVariables.MatrixVariable" }
+    };
     
     /// <summary>
     /// Create instance of IVariableBase based on VariableType.

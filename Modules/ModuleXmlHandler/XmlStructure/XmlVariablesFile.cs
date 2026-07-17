@@ -13,6 +13,7 @@ public class XmlVariablesFile
 {
     [XmlArray("variables")]
     [XmlArrayItem(typeof(XmlScalarVariable), ElementName = "scalarVariable")]
+    [XmlArrayItem(typeof(XmlMatrixVariable), ElementName = "matrixVariable")]
     [XmlArrayItem(typeof(XmlStringVariable), ElementName = "stringVariable")]
     public List<XmlVariable> Variables { get; set; } = [];
 }
