@@ -178,10 +178,8 @@
 										           Width="1" Margin="3,-1,3,-1" Fill="#FF909090" Visibility="Collapsed"/>
 									</Grid>
 									<DataTemplate.Triggers>
-										<DataTrigger Binding="{Binding IsAxis}" Value="True">
-											<Setter TargetName="DisplayText" Property="FontWeight" Value="Bold"/>
-											<Setter TargetName="EditText" Property="FontWeight" Value="Bold"/>
-										</DataTrigger>
+										<!-- Osy se od dat lisi jen oddelovaci linkou (tucne pismo vyrazeno
+										     jako nadbytecne - rozhodnuti Radka 2026-07-17) -->
 										<DataTrigger Binding="{Binding Kind}" Value="XAxis">
 											<Setter TargetName="BottomLine" Property="Visibility" Value="Visible"/>
 										</DataTrigger>
