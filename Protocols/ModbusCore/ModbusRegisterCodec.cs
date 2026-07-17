@@ -113,6 +113,43 @@ public static class ModbusRegisterCodec
         };
     }
 
+    /// <summary>
+    /// Packs a raw byte buffer into registers, two bytes per register with the high byte first
+    /// (Modbus network order). Element endianness within the buffer is the variable's own concern
+    /// (MatrixVariable.Endianness); wordOrder does not apply to raw block transfers. An odd byte
+    /// count pads the final register's low byte with zero.
+    /// </summary>
+    public static ushort[] EncodeBytes(ReadOnlySpan<byte> bytes)
+    {
+        var registers = new ushort[(bytes.Length + 1) / 2];
+        for (var i = 0; i < registers.Length; i++)
+        {
+            var high = bytes[i * 2];
+            var low = i * 2 + 1 < bytes.Length ? bytes[i * 2 + 1] : (byte)0;
+            registers[i] = (ushort)((high << 8) | low);
+        }
+
+        return registers;
+    }
+
+    /// <summary>Unpacks registers into <paramref name="byteCount"/> raw bytes (inverse of EncodeBytes).</summary>
+    public static byte[] DecodeBytes(ReadOnlySpan<ushort> registers, int byteCount)
+    {
+        if (registers.Length * 2 < byteCount)
+        {
+            throw new ModbusProtocolException(
+                $"Expected at least {(byteCount + 1) / 2} register(s) for {byteCount} bytes, got {registers.Length}.");
+        }
+
+        var bytes = new byte[byteCount];
+        for (var i = 0; i < byteCount; i++)
+        {
+            bytes[i] = (byte)(i % 2 == 0 ? registers[i / 2] >> 8 : registers[i / 2]);
+        }
+
+        return bytes;
+    }
+
     /// <summary>Coil/discrete-input state of a boxed numeric value: any non-zero value is ON.</summary>
     public static bool ToBit(object value)
     {

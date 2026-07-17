@@ -197,7 +197,7 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
     {
         public required ModbusProtocolVariable ProtocolVariable { get; init; }
         public required ModbusVariableSpecification Spec { get; init; }
-        public required ScalarVariable Scalar { get; init; }
+        public required IVariableBase Variable { get; init; }
         public required long IntervalMs { get; init; }
         public long NextDueMs { get; set; }
     }
@@ -244,8 +244,8 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
                     }
                     catch (Exception e) when (e is ModbusSlaveException or ModbusTimeoutException or ModbusProtocolException)
                     {
-                        Logger?.Log(LogLevel.Warn, $"Modbus master: poll of '{entry.Scalar.Name}' failed: {e.Message}");
-                        SetState(CommunicationState.Running, $"Poll of '{entry.Scalar.Name}' failed: {e.Message}");
+                        Logger?.Log(LogLevel.Warn, $"Modbus master: poll of '{entry.Variable.Name}' failed: {e.Message}");
+                        SetState(CommunicationState.Running, $"Poll of '{entry.Variable.Name}' failed: {e.Message}");
                     }
 
                     // Re-anchor to now: after a stall the missed cycles are skipped instead of bursting.
@@ -282,15 +282,16 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
                 !modbusVariable.IsCommunicated ||
                 modbusVariable.ProtocolVariableSpecification is not ModbusVariableSpecification spec ||
                 spec.Direction == CommDirection.Write ||
-                modbusVariable.Variable is not ScalarVariable scalarVariable)
+                modbusVariable.Variable is not (ScalarVariable or MatrixVariable))
             {
                 continue;
             }
 
+            var variable = modbusVariable.Variable;
             if (spec.VariableEvent is not PeriodicVarEvent periodicEvent)
             {
                 Logger?.Log(LogLevel.Warn,
-                    $"Modbus master: variable '{scalarVariable.Name}' has no periodic event; not polled.");
+                    $"Modbus master: variable '{variable.Name}' has no periodic event; not polled.");
                 continue;
             }
 
@@ -298,7 +299,7 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
             if (intervalMs <= 0)
             {
                 Logger?.Log(LogLevel.Warn,
-                    $"Modbus master: variable '{scalarVariable.Name}' has a non-positive poll interval; not polled.");
+                    $"Modbus master: variable '{variable.Name}' has a non-positive poll interval; not polled.");
                 continue;
             }
 
@@ -306,7 +307,7 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
             {
                 ProtocolVariable = modbusVariable,
                 Spec = spec,
-                Scalar = scalarVariable,
+                Variable = variable,
                 IntervalMs = intervalMs,
                 NextDueMs = now
             });
@@ -320,7 +321,15 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
         var session = engine ?? throw new ModbusProtocolException("Modbus master engine is not running.");
 
         object value;
-        if (entry.Spec.IsBitTable)
+        if (entry.Variable is MatrixVariable matrixVariable)
+        {
+            // The whole raw buffer travels as one register block; element endianness is decoded
+            // by the variable itself, so wordOrder does not apply here.
+            var registers = await session.ReadRegistersAsync(settings.UnitId, entry.Spec.RegisterType,
+                entry.Spec.Address, entry.Spec.RegisterCount, ct);
+            value = ModbusRegisterCodec.DecodeBytes(registers, matrixVariable.Size);
+        }
+        else if (entry.Spec.IsBitTable)
         {
             var bits = await session.ReadBitsAsync(settings.UnitId, entry.Spec.RegisterType, entry.Spec.Address, 1, ct);
             value = ModbusRegisterCodec.FromBit(bits[0], entry.Spec.DataType);
@@ -332,8 +341,8 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
             value = ModbusRegisterCodec.DecodeValue(registers, entry.Spec.DataType, entry.Spec.WordOrder);
         }
 
-        entry.Scalar.SetValue(value);
-        entry.Scalar.Timestamp = DateTime.UtcNow;
+        entry.Variable.SetValue(value);
+        entry.Variable.Timestamp = DateTime.UtcNow;
 
         // The operator-write path listens on this notification; the flag keeps a polled update from
         // echoing back out (NotifyValueChangedAsync awaits its handlers, so the scope holds).
@@ -355,7 +364,7 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
     public bool CanWriteVariable(IProtocolVariable protocolVariable)
     {
         return Variables.Contains(protocolVariable) &&
-               protocolVariable is ModbusProtocolVariable { Variable: ScalarVariable } &&
+               protocolVariable is ModbusProtocolVariable { Variable: ScalarVariable or MatrixVariable } &&
                protocolVariable.ProtocolVariableSpecification is ModbusVariableSpecification
                {
                    Direction: CommDirection.Write or CommDirection.ReadWrite
@@ -366,7 +375,6 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
     {
         if (protocolVariable is not ModbusProtocolVariable modbusVariable ||
             modbusVariable.IsUpdatingFromBus || // echo of our own poll update
-            modbusVariable.Variable is not ScalarVariable scalarVariable ||
             modbusVariable.ProtocolVariableSpecification is not ModbusVariableSpecification spec)
         {
             return;
@@ -375,7 +383,19 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
         var session = engine;
         if (session == null || State != CommunicationState.Running)
         {
-            Logger?.Log(LogLevel.Warn, $"Modbus master: write of '{scalarVariable.Name}' skipped — protocol not running.");
+            Logger?.Log(LogLevel.Warn,
+                $"Modbus master: write of '{modbusVariable.Variable.Name}' skipped — protocol not running.");
+            return;
+        }
+
+        if (modbusVariable.Variable is MatrixVariable matrixVariable)
+        {
+            await WriteMatrixElementsAsync(matrixVariable, spec, session, ct);
+            return;
+        }
+
+        if (modbusVariable.Variable is not ScalarVariable scalarVariable)
+        {
             return;
         }
 
@@ -402,6 +422,55 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
         {
             Logger?.Log(LogLevel.Warn, $"Modbus master: write of '{scalarVariable.Name}' failed: {e.Message}");
             SetState(CommunicationState.Running, $"Write of '{scalarVariable.Name}' failed: {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Drains the pending element writes of a matrix variable. Each request writes only the
+    /// registers its bytes touch (FC 06/16). The edited bytes are re-applied over the current
+    /// buffer first: a poll may have replaced it since the edit, and a register shared with a
+    /// neighbouring element must carry that neighbour's current value.
+    /// </summary>
+    private async Task WriteMatrixElementsAsync(MatrixVariable matrixVariable, ModbusVariableSpecification spec,
+        ModbusMasterEngine session, CancellationToken ct)
+    {
+        while (matrixVariable.TryDequeuePendingWrite(out var request))
+        {
+            if (request.ByteOffset < 0 || request.Bytes.Length == 0 ||
+                request.ByteOffset + request.Bytes.Length > matrixVariable.Size)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"Modbus master: pending write of '{matrixVariable.Name}' at byte {request.ByteOffset} " +
+                    "no longer fits the matrix layout; skipped.");
+                continue;
+            }
+
+            try
+            {
+                var buffer = matrixVariable.RawData;
+                request.Bytes.CopyTo(buffer.AsSpan(request.ByteOffset));
+
+                var firstRegister = request.ByteOffset / 2;
+                var lastRegister = (request.ByteOffset + request.Bytes.Length - 1) / 2;
+                var windowStart = firstRegister * 2;
+                var windowLength = Math.Min((lastRegister + 1) * 2, buffer.Length) - windowStart;
+
+                var registers = ModbusRegisterCodec.EncodeBytes(buffer.AsSpan(windowStart, windowLength));
+                await session.WriteRegistersAsync(settings.UnitId, (ushort)(spec.Address + firstRegister), registers, ct);
+
+                Logger?.Log(LogLevel.Info,
+                    $"Modbus master: wrote {registers.Length} register(s) of '{matrixVariable.Name}' " +
+                    $"at address {spec.Address + firstRegister}.");
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception e) when (e is ModbusSlaveException or ModbusTimeoutException or ModbusProtocolException)
+            {
+                Logger?.Log(LogLevel.Warn, $"Modbus master: write of '{matrixVariable.Name}' failed: {e.Message}");
+                SetState(CommunicationState.Running, $"Write of '{matrixVariable.Name}' failed: {e.Message}");
+            }
         }
     }
 

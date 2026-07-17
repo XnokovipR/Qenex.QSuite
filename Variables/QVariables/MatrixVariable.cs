@@ -1,5 +1,7 @@
 #nullable enable
 using System.Buffers.Binary;
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using Qenex.QSuite.Variables.QVariables.Values;
 using Qenex.QSuite.Variables.ValueConversion;
@@ -28,6 +30,7 @@ public enum MatrixSectionKind { XAxis, YAxis, Data }
 public class MatrixVariable : VariableBase
 {
     private byte[] rawData = [];
+    private readonly ConcurrentQueue<MatrixWriteRequest> pendingWrites = new();
 
     #region Layout properties
 
@@ -187,6 +190,24 @@ public class MatrixVariable : VariableBase
         }
 
         rawData = bytes;
+    }
+
+    #endregion
+
+    #region Pending writes
+
+    /// <summary>
+    /// Queues an element write for the protocol owning the variable. The protocol drains the
+    /// queue in its write path (triggered by NotifyValueChangedAsync on the protocol variable).
+    /// </summary>
+    public void EnqueuePendingWrite(MatrixWriteRequest request)
+    {
+        pendingWrites.Enqueue(request);
+    }
+
+    public bool TryDequeuePendingWrite([NotNullWhen(true)] out MatrixWriteRequest? request)
+    {
+        return pendingWrites.TryDequeue(out request);
     }
 
     #endregion

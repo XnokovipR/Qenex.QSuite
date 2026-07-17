@@ -35,11 +35,17 @@ public class ModbusVariableSpecification : ProtVariableSpecification
     /// <summary>Event whose period drives the master's polling; null for write-only or slave-side variables.</summary>
     public IVarEvent? VariableEvent { get; init; }
 
-    /// <summary>Value type used for register coding; always the bound variable's own type.</summary>
+    /// <summary>Value type used for register coding; always the bound variable's own type.
+    /// Undefined for matrix variables (transferred as a raw byte block).</summary>
     public ValueDataType DataType { get; init; }
 
+    /// <summary>Raw buffer size of a bound matrix variable in bytes; 0 for scalar variables.</summary>
+    public int MatrixByteCount { get; init; }
+
     /// <summary>Number of 16-bit registers the value occupies (1 for bit tables).</summary>
-    public int RegisterCount => IsBitTable ? 1 : ModbusRegisterCodec.RegisterCount(DataType);
+    public int RegisterCount => IsBitTable
+        ? 1
+        : MatrixByteCount > 0 ? (MatrixByteCount + 1) / 2 : ModbusRegisterCodec.RegisterCount(DataType);
 
     public bool IsBitTable => RegisterType is ModbusRegisterType.Coil or ModbusRegisterType.DiscreteInput;
 
@@ -93,7 +99,8 @@ public class ModbusVariableSpecification : ProtVariableSpecification
         var wordOrder = ParseWordOrder(settings);
         var direction = ParseDirection(settings);
         var variableEvent = ResolveEvent(settings, variableEvents);
-        var dataType = ResolveDataType(variable, registerType);
+        var matrixByteCount = ResolveMatrixByteCount(variable, registerType, direction);
+        var dataType = matrixByteCount > 0 ? ValueDataType.Undefined : ResolveDataType(variable, registerType);
 
         if (requirePollEvent && variableEvent is null && direction != CommDirection.Write)
         {
@@ -110,7 +117,7 @@ public class ModbusVariableSpecification : ProtVariableSpecification
 
         var registerCount = registerType is ModbusRegisterType.Coil or ModbusRegisterType.DiscreteInput
             ? 1
-            : ModbusRegisterCodec.RegisterCount(dataType);
+            : matrixByteCount > 0 ? (matrixByteCount + 1) / 2 : ModbusRegisterCodec.RegisterCount(dataType);
         if (address + registerCount - 1 > ushort.MaxValue)
         {
             throw new ArgumentException($"Variable '{variable.Name}': register range exceeds the 16-bit address space.");
@@ -123,7 +130,8 @@ public class ModbusVariableSpecification : ProtVariableSpecification
             WordOrder = wordOrder,
             Direction = direction,
             VariableEvent = variableEvent,
-            DataType = dataType
+            DataType = dataType,
+            MatrixByteCount = matrixByteCount
         };
     }
 
@@ -212,6 +220,41 @@ public class ModbusVariableSpecification : ProtVariableSpecification
 
         return variableEvents?.FirstOrDefault(e => e.Name == eventName)
                ?? throw new ArgumentException($"Event '{eventName}' referenced by commParam eventRef was not found.");
+    }
+
+    // A matrix variable travels as one raw register block: reads use a single FC 03/04 request
+    // (limit 125 registers), element writes a single FC 06/16 request (limit 123 registers), so
+    // the whole buffer must fit the stricter of the limits its direction can hit.
+    private static int ResolveMatrixByteCount(IVariableBase variable, ModbusRegisterType registerType,
+        CommDirection direction)
+    {
+        if (variable is not MatrixVariable matrixVariable)
+        {
+            return 0;
+        }
+
+        if (registerType is ModbusRegisterType.Coil or ModbusRegisterType.DiscreteInput)
+        {
+            throw new ArgumentException(
+                $"Variable '{variable.Name}': a matrix variable cannot be mapped to the bit table '{registerType}'.");
+        }
+
+        var layoutError = matrixVariable.ValidateLayout();
+        if (layoutError != null)
+        {
+            throw new ArgumentException($"Variable '{variable.Name}': invalid matrix layout — {layoutError}");
+        }
+
+        var registerCount = (matrixVariable.Size + 1) / 2;
+        var limit = direction == CommDirection.Read ? ModbusPdu.MaxRegistersPerRead : ModbusPdu.MaxRegistersPerWrite;
+        if (registerCount > limit)
+        {
+            throw new ArgumentException(
+                $"Variable '{variable.Name}': {matrixVariable.Size} bytes need {registerCount} registers, " +
+                $"exceeding the Modbus limit of {limit} registers ({limit * 2} bytes) per request.");
+        }
+
+        return matrixVariable.Size;
     }
 
     private static ValueDataType ResolveDataType(IVariableBase variable, ModbusRegisterType registerType)
