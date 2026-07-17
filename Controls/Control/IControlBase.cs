@@ -115,7 +115,14 @@ public interface IControlBase : IComponentSpecification
 	void UpdateThemeSettingsControl(Color backgroundColor, Color foregroundColor, int fontSize);
 
 	Task UpdateVariableValueAsync(IVariableBase variable);
-	
+
+	/// <summary>
+	/// Whether the control can display the given variable type. The host refuses
+	/// drag&drop onto incompatible controls based on this; BindVariable of a control
+	/// ignores incompatible variables as the last line of defence.
+	/// </summary>
+	bool CanBindVariable(IVariableBase variable);
+
 	void BindVariable(IVariableBase protVariable);
 
 	#endregion

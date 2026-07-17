@@ -177,9 +177,12 @@ public class GaugeControlViewModel : ControlBase
 
 	#region Variable binding
 
+	// Rucicka ukazuje jednu ciselnou hodnotu: jen skalarni promenne
+	public override bool CanBindVariable(IVariableBase variable) => variable is ScalarVariable;
+
 	public override void BindVariable(IVariableBase protVariable)
 	{
-		if (Variables.Any(v => v.Equals(protVariable)))
+		if (!CanBindVariable(protVariable) || Variables.Any(v => v.Equals(protVariable)))
 		{
 			return;
 		}

@@ -277,14 +277,12 @@ public class MatrixControlViewModel : ControlBase, IMatrixVariableWriteControl
         _ = Application.Current.Dispatcher.BeginInvoke(() => ApplyVariable(matrixVariable));
     }
 
+    // Tabulka zobrazuje vyhradne matrix promenne (skalary patri Signal/Gauge/WatchTable)
+    public override bool CanBindVariable(IVariableBase variable) => variable is MatrixVariable;
+
     public override void BindVariable(IVariableBase protVariable)
     {
-        if (protVariable is not MatrixVariable)
-        {
-            return;
-        }
-
-        if (Variables.Any(v => v.Equals(protVariable)))
+        if (!CanBindVariable(protVariable) || Variables.Any(v => v.Equals(protVariable)))
         {
             return;
         }

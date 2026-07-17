@@ -207,8 +207,13 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
     
     #region Overrides of ControlBase
     
+    // Graf kresli ciselne prubehy: jen skalarni promenne
+    public override bool CanBindVariable(IVariableBase variable) => variable is ScalarVariable;
+
     public override void BindVariable(IVariableBase variable)
     {
+        if (!CanBindVariable(variable)) return;
+
         var ev = Variables.FirstOrDefault(v => v.Equals(variable));
         if (ev != null) return;
 

@@ -208,9 +208,12 @@ public class SignalControlViewModel : ControlBase, IVariableWriteControl
 	    
     }
 
+    // Zobrazuje jednu hodnotu: skalar nebo string (matice apod. patri specializovanym controlum)
+    public override bool CanBindVariable(IVariableBase variable) => variable is ScalarVariable or StringVariable;
+
     public override void BindVariable(IVariableBase protVariable)
     {
-	    if (Variables.Any(v => v.Equals(protVariable)))
+	    if (!CanBindVariable(protVariable) || Variables.Any(v => v.Equals(protVariable)))
 	    {
 		    return;
 	    }

@@ -72,8 +72,16 @@ public class WatchTableControlViewModel : ControlBase
 
 	#region Variable binding
 
+	// Radky tabulky jsou jednohodnotove: skalar nebo string (matice ma vlastni control)
+	public override bool CanBindVariable(IVariableBase variable) => variable is ScalarVariable or StringVariable;
+
 	public override void BindVariable(IVariableBase protVariable)
 	{
+		if (!CanBindVariable(protVariable))
+		{
+			return;
+		}
+
 		RememberVariableBinding(protVariable);
 		var reference = GetVariableReference(protVariable);
 		if (Rows.Any(row => row.Reference == reference))

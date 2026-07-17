@@ -159,6 +159,13 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 	#region Public methods
 
 	public abstract Task UpdateVariableValueAsync(IVariableBase variable);
+
+	/// <summary>
+	/// Whether the control can display the given variable type; override to restrict
+	/// (e.g. scalar-only controls refuse a matrix variable). Default accepts everything.
+	/// </summary>
+	public virtual bool CanBindVariable(IVariableBase variable) => true;
+
 	public abstract void BindVariable(IVariableBase protVariable);
 
 	protected virtual void OnIsRunChanged(bool wasRun, bool isRun)

@@ -369,7 +369,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 		    {
 			    var protocolVariable = projectProtocolVariables.FirstOrDefault(v =>
 				    ControlBase.IsVariableReferenceMatch(variableReference, v.Variable));
-			    if (protocolVariable != null)
+			    if (protocolVariable != null && control.CanBindVariable(protocolVariable.Variable))
 			    {
 				    control.BindVariable(protocolVariable.Variable);
 				    SubscribeControlVariable(control, protocolVariable);
@@ -610,12 +610,24 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     private void OnVariableDragOver(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
     {
 	    var variable = DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedVariable");
-	    if (variable is IVariableBase)
+	    if (variable is not IVariableBase variableBase)
 	    {
-		    VariableDragAndDropBehavior.IsOverValidTarget = true;
-		    e.Effects = DragDropEffects.All;
-		    e.Handled = true;
+		    return;
 	    }
+
+	    // Kazdy control umi jen sve typy promennych (matice nepatri na Signal/WatchTable
+	    // a naopak) - nekompatibilni cil ukaze zakazany kurzor a drop se nekona.
+	    var canBind = ResolveDropTargetControl(sender)?.CanBindVariable(variableBase) ?? false;
+	    VariableDragAndDropBehavior.IsOverValidTarget = canBind;
+	    e.Effects = canBind ? DragDropEffects.All : DragDropEffects.None;
+	    e.Handled = true;
+    }
+
+    private static ControlBase? ResolveDropTargetControl(object sender)
+    {
+	    return sender is RadDiagramShape { Content: UserControl { DataContext: ControlBase control } }
+		    ? control
+		    : null;
     }
     
     private void OnVariableDragLeave(object sender, Telerik.Windows.DragDrop.DragEventArgs e)
@@ -627,9 +639,13 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     {
 	    if (DragDropPayloadManager.GetDataFromObject(e.Data, "DraggedProtocolVariable") is not IProtocolVariable protocolVariable) return;
 
-	    if (sender is not RadDiagramShape shape) return;
-	    if (shape.Content is not UserControl uc) return;
-	    if (uc.DataContext is not ControlBase control) return;
+	    if (ResolveDropTargetControl(sender) is not { } control) return;
+	    if (!control.CanBindVariable(protocolVariable.Variable))
+	    {
+		    VariableDragAndDropBehavior.IsOverValidTarget = false;
+		    e.Handled = true;
+		    return;
+	    }
 
 	    // Bind first (single-variable controls replace, multi-variable add), then make the host-owned
 	    // subscriptions match: drop the ones the control no longer holds, subscribe the dropped one.
