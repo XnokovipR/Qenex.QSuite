@@ -147,6 +147,7 @@ public static class XmlVariableMapper
         return new XmlMatrixSection
         {
             Count = count,
+            Label = string.IsNullOrEmpty(section.Label) ? null : section.Label,
             DataType = section.DataType != ValuesGlobal.ValueDataType.Undefined
                 ? Enum.Parse<XmlValuesDataType>(section.DataType.ToString())
                 : default,
@@ -170,6 +171,7 @@ public static class XmlVariableMapper
         var section = new MatrixSection
         {
             Count = xmlSection.Count,
+            Label = xmlSection.Label ?? string.Empty,
             DataType = xmlSection.DataTypeSpecified
                 ? Enum.Parse<ValuesGlobal.ValueDataType>(xmlSection.DataType.ToString())
                 : ValuesGlobal.ValueDataType.Undefined

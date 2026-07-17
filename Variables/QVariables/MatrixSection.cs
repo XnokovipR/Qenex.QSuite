@@ -18,6 +18,12 @@ public class MatrixSection
     public int Count { get; set; }
 
     /// <summary>
+    /// Display label of the section (axis caption in controls); the data section is
+    /// typically labelled by the variable itself.
+    /// </summary>
+    public string Label { get; set; } = string.Empty;
+
+    /// <summary>
     /// Element type of the section; Undefined falls back to MatrixVariable.DefaultDataType.
     /// </summary>
     public ValuesGlobal.ValueDataType DataType { get; set; } = ValuesGlobal.ValueDataType.Undefined;
