@@ -580,9 +580,21 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             return;
         }
 
+        // A changed presentation (unit, print format, ...) must refresh the controls of every
+        // variable that references it — the variable wrapper itself has no changes then, but
+        // controls cache the presentation-derived header texts (unit, label).
+        var changedPresentations = Presentations
+            .Where(presentation => presentation.HasChanges)
+            .Select(presentation => presentation.Presentation)
+            .ToHashSet();
+
         var changedVariables = Variables
             .Where(variable => variable.HasChanges)
             .Select(variable => variable.Variable)
+            .Concat(Variables
+                .Select(variable => variable.Variable)
+                .Where(variable => VariableUsesPresentation(variable, changedPresentations)))
+            .Distinct()
             .ToList();
 
         foreach (var driver in Drivers)
@@ -1446,6 +1458,25 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         {
             ErrorMessage = $"Variables could not be imported: {e.Message}";
         }
+    }
+
+    private static bool VariableUsesPresentation(IVariableBase variable, IReadOnlySet<IPresentation> presentations)
+    {
+        if (presentations.Count == 0)
+        {
+            return false;
+        }
+
+        return variable switch
+        {
+            ScalarVariable scalar => scalar.Values?.ValPresentation != null &&
+                                     presentations.Contains(scalar.Values.ValPresentation),
+            MatrixVariable matrix =>
+                (matrix.XAxis?.Presentation != null && presentations.Contains(matrix.XAxis.Presentation)) ||
+                (matrix.YAxis?.Presentation != null && presentations.Contains(matrix.YAxis.Presentation)) ||
+                (matrix.Data.Presentation != null && presentations.Contains(matrix.Data.Presentation)),
+            _ => false
+        };
     }
 
     private static IEnumerable<string?> GetVariablePresentationRefs(XmlVariable xmlVariable)
