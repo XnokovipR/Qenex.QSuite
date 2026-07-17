@@ -286,6 +286,12 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 			    ResolveProtocolVariable(variable) is { } protocolVariable
 			    && (CanWriteProtocolVariable?.Invoke(protocolVariable) ?? false);
 		    writeControl.WriteVariableEngValueAsync = WriteControlVariableEngValueAsync;
+
+		    if (writeControl is IMatrixVariableWriteControl matrixWriteControl)
+		    {
+			    matrixWriteControl.WriteMatrixElementEngValueAsync = WriteControlMatrixElementEngValueAsync;
+		    }
+
 		    writeControl.RefreshWriteCapability();
 	    }
     }
@@ -320,6 +326,32 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
 	    // Na notifikaci je prihlaseny command driver (zapis do zarizeni) i ctecí handlery
 	    // ostatnich controlu (okamzity feedback nove hodnoty)
+	    await protocolVariable.NotifyValueChangedAsync();
+	    return true;
+    }
+
+    /// <summary>
+    /// Zapis jednoho prvku (bunky) matice: inverzni konverze do raw bufferu + fronta zapisu
+    /// s presnymi byty prvku (protokol z ni zapise jen dotcene registry; nesene byty prezijou
+    /// i prepis bufferu soubeznym pollem).
+    /// </summary>
+    private async Task<bool> WriteControlMatrixElementEngValueAsync(IVariableBase variable,
+	    MatrixSectionKind kind, int index, double engValue)
+    {
+	    var protocolVariable = ResolveProtocolVariable(variable);
+	    if (protocolVariable == null
+	        || CanWriteProtocolVariable?.Invoke(protocolVariable) != true
+	        || protocolVariable.Variable is not MatrixVariable matrixVariable
+	        || !matrixVariable.TrySetEngValue(kind, index, engValue))
+	    {
+		    return false;
+	    }
+
+	    var elementSize = matrixVariable.GetElementSize(kind);
+	    var byteOffset = matrixVariable.GetSectionOffset(kind) + index * elementSize;
+	    var bytes = matrixVariable.RawData.AsSpan(byteOffset, elementSize).ToArray();
+	    matrixVariable.EnqueuePendingWrite(new MatrixWriteRequest(byteOffset, bytes));
+
 	    await protocolVariable.NotifyValueChangedAsync();
 	    return true;
     }
@@ -361,9 +393,33 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 	    return variable switch
 	    {
 		    ScalarVariable scalarVariable => CreateScalarVariableSnapshot(scalarVariable),
+		    MatrixVariable matrixVariable => CreateMatrixVariableSnapshot(matrixVariable),
 		    StringVariable stringVariable => CreateStringVariableSnapshot(stringVariable),
 		    _ => variable
 	    };
+    }
+
+    private static MatrixVariable CreateMatrixVariableSnapshot(MatrixVariable variable)
+    {
+	    // Sekce (layout + presentation reference) se sdileji, kopiruje se jen datovy buffer.
+	    var snapshot = new MatrixVariable
+	    {
+		    Id = variable.Id,
+		    Namespace = variable.Namespace,
+		    Name = variable.Name,
+		    Label = variable.Label,
+		    Description = variable.Description,
+		    Timestamp = variable.Timestamp,
+		    CommComponents = variable.CommComponents,
+		    DefaultDataType = variable.DefaultDataType,
+		    Endianness = variable.Endianness,
+		    XAxis = variable.XAxis,
+		    YAxis = variable.YAxis,
+		    Data = variable.Data
+	    };
+
+	    snapshot.SetValue(variable.RawData.ToArray());
+	    return snapshot;
     }
 
     private static ScalarVariable CreateScalarVariableSnapshot(ScalarVariable variable)

@@ -1,0 +1,204 @@
+<UserControl x:Class="Qenex.QSuite.Controls.MatrixControl.Views.MatrixControlView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:conv="clr-namespace:Qenex.QSuite.Controls.MatrixControl.Converters"
+             xmlns:vm="clr-namespace:Qenex.QSuite.Controls.MatrixControl.ViewModels"
+             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
+             mc:Ignorable="d"
+             d:DesignHeight="180" d:DesignWidth="320"
+             d:DataContext="{d:DesignInstance vm:MatrixControlViewModel, IsDesignTimeCreatable=False}"
+             Background="Transparent">
+
+	<UserControl.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/Qenex.QSuite.Controls.Control;component/Style/SharedStyles.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+			<BooleanToVisibilityConverter x:Key="TrueToVisible"/>
+			<conv:TrueToCollapsedConverter x:Key="TrueToCollapsed"/>
+			<conv:EmptyToCollapsedConverter x:Key="EmptyToCollapsed"/>
+			<conv:CellStateToBackgroundConverter x:Key="CellStateBackground"/>
+		</ResourceDictionary>
+	</UserControl.Resources>
+
+	<telerik:RadContextMenu.ContextMenu>
+		<telerik:RadContextMenu>
+			<telerik:RadMenuItem Header="Lock" IsCheckable="True" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
+			<telerik:RadMenuItem Header="Write Mode" IsCheckable="True" IsChecked="{Binding IsWriteMode, Mode=TwoWay}"
+			                     IsEnabled="{Binding CanWrite}"/>
+			<telerik:RadMenuItem Header="Write on Enter" IsCheckable="True" IsChecked="{Binding WriteOnEnter, Mode=TwoWay}"
+			                     IsEnabled="{Binding IsWriteActive}"/>
+			<telerik:RadMenuItem Header="Auto Read" IsCheckable="True" IsChecked="{Binding AutoRead, Mode=TwoWay}"/>
+		</telerik:RadContextMenu>
+	</telerik:RadContextMenu.ContextMenu>
+
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!-- Header: settings expander | variable label | read/write toolbar -->
+		<Grid Grid.Row="0">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="Auto"/>
+				<ColumnDefinition Width="*"/>
+				<ColumnDefinition Width="Auto"/>
+			</Grid.ColumnDefinitions>
+
+			<telerik:RadExpander Grid.Column="0" Style="{StaticResource SquareExpanderStyle}" HorizontalAlignment="Left">
+				<Grid Margin="5">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="Auto"/>
+					</Grid.ColumnDefinitions>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+					</Grid.RowDefinitions>
+
+					<q:QTextBlock Grid.Column="0" Grid.Row="0" Text="Refresh [ms]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+					<q:QTextBox Grid.Column="1" Grid.Row="0" Text="{Binding RefreshTime, Mode=TwoWay}"
+					            Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="50" VerticalAlignment="Center"/>
+
+					<q:QTextBlock Grid.Column="0" Grid.Row="1" Text="Cell width [px]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+					<q:QTextBox Grid.Column="1" Grid.Row="1" Text="{Binding CellWidth, Mode=TwoWay}"
+					            Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="50" VerticalAlignment="Center"/>
+				</Grid>
+			</telerik:RadExpander>
+
+			<StackPanel Grid.Column="1" Orientation="Horizontal" Margin="5,0,0,3" VerticalAlignment="Center">
+				<q:QTextBlock Text="{Binding VariableLabel}" TextWrapping="NoWrap"/>
+				<q:QTextBlock Text=" ["/>
+				<q:QTextBlock Text="{Binding DataUnit}"/>
+				<q:QTextBlock Text="]"/>
+			</StackPanel>
+
+			<!-- Ticky (Auto Read, Write on Enter) jsou v kontextovem menu; tady jen tlacitka -->
+			<StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="5,0,0,0">
+				<telerik:RadButton Content="Read" Command="{Binding ReadCommand}" Padding="8,1" Margin="0,0,5,0"
+				                   ToolTip="Refresh the table from the last read data (discards pending edits)"/>
+				<telerik:RadButton Content="Write" Command="{Binding WriteDirtyCommand}" Padding="8,1"
+				                   IsEnabled="{Binding CanWriteDirty}"
+				                   Visibility="{Binding IsWriteActive, Converter={StaticResource TrueToVisible}}"
+				                   ToolTip="Write all edited (highlighted) cells to the device"/>
+			</StackPanel>
+		</Grid>
+
+		<!-- Matrix table: X axis as the first (header) row, Y axis as the first column;
+		     axis captions from the variable layout (X above, Y rotated on the left).
+		     Zadny ScrollViewer (rozhodnuti Radka): obsah se orizne, pohyb kurzorem
+		     v editacnich polich jako u Comm params; velikost ridi resize controlu. -->
+		<Grid Grid.Row="1" Margin="0,3,0,0" ClipToBounds="True">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="*"/>
+				</Grid.RowDefinitions>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+
+				<q:QTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding XAxisLabel}" FontStyle="Italic"
+				              HorizontalAlignment="Center" Margin="0,0,0,2"
+				              Visibility="{Binding XAxisLabel, Converter={StaticResource EmptyToCollapsed}}"/>
+
+				<q:QTextBlock Grid.Row="1" Grid.Column="0" Text="{Binding YAxisLabel}" FontStyle="Italic"
+				              VerticalAlignment="Center" Margin="0,0,2,0"
+				              Visibility="{Binding YAxisLabel, Converter={StaticResource EmptyToCollapsed}}">
+					<q:QTextBlock.LayoutTransform>
+						<RotateTransform Angle="-90"/>
+					</q:QTextBlock.LayoutTransform>
+				</q:QTextBlock>
+
+				<ItemsControl Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Rows}">
+				<ItemsControl.ItemTemplate>
+					<DataTemplate>
+						<ItemsControl ItemsSource="{Binding}">
+							<ItemsControl.ItemsPanel>
+								<ItemsPanelTemplate>
+									<StackPanel Orientation="Horizontal"/>
+								</ItemsPanelTemplate>
+							</ItemsControl.ItemsPanel>
+							<ItemsControl.ItemTemplate>
+								<DataTemplate DataType="{x:Type vm:MatrixCellViewModel}">
+									<!-- Bunka + oddelovaci linky: osa X ma pod sebou vodorovnou linku,
+									     osa Y vpravo svislou, obe s mezerou (linka lezi presne mezi osou
+									     a daty); zaporne okraje -1 premostuji 1px mezery mezi bunkami,
+									     aby linka byla souvisla. Roh mapy (placeholder) nese obe. -->
+									<Grid>
+										<Grid.RowDefinitions>
+											<RowDefinition Height="*"/>
+											<RowDefinition Height="Auto"/>
+										</Grid.RowDefinitions>
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="*"/>
+											<ColumnDefinition Width="Auto"/>
+										</Grid.ColumnDefinitions>
+
+										<Border x:Name="CellBorder" Grid.Row="0" Grid.Column="0" Margin="1"
+										        BorderThickness="0.6" BorderBrush="#55808080"
+										        Width="{Binding DataContext.CellWidth, RelativeSource={RelativeSource AncestorType=UserControl}}">
+											<Grid>
+												<!-- Zadny lokalni Style: prebil by implicitni theme styl QText* prvku
+												     registrovany v ShellWindow.Resources (barvy tematu) -->
+												<q:QTextBlock x:Name="DisplayText" Text="{Binding Text}" TextAlignment="Right"
+												              Margin="3,1"
+												              Visibility="{Binding DataContext.IsWriteActive,
+												                           RelativeSource={RelativeSource AncestorType=UserControl},
+												                           Converter={StaticResource TrueToCollapsed}}"/>
+												<q:QTextBox x:Name="EditText" Text="{Binding EditText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+												            TextAlignment="Right"
+												            Visibility="{Binding DataContext.IsWriteActive,
+												                         RelativeSource={RelativeSource AncestorType=UserControl},
+												                         Converter={StaticResource TrueToVisible}}"
+												            ToolTip="Engineering value; Enter writes immediately when Write on Enter is ticked">
+													<q:QTextBox.Background>
+														<MultiBinding Converter="{StaticResource CellStateBackground}">
+															<Binding Path="IsDirty"/>
+															<Binding Path="IsWriteError"/>
+														</MultiBinding>
+													</q:QTextBox.Background>
+													<q:QTextBox.InputBindings>
+														<KeyBinding Key="Enter" Command="{Binding CommitCommand}"/>
+													</q:QTextBox.InputBindings>
+												</q:QTextBox>
+											</Grid>
+										</Border>
+
+										<Rectangle x:Name="BottomLine" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+										           Height="1" Margin="-1,3,-1,3" Fill="#FF909090" Visibility="Collapsed"/>
+										<Rectangle x:Name="RightLine" Grid.Row="0" Grid.Column="1" Grid.RowSpan="2"
+										           Width="1" Margin="3,-1,3,-1" Fill="#FF909090" Visibility="Collapsed"/>
+									</Grid>
+									<DataTemplate.Triggers>
+										<DataTrigger Binding="{Binding IsAxis}" Value="True">
+											<Setter TargetName="DisplayText" Property="FontWeight" Value="Bold"/>
+											<Setter TargetName="EditText" Property="FontWeight" Value="Bold"/>
+										</DataTrigger>
+										<DataTrigger Binding="{Binding Kind}" Value="XAxis">
+											<Setter TargetName="BottomLine" Property="Visibility" Value="Visible"/>
+										</DataTrigger>
+										<DataTrigger Binding="{Binding Kind}" Value="YAxis">
+											<Setter TargetName="RightLine" Property="Visibility" Value="Visible"/>
+										</DataTrigger>
+										<DataTrigger Binding="{Binding IsPlaceholder}" Value="True">
+											<Setter TargetName="DisplayText" Property="Visibility" Value="Hidden"/>
+											<Setter TargetName="EditText" Property="Visibility" Value="Hidden"/>
+											<Setter TargetName="CellBorder" Property="BorderThickness" Value="0"/>
+											<Setter TargetName="BottomLine" Property="Visibility" Value="Visible"/>
+											<Setter TargetName="RightLine" Property="Visibility" Value="Visible"/>
+										</DataTrigger>
+									</DataTemplate.Triggers>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+					</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+		</Grid>
+	</Grid>
+</UserControl>

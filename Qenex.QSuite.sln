@@ -190,6 +190,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataLogRoundTripTest", "_Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixVariableTest", "_Tests\MatrixVariableTest\MatrixVariableTest.csproj", "{B3552B74-CE16-477C-8F2C-BE25530A9F3E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatrixControl", "Controls\MatrixControl\MatrixControl.csproj", "{138F4E38-82A0-494A-8C34-D19922E972D8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -980,6 +982,18 @@ Global
 		{B3552B74-CE16-477C-8F2C-BE25530A9F3E}.Release|x64.Build.0 = Release|Any CPU
 		{B3552B74-CE16-477C-8F2C-BE25530A9F3E}.Release|x86.ActiveCfg = Release|Any CPU
 		{B3552B74-CE16-477C-8F2C-BE25530A9F3E}.Release|x86.Build.0 = Release|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Debug|x64.Build.0 = Debug|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Debug|x86.Build.0 = Debug|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Release|x64.ActiveCfg = Release|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Release|x64.Build.0 = Release|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Release|x86.ActiveCfg = Release|Any CPU
+		{138F4E38-82A0-494A-8C34-D19922E972D8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1062,6 +1076,7 @@ Global
 		{039A53F7-6FE1-460D-8621-DF36E08F2FF5} = {2F390566-E2DF-4D8B-93D9-FEEC53923D27}
 		{CF36539A-6893-4692-B52D-9FE12001AAE5} = {96190788-7C2A-4B67-90FA-516D7D9946CF}
 		{B3552B74-CE16-477C-8F2C-BE25530A9F3E} = {96190788-7C2A-4B67-90FA-516D7D9946CF}
+		{138F4E38-82A0-494A-8C34-D19922E972D8} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {30000164-E084-4EF1-818A-1B98829BA5EA}

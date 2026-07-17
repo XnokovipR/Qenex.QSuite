@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows7.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <UseWPF>true</UseWPF>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <AssemblyName>Qenex.QSuite.Controls.MatrixControl</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Controls.MatrixControl</RootNamespace>
+        <Company>Qenex.QSuite.Controls.MatrixControl</Company>
+        <Product>Qenex.QSuite.Controls.MatrixControl</Product>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <None Remove="Icons\MatrixControl.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Common\WpfComm\WpfComm.csproj" />
+      <ProjectReference Include="..\..\Variables\QVariables\QVariables.csproj" />
+      <ProjectReference Include="..\Control\Control.csproj" />
+      <ProjectReference Include="..\DerivedWinControls\DerivedWinControls.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.10" />
+      <PackageReference Include="Telerik.Windows.Controls.for.Wpf" Version="2026.1.415" />
+      <PackageReference Include="Telerik.Windows.Controls.Navigation.for.Wpf" Version="2026.1.415" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Resource Include="Icons\MatrixControl.png" />
+    </ItemGroup>
+
+    <!-- Plugin deploy: zkopiruj control DLL do QInsight\...\Controls (nacita se dynamicky, ne pres ProjectReference) -->
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\Controls\&quot;" />
+    </Target>
+
+</Project>
