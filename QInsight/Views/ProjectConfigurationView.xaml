@@ -500,6 +500,13 @@
                             Command="{Binding CopyVariableCommand}"
                             Content="Copy"
                             ToolTip="Create a new variable as a copy of the selected one"/>
+                        <telerik:RadComboBox
+                            Width="80"
+                            Height="28"
+                            Margin="0,0,6,0"
+                            ItemsSource="{Binding NewVariableTypeOptions}"
+                            SelectedItem="{Binding NewVariableType, Mode=TwoWay}"
+                            ToolTip="Type of the variable the + button adds"/>
                         <telerik:RadButton
                             Width="34"
                             Height="28"
@@ -523,9 +530,13 @@
                         Margin="0,8,0,6"
                         FontWeight="SemiBold"
                         Text="Variable detail"/>
+                    <!-- Horizontal scrolling disabled on purpose: a long value (e.g. a matrix
+                         Layout) must scroll inside its own text box under the caret, not shift
+                         the whole detail panel sideways. -->
                     <ScrollViewer
                         Grid.Row="4"
-                        VerticalScrollBarVisibility="Auto">
+                        VerticalScrollBarVisibility="Auto"
+                        HorizontalScrollBarVisibility="Disabled">
                         <ItemsControl ItemsSource="{Binding SelectedVariable.Properties}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type wrappers:EditablePropertyWrapper}">

@@ -1245,6 +1245,15 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
     }
 
+    /// <summary>Variable type created by the + button; the combo next to it selects the type.</summary>
+    public IReadOnlyList<string> NewVariableTypeOptions { get; } = ["Scalar", "Matrix"];
+
+    public string NewVariableType
+    {
+        get;
+        set { field = value; OnPropertyChanged(); }
+    } = "Scalar";
+
     private void AddVariable()
     {
         if (!CanAddVariable())
@@ -1252,9 +1261,17 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             return;
         }
 
+        IVariableBase variable = NewVariableType == "Matrix"
+            ? CreateNewMatrixVariable()
+            : CreateNewScalarVariable();
+        AddVariableWrapper(variable);
+    }
+
+    private ScalarVariable CreateNewScalarVariable()
+    {
         var values = ValuesGlobal.CreateInstance(ValuesGlobal.ValueDataType.Int);
         values.ValPresentation = Presentations.First().Presentation;
-        var variable = new ScalarVariable
+        return new ScalarVariable
         {
             Id = CreateUniqueVariableId(),
             Namespace = "/",
@@ -1264,7 +1281,21 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             Size = values.Size,
             Values = values
         };
-        AddVariableWrapper(variable);
+    }
+
+    private MatrixVariable CreateNewMatrixVariable()
+    {
+        // A small valid value block to start from; the Layout field shapes it into a curve/map.
+        return new MatrixVariable
+        {
+            Id = CreateUniqueVariableId(),
+            Namespace = "/",
+            Name = CreateUniqueVariableName(),
+            Label = "Variable",
+            Description = string.Empty,
+            DefaultDataType = ValuesGlobal.ValueDataType.Byte,
+            Data = new MatrixSection { Count = 4 }
+        };
     }
 
     private bool CanAddVariable()
@@ -1388,10 +1419,11 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
                 }
 
                 // A variable requiring a presentation the project does not have is not imported.
-                var presentationRef = (xmlVariable as XmlScalarVariable)?.Values?.PresentationReference?.Ref;
-                if (!string.IsNullOrEmpty(presentationRef) && !presentationNames.Contains(presentationRef))
+                var missingPresentation = GetVariablePresentationRefs(xmlVariable)
+                    .FirstOrDefault(reference => !string.IsNullOrEmpty(reference) && !presentationNames.Contains(reference));
+                if (missingPresentation != null)
                 {
-                    skipped.Add($"{xmlVariable.Name} — presentation \"{presentationRef}\" not found in the project");
+                    skipped.Add($"{xmlVariable.Name} — presentation \"{missingPresentation}\" not found in the project");
                     continue;
                 }
 
@@ -1414,6 +1446,21 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         {
             ErrorMessage = $"Variables could not be imported: {e.Message}";
         }
+    }
+
+    private static IEnumerable<string?> GetVariablePresentationRefs(XmlVariable xmlVariable)
+    {
+        return xmlVariable switch
+        {
+            XmlScalarVariable scalar => [scalar.Values?.PresentationReference?.Ref],
+            XmlMatrixVariable matrix =>
+            [
+                matrix.XAxis?.PresentationReference?.Ref,
+                matrix.YAxis?.PresentationReference?.Ref,
+                matrix.Data?.PresentationReference?.Ref
+            ],
+            _ => []
+        };
     }
 
     // Import results do not go to the footer message strip: a long skip list would

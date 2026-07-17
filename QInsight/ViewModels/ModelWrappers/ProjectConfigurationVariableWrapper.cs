@@ -51,6 +51,10 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
         {
             ApplyScalarState(scalarVariable, currentState.ScalarState);
         }
+        else if (Variable is MatrixVariable matrixVariable && currentState.MatrixState != null)
+        {
+            ApplyMatrixState(matrixVariable, currentState.MatrixState);
+        }
 
         originalState = currentState;
         NotifyStateChanged();
@@ -83,6 +87,12 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
             };
             ApplyScalarState(scalarSnapshot, currentState.ScalarState);
             snapshot = scalarSnapshot;
+        }
+        else if (Variable is MatrixVariable && currentState.MatrixState != null)
+        {
+            var matrixSnapshot = new MatrixVariable();
+            ApplyMatrixState(matrixSnapshot, currentState.MatrixState);
+            snapshot = matrixSnapshot;
         }
         else if (Variable is StringVariable stringVariable)
         {
@@ -131,6 +141,30 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
             properties.Add(presentationProperty);
         }
 
+        if (currentState.MatrixState != null)
+        {
+            // Total size in bytes is derived from the layout (value counts x element types).
+            properties.Add(Create(
+                "Matrix",
+                "Default Data Type",
+                () => currentState.MatrixState.DefaultDataType,
+                value => UpdateMatrixState(s => s with { DefaultDataType = Parse<ValuesGlobal.ValueDataType>(value) }),
+                ValuesGlobal.ValueDataTypeDict.Keys
+                    .Where(valueType => valueType != ValuesGlobal.ValueDataType.String)
+                    .Select(valueType => valueType.ToString())));
+            properties.Add(Create(
+                "Matrix",
+                "Endianness",
+                () => currentState.MatrixState.Endianness,
+                value => UpdateMatrixState(s => s with { Endianness = Parse<MatrixEndianness>(value) }),
+                Enum.GetNames<MatrixEndianness>()));
+            properties.Add(Create(
+                "Matrix",
+                "Layout",
+                () => currentState.MatrixState.Layout,
+                value => UpdateMatrixState(s => s with { Layout = value })));
+        }
+
         foreach (var property in properties)
         {
             editableProperties.Add(property);
@@ -157,6 +191,22 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
         }
 
         UpdateState(currentState with { ScalarState = update(currentState.ScalarState) });
+    }
+
+    private void UpdateMatrixState(Func<MatrixVariableState, MatrixVariableState> update)
+    {
+        if (currentState.MatrixState == null)
+        {
+            return;
+        }
+
+        var newState = update(currentState.MatrixState);
+
+        // Validate eagerly on a probe variable so a bad layout/type shows up as the field's
+        // error tooltip right away instead of failing later on apply.
+        ApplyMatrixState(new MatrixVariable(), newState);
+
+        UpdateState(currentState with { MatrixState = newState });
     }
 
     private void UpdateState(VariableState state)
@@ -208,6 +258,62 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
         scalarVariable.Values.ValPresentation = string.IsNullOrWhiteSpace(state.PresentationName)
             ? null!
             : presentations.First(presentation => presentation.Name.Equals(state.PresentationName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// Zapise stav konfigurace do MatrixVariable: parsuje Layout string, resolvuje prezentace
+    /// per sekce a validuje vysledny layout vc. Modbus limitu 246 B (123 registru, FC16).
+    /// Vola se i nad sondou (probe) pri kazde editaci — vyhazuje ArgumentException s popisem.
+    /// </summary>
+    private void ApplyMatrixState(MatrixVariable matrixVariable, MatrixVariableState state)
+    {
+        var parts = MatrixLayoutText.Parse(state.Layout);
+
+        matrixVariable.DefaultDataType = state.DefaultDataType;
+        matrixVariable.Endianness = state.Endianness;
+        matrixVariable.XAxis = CreateMatrixSection(parts.X);
+        matrixVariable.YAxis = CreateMatrixSection(parts.Y);
+        matrixVariable.Data = CreateMatrixSection(parts.Data)!;
+
+        var layoutError = matrixVariable.ValidateLayout();
+        if (layoutError != null)
+        {
+            throw new ArgumentException(layoutError);
+        }
+
+        if (matrixVariable.Size > MaxMatrixBytes)
+        {
+            throw new ArgumentException(
+                $"Matrix size {matrixVariable.Size} B exceeds the {MaxMatrixBytes} B limit " +
+                "(123 registers per Modbus write request).");
+        }
+    }
+
+    // Modbus FC16 zapisuje max 123 registru = 246 B; cela matice se prenasi jednim requestem.
+    private const int MaxMatrixBytes = 246;
+
+    private MatrixSection? CreateMatrixSection(MatrixSectionParts? parts)
+    {
+        if (parts == null)
+        {
+            return null;
+        }
+
+        IPresentation? presentation = null;
+        if (!string.IsNullOrWhiteSpace(parts.PresentationName))
+        {
+            presentation = presentations.FirstOrDefault(p =>
+                    p.Name.Equals(parts.PresentationName, StringComparison.OrdinalIgnoreCase))
+                ?? throw new ArgumentException($"Presentation \"{parts.PresentationName}\" was not found.");
+        }
+
+        return new MatrixSection
+        {
+            Count = parts.Count,
+            Label = parts.Label,
+            DataType = parts.DataType,
+            Presentation = presentation
+        };
     }
 
     private static T Parse<T>(string value)
@@ -264,7 +370,8 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
         string Name,
         string Label,
         string Description,
-        ScalarVariableState? ScalarState)
+        ScalarVariableState? ScalarState,
+        MatrixVariableState? MatrixState)
     {
         public static VariableState FromVariable(IVariableBase variable)
         {
@@ -276,7 +383,24 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
                 variable.Description,
                 variable is ScalarVariable scalarVariable
                     ? ScalarVariableState.FromScalarVariable(scalarVariable)
+                    : null,
+                variable is MatrixVariable matrixVariable
+                    ? MatrixVariableState.FromMatrixVariable(matrixVariable)
                     : null);
+        }
+    }
+
+    private sealed record MatrixVariableState(
+        ValuesGlobal.ValueDataType DefaultDataType,
+        MatrixEndianness Endianness,
+        string Layout)
+    {
+        public static MatrixVariableState FromMatrixVariable(MatrixVariable matrixVariable)
+        {
+            return new MatrixVariableState(
+                matrixVariable.DefaultDataType,
+                matrixVariable.Endianness,
+                MatrixLayoutText.Build(matrixVariable));
         }
     }
 
