@@ -20,5 +20,12 @@ namespace Qenex.QInsight
 	/// </summary>
 	public partial class App : Application
 	{
+		protected override void OnStartup(StartupEventArgs e)
+		{
+			// Drivers resolve relative data paths (e.g. the default DataLogs directory) against
+			// this root — the installation directory is not writable under Program Files.
+			Qenex.QSuite.Drivers.Driver.DriverEnvironment.DataRootDirectory = AppDataPaths.Root;
+			base.OnStartup(e);
+		}
 	}
 }

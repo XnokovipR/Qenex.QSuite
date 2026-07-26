@@ -11,7 +11,6 @@ namespace Qenex.QInsight.ViewModels;
 
 public class ThemePreferencesViewModel : PropertyChangedBaseWithValidation
 {
-    private const string AppSettingsFileName = "QInsightAppSettings.xml";
     private static readonly AppSettings DefaultSettings = AppSettings.GetDefaultAppSettings();
     private readonly AppSettings appSettings;
     private readonly Logger logger;
@@ -100,7 +99,7 @@ public class ThemePreferencesViewModel : PropertyChangedBaseWithValidation
             appSettings.Design.DarkThemeTextBoxBackgroundColor = GetColor("DarkThemeTextBoxBackgroundColor");
             appSettings.Design.DarkThemeControlBackgroundColor = GetColor("DarkThemeControlBackgroundColor");
 
-            AppSettings.SaveAppSettingsToFile(AppSettingsFileName, appSettings);
+            AppSettings.SaveAppSettingsToFile(AppDataPaths.AppSettingsFile, appSettings);
             ShellWindow.ApplyDesignSettings();
             ErrorMessage = string.Empty;
             logger.Log(LogLevel.Info, "Application preferences saved.");

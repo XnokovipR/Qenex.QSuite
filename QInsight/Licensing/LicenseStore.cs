@@ -8,19 +8,17 @@ namespace Qenex.QInsight.Licensing;
 /// the machine was deactivated in the portal — the key stays for easy re-activation.</summary>
 public sealed record StoredLicense(string LicenseKey, string Token);
 
-/// <summary>Persists the license key and the last issued token. Lives in %LOCALAPPDATA%
-/// (not next to QInsightAppSettings.xml) because the application directory is not writable
-/// when installed under Program Files. A missing or corrupt file simply means "no license" —
-/// storage errors must never crash the application.</summary>
+/// <summary>Persists the license key and the last issued token. Lives in %LOCALAPPDATA% (with
+/// the other per-user files, see <see cref="AppConfig.AppDataPaths"/>) because the application
+/// directory is not writable when installed under Program Files. A missing or corrupt file simply
+/// means "no license" — storage errors must never crash the application.</summary>
 public class LicenseStore
 {
     private readonly string filePath;
     private readonly Logger? logger;
 
     public LicenseStore(Logger? logger = null)
-        : this(Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Qenex", "QInsight", "license.json"), logger)
+        : this(AppConfig.AppDataPaths.GetFilePath("license.json"), logger)
     {
     }
 

@@ -14,7 +14,7 @@ namespace Qenex.QSuite.Drivers.FileDataReplayDriver;
 public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExportDriver
 {
     private static readonly TimeSpan DataLoadProgressUpdateInterval = TimeSpan.FromMilliseconds(100);
-    private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs", "values.qilog");
+    private string logFilePath = Path.Combine(DriverEnvironment.DataRootDirectory, "DataLogs", "values.qilog");
     private bool loop;
     private double speed = 1.0;
     private ReplayMode replayMode = ReplayMode.Realtime;
@@ -109,7 +109,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
 
         if (!Path.IsPathRooted(logFilePath))
         {
-            logFilePath = Path.Combine(AppContext.BaseDirectory, logFilePath);
+            logFilePath = Path.Combine(DriverEnvironment.DataRootDirectory, logFilePath);
         }
 
         if (settings.TryGetValue("loop", out var loopValue) && bool.TryParse(loopValue, out var parsedLoop))

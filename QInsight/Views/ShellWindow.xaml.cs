@@ -34,7 +34,7 @@ public partial class ShellWindow : Window
 		
 		try
 		{
-			ProcessAppSettings("QInsightAppSettings.xml");
+			ProcessAppSettings(AppDataPaths.AppSettingsFile);
 
 			SourceInitialized += WindowSourceInitialized;
 

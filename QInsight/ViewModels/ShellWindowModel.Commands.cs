@@ -267,7 +267,7 @@ public partial class ShellWindowModel
         try
         {
             licenseService.Dispose();
-            AppSettings.SaveAppSettingsToFile("QInsightAppSettings.xml", ShellWindow.MainAppSettings);
+            AppSettings.SaveAppSettingsToFile(AppDataPaths.AppSettingsFile, ShellWindow.MainAppSettings);
         }
         catch (Exception e)
         {
@@ -1712,7 +1712,9 @@ public partial class ShellWindowModel
         var settingsLayoutFile = IsRuntimeStarted ? runtimeSettingLayoutFile : editModeSettingLayoutFile;
         if (filePrep != null)
         {
-            settingsLayoutFile = $"{filePrep}_{settingsLayoutFile}";
+            settingsLayoutFile = Path.Combine(
+                Path.GetDirectoryName(settingsLayoutFile) ?? string.Empty,
+                $"{filePrep}_{Path.GetFileName(settingsLayoutFile)}");
         }
         
         try

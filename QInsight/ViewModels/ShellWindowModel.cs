@@ -24,8 +24,8 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 
 	private const string AppTitle = "QInsight";
 	
-	private string runtimeSettingLayoutFile = "QInsightRuntimeSettings.xml";
-	private string editModeSettingLayoutFile = "QInsightEditSettings.xml";
+	private readonly string runtimeSettingLayoutFile = AppDataPaths.RuntimeLayoutFile;
+	private readonly string editModeSettingLayoutFile = AppDataPaths.EditLayoutFile;
 
 	private readonly EventAggregator eventAggregator;
 	private readonly Logger logger;

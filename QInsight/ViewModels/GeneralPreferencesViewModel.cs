@@ -11,7 +11,6 @@ namespace Qenex.QInsight.ViewModels;
 
 public class GeneralPreferencesViewModel : PropertyChangedBaseWithValidation
 {
-    private const string AppSettingsFileName = "QInsightAppSettings.xml";
     private readonly AppSettings appSettings;
     private readonly Logger logger;
     private RadWindow? parentWindow;
@@ -70,7 +69,7 @@ public class GeneralPreferencesViewModel : PropertyChangedBaseWithValidation
         {
             appSettings.ScriptEngine.PythonDllPath = PythonDllPath.Trim();
 
-            AppSettings.SaveAppSettingsToFile(AppSettingsFileName, appSettings);
+            AppSettings.SaveAppSettingsToFile(AppDataPaths.AppSettingsFile, appSettings);
             ErrorMessage = string.Empty;
             logger.Log(LogLevel.Info, "General preferences saved.");
             return true;

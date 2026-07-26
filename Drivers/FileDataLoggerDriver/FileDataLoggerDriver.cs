@@ -21,7 +21,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
     private readonly object pendingRecordsLock = new();
     private readonly LinkedList<BufferedVariableLogRecord> pendingRecords = [];
     private readonly EventWaitHandle waitHandle = new AutoResetEvent(false);
-    private string logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs");
+    private string logFilePath = Path.Combine(DriverEnvironment.DataRootDirectory, "DataLogs");
     private bool append = true;
     private bool flushOnWrite;
     private TimeSpan reorderBufferDelay = DefaultReorderBufferDelay;
@@ -59,7 +59,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 
     public override void SetConfiguration()
     {
-        logFilePath = Path.Combine(AppContext.BaseDirectory, "DataLogs");
+        logFilePath = Path.Combine(DriverEnvironment.DataRootDirectory, "DataLogs");
         append = true;
         flushOnWrite = false;
         reorderBufferDelay = DefaultReorderBufferDelay;
@@ -78,7 +78,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
 
         if (!Path.IsPathRooted(logFilePath))
         {
-            logFilePath = Path.Combine(AppContext.BaseDirectory, logFilePath);
+            logFilePath = Path.Combine(DriverEnvironment.DataRootDirectory, logFilePath);
         }
 
         if (settings.TryGetValue("append", out var appendValue) && bool.TryParse(appendValue, out var parsedAppend))

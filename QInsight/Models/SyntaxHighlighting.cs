@@ -17,7 +17,7 @@ public static class SyntaxHighlighting
     {
         var fileName = isDark ? DarkPythonHighlightingFileName : LightPythonHighlightingFileName;
         var resourceName = $"{ResourceNamespace}.{fileName}";
-        var userHighlightingFilePath = Path.Combine(AppContext.BaseDirectory, UserHighlightingDirectoryName, fileName);
+        var userHighlightingFilePath = AppConfig.AppDataPaths.GetFilePath(Path.Combine(UserHighlightingDirectoryName, fileName));
 
         EnsureUserHighlightingFile(userHighlightingFilePath, resourceName);
 

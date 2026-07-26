@@ -3,6 +3,7 @@ using System.Text;
 using System.Windows.Media;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Highlighting;
+using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.Models;
 using Qenex.QInsight.Views;
 using Qenex.QLibs.QUI;
@@ -15,7 +16,7 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
     private const string PrimaryPrompt = ">>> ";
     private const string ContinuationPrompt = "... ";
     private const int MaxHistoryCount = 50;
-    private const string HistoryFileName = "QInsightPythonHistory.csv";
+    private static readonly string HistoryFilePath = AppDataPaths.PythonHistoryFile;
     private readonly Func<Task<ScriptingContext?>> scriptingContextProvider;
     private readonly List<string> inputHistory = [];
     private string currentPrompt = PrimaryPrompt;
@@ -172,14 +173,14 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
 
     private void LoadInputHistory()
     {
-        if (!File.Exists(HistoryFileName))
+        if (!File.Exists(HistoryFilePath))
         {
             return;
         }
 
         try
         {
-            foreach (var line in File.ReadLines(HistoryFileName))
+            foreach (var line in File.ReadLines(HistoryFilePath))
             {
                 var input = UnescapeHistoryLine(line);
                 if (!string.IsNullOrWhiteSpace(input))
@@ -200,7 +201,7 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
     {
         try
         {
-            File.WriteAllLines(HistoryFileName, inputHistory.Select(EscapeHistoryLine));
+            File.WriteAllLines(HistoryFilePath, inputHistory.Select(EscapeHistoryLine));
         }
         catch
         {
