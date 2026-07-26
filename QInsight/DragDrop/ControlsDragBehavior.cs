@@ -19,21 +19,20 @@ public class ControlsDragBehavior : Behavior<ItemsControl>
     {
         base.OnAttached();
         DragDropManager.AddDragInitializeHandler(this.AssociatedObject, OnDragInitialized);
-        DragDropManager.AddDragDropCompletedHandler(this.AssociatedObject, OnDropComleted);
     }
-    
+
     private void OnDragInitialized(object sender, DragInitializeEventArgs e)
     {
         if (sender is not RadListBox radListBox) return;
-        if (radListBox.DataContext is not ControlsViewModel vm) return;
+        if (radListBox.DataContext is not ControlsViewModel) return;
         if (((FrameworkElement)e.OriginalSource).DataContext is not IControlBase control) return;
-        
-        
+
+
         var dragVisualControl = new ContentControl();
         var payload = DragDropPayloadManager.GeneratePayload(null);
 
-        var controlId = vm.LastControlId + 1;
-        payload.SetData("ControlId", controlId);
+        // The new control's Id is assigned on drop by the target workspace, not here — the
+        // toolbox has no view of the workspace's already-used Ids.
         payload.SetData("NewDraggedControl", control);
         payload.SetData("NewDraggedControlDragVisual", dragVisualControl);
         e.Data = payload;
@@ -69,23 +68,5 @@ public class ControlsDragBehavior : Behavior<ItemsControl>
         e.DragVisual = dragVisualControl;
         e.DragVisualOffset = new Point(e.RelativeStartPoint.X, e.RelativeStartPoint.Y);
         e.Handled = true;
-    }
-
-    private void OnDropComleted(object sender, DragDropCompletedEventArgs e)
-    {
-        if (sender is not RadListBox radListBox) return;
-        if (radListBox.DataContext is not ControlsViewModel vm) return;
-        
-        try
-        {
-            var controlId = (int)DragDropPayloadManager.GetDataFromObject(e.Data, "LastControlId");
-            vm.LastControlId = controlId;
-
-            e.Handled = true;
-        }
-        catch (NullReferenceException)
-        {
-            // ignore
-        }
     }
 }

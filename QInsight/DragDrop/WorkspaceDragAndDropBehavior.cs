@@ -34,12 +34,14 @@ public class WorkspaceDragAndDropBehavior : Behavior<RadDiagram>
         if (sender is not RadDiagram radDiagram) return;
         if (radDiagram.DataContext is not WorkspaceViewModel vm) return;
         
-        if (!TryGetPayload<int>(e.Data, "ControlId", out var controlId)) return;
         if (!TryGetPayload<IControlBase>(e.Data, "NewDraggedControl", out var control)) return;
-        
+
         if (Activator.CreateInstance(control.GetType()) is not IControlBase newControl) return;
-        newControl.Id = controlId;
-        
+        // The Id comes from the target workspace state (max of the same control type + 1) — a
+        // session counter produced duplicates with controls loaded from the project, and such
+        // controls silently lost their variable bindings on the next project open.
+        newControl.Id = vm.CreateUniqueControlId(control.GetType());
+
         var position = e.GetPosition(radDiagram);
 
         var snappedX = position.X;
@@ -53,8 +55,6 @@ public class WorkspaceDragAndDropBehavior : Behavior<RadDiagram>
         }
         
         vm.AddControlToDiagram(newControl, snappedX, snappedY);
-        
-        DragDropPayloadManager.SetData(e.Data, "LastControlId", controlId);
         e.Handled = true;
     }
 

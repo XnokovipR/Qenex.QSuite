@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Windows;
 using System.Windows.Controls;
@@ -155,6 +156,7 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
      public void SetControlProjectData(IEnumerable<ControlBase> controls)
      {
 	     controlsToLoad = controls.ToList();
+	     RenumberDuplicateControlIds(controlsToLoad);
 
 	     if (!isViewLoaded)
 	     {
@@ -519,14 +521,56 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     private IEnumerable<ControlBase> GetWorkspaceControls()
     {
-	    var controls = isViewLoaded
-		    ? controlsToLoad.Concat(GetDiagramControls().Select(item => item.Control))
-		    : controlsToLoad;
-
 	    // Dedup by logical control identity (type + Id), not reference: the same control can appear as
 	    // separate instances across controlsToLoad/diagram (or as duplicate diagram shapes), and reference
 	    // equality would let those slip through and be counted/reported multiple times.
-	    return controls.DistinctBy(control => (control.GetType(), control.Id));
+	    return GetAllControlInstances().DistinctBy(control => (control.GetType(), control.Id));
+    }
+
+    private IEnumerable<ControlBase> GetAllControlInstances()
+    {
+	    return isViewLoaded
+		    ? controlsToLoad.Concat(GetDiagramControls().Select(item => item.Control))
+		    : controlsToLoad;
+    }
+
+    /// <summary>
+    /// Next free Id for a new control of the given type, derived from the controls actually
+    /// present in this workspace. Ids must be unique per control type — a control whose
+    /// (type, Id) collides with another one is invisible to GetWorkspaceControls and would
+    /// silently lose its variable bindings on the next project open.
+    /// </summary>
+    public int CreateUniqueControlId(Type controlType)
+    {
+	    return GetAllControlInstances()
+		    .Where(control => control.GetType() == controlType)
+		    .Select(control => control.Id)
+		    .DefaultIfEmpty(0)
+		    .Max() + 1;
+    }
+
+    // Older builds assigned control Ids from a per-session counter, so saved projects can carry
+    // duplicate (type, Id) pairs; the duplicates would be dropped by GetWorkspaceControls and
+    // never get their variables bound. Heal such projects while loading.
+    private static void RenumberDuplicateControlIds(List<ControlBase> controls)
+    {
+	    foreach (var typeGroup in controls.GroupBy(control => control.GetType()))
+	    {
+		    var usedIds = new HashSet<int>();
+		    foreach (var control in typeGroup)
+		    {
+			    if (usedIds.Add(control.Id))
+			    {
+				    continue;
+			    }
+
+			    var renumberedId = usedIds.Max() + 1;
+			    Trace.TraceWarning(
+				    $"Workspace: duplicate {typeGroup.Key.Name} Id {control.Id} ('{control.Label}') renumbered to {renumberedId}.");
+			    control.Id = renumberedId;
+			    usedIds.Add(renumberedId);
+		    }
+	    }
     }
 
     private static IEnumerable<string> GetControlVariableReferences(ControlBase control)
