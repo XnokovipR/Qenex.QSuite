@@ -95,26 +95,26 @@
                     </Grid.RowDefinitions>
 
                     <q:QTextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Label"/>
-                    <q:QTextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Label, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                    <q:QTextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <q:QTextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Description"/>
-                    <q:QTextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Description, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                    <q:QTextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <q:QTextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Version"/>
-                    <q:QTextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Version, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                    <q:QTextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Version, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <q:QTextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Author"/>
-                    <q:QTextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Author, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                    <q:QTextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Author, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <q:QTextBlock Grid.Row="4" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Company"/>
-                    <q:QTextBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Company, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                    <q:QTextBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,6" Text="{Binding Project.Company, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <q:QTextBlock Grid.Row="5" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Creation date"/>
-                    <q:QTextBox Grid.Row="5" Grid.Column="1" Margin="0,0,8,6" Text="{Binding Project.CreationDate, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                    <q:QTextBox Grid.Row="5" Grid.Column="1" Margin="0,0,8,6" Text="{Binding Project.CreationDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                     <telerik:RadButton Grid.Row="5" Grid.Column="2" MinWidth="82" Margin="0,0,0,6" Content="Get Date" Command="{Binding Project.SetCreationDateNowCommand}"/>
 
                     <q:QTextBlock Grid.Row="6" Grid.Column="0" Margin="0,0,10,6" VerticalAlignment="Center" Text="Modified"/>
-                    <q:QTextBox Grid.Row="6" Grid.Column="1" Margin="0,0,8,6" Text="{Binding Project.Modified, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                    <q:QTextBox Grid.Row="6" Grid.Column="1" Margin="0,0,8,6" Text="{Binding Project.Modified, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                     <telerik:RadButton Grid.Row="6" Grid.Column="2" MinWidth="82" Margin="0,0,0,6" Content="Get Date" Command="{Binding Project.SetModifiedNowCommand}"/>
 
                     <q:QTextBlock
@@ -239,7 +239,7 @@
                                     <DataTemplate>
                                         <q:QTextBox
                                             VerticalAlignment="Center"
-                                            Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                            Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             IsEnabled="{Binding CanEditLabel}"
                                             ToolTip="{Binding ToolTip}">
                                             <i:Interaction.Triggers>
@@ -412,7 +412,7 @@
                             Grid.Row="0"
                             Grid.Column="1"
                             Margin="0,0,0,8"
-                            Text="{Binding SelectedDriver.Settings, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                            Text="{Binding SelectedDriver.Settings, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <q:QTextBlock
                             Grid.Row="1"
@@ -423,7 +423,7 @@
                         <q:QTextBox
                             Grid.Row="1"
                             Grid.Column="1"
-                            Text="{Binding SelectedProtocol.Settings, Mode=TwoWay, UpdateSourceTrigger=LostFocus}">
+                            Text="{Binding SelectedProtocol.Settings, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                             <q:QTextBox.Style>
                                 <Style TargetType="{x:Type q:QTextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
                                     <Style.Triggers>
@@ -555,7 +555,7 @@
                                         <Grid Grid.Column="1">
                                             <q:QTextBox
                                                 x:Name="ValueTextBox"
-                                                Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                 ToolTip="{Binding Error}"/>
                                             <telerik:RadComboBox
                                                 x:Name="ValueComboBox"
@@ -755,7 +755,7 @@
                             Grid.Row="3"
                             Grid.Column="1"
                             Margin="0,0,0,6"
-                            Text="{Binding SelectedCommunicatedVariable.Multiplier, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                            Text="{Binding SelectedCommunicatedVariable.Multiplier, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <q:QTextBlock
                             Grid.Row="4"
@@ -767,7 +767,7 @@
                             Grid.Row="4"
                             Grid.Column="1"
                             Margin="0,0,0,6"
-                            Text="{Binding SelectedCommunicatedVariable.CommunicationId, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                            Text="{Binding SelectedCommunicatedVariable.CommunicationId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <q:QTextBlock
                             Grid.Row="5"
@@ -779,7 +779,7 @@
                             Grid.Row="5"
                             Grid.Column="1"
                             Margin="0,0,0,6"
-                            Text="{Binding SelectedCommunicatedVariable.CommParam, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                            Text="{Binding SelectedCommunicatedVariable.CommParam, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                         <StackPanel
                             Grid.Row="6"
@@ -832,12 +832,12 @@
                                             <q:QTextBox
                                                 Grid.Column="3"
                                                 Margin="0,0,4,0"
-                                                Text="{Binding Threshold, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                                                Text="{Binding Threshold, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                                             <q:QTextBox
                                                 Grid.Column="4"
                                                 Margin="0,0,4,0"
                                                 ToolTipService.ToolTip="Hysteresis band (Above/Below only)"
-                                                Text="{Binding Hysteresis, Mode=TwoWay, UpdateSourceTrigger=LostFocus}">
+                                                Text="{Binding Hysteresis, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
                                                 <q:QTextBox.Style>
                                                     <Style TargetType="{x:Type q:QTextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
                                                         <Style.Triggers>
@@ -993,7 +993,7 @@
                                         <Grid Grid.Column="1">
                                             <q:QTextBox
                                                 x:Name="ValueTextBox"
-                                                Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                 IsReadOnly="{Binding IsReadOnly}"
                                                 ToolTip="{Binding Error}"/>
                                             <telerik:RadComboBox
@@ -1074,11 +1074,11 @@
                                             <q:QTextBox
                                                 Grid.Column="0"
                                                 Margin="0,0,10,0"
-                                                Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                 ToolTip="{Binding Error}"/>
                                             <q:QTextBox
                                                 Grid.Column="1"
-                                                Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                 ToolTip="{Binding Error}"/>
                                         </Grid>
                                     </DataTemplate>
@@ -1198,7 +1198,7 @@
                                     <Grid Grid.Column="1">
                                         <q:QTextBox
                                             x:Name="ValueTextBox"
-                                            Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                            Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             ToolTip="{Binding Error}"/>
                                         <telerik:RadComboBox
                                             x:Name="ValueComboBox"
@@ -1329,7 +1329,7 @@
                                     <Grid Grid.Column="1">
                                         <q:QTextBox
                                             x:Name="ValueTextBox"
-                                            Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                            Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             IsReadOnly="{Binding IsReadOnly}"
                                             ToolTip="{Binding Error}"/>
                                         <telerik:RadComboBox
