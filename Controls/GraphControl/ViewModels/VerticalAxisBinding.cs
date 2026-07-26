@@ -11,6 +11,9 @@ public class VerticalAxisBinding
     public string Name { get; set; } = string.Empty;
 
     [DataMember]
+    public string? Label { get; set; }
+
+    [DataMember]
     public Edge Edge { get; set; } = Edge.Right;
 
     [DataMember]
@@ -65,6 +68,7 @@ public class VerticalAxisBinding
         var binding = new VerticalAxisBinding
         {
             Name = axis.Name,
+            Label = axis.AxisLabel,
             Edge = axis.Edge,
             IsVisible = axis.IsVisible,
             IsAutoScale = axis.IsAutoScale,

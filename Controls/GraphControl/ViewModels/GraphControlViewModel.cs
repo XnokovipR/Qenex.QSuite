@@ -1035,6 +1035,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
         var newAxis = new VerticalAxis(edge)
         {
             Name = string.IsNullOrWhiteSpace(axisBinding?.Name) ? $"Y->{index}" : axisBinding.Name,
+            AxisLabel = axisBinding?.Label ?? string.Empty,
             IsVisible = axisBinding?.IsVisible ?? true,
             IsAutoScale = axisBinding?.IsAutoScale ?? true,
             ThemeForeColor = foregroundColor,

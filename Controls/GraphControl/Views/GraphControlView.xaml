@@ -173,6 +173,7 @@
                                         </DataTemplate>
                                     </telerik:GridViewDataColumn.CellTemplate>
                                 </telerik:GridViewDataColumn>
+                                <telerik:GridViewDataColumn Header="Label" IsFilterable="False" Width="120" DataMemberBinding="{Binding Path=AxisLabel}"/>
                                 <telerik:GridViewDataColumn Header="Visibility" IsFilterable="False" DataMemberBinding="{Binding Path=IsVisible}"/>
                                 <telerik:GridViewDataColumn Header="Color" IsFilterable="False">
                                     <telerik:GridViewDataColumn.CellTemplate>
