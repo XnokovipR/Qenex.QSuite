@@ -10,7 +10,7 @@ public static class LicensingConstants
 
     /// <summary>Maximum number of communicated signals (protocol variables with IsCommunicated)
     /// allowed by the Free tier, counted across the whole project. Other tiers are unlimited.</summary>
-    public const int FreeMaxCommunicatedSignals = 10;
+    public const int FreeMaxCommunicatedSignals = 5;
 
     /// <summary>Production ECDSA P-256 public key used for offline token validation.
     /// The matching private key exists only on the license server.</summary>

@@ -221,11 +221,11 @@ internal static class Program
         var limit = CommunicatedSignals.GetLimit(harness.Service);
 
         Check(limit == LicensingConstants.FreeMaxCommunicatedSignals, "Free tier -> communicated signal limit applies");
-        Check(LicensingConstants.FreeMaxCommunicatedSignals == 10, "Free tier limit is 10");
-        Check(11 > limit, "11 communicated signals exceed the Free limit");
-        Check(!(10 > limit), "10 communicated signals fit the Free limit");
-        Check(CommunicatedSignals.BuildOverLimitMessage(11, 10)
-              == "Free license: the project has 11 communicated signals, the limit is 10.",
+        Check(LicensingConstants.FreeMaxCommunicatedSignals == 5, "Free tier limit is 5");
+        Check(6 > limit, "6 communicated signals exceed the Free limit");
+        Check(!(5 > limit), "5 communicated signals fit the Free limit");
+        Check(CommunicatedSignals.BuildOverLimitMessage(6, 5)
+              == "Free license: the project has 6 communicated signals, the limit is 5.",
             "over-limit message names count and limit");
     }
 

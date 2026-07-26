@@ -200,7 +200,7 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	}
 
 	/// <summary>Badge text; with a project open it includes the communicated-signal
-	/// counter (e.g. "FREE NON-COMMERCIAL LICENCE · 12/10 signals").</summary>
+	/// counter (e.g. "FREE NON-COMMERCIAL LICENCE · 7/5 signals").</summary>
 	public string LicenseBadgeText
 	{
 		get;
