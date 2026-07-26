@@ -1,0 +1,283 @@
+using System.Globalization;
+using System.Reflection;
+using Qenex.QSuite.Common.CoreComm;
+using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Specifications.Specification;
+
+namespace Qenex.QSuite.Examples.TempSensorDriver;
+
+/// <summary>
+/// Example driver: simulates a temperature sensor device with a few channels. Every period it
+/// produces one text line per channel ("ch1=23.47") and hands the lines to its protocols.
+/// An operator write coming back through Send re-bases the channel's temperature, so the whole
+/// read/write chain can be tried without any hardware.
+/// </summary>
+public class TempSensorDriver : DriverBase, IProtocolVariableCommandDriver
+{
+    private int periodMs = 500;
+    private int channelCount = 2;
+
+    // The simulated device state: current temperature of every channel.
+    private readonly object channelLock = new();
+    private double[] channelTemps = [];
+
+    private readonly Random random = new();
+    private volatile bool exitRequested;
+    private CancellationTokenSource? runCts;
+    private Task? runTask;
+
+    public TempSensorDriver()
+    {
+        Specification = new SpecificationBase
+        {
+            Name = "TempSensorDriver",
+            Label = "Temperature Sensor (example)",
+            Description = "Example driver simulating a multi-channel temperature sensor.",
+            CreatedOn = new DateTime(2026, 7, 26),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Author = "Qenex",
+            Company = "QENEX Ltd."
+        };
+    }
+
+    #region Configuration
+
+    public override string DefaultRawSettings => "periodMs=500;channels=2";
+
+    public override void SetConfiguration()
+    {
+        // "key=value;..." — missing or invalid keys silently keep the defaults, so a freshly
+        // added driver with empty settings does not spam the log.
+        foreach (var part in RawSettings.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var pair = part.Split('=', 2, StringSplitOptions.TrimEntries);
+            if (pair.Length != 2)
+            {
+                continue;
+            }
+
+            if (pair[0].Equals("periodMs", StringComparison.OrdinalIgnoreCase)
+                && int.TryParse(pair[1], out var parsedPeriod) && parsedPeriod > 0)
+            {
+                periodMs = parsedPeriod;
+            }
+            else if (pair[0].Equals("channels", StringComparison.OrdinalIgnoreCase)
+                     && int.TryParse(pair[1], out var parsedChannels))
+            {
+                channelCount = Math.Clamp(parsedChannels, 1, 16);
+            }
+        }
+    }
+
+    #endregion
+
+    #region Driver control
+
+    public override async Task StartAsync(CancellationToken ct = default)
+    {
+        if (!IsEnabled)
+        {
+            SetState(CommunicationState.Disabled);
+            return;
+        }
+
+        if (State == CommunicationState.Running || runTask is { IsCompleted: false })
+        {
+            return;
+        }
+
+        SetState(CommunicationState.Starting);
+        exitRequested = false;
+
+        // Every channel starts at a slightly different temperature.
+        lock (channelLock)
+        {
+            channelTemps = Enumerable.Range(0, channelCount).Select(i => 20.0 + 2.0 * i).ToArray();
+        }
+
+        // Give write-capable protocols a TX path into this driver before they start.
+        SetTransmitters(ApplyWriteAsync);
+        foreach (var protocol in Protocols)
+        {
+            await protocol.StartAsync(ct);
+        }
+
+        runCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        runTask = RunLoopAsync(runCts.Token);
+        SetState(CommunicationState.Running);
+    }
+
+    public override async Task StopAsync(CancellationToken ct = default)
+    {
+        SetState(CommunicationState.Stopping);
+        exitRequested = true;
+
+        if (runCts != null)
+        {
+            await runCts.CancelAsync();
+        }
+
+        if (runTask != null)
+        {
+            try
+            {
+                await runTask.WaitAsync(TimeSpan.FromSeconds(5), ct);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (TimeoutException)
+            {
+                Logger?.Log(LogLevel.Warn, "Temp sensor: the sampling loop did not stop before timeout.");
+            }
+        }
+
+        foreach (var protocol in Protocols)
+        {
+            await protocol.StopAsync(ct);
+        }
+
+        SetTransmitters(null);
+        runCts?.Dispose();
+        runCts = null;
+        runTask = null;
+        SetState(CommunicationState.Stopped);
+    }
+
+    public override void Dispose()
+    {
+        runCts?.Dispose();
+    }
+
+    #endregion
+
+    #region Communication
+
+    // The protocol encoded an operator write into a "ch1=50" line — apply it to the device.
+    public override void Send<T>(T data)
+    {
+        if (data is string line)
+        {
+            ApplyWrite(line);
+        }
+    }
+
+    public override Task SendAsync<T>(T data, CancellationToken ct = default)
+    {
+        Send(data);
+        return Task.CompletedTask;
+    }
+
+    // Operator writes: delegated to the owning protocol (same pattern as the CAN and serial drivers).
+    public bool CanSendCommand(IProtocolVariable protocolVariable)
+    {
+        return Protocols
+            .OfType<IProtocolVariableWriteProtocol>()
+            .Any(protocol => protocol.CanWriteVariable(protocolVariable));
+    }
+
+    public async Task OnProtocolVariableCommandAsync(IProtocolVariable protocolVariable, CancellationToken ct = default)
+    {
+        foreach (var protocol in Protocols.OfType<IProtocolVariableWriteProtocol>())
+        {
+            if (!protocol.CanWriteVariable(protocolVariable))
+            {
+                continue;
+            }
+
+            await protocol.WriteVariableAsync(protocolVariable, ct);
+            return;
+        }
+    }
+
+    #endregion
+
+    #region Simulated device
+
+    private async Task RunLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested && !exitRequested)
+            {
+                var lines = new List<string>(channelCount);
+                lock (channelLock)
+                {
+                    for (var i = 0; i < channelTemps.Length; i++)
+                    {
+                        // The temperature drifts slowly around its current base.
+                        channelTemps[i] += 0.1 * (random.NextDouble() * 2.0 - 1.0);
+                        lines.Add($"ch{i + 1}={channelTemps[i].ToString("F2", CultureInfo.InvariantCulture)}");
+                    }
+                }
+
+                foreach (var protocol in Protocols)
+                {
+                    if (protocol is ProtocolBase<string> textProtocol)
+                    {
+                        await textProtocol.AddReceivedDataToQueueAsync(lines, ct);
+                    }
+                }
+
+                await Task.Delay(periodMs, ct);
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested || exitRequested)
+        {
+            // Normal stop.
+        }
+        catch (Exception e)
+        {
+            Logger?.Log(LogLevel.Error, $"Temp sensor loop failed: {e.Message}");
+            SetState(CommunicationState.Faulted, e.Message);
+        }
+    }
+
+    private Task ApplyWriteAsync(string line, CancellationToken ct)
+    {
+        ApplyWrite(line);
+        return Task.CompletedTask;
+    }
+
+    private void ApplyWrite(string line)
+    {
+        var pair = line.Split('=', 2, StringSplitOptions.TrimEntries);
+        if (pair.Length != 2
+            || !pair[0].StartsWith("ch", StringComparison.OrdinalIgnoreCase)
+            || !int.TryParse(pair[0][2..], out var channelNumber)
+            || !double.TryParse(pair[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+        {
+            Logger?.Log(LogLevel.Warn, $"Temp sensor: cannot apply write '{line}'.");
+            return;
+        }
+
+        lock (channelLock)
+        {
+            var index = channelNumber - 1;
+            if (index < 0 || index >= channelTemps.Length)
+            {
+                Logger?.Log(LogLevel.Warn, $"Temp sensor: channel '{pair[0]}' does not exist.");
+                return;
+            }
+
+            channelTemps[index] = value;
+        }
+
+        Logger?.Log(LogLevel.Info, $"Temp sensor: channel {pair[0]} re-based to {pair[1]}.");
+    }
+
+    private void SetTransmitters(Func<string, CancellationToken, Task>? transmitter)
+    {
+        foreach (var protocol in Protocols)
+        {
+            if (protocol is ITransportProtocol<string> transportProtocol)
+            {
+                transportProtocol.SetTransmitter(transmitter);
+            }
+        }
+    }
+
+    #endregion
+}
