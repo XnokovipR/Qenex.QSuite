@@ -447,6 +447,7 @@ public sealed record ProjectConfigurationProtocolOption(
 public static class ProjectConfigurationProtocolVariableFactory
 {
     private const string PiZeroJsonProtocolName = "PiZeroJsonProtocol";
+    private const string SimulDataProtocolName = "SimulDataProtocol";
     private const string ModbusMasterProtocolName = "ModbusMasterProtocol";
     private const string ModbusSlaveProtocolName = "ModbusSlaveProtocol";
     private const string XcpProtocolName = "XcpProtocol";
@@ -547,6 +548,17 @@ public static class ProjectConfigurationProtocolVariableFactory
             return string.Join(";",
                 "direction=\"read\"",
                 "multiplier=\"1\"",
+                $"id=\"{variable.Name}\"");
+        }
+
+        // The simulation protocol picks one of the five generators via "signal"
+        // (step, noisystep, walk1, walk2, walk3); the rate comes from the referenced event.
+        if (protocol.Specification.Name.Equals(SimulDataProtocolName, StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Join(";",
+                "direction=\"read\"",
+                $"eventRef=\"{GetDefaultEventName(variableEvents)}\"",
+                "signal=\"step\"",
                 $"id=\"{variable.Name}\"");
         }
 

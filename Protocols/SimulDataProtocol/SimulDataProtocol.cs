@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.LogSystems.LogSystem;
@@ -10,28 +10,29 @@ using Qenex.QSuite.Variables.VariableEvents;
 
 namespace Qenex.QSuite.Protocols.SimulDataProtocol;
 
+/// <summary>
+/// Simulation source: generates five signal shapes (staircase sine, noisy staircase sine and
+/// three mean-reverting random walks) directly into its variables. Each variable is generated
+/// in the period of its periodic event, mirroring the poll scheduling of the Modbus/XCP
+/// protocols; the hosting SimDataDriver only starts and stops the protocol.
+/// </summary>
 public class SimulDataProtocol : ProtocolBase<int>
 {
-    #region Fields
-    
-    private volatile bool exitRequested = false;
-    private readonly EventWaitHandle waitHandle;
-    private readonly ConcurrentQueue<int> receivedDataQueue;
-    
-    #endregion
-    
+    private const int SchedulerIdleMs = 50;
+
+    private volatile bool exitRequested;
+    private CancellationTokenSource? runCts;
+    private Task? runTask;
+
     #region Constructors
 
     public SimulDataProtocol()
     {
-        waitHandle = new AutoResetEvent(false);
-        receivedDataQueue = new ConcurrentQueue<int>();
-        
         Specification = new SpecificationBase()
         {
             Name = "SimulDataProtocol",
             Label = "Simulation Data Protocol",
-            Description = "Protocol for simulating data communication. Use especially for testing with the SimDataDriver.",
+            Description = "Protocol simulating five signal generators; each variable is generated in the period of its event. Use with the SimDataDriver.",
             CreatedOn = new DateTime(2021, 11, 23),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? throw new Exception("Version not found"),
             Author = "Qenex",
@@ -40,7 +41,7 @@ public class SimulDataProtocol : ProtocolBase<int>
     }
 
     #endregion
-    
+
     #region Configuration
 
     public override void SetConfiguration()
@@ -55,58 +56,51 @@ public class SimulDataProtocol : ProtocolBase<int>
     {
         throw new NotSupportedException();
     }
-    
+
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent varEvent, string id)
     {
         try
         {
-            var protocolVariable = new SimulDataProtocolVariable
+            return new SimulDataProtocolVariable
             {
                 Variable = variable,
                 IsCommunicated = true,
-                ProtocolVariableSpecification = SimulDataProtocolVariableSpecification.CreateDefault(varEvent!, id)
+                ProtocolVariableSpecification = SimulDataProtocolVariableSpecification.CreateDefault(varEvent, id)
             };
-    
-            return protocolVariable; 
         }
         catch (Exception e)
         {
-            Logger?.Log(LogLevel.Warn, $"Protocol variable specification for variable {variable.Name} could not be created (${e.Message}).");
+            Logger?.Log(LogLevel.Warn, $"Protocol variable specification for variable {variable.Name} could not be created ({e.Message}).");
             return null;
         }
-       
     }
-    
-    
+
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents,
-        string commParams, bool isCommunicated )
+        string commParams, bool isCommunicated)
     {
         try
         {
             var eventRefName = commParams.Split(';').FirstOrDefault(e => e.Contains("eventRef"));
             eventRefName = eventRefName?.Split('=')[1].Trim('"');
-        
+
             var varEvent = variableEvents.FirstOrDefault(e => e.Name == eventRefName);
-        
-            var protocolVariable = new SimulDataProtocolVariable
+
+            return new SimulDataProtocolVariable
             {
                 Variable = variable,
                 IsCommunicated = isCommunicated,
-                ProtocolVariableSpecification = SimulDataProtocolVariableSpecification.Create(varEvent!, commParams)
+                ProtocolVariableSpecification = SimulDataProtocolVariableSpecification.Create(varEvent, commParams)
             };
-
-            return protocolVariable; 
         }
         catch (Exception e)
         {
-            Logger?.Log(LogLevel.Warn, $"Protocol variable specification for variable {variable.Name} could not be created (${e.Message}).");
+            Logger?.Log(LogLevel.Warn, $"Protocol variable specification for variable {variable.Name} could not be created ({e.Message}).");
             return null;
         }
-       
     }
 
     #endregion
-    
+
     #region Protocol control
 
     public override Task StartAsync(CancellationToken ct = default)
@@ -117,56 +111,265 @@ public class SimulDataProtocol : ProtocolBase<int>
             return Task.CompletedTask;
         }
 
+        if (State == CommunicationState.Running || runTask is { IsCompleted: false })
+        {
+            return Task.CompletedTask;
+        }
+
         SetState(CommunicationState.Starting);
         exitRequested = false;
-        _ = RunLoopAsync(ct);
 
+        runCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        runTask = GenerateLoopAsync(runCts.Token);
         return Task.CompletedTask;
     }
 
-    public override Task StopAsync(CancellationToken ct = default)
+    public override async Task StopAsync(CancellationToken ct = default)
     {
         SetState(CommunicationState.Stopping);
         exitRequested = true;
-        return Task.CompletedTask;
+
+        if (runCts != null)
+        {
+            await runCts.CancelAsync();
+        }
+
+        if (runTask != null)
+        {
+            try
+            {
+                await runTask.WaitAsync(TimeSpan.FromSeconds(5), ct);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (TimeoutException)
+            {
+                Logger?.Log(LogLevel.Warn, "Simulation protocol did not stop before timeout.");
+            }
+        }
+
+        runCts?.Dispose();
+        runCts = null;
+        runTask = null;
+        SetState(CommunicationState.Stopped);
     }
 
     public override void Dispose()
     {
-        
+        runCts?.Dispose();
     }
 
     #endregion
 
-    public override Task AddReceivedDataToQueueAsync(IEnumerable<int> data, CancellationToken ct = default)
+    #region Signal generation
+
+    private sealed class PollEntry
     {
-        foreach (var d in data)
+        public required SimulDataProtocolVariable ProtocolVariable { get; init; }
+        public required ScalarVariable Scalar { get; init; }
+        public required ISimulSignal Signal { get; init; }
+        public required long IntervalMs { get; init; }
+        public long NextDueMs { get; set; }
+    }
+
+    private async Task GenerateLoopAsync(CancellationToken ct)
+    {
+        try
         {
-            receivedDataQueue.Enqueue(d);
+            var entries = BuildPollEntries();
+            SetState(CommunicationState.Running, $"Simulation: generating {entries.Count} signal(s).");
+
+            if (entries.Count == 0)
+            {
+                Logger?.Log(LogLevel.Warn, "Simulation: no variables with a periodic event; nothing to generate.");
+                await Task.Delay(Timeout.Infinite, ct);
+                return;
+            }
+
+            var clock = Stopwatch.StartNew();
+            while (!ct.IsCancellationRequested && !exitRequested)
+            {
+                var now = Environment.TickCount64;
+                var anyDue = false;
+
+                foreach (var entry in entries)
+                {
+                    if (entry.NextDueMs > now)
+                    {
+                        continue;
+                    }
+
+                    anyDue = true;
+                    var sample = entry.Signal.Next(clock.Elapsed.TotalSeconds);
+                    SetSampleValue(entry.Scalar, sample);
+                    entry.Scalar.Timestamp = DateTime.UtcNow;
+                    await entry.ProtocolVariable.NotifyValueChangedAsync();
+
+                    // Absolute anchoring keeps the average rate exactly on the event period even
+                    // though Task.Delay wakes late (Windows timer granularity); a variable that
+                    // fell a whole interval behind skips the missed cycles instead of bursting.
+                    entry.NextDueMs += entry.IntervalMs;
+                    if (entry.NextDueMs <= Environment.TickCount64)
+                    {
+                        entry.NextDueMs = Environment.TickCount64 + entry.IntervalMs;
+                    }
+                }
+
+                if (!anyDue)
+                {
+                    var nextDueIn = entries.Min(e => e.NextDueMs) - Environment.TickCount64;
+                    var delay = (int)Math.Clamp(nextDueIn, 1, SchedulerIdleMs);
+                    await Task.Delay(delay, ct);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested || exitRequested)
+        {
+            // Normal stop.
+        }
+        catch (Exception e)
+        {
+            Logger?.Log(LogLevel.Error, $"Simulation loop failed: {e.Message}");
+            SetState(CommunicationState.Faulted, e.Message);
+        }
+    }
+
+    private List<PollEntry> BuildPollEntries()
+    {
+        var entries = new List<PollEntry>();
+        var now = Environment.TickCount64;
+
+        foreach (var protocolVariable in Variables)
+        {
+            if (protocolVariable is not SimulDataProtocolVariable simulVariable ||
+                !simulVariable.IsCommunicated ||
+                simulVariable.ProtocolVariableSpecification is not SimulDataProtocolVariableSpecification spec)
+            {
+                continue;
+            }
+
+            if (simulVariable.Variable is not ScalarVariable scalarVariable)
+            {
+                Logger?.Log(LogLevel.Warn, $"Simulation: variable '{simulVariable.Variable.Name}' is not scalar; not generated.");
+                continue;
+            }
+
+            if (spec.VariableEvent is not PeriodicVarEvent periodicEvent)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"Simulation: variable '{scalarVariable.Name}' has no periodic event ('{spec.VariableEvent?.Name}'); not generated.");
+                continue;
+            }
+
+            var intervalMs = (long)periodicEvent.Period * (int)periodicEvent.Unit;
+            if (intervalMs <= 0)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"Simulation: variable '{scalarVariable.Name}' has a non-positive period; not generated.");
+                continue;
+            }
+
+            if (!SupportsValues(scalarVariable))
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"Simulation: variable '{scalarVariable.Name}' has an unsupported value type; not generated.");
+                continue;
+            }
+
+            entries.Add(new PollEntry
+            {
+                ProtocolVariable = simulVariable,
+                Scalar = scalarVariable,
+                Signal = SimulSignalCatalog.Create(ResolveSignalKey(spec, scalarVariable)),
+                IntervalMs = intervalMs,
+                NextDueMs = now
+            });
         }
 
-        waitHandle.Set();
+        return entries;
+    }
+
+    private string ResolveSignalKey(SimulDataProtocolVariableSpecification spec, ScalarVariable scalarVariable)
+    {
+        if (string.IsNullOrWhiteSpace(spec.Signal))
+        {
+            return SimulSignalCatalog.FallbackKey(scalarVariable);
+        }
+
+        if (!SimulSignalCatalog.IsKnown(spec.Signal))
+        {
+            var fallback = SimulSignalCatalog.FallbackKey(scalarVariable);
+            Logger?.Log(LogLevel.Warn,
+                $"Simulation: variable '{scalarVariable.Name}' has an unknown signal '{spec.Signal}'; using '{fallback}'.");
+            return fallback;
+        }
+
+        return spec.Signal;
+    }
+
+    private static bool SupportsValues(ScalarVariable scalarVariable)
+    {
+        return scalarVariable.Values is Values<double> or Values<float> or Values<long> or Values<ulong>
+            or Values<int> or Values<uint> or Values<short> or Values<ushort> or Values<byte> or Values<sbyte>;
+    }
+
+    // Values<T>.SetValue does not convert, so the generated double is rounded and clamped
+    // to the variable's raw type here.
+    private static void SetSampleValue(ScalarVariable scalarVariable, double sample)
+    {
+        switch (scalarVariable.Values)
+        {
+            case Values<double> doubleValues:
+                doubleValues.Value = sample;
+                break;
+            case Values<float> floatValues:
+                floatValues.Value = (float)sample;
+                break;
+            case Values<long> longValues:
+                longValues.Value = (long)Math.Clamp(Math.Round(sample), long.MinValue, long.MaxValue);
+                break;
+            case Values<ulong> ulongValues:
+                ulongValues.Value = (ulong)Math.Clamp(Math.Round(sample), ulong.MinValue, ulong.MaxValue);
+                break;
+            case Values<int> intValues:
+                intValues.Value = (int)Math.Clamp(Math.Round(sample), int.MinValue, int.MaxValue);
+                break;
+            case Values<uint> uintValues:
+                uintValues.Value = (uint)Math.Clamp(Math.Round(sample), uint.MinValue, uint.MaxValue);
+                break;
+            case Values<short> shortValues:
+                shortValues.Value = (short)Math.Clamp(Math.Round(sample), short.MinValue, short.MaxValue);
+                break;
+            case Values<ushort> ushortValues:
+                ushortValues.Value = (ushort)Math.Clamp(Math.Round(sample), ushort.MinValue, ushort.MaxValue);
+                break;
+            case Values<byte> byteValues:
+                byteValues.Value = (byte)Math.Clamp(Math.Round(sample), byte.MinValue, byte.MaxValue);
+                break;
+            case Values<sbyte> sbyteValues:
+                sbyteValues.Value = (sbyte)Math.Clamp(Math.Round(sample), sbyte.MinValue, sbyte.MaxValue);
+                break;
+        }
+    }
+
+    #endregion
+
+    #region Received data & encoding (not used - the protocol is a data source)
+
+    public override Task AddReceivedDataToQueueAsync(IEnumerable<int> data, CancellationToken ct = default)
+    {
         return Task.CompletedTask;
     }
 
     protected override void ProcessReceivedData(IEnumerable<int> data)
     {
-        var decodedVars = Decode(data);
-        foreach (var variable in decodedVars)
-        {
-            variable.NotifyValueChanged();
-        }
     }
 
-    protected override async Task ProcessReceivedDataAsync(IEnumerable<int> data, CancellationToken ct = default)
+    protected override Task ProcessReceivedDataAsync(IEnumerable<int> data, CancellationToken ct = default)
     {
-        var decodedVars = Decode(data);
-        var notifyTasks = decodedVars.Select(variable => variable.NotifyValueChangedAsync()).ToList();
-
-        await Task.WhenAll(notifyTasks);
+        return Task.CompletedTask;
     }
-
-    #region Encoding and decoding
 
     protected override IEnumerable<int> Encode(IEnumerable<IProtocolVariable> protocolVariables)
     {
@@ -175,72 +378,8 @@ public class SimulDataProtocol : ProtocolBase<int>
 
     protected override IEnumerable<IProtocolVariable> Decode(IEnumerable<int> data)
     {
-        var protVars = new List<IProtocolVariable>();
-
-        var periods = data.ToList();
-        if (periods.Count == 0) return protVars;
-        var period = periods[0] as int? ?? 0;
-        var rnd = new Random();
-        var vars = Variables
-            .Where(v => v.IsCommunicated && v.ProtocolVariableSpecification is SimulDataProtocolVariableSpecification)
-            .Cast<SimulDataProtocolVariable>();
-                    
-        foreach (var simpleProtVariable in vars)
-        {
-            if (simpleProtVariable.Variable is not ScalarVariable scalarVariable) continue;
-            if (simpleProtVariable.ProtocolVariableSpecification is not SimulDataProtocolVariableSpecification spec) continue;
-            if (spec.VariableEvent is not PeriodicVarEvent periodicVarEvent) continue;
-            var resultPeriod = (int)periodicVarEvent.Unit * periodicVarEvent.Period;
-            if (resultPeriod != period) continue;
-
-            scalarVariable.Timestamp = DateTime.UtcNow;
-            if (scalarVariable.Values is Values<int> intValues)
-            {
-                intValues.Value = (int)(1000 * Math.Sin(DateTime.UtcNow.Second / 60.0 * 16 * Math.PI)) + (int)(100 * rnd.NextDouble() - 50.0);
-            }
-            else if (scalarVariable.Values is Values<float> floatValues)
-            {
-                floatValues.Value = (float)(750 * Math.Sin(DateTime.UtcNow.Second / 60.0 * 8 * Math.PI));
-            }
-            else if (scalarVariable.Values is Values<byte> byteValues)
-            {
-                byteValues.Value = (byte)rnd.Next(0, 4);
-            }
-            
-            protVars.Add(simpleProtVariable);
-        }           
-
-        return protVars;
+        throw new NotImplementedException();
     }
-
-    #endregion
-    
-    #region Private
-
-    private async Task RunLoopAsync(CancellationToken ct)
-    {
-        _ = Task.Run(async () =>
-        {
-            SetState(CommunicationState.Running);
-            while (!ct.IsCancellationRequested && !exitRequested)
-            {
-                if (receivedDataQueue.Count > 0)
-                {
-                    receivedDataQueue.TryDequeue(out int rcvData);
-                    await ProcessReceivedDataAsync(new List<int> { rcvData }, ct);
-                }
-                else
-                {
-                    waitHandle.WaitOne();
-                }               
-
-            }
-            
-            SetState(CommunicationState.Stopped);
-        }, ct);
-        exitRequested = false;
-
-    } 
 
     #endregion
 }

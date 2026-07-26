@@ -1,24 +1,17 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
-using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.SimDataDriver;
 
+/// <summary>
+/// Virtual connection for the simulation protocol: no transport and no timing of its own.
+/// The hosted SimulDataProtocol generates the data itself in the periods of its variables'
+/// events; this driver only starts and stops the protocols.
+/// </summary>
 public class SimDriver : DriverBase
 {
-    #region Fields
-
-    private string settings = string.Empty;
-    private string encryptedSettings = string.Empty;
-    private volatile bool exitRequested = false;
-
-    private IEnumerable<IProtocolVariable> receivedVariables;
-    private int sleepPeriod = 1000;
-
-    #endregion
-    
     #region Constructors
 
     public SimDriver()
@@ -33,31 +26,16 @@ public class SimDriver : DriverBase
             Author = "Qenex",
             Company = "QENEX Ltd."
         };
-        
-        receivedVariables = new List<IProtocolVariable>();
     }
 
     #endregion
 
     #region Configuration
 
-    public override string DefaultRawSettings => "periodes=20";
-
+    // Legacy projects may still carry "periodes=..." in the settings; the value is obsolete
+    // (signal periods come from the variables' events) and is silently ignored.
     public override void SetConfiguration()
     {
-        settings = RawSettings;
-        encryptedSettings = RawEncryptedSettings;
-        
-        var rnd = new Random();
-        var rawData = RawSettings.Split(";");
-        var numbers = rawData.FirstOrDefault(r => r.Contains("periodes="))?.Split('=')[1].Split(',');
-        if (numbers is not { Length: 1 }) throw new Exception("Invalid number of driver periods.");
-        
-        if (double.TryParse(numbers[0], out var period))
-        {
-            sleepPeriod = ((int)period);
-        }
-        
     }
 
     #endregion
@@ -73,20 +51,27 @@ public class SimDriver : DriverBase
         }
 
         SetState(CommunicationState.Starting);
-        exitRequested = false;
-        _ = RunLoopAsync(ct);
+        foreach (var protocol in Protocols)
+        {
+            await protocol.StartAsync(ct);
+        }
+
+        SetState(CommunicationState.Running);
     }
 
-    public override Task StopAsync(CancellationToken ct = default)
+    public override async Task StopAsync(CancellationToken ct = default)
     {
         SetState(CommunicationState.Stopping);
-        exitRequested = true;
-        return Task.CompletedTask;
+        foreach (var protocol in Protocols)
+        {
+            await protocol.StopAsync(ct);
+        }
+
+        SetState(CommunicationState.Stopped);
     }
 
     public override void Dispose()
     {
-        
     }
 
     #endregion
@@ -102,54 +87,6 @@ public class SimDriver : DriverBase
     {
         throw new NotImplementedException();
     }
-
-    #endregion    
-    
-    #region Process received data
-
-    private async Task ProcessReceivedDataAsync<T>(T data, CancellationToken ct = default)
-    {
-        if (data is IEnumerable<IProtocolVariable> variables)
-        {
-            foreach (var protocol in Protocols)
-            {
-                if (protocol is not ProtocolBase<int> prot) continue;
-                await prot.AddReceivedDataToQueueAsync([sleepPeriod], ct);
-            }
-        }
-
-        //return Task.CompletedTask;
-    }
-    
-    #endregion
-
-    #region Private
-
-    private async Task RunLoopAsync(CancellationToken ct)
-    {
-        await Task.Run(async () =>
-        {
-            foreach (var protocol in Protocols)
-            {
-                _ = protocol.StartAsync(ct);
-            }
-            
-            SetState(CommunicationState.Running);
-            while (!ct.IsCancellationRequested && !exitRequested)
-            {
-                await ProcessReceivedDataAsync(receivedVariables, ct);
-                await Task.Delay(sleepPeriod, ct);
-            }
-            
-            foreach (var protocol in Protocols)
-            {
-                _ = protocol.StopAsync(ct);
-            }
-            
-            SetState(CommunicationState.Stopped);
-        }, ct);
-        exitRequested = false;
-    } 
 
     #endregion
 }
