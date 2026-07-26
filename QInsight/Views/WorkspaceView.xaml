@@ -9,6 +9,7 @@
              xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
              xmlns:dragdrop="clr-namespace:Qenex.QInsight.DragDrop"
+             xmlns:behaviors="clr-namespace:Qenex.QInsight.Behaviors"
              d:DataContext="{d:DesignInstance vm:WorkspaceViewModel, IsDesignTimeCreatable=False}"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300"
@@ -29,6 +30,7 @@
 
 		<i:Interaction.Behaviors>
 			<dragdrop:WorkspaceDragAndDropBehavior/>
+			<behaviors:DiagramClipboardGuardBehavior/>
 		</i:Interaction.Behaviors>
 	</telerik:RadDiagram>
     
