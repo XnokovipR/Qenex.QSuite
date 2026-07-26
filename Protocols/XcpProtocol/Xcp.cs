@@ -50,6 +50,17 @@ public class Xcp : ProtocolBase<CanFrame>, ITransportProtocol<CanFrame>, IProtoc
     // 0x200/0x201 values are placeholders the operator replaces with the slave's actual ids.
     public override string DefaultRawSettings => "masterId=0x200;slaveId=0x201;extendedIds=false;timeoutMs=1000";
 
+    // address is mandatory with no sensible default, 0x0 is a placeholder to overwrite.
+    public override string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
+    {
+        return string.Join(";",
+            "address=\"0x0\"",
+            "addressExtension=\"0\"",
+            "direction=\"read\"",
+            "multiplier=\"1\"",
+            $"eventRef=\"{GetDefaultEventName(variableEvents)}\"");
+    }
+
     public override void SetConfiguration()
     {
         try

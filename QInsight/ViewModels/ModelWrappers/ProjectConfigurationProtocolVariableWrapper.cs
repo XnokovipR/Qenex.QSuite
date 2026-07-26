@@ -52,7 +52,7 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
         this.variableEvents = variableEvents;
         this.variableEventOptionsProvider = variableEventOptionsProvider;
         this.scripts = scripts;
-        originalCommParam = ProjectConfigurationProtocolVariableFactory.GetCommParam(protocolVariable.ProtocolVariableSpecification);
+        originalCommParam = protocolVariable.ProtocolVariableSpecification.ToCommParam();
         originalIsCommunicated = protocolVariable.IsCommunicated;
         originalIsFileLogEnabled = isFileLogEnabled;
         commParam = originalCommParam;
@@ -446,12 +446,6 @@ public sealed record ProjectConfigurationProtocolOption(
 
 public static class ProjectConfigurationProtocolVariableFactory
 {
-    private const string PiZeroJsonProtocolName = "PiZeroJsonProtocol";
-    private const string SimulDataProtocolName = "SimulDataProtocol";
-    private const string ModbusMasterProtocolName = "ModbusMasterProtocol";
-    private const string ModbusSlaveProtocolName = "ModbusSlaveProtocol";
-    private const string XcpProtocolName = "XcpProtocol";
-
     public static IProtocolVariable CreateProtocolVariable(
         IProtocolBase protocol,
         IVariableBase variable,
@@ -491,120 +485,6 @@ public static class ProjectConfigurationProtocolVariableFactory
                 + (firstError == null ? "." : $": {firstError}"));
     }
 
-    public static string GetCommParam(IProtVariableSpecification specification)
-    {
-        var properties = specification.GetType()
-            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
-            .Where(property => property.CanRead)
-            .ToList();
-
-        if (properties.FirstOrDefault(property => property.Name == "CommParams")?.GetValue(specification) is string commParams)
-        {
-            return commParams;
-        }
-
-        var parameters = new List<string>();
-        AddCommParam(parameters, properties, specification, "Direction", value => value.ToString()!.ToLowerInvariant());
-        AddCommParam(parameters, properties, specification, "VariableEvent", value => ((IVarEvent)value).Name, "eventRef");
-        AddCommParam(parameters, properties, specification, "Multiplier");
-
-        foreach (var property in properties.Where(property => property.Name is not ("Name" or "Direction" or "VariableEvent" or "Multiplier")))
-        {
-            var value = property.GetValue(specification);
-            if (value == null)
-            {
-                continue;
-            }
-
-            parameters.Add($"{ToCamelCase(property.Name)}=\"{Convert.ToString(value, CultureInfo.InvariantCulture)}\"");
-        }
-
-        return string.Join(";", parameters);
-    }
-
-    public static string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
-    {
-        var eventName = variableEvents.FirstOrDefault(variableEvent => variableEvent is PeriodicVarEvent)?.Name
-            ?? variableEvents.FirstOrDefault()?.Name;
-        var parameters = new List<string>
-        {
-            "direction=\"read\""
-        };
-
-        if (!string.IsNullOrWhiteSpace(eventName))
-        {
-            parameters.Add($"eventRef=\"{eventName}\"");
-        }
-
-        parameters.Add("multiplier=\"1\"");
-        parameters.Add($"id=\"{variable.Name}\"");
-        return string.Join(";", parameters);
-    }
-
-    public static string CreateDefaultCommParam(IProtocolBase protocol, IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
-    {
-        if (protocol.Specification.Name.Equals(PiZeroJsonProtocolName, StringComparison.OrdinalIgnoreCase))
-        {
-            return string.Join(";",
-                "direction=\"read\"",
-                "multiplier=\"1\"",
-                $"id=\"{variable.Name}\"");
-        }
-
-        // The simulation protocol picks one of the five generators via "signal"
-        // (step, noisystep, walk1, walk2, walk3); the rate comes from the referenced event.
-        if (protocol.Specification.Name.Equals(SimulDataProtocolName, StringComparison.OrdinalIgnoreCase))
-        {
-            return string.Join(";",
-                "direction=\"read\"",
-                $"eventRef=\"{GetDefaultEventName(variableEvents)}\"",
-                "signal=\"step\"",
-                $"id=\"{variable.Name}\"");
-        }
-
-        // Modbus and XCP templates list every supported commParam explicitly so the user only
-        // edits values instead of discovering keys; address is mandatory with no sensible
-        // default, 0/0x0 is a placeholder to overwrite. dataType/size stay derived from the
-        // variable on purpose (an explicit value would break when the variable type changes).
-        if (protocol.Specification.Name.Equals(ModbusMasterProtocolName, StringComparison.OrdinalIgnoreCase))
-        {
-            return string.Join(";",
-                "registerType=\"holdingRegister\"",
-                "address=\"0\"",
-                "wordOrder=\"big\"",
-                "direction=\"read\"",
-                $"eventRef=\"{GetDefaultEventName(variableEvents)}\"");
-        }
-
-        if (protocol.Specification.Name.Equals(ModbusSlaveProtocolName, StringComparison.OrdinalIgnoreCase))
-        {
-            return string.Join(";",
-                "registerType=\"holdingRegister\"",
-                "address=\"0\"",
-                "wordOrder=\"big\"",
-                "direction=\"read\"");
-        }
-
-        if (protocol.Specification.Name.Equals(XcpProtocolName, StringComparison.OrdinalIgnoreCase))
-        {
-            return string.Join(";",
-                "address=\"0x0\"",
-                "addressExtension=\"0\"",
-                "direction=\"read\"",
-                "multiplier=\"1\"",
-                $"eventRef=\"{GetDefaultEventName(variableEvents)}\"");
-        }
-
-        return CreateDefaultCommParam(variable, variableEvents);
-    }
-
-    private static string GetDefaultEventName(IEnumerable<IVarEvent> variableEvents)
-    {
-        return variableEvents.FirstOrDefault(variableEvent => variableEvent is PeriodicVarEvent)?.Name
-               ?? variableEvents.FirstOrDefault()?.Name
-               ?? string.Empty;
-    }
-
     public static Dictionary<string, string> ParseCommParam(string commParam)
     {
         var parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -617,36 +497,5 @@ public static class ProjectConfigurationProtocolVariableFactory
         }
 
         return parameters;
-    }
-
-    private static void AddCommParam(
-        ICollection<string> parameters,
-        IEnumerable<PropertyInfo> properties,
-        object specification,
-        string propertyName,
-        Func<object, string>? valueFormatter = null,
-        string? parameterName = null)
-    {
-        var property = properties.FirstOrDefault(property => property.Name == propertyName);
-        var value = property?.GetValue(specification);
-        if (value == null)
-        {
-            return;
-        }
-
-        var text = valueFormatter?.Invoke(value) ?? Convert.ToString(value, CultureInfo.InvariantCulture);
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return;
-        }
-
-        parameters.Add($"{parameterName ?? ToCamelCase(propertyName)}=\"{text}\"");
-    }
-
-    private static string ToCamelCase(string value)
-    {
-        return string.IsNullOrEmpty(value)
-            ? value
-            : char.ToLowerInvariant(value[0]) + value[1..];
     }
 }

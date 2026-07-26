@@ -40,6 +40,15 @@ public class PiZeroJsonProtocol : ProtocolBase<byte[]>, ITransportProtocol<byte[
     {
     }
 
+    // Data arrive as pushed JSON lines, so there is no poll event to reference.
+    public override string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
+    {
+        return string.Join(";",
+            "direction=\"read\"",
+            "multiplier=\"1\"",
+            $"id=\"{variable.Name}\"");
+    }
+
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated)
     {
         return new PiZeroJsonProtocolVariable

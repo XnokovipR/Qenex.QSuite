@@ -174,7 +174,7 @@ public class XmlModuleHandler
         {
             Ref = protocolVariable.Variable.Id,
             IsCommunicated = protocolVariable.IsCommunicated,
-            CommParam = GetCommParam(protocolVariable.ProtocolVariableSpecification),
+            CommParam = protocolVariable.ProtocolVariableSpecification.ToCommParam(),
             Scripts = scripting.GetOnValueChangedScriptTriggers(protocolVariable.Variable.Id)
                 .Select(trigger => new XmlScriptReference
                 {
@@ -208,60 +208,6 @@ public class XmlModuleHandler
     private List<XmlScript> GetXmlScripts(IEnumerable<IScriptBase> scripts)
     {
         return XmlComponentMapper.ToXmlScripts(scripts, logger);
-    }
-
-    private string GetCommParam(IProtVariableSpecification specification)
-    {
-        var properties = specification.GetType()
-            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
-            .Where(p => p.CanRead)
-            .ToList();
-
-        if (properties.FirstOrDefault(p => p.Name == "CommParams")?.GetValue(specification) is string commParams)
-        {
-            return commParams;
-        }
-
-        var parameters = new List<string>();
-        AddCommParam(parameters, properties, specification, "Direction", value => value.ToString()!.ToLowerInvariant());
-        AddCommParam(parameters, properties, specification, "VariableEvent", value => ((IVarEvent)value).Name, "eventRef");
-        AddCommParam(parameters, properties, specification, "Multiplier");
-
-        foreach (var property in properties.Where(p => p.Name is not ("Name" or "Direction" or "VariableEvent" or "Multiplier")))
-        {
-            var value = property.GetValue(specification);
-            if (value == null)
-            {
-                continue;
-            }
-
-            parameters.Add($"{ToCamelCase(property.Name)}=\"{Convert.ToString(value, CultureInfo.InvariantCulture)}\"");
-        }
-
-        return string.Join(";", parameters);
-    }
-
-    private static void AddCommParam(
-        ICollection<string> parameters,
-        IEnumerable<PropertyInfo> properties,
-        object specification,
-        string propertyName,
-        Func<object, string>? valueFormatter = null,
-        string? parameterName = null)
-    {
-        var property = properties.FirstOrDefault(p => p.Name == propertyName);
-        var value = property?.GetValue(specification);
-        if (value == null)
-        {
-            return;
-        }
-
-        parameters.Add($"{parameterName ?? ToCamelCase(propertyName)}=\"{(valueFormatter?.Invoke(value) ?? Convert.ToString(value, CultureInfo.InvariantCulture))}\"");
-    }
-
-    private static string ToCamelCase(string value)
-    {
-        return string.IsNullOrEmpty(value) ? value : char.ToLowerInvariant(value[0]) + value[1..];
     }
 
     private List<IVariableBase> GetVariables(IEnumerable<IPresentation> presentations, IEnumerable<XmlVariable> xmlVariables, IEnumerable<IVarEvent> variableEvents)

@@ -37,8 +37,17 @@ public interface IProtocolBase: ICoreCommunication, IComponentSpecification
     /// Propagated by the owning driver; setting it also flows to already-added variables.
     /// </summary>
     ILogger? Logger { get; set; }
-    
+
     void SetConfiguration();
+
+    /// <summary>
+    /// Comm-param template pre-filled when a communicated variable is added to this protocol in
+    /// Project Configuration: it lists every supported per-variable parameter with a
+    /// representative value so the operator only edits the values. The template lives in the
+    /// protocol itself so a plugin dropped into the Protocols folder works without any change
+    /// in the host application.
+    /// </summary>
+    string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents);
 
     IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated);
     IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent variableEvent, string id);

@@ -44,6 +44,16 @@ public class ModbusSlaveProtocol : ProtocolBase<byte[]>, ITransportProtocol<byte
     // it is listed explicitly here so the operator sees it.
     public override string DefaultRawSettings => "mode=rtu;unitId=1;respondToAnyUnit=false";
 
+    // The slave serves data on request, so there is no poll event; address 0 is a placeholder.
+    public override string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
+    {
+        return string.Join(";",
+            "registerType=\"holdingRegister\"",
+            "address=\"0\"",
+            "wordOrder=\"big\"",
+            "direction=\"read\"");
+    }
+
     public override void SetConfiguration()
     {
         try

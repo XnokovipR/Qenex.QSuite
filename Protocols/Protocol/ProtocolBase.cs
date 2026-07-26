@@ -66,6 +66,34 @@ public abstract class ProtocolBase<T> : IProtocolBase
     #region Configuration
     public abstract void SetConfiguration();
 
+    // The common vocabulary understood by most protocols; protocols with their own
+    // per-variable parameters override this with a template listing all of them.
+    public virtual string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
+    {
+        var eventName = GetDefaultEventName(variableEvents);
+        var parameters = new List<string>
+        {
+            "direction=\"read\""
+        };
+
+        if (!string.IsNullOrWhiteSpace(eventName))
+        {
+            parameters.Add($"eventRef=\"{eventName}\"");
+        }
+
+        parameters.Add("multiplier=\"1\"");
+        parameters.Add($"id=\"{variable.Name}\"");
+        return string.Join(";", parameters);
+    }
+
+    /// <summary>First periodic event of the configuration, or the first event, or empty.</summary>
+    protected static string GetDefaultEventName(IEnumerable<IVarEvent> variableEvents)
+    {
+        return variableEvents.FirstOrDefault(variableEvent => variableEvent is PeriodicVarEvent)?.Name
+               ?? variableEvents.FirstOrDefault()?.Name
+               ?? string.Empty;
+    }
+
     protected void SetState(CommunicationState state, string? message = null)
     {
         if (State == state && StateMessage == message)

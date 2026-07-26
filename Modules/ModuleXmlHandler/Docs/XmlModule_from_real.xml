@@ -18,14 +18,14 @@
           <encryptedSettings />
           <variableReferences>
             <variableReference ref="1" isCommunicated="true">
-              <commParam>direction="read";eventRef="Event20ms";multiplier="1";id="LivingRoomTemp"</commParam>
+              <commParam>direction="read";eventRef="Event20ms";id="LivingRoomTemp"</commParam>
               <script ref="value_changed_filter.py" additionalInfo="threshold=10.0" />
             </variableReference>
             <variableReference ref="2" isCommunicated="true">
-              <commParam>direction="read";eventRef="Event20ms";multiplier="1";id="LivingRoomPressure"</commParam>
+              <commParam>direction="read";eventRef="Event20ms";id="LivingRoomPressure"</commParam>
             </variableReference>
             <variableReference ref="3" isCommunicated="true">
-              <commParam>direction="read";eventRef="Event20ms";multiplier="1";id="variable"</commParam>
+              <commParam>direction="read";eventRef="Event20ms";id="variable"</commParam>
             </variableReference>
           </variableReferences>
         </protocolReference>

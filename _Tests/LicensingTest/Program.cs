@@ -448,6 +448,7 @@ internal static class Program
         public Task StopAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
         public void Dispose() { }
         public void SetConfiguration() { }
+        public string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents) => string.Empty;
         public IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated) => null;
         public IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent variableEvent, string id) => null;
         public IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents, string commParams, bool isCommunicated) => null;

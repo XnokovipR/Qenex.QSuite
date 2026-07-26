@@ -49,6 +49,20 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
     // matching the driver the protocol is hosted on.
     public override string DefaultRawSettings => "mode=rtu;unitId=1;timeoutMs=1000;retries=2";
 
+    // Every supported commParam listed explicitly so the user only edits values instead of
+    // discovering keys; address is mandatory with no sensible default, 0 is a placeholder to
+    // overwrite. dataType/size stay derived from the variable on purpose (an explicit value
+    // would break when the variable type changes).
+    public override string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
+    {
+        return string.Join(";",
+            "registerType=\"holdingRegister\"",
+            "address=\"0\"",
+            "wordOrder=\"big\"",
+            "direction=\"read\"",
+            $"eventRef=\"{GetDefaultEventName(variableEvents)}\"");
+    }
+
     public override void SetConfiguration()
     {
         try

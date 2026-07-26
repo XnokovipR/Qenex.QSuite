@@ -48,6 +48,17 @@ public class SimulDataProtocol : ProtocolBase<int>
     {
     }
 
+    // "signal" picks one of the five generators (step, noisystep, walk1, walk2, walk3);
+    // the generation rate comes from the referenced event.
+    public override string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
+    {
+        return string.Join(";",
+            "direction=\"read\"",
+            $"eventRef=\"{GetDefaultEventName(variableEvents)}\"",
+            $"signal=\"{SimulSignalCatalog.StepKey}\"",
+            $"id=\"{variable.Name}\"");
+    }
+
     #endregion
 
     #region Protocol variables
