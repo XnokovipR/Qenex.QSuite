@@ -63,9 +63,13 @@ public class SimulDataProtocol : ProtocolBase<int>
 
     #region Protocol variables
 
+    // The project loader uses this overload when the commParam carries no eventRef (which can
+    // happen after a source move in the Project Configurator). Throwing here made such a
+    // project impossible to open; instead create the variable without an event — the protocol
+    // logs a "not generated" warning at start.
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated)
     {
-        throw new NotSupportedException();
+        return CreateProtocolVariable(variable, [], commParams, isCommunicated);
     }
 
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent varEvent, string id)
