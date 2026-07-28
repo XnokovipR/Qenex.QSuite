@@ -293,6 +293,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
             field = value;
             SelectedProtocol = field?.Protocols.FirstOrDefault();
+            ErrorMessage = string.Empty;
             OnPropertyChanged();
             AddDriverCommand?.OnCanExecuteChanged();
             RemoveDriverCommand?.OnCanExecuteChanged();
@@ -312,6 +313,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             }
 
             field = value;
+            ErrorMessage = string.Empty;
             OnPropertyChanged();
             AddDriverCommand?.OnCanExecuteChanged();
         }
@@ -328,6 +330,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             }
 
             field = value;
+            ErrorMessage = string.Empty;
             OnPropertyChanged();
             RemoveProtocolCommand?.OnCanExecuteChanged();
         }
@@ -344,6 +347,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             }
 
             field = value;
+            ErrorMessage = string.Empty;
             OnPropertyChanged();
             AddProtocolCommand?.OnCanExecuteChanged();
         }
@@ -379,6 +383,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             }
 
             field = value;
+            ErrorMessage = string.Empty;
             OnPropertyChanged();
             RemoveCommunicatedVariableCommand?.OnCanExecuteChanged();
         }
@@ -395,6 +400,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             }
 
             field = value;
+            ErrorMessage = string.Empty;
             OnPropertyChanged();
             RemoveScriptCommand?.OnCanExecuteChanged();
             ExportScriptCommand?.OnCanExecuteChanged();
@@ -412,6 +418,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             }
 
             field = value;
+            ErrorMessage = string.Empty;
             OnPropertyChanged();
             RemoveConversionCommand?.OnCanExecuteChanged();
             CopyConversionCommand?.OnCanExecuteChanged();
@@ -465,6 +472,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             }
 
             field = value;
+            ErrorMessage = string.Empty;
             OnPropertyChanged();
             AddVariableToSourceCommand?.OnCanExecuteChanged();
         }
@@ -710,10 +718,21 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             }
         }
 
+        // One failing variable (e.g. a commParam the target protocol rejects) must not abort the
+        // whole apply half-way — that used to leave the module in an inconsistent state. The
+        // failed wrapper keeps its pending changes, everything else applies normally.
+        var communicatedVariableProblems = new List<string>();
         foreach (var communicatedVariable in CommunicatedVariables)
         {
-            communicatedVariable.ApplyChanges();
-            communicatedVariable.ApplyScriptTrigger(onValueChangedScriptTriggers);
+            try
+            {
+                communicatedVariable.ApplyChanges();
+                communicatedVariable.ApplyScriptTrigger(onValueChangedScriptTriggers);
+            }
+            catch (Exception e)
+            {
+                communicatedVariableProblems.Add($"{communicatedVariable.DisplayName}: {e.Message}");
+            }
         }
 
         SynchronizeFileLogAndReplayVariables();
@@ -753,6 +772,13 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         }
 
         eventAggregator?.Publish(new ProjectConfigurationAppliedMsg());
+
+        if (communicatedVariableProblems.Count > 0)
+        {
+            ErrorMessage = "Some variables could not be applied: "
+                           + string.Join("; ", communicatedVariableProblems);
+        }
+
         NotifyHasChangesChanged();
     }
 
@@ -1683,15 +1709,29 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
         ProjectConfigurationVariableWrapper variable,
         IReadOnlyCollection<VariableUsage> usages)
     {
-        var lines = string.Join(
-            Environment.NewLine,
-            usages.Select(usage => $"  • [{usage.WorkspaceName}] {usage.ControlLabel}"));
-
         return $"Variable '{variable.DisplayName}' cannot be deleted because it is still used:"
                + Environment.NewLine
-               + lines
+               + FormatVariableUsageLines(usages)
                + Environment.NewLine
                + "Remove it from these controls first, then delete the variable.";
+    }
+
+    private static string BuildCommunicatedVariableInUseMessage(
+        ProjectConfigurationProtocolVariableWrapper communicatedVariable,
+        IReadOnlyCollection<VariableUsage> usages)
+    {
+        return $"Variable '{communicatedVariable.DisplayName}' cannot be removed from {communicatedVariable.SourceText} because it is still used:"
+               + Environment.NewLine
+               + FormatVariableUsageLines(usages)
+               + Environment.NewLine
+               + "Remove it from these controls first, then remove it from the driver/protocol.";
+    }
+
+    private static string FormatVariableUsageLines(IReadOnlyCollection<VariableUsage> usages)
+    {
+        return string.Join(
+            Environment.NewLine,
+            usages.Select(usage => $"  • {usage.WorkspaceName}/{usage.ControlLabel}"));
     }
 
     private int CreateUniqueVariableId()
@@ -2685,16 +2725,22 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             return;
         }
 
+        // A communicated variable bound to a Control must not be detached from its driver/protocol:
+        // that would break the control's binding. The arrow stays enabled so the user gets an
+        // explanation of where the variable is used instead of a silently disabled button.
+        var usages = QueryVariableUsage(SelectedCommunicatedVariable.Variable);
+        if (usages.Count > 0)
+        {
+            ErrorMessage = BuildCommunicatedVariableInUseMessage(SelectedCommunicatedVariable, usages);
+            return;
+        }
+
         RemoveCommunicatedVariable(SelectedCommunicatedVariable);
     }
 
-    // A communicated variable bound to a Control must not be detachable from its driver/protocol: that
-    // would break the control's binding. The left arrow stays disabled until the variable is removed
-    // from every control that uses it.
     private bool CanRemoveCommunicatedVariable()
     {
-        return SelectedCommunicatedVariable != null
-               && QueryVariableUsage(SelectedCommunicatedVariable.Variable).Count == 0;
+        return SelectedCommunicatedVariable != null;
     }
 
     private void RemoveCommunicatedVariable(ProjectConfigurationProtocolVariableWrapper communicatedVariable)

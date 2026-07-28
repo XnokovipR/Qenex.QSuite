@@ -94,7 +94,18 @@ public class ProjectConfigurationProtocolVariableWrapper : PropertyChangedBase
                 return;
             }
 
+            var previousProtocol = selectedSource.Protocol;
             selectedSource = value;
+
+            // A commParam only has meaning for the protocol that authored it; carrying it over
+            // to another protocol silently drops its parameters (tolerant parsers) or fails on
+            // mandatory ones (strict parsers). A protocol change therefore restarts the
+            // commParam from the target protocol's default template.
+            if (!ReferenceEquals(previousProtocol, value.Protocol))
+            {
+                CommParam = value.Protocol.CreateDefaultCommParam(Variable, variableEvents);
+            }
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(SourceText));
             OnPropertyChanged(nameof(HasChanges));
