@@ -108,7 +108,13 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 	        : controlsToLoad.ToList();
 
          isViewLoaded = true;
+         if (diagram != null)
+         {
+	         diagram.SelectionChanged -= OnDiagramSelectionChanged;
+         }
+
          diagram = radDiagram;
+         diagram.SelectionChanged += OnDiagramSelectionChanged;
          GridCellSize = Telerik.Windows.Controls.Diagrams.Primitives.BackgroundGrid.GetCellSize(diagram).Height;
 
          var diagramAlreadyContainsControls = GetDiagramControls(diagram).Any();
@@ -459,10 +465,27 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 	    };
     }
 
+    // Named handler so it can be unsubscribed on diagram reload and in Clean() (zombie rule).
+    private void OnDiagramSelectionChanged(object? sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+	    var shape = diagram?.SelectedItems?.OfType<RadDiagramShape>().FirstOrDefault();
+	    var control = (shape?.Content as UserControl)?.DataContext as ControlBase;
+	    EventAggregator.Publish(new WorkspaceControlSelectedMsg
+	    {
+		    WorkspaceName = string.IsNullOrWhiteSpace(WinTitle) ? Name : WinTitle,
+		    Control = control
+	    });
+    }
+
     public override void Clean()
     {
 	    UnsubscribeLoadedControlVariables();
 	    activeProtocolVariables.Clear();
+
+	    if (diagram != null)
+	    {
+		    diagram.SelectionChanged -= OnDiagramSelectionChanged;
+	    }
 
 	    // Release EventAggregator subscriptions taken in the constructor; without this a removed
 	    // workspace lingers as a subscriber (zombie) and still answers VariableUsageQuery from stale state.
@@ -488,10 +511,27 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 			    query.Usages.Add(new VariableUsage
 			    {
 				    WorkspaceName = string.IsNullOrWhiteSpace(WinTitle) ? (string.IsNullOrWhiteSpace(Name) ? "(unnamed workspace)" : Name) : WinTitle,
-				    ControlLabel = $"{control.GetType().Name} '{control.Label}' (Id {control.Id}) [source={(isViewLoaded ? "diagram" : "controlsToLoad/not-opened")}; refs={string.Join(", ", GetControlVariableReferences(control).Where(r => ControlBase.IsVariableReferenceMatch(r, query.Variable)))}]"
+				    ControlLabel = $"{GetControlDisplayName(control)} (id: {control.Id})"
 			    });
 		    }
 	    }
+    }
+
+    // User-facing control name: the control kind as the user knows it from the toolbox
+    // ("Graph", "Gauge", ...; ControlBase.Label is the plugin's fixed kind name — controls have
+    // no per-instance name today). Type-name fallback covers a plugin returning an empty Label.
+    internal static string GetControlDisplayName(ControlBase control)
+    {
+	    if (!string.IsNullOrWhiteSpace(control.Label))
+	    {
+		    return control.Label;
+	    }
+
+	    const string typeNameSuffix = "ControlViewModel";
+	    var typeName = control.GetType().Name;
+	    return typeName.EndsWith(typeNameSuffix, StringComparison.Ordinal)
+		    ? typeName[..^typeNameSuffix.Length]
+		    : typeName;
     }
 
     public override Task CleanAsync(CancellationToken ct = default)

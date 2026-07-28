@@ -30,6 +30,30 @@ public partial class ShellWindowModel
         eventAggregator.SubscribeAction<RemoveWorkspaceFromSolutionExplorerMsg>(RemoveWorkspace);
         eventAggregator.SubscribeAction<ScriptsRemovedMsg>(RemoveScriptDocuments);
         eventAggregator.SubscribeAction<ProjectConfigurationAppliedMsg>(_ => RefreshProjectConfigurationAppliedProperties());
+        eventAggregator.SubscribeAction<WorkspaceControlSelectedMsg>(OnWorkspaceControlSelected);
+    }
+
+    private void OnWorkspaceControlSelected(WorkspaceControlSelectedMsg msg)
+    {
+        var vm = ViewModels.FirstOrDefault(viewModel => viewModel.Name.Equals("PropertiesViewModel"));
+        if (vm is not PropertiesViewModel propVm)
+        {
+            return;
+        }
+
+        if (msg.Control == null)
+        {
+            // Deselecting in the diagram clears only a control view; a selection made elsewhere
+            // (Solution Explorer) keeps its properties.
+            if (propVm.SelectedViewModel is ControlPropertiesViewModel)
+            {
+                propVm.SelectedViewModel = new EmptyPropertiesViewModel(eventAggregator);
+            }
+
+            return;
+        }
+
+        propVm.SelectedViewModel = new ControlPropertiesViewModel(eventAggregator, msg.WorkspaceName, msg.Control);
     }
     private void OnSolutionExplorerClickedMsg(SolutionExplorerClickedItemMsg msg)
     {
