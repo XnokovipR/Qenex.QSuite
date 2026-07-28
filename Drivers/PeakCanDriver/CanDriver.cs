@@ -465,15 +465,25 @@ public class CanDriver : DriverBase, IProtocolVariableCommandDriver
             .ToDictionary(parts => parts[0], parts => parts[1].Trim('"'), StringComparer.OrdinalIgnoreCase);
     }
 
-    private static uint GetUInt(IReadOnlyDictionary<string, string> settings, string key, uint defaultValue)
+    private uint GetUInt(IReadOnlyDictionary<string, string> settings, string key, uint defaultValue)
     {
-        return settings.TryGetValue(key, out var value) && uint.TryParse(value, out var parsed)
-            ? parsed
-            : defaultValue;
+        if (!settings.TryGetValue(key, out var value))
+        {
+            return defaultValue;
+        }
+
+        if (uint.TryParse(value, out var parsed))
+        {
+            return parsed;
+        }
+
+        // A typo must not pass silently — the driver would run with a value the operator never chose.
+        Logger?.Log(LogLevel.Warn, $"PEAK CAN: invalid value '{value}' for setting '{key}', using {defaultValue}.");
+        return defaultValue;
     }
 
     // Device id is entered in hexadecimal to match PEAK Settings (range 0..FF), e.g. "01", "0x1A" or "FFh".
-    private static uint GetHexId(IReadOnlyDictionary<string, string> settings, string key, uint defaultValue)
+    private uint GetHexId(IReadOnlyDictionary<string, string> settings, string key, uint defaultValue)
     {
         if (!settings.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
         {
@@ -490,9 +500,13 @@ public class CanDriver : DriverBase, IProtocolVariableCommandDriver
             text = text[..^1];
         }
 
-        return uint.TryParse(text, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var parsed)
-            ? parsed
-            : defaultValue;
+        if (uint.TryParse(text, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var parsed))
+        {
+            return parsed;
+        }
+
+        Logger?.Log(LogLevel.Warn, $"PEAK CAN: invalid hex value '{value}' for setting '{key}', using 0x{defaultValue:X}.");
+        return defaultValue;
     }
 
     #endregion

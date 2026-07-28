@@ -139,7 +139,8 @@ public class ModbusSlaveProtocol : ProtocolBase<byte[]>, ITransportProtocol<byte
 
         try
         {
-            var map = ModbusVariableRegisterMap.Build(Variables);
+            var map = ModbusVariableRegisterMap.Build(Variables,
+                message => Logger?.Log(LogLevel.Warn, $"Modbus slave: {message}"));
             if (map.IsEmpty)
             {
                 Logger?.Log(LogLevel.Warn, "Modbus slave: no variables mapped; every request will be rejected.");

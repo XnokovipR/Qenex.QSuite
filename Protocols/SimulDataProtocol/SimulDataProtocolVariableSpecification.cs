@@ -32,10 +32,14 @@ public class SimulDataProtocolVariableSpecification : ProtVariableSpecification
     {
         var parameters = ParseCommParams(commParams);
 
+        // Tolerant on purpose: direction is informative only for a generator, so a typo must
+        // not knock the variable out of communication.
         var direction = CommDirection.Read;
-        if (parameters.TryGetValue("direction", out var directionStr) && !string.IsNullOrWhiteSpace(directionStr))
+        if (parameters.TryGetValue("direction", out var directionStr)
+            && !string.IsNullOrWhiteSpace(directionStr)
+            && Enum.TryParse<CommDirection>(directionStr, ignoreCase: true, out var parsedDirection))
         {
-            direction = Enum.Parse<CommDirection>(directionStr, ignoreCase: true);
+            direction = parsedDirection;
         }
 
         return new SimulDataProtocolVariableSpecification

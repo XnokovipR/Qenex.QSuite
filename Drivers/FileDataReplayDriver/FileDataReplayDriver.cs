@@ -112,22 +112,42 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
             logFilePath = Path.Combine(DriverEnvironment.DataRootDirectory, logFilePath);
         }
 
-        if (settings.TryGetValue("loop", out var loopValue) && bool.TryParse(loopValue, out var parsedLoop))
+        if (settings.TryGetValue("loop", out var loopValue))
         {
-            loop = parsedLoop;
+            if (bool.TryParse(loopValue, out var parsedLoop))
+            {
+                loop = parsedLoop;
+            }
+            else
+            {
+                Logger?.Log(LogLevel.Warn, $"Replay: invalid loop value '{loopValue}', keeping {loop}.");
+            }
         }
 
-        if (settings.TryGetValue("speed", out var speedValue)
-            && double.TryParse(speedValue, out var parsedSpeed)
-            && parsedSpeed > 0)
+        if (settings.TryGetValue("speed", out var speedValue))
         {
-            speed = parsedSpeed;
+            // Invariant culture on purpose: "speed=1.5" must work regardless of the OS locale.
+            if (double.TryParse(speedValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedSpeed)
+                && parsedSpeed > 0)
+            {
+                speed = parsedSpeed;
+            }
+            else
+            {
+                Logger?.Log(LogLevel.Warn, $"Replay: invalid speed value '{speedValue}', keeping {speed.ToString(CultureInfo.InvariantCulture)}.");
+            }
         }
 
-        if (settings.TryGetValue("mode", out var modeValue)
-            && Enum.TryParse<ReplayMode>(modeValue, ignoreCase: true, out var parsedMode))
+        if (settings.TryGetValue("mode", out var modeValue))
         {
-            replayMode = parsedMode;
+            if (Enum.TryParse<ReplayMode>(modeValue, ignoreCase: true, out var parsedMode))
+            {
+                replayMode = parsedMode;
+            }
+            else
+            {
+                Logger?.Log(LogLevel.Warn, $"Replay: invalid mode value '{modeValue}', keeping {replayMode}.");
+            }
         }
     }
 

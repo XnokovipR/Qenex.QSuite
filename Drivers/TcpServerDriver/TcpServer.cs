@@ -301,11 +301,21 @@ public class TcpServer : DriverBase
             : defaultValue;
     }
 
-    private static int GetInt(IReadOnlyDictionary<string, string> settings, string key, int defaultValue)
+    private int GetInt(IReadOnlyDictionary<string, string> settings, string key, int defaultValue)
     {
-        return settings.TryGetValue(key, out var value) && int.TryParse(value, out var parsedValue)
-            ? parsedValue
-            : defaultValue;
+        if (!settings.TryGetValue(key, out var value))
+        {
+            return defaultValue;
+        }
+
+        if (int.TryParse(value, out var parsedValue))
+        {
+            return parsedValue;
+        }
+
+        // A typo must not pass silently — the driver would run with a value the operator never chose.
+        Logger?.Log(LogLevel.Warn, $"TCP server: invalid value '{value}' for setting '{key}', using {defaultValue}.");
+        return defaultValue;
     }
 
     #endregion

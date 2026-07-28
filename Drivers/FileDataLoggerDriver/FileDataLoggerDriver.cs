@@ -81,21 +81,41 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             logFilePath = Path.Combine(DriverEnvironment.DataRootDirectory, logFilePath);
         }
 
-        if (settings.TryGetValue("append", out var appendValue) && bool.TryParse(appendValue, out var parsedAppend))
+        if (settings.TryGetValue("append", out var appendValue))
         {
-            append = parsedAppend;
+            if (bool.TryParse(appendValue, out var parsedAppend))
+            {
+                append = parsedAppend;
+            }
+            else
+            {
+                Logger?.Log(LogLevel.Warn, $"Data logger: invalid append value '{appendValue}', using {append}.");
+            }
         }
 
-        if (settings.TryGetValue("flushOnWrite", out var flushValue) && bool.TryParse(flushValue, out var parsedFlush))
+        if (settings.TryGetValue("flushOnWrite", out var flushValue))
         {
-            flushOnWrite = parsedFlush;
+            if (bool.TryParse(flushValue, out var parsedFlush))
+            {
+                flushOnWrite = parsedFlush;
+            }
+            else
+            {
+                Logger?.Log(LogLevel.Warn, $"Data logger: invalid flushOnWrite value '{flushValue}', using {flushOnWrite}.");
+            }
         }
 
-        if (settings.TryGetValue("reorderBufferMs", out var reorderBufferValue)
-            && double.TryParse(reorderBufferValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedReorderBufferMs)
-            && parsedReorderBufferMs >= 0)
+        if (settings.TryGetValue("reorderBufferMs", out var reorderBufferValue))
         {
-            reorderBufferDelay = TimeSpan.FromMilliseconds(parsedReorderBufferMs);
+            if (double.TryParse(reorderBufferValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedReorderBufferMs)
+                && parsedReorderBufferMs >= 0)
+            {
+                reorderBufferDelay = TimeSpan.FromMilliseconds(parsedReorderBufferMs);
+            }
+            else
+            {
+                Logger?.Log(LogLevel.Warn, $"Data logger: invalid reorderBufferMs value '{reorderBufferValue}', using {reorderBufferDelay.TotalMilliseconds}.");
+            }
         }
     }
 

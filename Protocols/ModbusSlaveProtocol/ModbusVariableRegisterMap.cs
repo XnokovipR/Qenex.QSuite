@@ -22,7 +22,7 @@ internal sealed class ModbusVariableRegisterMap : IModbusDataStore
     private readonly Dictionary<ushort, BitSlot> discreteInputs = [];
 
     /// <summary>Builds the map; throws ArgumentException on overlapping addresses.</summary>
-    public static ModbusVariableRegisterMap Build(IEnumerable<IProtocolVariable> variables)
+    public static ModbusVariableRegisterMap Build(IEnumerable<IProtocolVariable> variables, Action<string>? warn = null)
     {
         var map = new ModbusVariableRegisterMap();
 
@@ -30,9 +30,16 @@ internal sealed class ModbusVariableRegisterMap : IModbusDataStore
         {
             if (protocolVariable is not ModbusProtocolVariable modbusVariable ||
                 !modbusVariable.IsCommunicated ||
-                modbusVariable.ProtocolVariableSpecification is not ModbusVariableSpecification spec ||
-                modbusVariable.Variable is not ScalarVariable)
+                modbusVariable.ProtocolVariableSpecification is not ModbusVariableSpecification spec)
             {
+                continue;
+            }
+
+            // The slave serves scalar values only; anything else (e.g. a Matrix variable) must
+            // be reported, otherwise the operator sees an empty table with no explanation.
+            if (modbusVariable.Variable is not ScalarVariable)
+            {
+                warn?.Invoke($"Variable '{modbusVariable.Variable.Name}' is not a scalar and is not served by the Modbus slave.");
                 continue;
             }
 
