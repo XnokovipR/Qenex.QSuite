@@ -20,13 +20,32 @@ public class VariableBridge(IVariableBase variable)
     }
 
     /// <summary>
-    /// Engineering hodnota = Conversion(raw). Pro skalarni promennou (Linear: raw*Mult+Offset,
-    /// jinak = raw); pro ostatni typy raw jako double. Zatim read-only (zapis pres inverzni
-    /// konverzi je soucasti budouciho zapisoveho smeru).
+    /// Engineering value = Conversion(raw). For a scalar variable (Linear: raw*Mult+Offset,
+    /// otherwise = raw); other variable types read raw as double. Writing goes through the
+    /// inverse conversion (eng -> raw, see ScalarVariable.TrySetEngValue) and throws into the
+    /// script on overflow/NaN or an unsupported variable type, so the author sees the problem
+    /// instead of a silently unchanged value.
     /// </summary>
-    public double EngValue => variable is ScalarVariable scalar
-        ? scalar.GetEngValue()
-        : ToDouble(variable.GetValue());
+    public double EngValue
+    {
+        get => variable is ScalarVariable scalar
+            ? scalar.GetEngValue()
+            : ToDouble(variable.GetValue());
+        set
+        {
+            if (variable is not ScalarVariable scalarVariable)
+            {
+                throw new InvalidOperationException(
+                    $"Variable '{variable.Name}' does not support engineering-value writes.");
+            }
+
+            if (!scalarVariable.TrySetEngValue(value))
+            {
+                throw new InvalidOperationException(
+                    $"Engineering value {value} cannot be converted to the raw type of variable '{variable.Name}' (overflow, NaN or unsupported type).");
+            }
+        }
+    }
 
     public override string ToString() => variable.GetValue().ToString() ?? "null";
 
