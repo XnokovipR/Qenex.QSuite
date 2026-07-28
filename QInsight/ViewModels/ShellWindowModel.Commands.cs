@@ -234,13 +234,17 @@ public partial class ShellWindowModel
             LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
             
             
-            // Load drivers, protocols and controls
+            // Load drivers, protocols and controls. Plugin folders live next to the executable;
+            // resolve them from BaseDirectory because the process working directory differs when
+            // the app is started via the .qproj file association or a shortcut.
+            var pluginBaseDir = AppContext.BaseDirectory;
             pluginLoader = new PluginLoader(logger);
-            driverPlugins = pluginLoader.GetPluginDetails<IDriverBase>("./Drivers");
-            protocolPlugins = pluginLoader.GetPluginDetails<IProtocolBase>("./Protocols");
-            // Controls se nacitaji dynamicky jako plugin (pilot: SignalControl); slozka nemusi existovat (napr. nic nezkopirovano)
-            controlPlugins = Directory.Exists("./Controls")
-                ? pluginLoader.GetPluginDetails<IControlBase>("./Controls")
+            driverPlugins = pluginLoader.GetPluginDetails<IDriverBase>(Path.Combine(pluginBaseDir, "Drivers"));
+            protocolPlugins = pluginLoader.GetPluginDetails<IProtocolBase>(Path.Combine(pluginBaseDir, "Protocols"));
+            // Controls are loaded dynamically as plugins; the folder may not exist (e.g. nothing copied)
+            var controlsDir = Path.Combine(pluginBaseDir, "Controls");
+            controlPlugins = Directory.Exists(controlsDir)
+                ? pluginLoader.GetPluginDetails<IControlBase>(controlsDir)
                 : [];
             controlsViewModel.SetControlPlugins(controlPlugins);
 

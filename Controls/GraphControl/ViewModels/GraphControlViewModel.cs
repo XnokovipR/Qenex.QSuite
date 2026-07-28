@@ -930,11 +930,8 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
             return initialDirectory;
         }
 
-        if (Directory.Exists(Environment.CurrentDirectory))
-        {
-            return Environment.CurrentDirectory;
-        }
-
+        // No working-directory fallback: when installed, the process may start in the
+        // read-only application folder (Program Files) or wherever the opened .qproj lives.
         return Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
     }
 
