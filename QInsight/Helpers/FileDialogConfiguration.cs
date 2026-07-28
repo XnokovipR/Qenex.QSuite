@@ -17,6 +17,7 @@ public static class FileDialogConfiguration
     public static void ConfigureFastFileDialog(DialogWindowBase dialog)
     {
         dialog.LoadDrivesInBackground = true;
+        // Faster dialog opening; trade-off: the breadcrumb shows "This PC" instead of the current path (Telerik limitation).
         dialog.ExpandToCurrentDirectory = false;
         dialog.InitialSelectedLayout = LayoutType.Tiles;
         dialog.CanUserRename = false;
