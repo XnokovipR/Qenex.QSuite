@@ -97,6 +97,9 @@ LangString CreateDesktopSC ${LANG_CZECH}   "Vytvořit zástupce na ploše"
 LangString DotNetMissing ${LANG_ENGLISH} "QInsight requires the .NET Desktop Runtime 10 (x64), which does not appear to be installed.$\r$\nDo you want to open the download page now?$\r$\n$\r$\nYou can continue with the installation, but QInsight will not start until the runtime is installed."
 LangString DotNetMissing ${LANG_CZECH}   "QInsight vyžaduje .NET Desktop Runtime 10 (x64), který zřejmě není nainstalován.$\r$\nChcete nyní otevřít stránku pro jeho stažení?$\r$\n$\r$\nV instalaci lze pokračovat, ale QInsight se bez nainstalovaného runtime nespustí."
 
+LangString RemoveUserData ${LANG_ENGLISH} "Do you also want to remove the QInsight user settings, layouts and data logs?$\r$\n$\r$\n$LOCALAPPDATA\Qenex\QInsight$\r$\n$\r$\nChoose No to keep them for a future installation."
+LangString RemoveUserData ${LANG_CZECH}   "Chcete odstranit také uživatelská nastavení, rozložení oken a datové logy QInsight?$\r$\n$\r$\n$LOCALAPPDATA\Qenex\QInsight$\r$\n$\r$\nVolbou Ne je ponecháte pro případnou budoucí instalaci."
+
 ;--------------------------------
 ; Instalace
 
@@ -121,12 +124,17 @@ Section "-Install"
 	File "${EXAMPLES_SRC}\IssJsonProtocol\bin\Release\net10.0\Qenex.QSuite.Examples.IssJsonProtocol.dll"
 	File "${EXAMPLES_SRC}\TempSensorProtocol\bin\Release\net10.0\Qenex.QSuite.Examples.TempSensorProtocol.dll"
 
-	; Vychozi konfigurace do %LOCALAPPDATA%\Qenex\QInsight aktualniho uzivatele.
-	; Existujici nastaveni se NEprepisuje a odinstalace uzivatelska data nemaze.
+	; Vychozi konfigurace do %LOCALAPPDATA%\Qenex\QInsight aktualniho uzivatele
+	; (app settings s prazdnou cestou k Pythonu + vychozi edit/runtime layouty).
+	; Existujici nastaveni se NEprepisuje a odinstalace resi dotazem.
 	SetShellVarContext current
 	CreateDirectory "$LOCALAPPDATA\Qenex\${APP_NAME}\DataLogs"
 	IfFileExists "$LOCALAPPDATA\Qenex\${APP_NAME}\QInsightAppSettings.xml" +2
-		File "/oname=$LOCALAPPDATA\Qenex\${APP_NAME}\QInsightAppSettings.xml" "${SRC_ROOT}\QInsight\AppConfig\QInsightAppSettings.xml"
+		File "/oname=$LOCALAPPDATA\Qenex\${APP_NAME}\QInsightAppSettings.xml" "${SETUP_DIR}\QInsightAppSettings.xml"
+	IfFileExists "$LOCALAPPDATA\Qenex\${APP_NAME}\QInsightEditSettings.xml" +2
+		File "/oname=$LOCALAPPDATA\Qenex\${APP_NAME}\QInsightEditSettings.xml" "${SETUP_DIR}\QInsightEditSettings.xml"
+	IfFileExists "$LOCALAPPDATA\Qenex\${APP_NAME}\QInsightRuntimeSettings.xml" +2
+		File "/oname=$LOCALAPPDATA\Qenex\${APP_NAME}\QInsightRuntimeSettings.xml" "${SETUP_DIR}\QInsightRuntimeSettings.xml"
 	SetShellVarContext all
 
 	; Pracovni adresar aplikace musi byt $INSTDIR - zastupce i spusteni
@@ -184,7 +192,8 @@ Function CreateDesktopShortcut
 FunctionEnd
 
 ;--------------------------------
-; Odinstalace (uzivatelska data v %LOCALAPPDATA% zustavaji)
+; Odinstalace (uzivatelska data v %LOCALAPPDATA% - uzivatel si zvoli,
+; zda je smazat, nebo ponechat; vychozi je ponechat)
 
 Function un.onInit
 	SetRegView 64
@@ -199,6 +208,17 @@ Section "Uninstall"
 	Delete "$DESKTOP\${APP_NAME}.lnk"
 
 	RMDir /r "$INSTDIR"
+
+	; Volitelne smazani uzivatelskych dat (nastaveni, layouty, datove logy).
+	; Pri tiche odinstalaci (/S) se data ponechavaji.
+	SetShellVarContext current
+	${If} ${FileExists} "$LOCALAPPDATA\Qenex\${APP_NAME}\*.*"
+		MessageBox MB_YESNO|MB_ICONQUESTION "$(RemoveUserData)" /SD IDNO IDNO keepUserData
+		RMDir /r "$LOCALAPPDATA\Qenex\${APP_NAME}"
+		RMDir "$LOCALAPPDATA\Qenex"
+		keepUserData:
+	${EndIf}
+	SetShellVarContext all
 
 	DeleteRegValue HKLM "Software\Classes\${ASSOC_EXT}\OpenWithProgids" "${ASSOC_PROGID}"
 	DeleteRegKey /ifempty HKLM "Software\Classes\${ASSOC_EXT}\OpenWithProgids"

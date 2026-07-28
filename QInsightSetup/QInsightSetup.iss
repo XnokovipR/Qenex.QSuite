@@ -74,7 +74,9 @@ Source: "{#ExamplesDir}\TempSensorProtocol\bin\Release\net10.0\Qenex.QSuite.Exam
 ; Vychozi konfigurace do %LOCALAPPDATA%\Qenex\QInsight.
 ; onlyifdoesntexist - neprepsat existujici nastaveni uzivatele,
 ; uninsneveruninstall - odinstalace nesmaze uzivatelska data.
-Source: "..\QInsight\AppConfig\QInsightAppSettings.xml"; DestDir: "{localappdata}\Qenex\{#MyAppName}"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "QInsightAppSettings.xml"; DestDir: "{localappdata}\Qenex\{#MyAppName}"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "QInsightEditSettings.xml"; DestDir: "{localappdata}\Qenex\{#MyAppName}"; Flags: onlyifdoesntexist uninsneveruninstall
+Source: "QInsightRuntimeSettings.xml"; DestDir: "{localappdata}\Qenex\{#MyAppName}"; Flags: onlyifdoesntexist uninsneveruninstall
 
 [Dirs]
 ; Slozka pro datove logy aplikace

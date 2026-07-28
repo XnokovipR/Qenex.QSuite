@@ -206,6 +206,23 @@ public partial class ShellWindowModel
 
     #endregion
 
+    // Warns when Python scripting is not usable: the DLL path is either not configured or
+    // points to a missing file. The application keeps running; only scripts cannot start.
+    private void ValidatePythonDllPath()
+    {
+        var pythonDllPath = ShellWindow.MainAppSettings.ScriptEngine.PythonDllPath;
+        if (string.IsNullOrWhiteSpace(pythonDllPath))
+        {
+            eventAggregator.Publish(new LogMessage(LogLevel.Warn,
+                "The Python DLL path is not set; Python scripting is unavailable. Set it in Options -> Preferences -> General."));
+        }
+        else if (!File.Exists(pythonDllPath))
+        {
+            eventAggregator.Publish(new LogMessage(LogLevel.Warn,
+                $"The Python DLL '{pythonDllPath}' does not exist; Python scripting is unavailable. Fix the path in Options -> Preferences -> General."));
+        }
+    }
+
     private const string DocumentationBaseUrl = "https://qinsight.qenex.net/";
 
     // Opens the online documentation in the default browser; the parameter is the section
@@ -263,6 +280,8 @@ public partial class ShellWindowModel
                 ? pluginLoader.GetPluginDetails<IControlBase>(controlsDir)
                 : [];
             controlsViewModel.SetControlPlugins(controlPlugins);
+
+            ValidatePythonDllPath();
 
             // process app arguments
             var cmdArgs = Environment.GetCommandLineArgs();
