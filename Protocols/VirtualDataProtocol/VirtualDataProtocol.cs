@@ -1,0 +1,243 @@
+using System.Reflection;
+using System.Threading.Channels;
+using Qenex.QSuite.Common.CoreComm;
+using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Specifications.Specification;
+using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.VariableEvents;
+
+namespace Qenex.QSuite.Protocols.VirtualDataProtocol;
+
+/// <summary>
+/// Protocol for virtual (script-computed) variables. It has no transport and no timing of its
+/// own: every successful script write of one of its variables is enqueued by the module
+/// (IScriptWriteAwareProtocol) and the consumer loop publishes the notification, so the
+/// variables show up in controls, graphs and data logs like any other communicated signal.
+/// One write = one published sample, stamped with the time of the write.
+/// </summary>
+public class VirtualDataProtocol : ProtocolBase<VirtualWrite>, IScriptWriteAwareProtocol
+{
+    // Script writes waiting for publishing; the channel keeps the consumer loop cancelable.
+    private Channel<VirtualWrite>? pendingWrites;
+    private volatile bool exitRequested;
+    private CancellationTokenSource? runCts;
+    private Task? runTask;
+
+    public VirtualDataProtocol()
+    {
+        Specification = new SpecificationBase
+        {
+            Name = "VirtualDataProtocol",
+            Label = "Virtual Data Protocol",
+            Description = "Publishes script-computed (virtual) variable values so they show up in controls and data logs.",
+            CreatedOn = new DateTime(2026, 7, 28),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Author = "Qenex",
+            Company = "QENEX Ltd."
+        };
+    }
+
+    #region Configuration
+
+    // The protocol has no protocol-level settings; everything the variable needs is its identity.
+    public override void SetConfiguration()
+    {
+    }
+
+    public override string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
+    {
+        return $"id=\"{variable.Name}\"";
+    }
+
+    #endregion
+
+    #region Protocol variables
+
+    public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated)
+    {
+        return new ProtocolVariable
+        {
+            Variable = variable,
+            IsCommunicated = isCommunicated,
+            ProtocolVariableSpecification = VirtualDataProtocolVariableSpecification.Create(commParams)
+        };
+    }
+
+    public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent variableEvent, string id)
+    {
+        return CreateProtocolVariable(variable, $"id=\"{id}\"", true);
+    }
+
+    public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents,
+        string commParams, bool isCommunicated)
+    {
+        // Samples are born from script writes, so variable events are not used.
+        return CreateProtocolVariable(variable, commParams, isCommunicated);
+    }
+
+    #endregion
+
+    #region Protocol control
+
+    public override Task StartAsync(CancellationToken ct = default)
+    {
+        if (!IsEnabled)
+        {
+            SetState(CommunicationState.Disabled);
+            return Task.CompletedTask;
+        }
+
+        if (State == CommunicationState.Running || runTask is { IsCompleted: false })
+        {
+            return Task.CompletedTask;
+        }
+
+        SetState(CommunicationState.Starting);
+        exitRequested = false;
+        pendingWrites = Channel.CreateUnbounded<VirtualWrite>();
+
+        runCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        runTask = RunLoopAsync(runCts.Token);
+        SetState(CommunicationState.Running);
+        return Task.CompletedTask;
+    }
+
+    public override async Task StopAsync(CancellationToken ct = default)
+    {
+        SetState(CommunicationState.Stopping);
+        exitRequested = true;
+        pendingWrites?.Writer.TryComplete();
+
+        if (runCts != null)
+        {
+            await runCts.CancelAsync();
+        }
+
+        if (runTask != null)
+        {
+            try
+            {
+                await runTask.WaitAsync(TimeSpan.FromSeconds(5), ct);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (TimeoutException)
+            {
+                Logger?.Log(LogLevel.Warn, "Virtual data protocol did not stop before timeout.");
+            }
+        }
+
+        runCts?.Dispose();
+        runCts = null;
+        runTask = null;
+        SetState(CommunicationState.Stopped);
+    }
+
+    public override void Dispose()
+    {
+        runCts?.Dispose();
+    }
+
+    #endregion
+
+    #region Script writes
+
+    public void OnVariableWrittenByScript(IVariableBase variable)
+    {
+        if (State != CommunicationState.Running)
+        {
+            return;
+        }
+
+        pendingWrites?.Writer.TryWrite(new VirtualWrite(variable, DateTime.UtcNow));
+    }
+
+    #endregion
+
+    #region Received data
+
+    public override Task AddReceivedDataToQueueAsync(IEnumerable<VirtualWrite> data, CancellationToken ct = default)
+    {
+        foreach (var write in data)
+        {
+            pendingWrites?.Writer.TryWrite(write);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task RunLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            await foreach (var write in pendingWrites!.Reader.ReadAllAsync(ct))
+            {
+                if (exitRequested)
+                {
+                    break;
+                }
+
+                await ProcessReceivedDataAsync([write], ct);
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested || exitRequested)
+        {
+            // Normal stop.
+        }
+        catch (Exception e)
+        {
+            Logger?.Log(LogLevel.Error, $"Virtual data protocol loop failed: {e.Message}");
+            SetState(CommunicationState.Faulted, e.Message);
+        }
+    }
+
+    protected override void ProcessReceivedData(IEnumerable<VirtualWrite> data)
+    {
+        foreach (var protocolVariable in Decode(data))
+        {
+            protocolVariable.NotifyValueChanged();
+        }
+    }
+
+    protected override async Task ProcessReceivedDataAsync(IEnumerable<VirtualWrite> data, CancellationToken ct = default)
+    {
+        var notifyTasks = Decode(data).Select(protocolVariable => protocolVariable.NotifyValueChangedAsync());
+        await Task.WhenAll(notifyTasks);
+    }
+
+    #endregion
+
+    #region Encoding and decoding
+
+    protected override IEnumerable<IProtocolVariable> Decode(IEnumerable<VirtualWrite> data)
+    {
+        // The value already sits in the variable (the script wrote it); publishing only stamps
+        // the write time and hands the protocol variable to the notification pipeline.
+        var updated = new List<IProtocolVariable>();
+
+        foreach (var write in data)
+        {
+            foreach (var protocolVariable in Variables)
+            {
+                if (!protocolVariable.IsCommunicated || protocolVariable.Variable.Id != write.Variable.Id)
+                {
+                    continue;
+                }
+
+                protocolVariable.Variable.Timestamp = write.TimestampUtc;
+                updated.Add(protocolVariable);
+            }
+        }
+
+        return updated;
+    }
+
+    protected override IEnumerable<VirtualWrite> Encode(IEnumerable<IProtocolVariable> protocolVariables)
+    {
+        throw new NotSupportedException("Virtual data protocol has no outgoing data.");
+    }
+
+    #endregion
+}
