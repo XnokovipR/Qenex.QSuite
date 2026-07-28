@@ -37,6 +37,13 @@ public class RawCanProtocol : ProtocolBase<CanFrame>
     {
     }
 
+    // canId is mandatory with no sensible default; 0x100 is a placeholder the operator replaces.
+    // Without this override the base template would offer keys this protocol does not read.
+    public override string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
+    {
+        return "canId=\"0x100\";offset=\"0\";byteOrder=\"le\"";
+    }
+
     #region Protocol variables
 
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated)

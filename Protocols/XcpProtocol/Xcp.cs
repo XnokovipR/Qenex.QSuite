@@ -57,7 +57,6 @@ public class Xcp : ProtocolBase<CanFrame>, ITransportProtocol<CanFrame>, IProtoc
             "address=\"0x0\"",
             "addressExtension=\"0\"",
             "direction=\"read\"",
-            "multiplier=\"1\"",
             $"eventRef=\"{GetDefaultEventName(variableEvents)}\"");
     }
 
