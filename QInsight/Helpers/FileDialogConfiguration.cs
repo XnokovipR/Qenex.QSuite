@@ -19,7 +19,8 @@ public static class FileDialogConfiguration
         dialog.LoadDrivesInBackground = true;
         // Faster dialog opening; trade-off: the breadcrumb shows "This PC" instead of the current path (Telerik limitation).
         dialog.ExpandToCurrentDirectory = false;
-        dialog.InitialSelectedLayout = LayoutType.Tiles;
+        // Details stays readable at large theme fonts; the Tiles layout overlaps its labels there.
+        dialog.InitialSelectedLayout = LayoutType.Details;
         dialog.CanUserRename = false;
         AnimationManager.SetIsAnimationEnabled(dialog, false);
     }
