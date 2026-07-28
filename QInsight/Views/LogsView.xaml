@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
 			 xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+			 xmlns:behaviors="clr-namespace:Qenex.QInsight.Behaviors"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300">
 
@@ -59,7 +60,8 @@
 			ShowGroupPanel="False"
 			AutoGenerateColumns="False"
 			RowStyleSelector="{StaticResource LogLevelStyleSelector}"
-			RowIndicatorVisibility="Collapsed">
+			RowIndicatorVisibility="Collapsed"
+			behaviors:GridViewFontSizeRefitBehavior.IsEnabled="True">
 
 			<telerik:RadGridView.SortDescriptors>
 				<telerik:SortDescriptor Member="Timestamp" SortDirection="Descending"/>
@@ -72,8 +74,11 @@
 			</telerik:RadContextMenu.ContextMenu>
 
 			<telerik:RadGridView.Columns>
-				<telerik:GridViewDataColumn Width="160" Header="Timestamp" DataMemberBinding="{Binding Path=Timestamp, StringFormat=yyyy/MM/dd HH:mm:ss.fff}" IsReadOnly="True"/>
-				<telerik:GridViewDataColumn Width="100" Header="Level" DataMemberBinding="{Binding Level}" IsReadOnly="True"/>
+				<!-- Widths come from the sample text measured with the current theme font (see
+				     GridViewFontSizeRefitBehavior) — the grid's own automatic sizing never
+				     shrinks back after a font decrease. -->
+				<telerik:GridViewDataColumn behaviors:GridViewFontSizeRefitBehavior.WidthSampleText="0000/00/00 00:00:00.000" Header="Timestamp" DataMemberBinding="{Binding Path=Timestamp, StringFormat=yyyy/MM/dd HH:mm:ss.fff}" IsReadOnly="True"/>
+				<telerik:GridViewDataColumn behaviors:GridViewFontSizeRefitBehavior.WidthSampleText="Warning" Header="Level" DataMemberBinding="{Binding Level}" IsReadOnly="True"/>
 				<telerik:GridViewDataColumn Header="Message" DataMemberBinding="{Binding Message}" IsReadOnly="True" Width="*"/>
 			</telerik:RadGridView.Columns>
 
