@@ -22,7 +22,7 @@ public class ThemePreferencesViewModel : PropertyChangedBaseWithValidation
         this.logger = logger;
 
         Theme = appSettings.Design.AppTheme;
-        FontSize = appSettings.Design.FontSize.ToString(CultureInfo.InvariantCulture);
+        FontSize = Math.Clamp(appSettings.Design.FontSize, FontSizeOptions[0], FontSizeOptions[^1]);
         ColorSettings =
         [
             new ColorPreferenceViewModel("LightThemeTextColor", appSettings.Design.LightThemeTextColor, DefaultSettings.Design.LightThemeTextColor),
@@ -51,7 +51,11 @@ public class ThemePreferencesViewModel : PropertyChangedBaseWithValidation
         set { field = value; OnPropertyChanged(); }
     }
 
-    public string FontSize
+    // The UI layouts (ribbon, log columns, ...) are tuned for this range; outside it the
+    // fixed chrome around the text stops fitting, so the choice is a closed list.
+    public IReadOnlyList<int> FontSizeOptions { get; } = Enumerable.Range(10, 11).ToList();
+
+    public int FontSize
     {
         get;
         set { field = value; OnPropertyChanged(); }
@@ -85,13 +89,8 @@ public class ThemePreferencesViewModel : PropertyChangedBaseWithValidation
     {
         try
         {
-            if (!int.TryParse(FontSize, NumberStyles.Integer, CultureInfo.InvariantCulture, out var fontSize) || fontSize <= 0)
-            {
-                throw new InvalidOperationException("Font size must be a positive integer.");
-            }
-
             appSettings.Design.AppTheme = Theme;
-            appSettings.Design.FontSize = fontSize;
+            appSettings.Design.FontSize = Math.Clamp(FontSize, FontSizeOptions[0], FontSizeOptions[^1]);
             appSettings.Design.LightThemeTextColor = GetColor("LightThemeTextColor");
             appSettings.Design.LightThemeTextBoxBackgroundColor = GetColor("LightThemeTextBoxBackgroundColor");
             appSettings.Design.LightThemeControlBackgroundColor = GetColor("LightThemeControlBackgroundColor");

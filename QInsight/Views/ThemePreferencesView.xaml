@@ -49,7 +49,7 @@
                     <telerik:RadComboBox Grid.Row="0" Grid.Column="1" Margin="0,0,0,8" ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding Theme, Mode=TwoWay}"/>
 
                     <q:QTextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Text="Font Size"/>
-                    <q:QTextBox Grid.Row="1" Grid.Column="1" Text="{Binding FontSize, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
+                    <telerik:RadComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding FontSizeOptions}" SelectedItem="{Binding FontSize, Mode=TwoWay}"/>
                 </Grid>
 
                 <GroupBox Grid.Row="2" Header="Design Manager" Margin="0,0,0,12">
