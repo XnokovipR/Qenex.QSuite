@@ -1553,9 +1553,9 @@ public partial class ShellWindowModel
         try
         {
             lastDataLogDialogDirectory = Path.GetDirectoryName(dlg.FileName);
-            var replayDriver = CreateFileDataReplayDriver(dlg.FileName);
             var existingReplayDriver = realProjectData.Module.Drivers.FirstOrDefault(driver =>
                 driver.Specification.Name.Equals("FileDataReplayDriver", StringComparison.OrdinalIgnoreCase));
+            var replayDriver = CreateFileDataReplayDriver(dlg.FileName, existingReplayDriver?.RawSettings);
             if (existingReplayDriver != null)
             {
                 if (existingReplayDriver is IReplayDriver existingReplayDriverWithEvents
@@ -1761,7 +1761,7 @@ public partial class ShellWindowModel
                && driver is not IReplayDriver;
     }
 
-    private IDriverBase CreateFileDataReplayDriver(string logFilePath)
+    private IDriverBase CreateFileDataReplayDriver(string logFilePath, string? previousRawSettings)
     {
         var driverDetails = driverPlugins.FirstOrDefault(plugin =>
             plugin.Name.Equals("FileDataReplayDriver", StringComparison.OrdinalIgnoreCase));
@@ -1784,7 +1784,7 @@ public partial class ShellWindowModel
 
         driver.Label = $"Replay: {Path.GetFileName(logFilePath)}";
         driver.IsEnabled = false;
-        driver.RawSettings = $"file={logFilePath};mode=realtime;speed=1;loop=false";
+        driver.RawSettings = BuildReplayRawSettings(logFilePath, previousRawSettings);
         driver.SetConfiguration();
 
         protocol.IsEnabled = false;
@@ -1802,6 +1802,39 @@ public partial class ShellWindowModel
         driver.AddProtocol(protocol);
 
         return driver;
+    }
+
+    // Import always points the driver at the newly chosen file but keeps the operator's
+    // mode/speed/loop tuning from the previous replay driver, if there was one.
+    private static string BuildReplayRawSettings(string logFilePath, string? previousRawSettings)
+    {
+        var mode = "realtime";
+        var speed = "1";
+        var loop = "false";
+
+        foreach (var part in (previousRawSettings ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var pair = part.Split('=', 2, StringSplitOptions.TrimEntries);
+            if (pair.Length != 2)
+            {
+                continue;
+            }
+
+            if (pair[0].Equals("mode", StringComparison.OrdinalIgnoreCase))
+            {
+                mode = pair[1];
+            }
+            else if (pair[0].Equals("speed", StringComparison.OrdinalIgnoreCase))
+            {
+                speed = pair[1];
+            }
+            else if (pair[0].Equals("loop", StringComparison.OrdinalIgnoreCase))
+            {
+                loop = pair[1];
+            }
+        }
+
+        return $"file={logFilePath};mode={mode};speed={speed};loop={loop}";
     }
 
     private IDriverBase? FindReplayDriver()
