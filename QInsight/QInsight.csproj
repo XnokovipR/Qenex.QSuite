@@ -126,6 +126,14 @@
     <Resource Include="Icons\Menu\Theme.png" />
     <None Remove="Icons\Menu\GeneralPreferences.png" />
     <Resource Include="Icons\Menu\GeneralPreferences.png" />
+    <None Remove="Icons\Menu\HelpExamples.png" />
+    <Resource Include="Icons\Menu\HelpExamples.png" />
+    <None Remove="Icons\Menu\HelpGettingStarted.png" />
+    <Resource Include="Icons\Menu\HelpGettingStarted.png" />
+    <None Remove="Icons\Menu\HelpLogging.png" />
+    <Resource Include="Icons\Menu\HelpLogging.png" />
+    <None Remove="Icons\Menu\HelpReference.png" />
+    <Resource Include="Icons\Menu\HelpReference.png" />
     <None Remove="Icons\Menu\License.png" />
     <Resource Include="Icons\Menu\License.png" />
   </ItemGroup>

@@ -1,8 +1,5 @@
-﻿using System.Diagnostics;
-using System.Windows;
-using System.Windows.Navigation;
-using Telerik.Windows.Controls;
-
+﻿using System.Windows.Navigation;
+using Qenex.QInsight.Helpers;
 
 namespace Qenex.QInsight.Views;
 
@@ -13,13 +10,10 @@ public partial class AboutAppWindow
         InitializeComponent();
     }
 
+    // Thin forwarding only (no application logic in code-behind).
     private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
     {
-        System.Diagnostics.Process.Start(new ProcessStartInfo
-        {
-            FileName = e.Uri.AbsoluteUri,
-            UseShellExecute = true
-        });
+        WebBrowserLauncher.OpenUrl(e.Uri.AbsoluteUri);
         e.Handled = true;
     }
 }

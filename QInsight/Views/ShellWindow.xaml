@@ -317,19 +317,79 @@
 
                     <!-- Ribbon Menu - Help -->
                     <telerik:RadRibbonTab Header="Help" x:Name="HelpTab">
-                        <telerik:RadRibbonGroup Header="License">
+                        <telerik:RadRibbonGroup Header="Info">
                             <telerik:RadRibbonButton
 	                            Text="License"
 	                            Size="Large"
 	                            SmallImage="../Icons/Menu/License.png"
 	                            Command="{Binding RibbonLicenseCommand}"/>
-                        </telerik:RadRibbonGroup>
-                        <telerik:RadRibbonGroup Header="Documentation">
                             <telerik:RadRibbonButton
 	                            Text="About"
 	                            Size="Large"
-	                            SmallImage="../Icons/QInsight.png"
+	                            SmallImage="../Icons/Menu/AboutApp.png"
 	                            Command="{Binding RibbonAboutAppCommand}"/>
+                        </telerik:RadRibbonGroup>
+                        <!-- Online documentation on qinsight.qenex.net; the parameter is the section slug -->
+                        <telerik:RadRibbonGroup Header="Getting Started">
+                            <telerik:RadRibbonButton
+	                            Text="Getting Started"
+	                            Size="Large"
+	                            SmallImage="../Icons/Menu/HelpGettingStarted.png"
+	                            Command="{Binding RibbonOpenDocumentationCommand}" CommandParameter="getting-started/what-is-qenex-suite"/>
+                            <telerik:RadRibbonButton
+	                            Text="First Project"
+	                            Size="Large"
+	                            SmallImage="../Icons/SolutionExplorer/Project.png"
+	                            Command="{Binding RibbonOpenDocumentationCommand}" CommandParameter="first-project/create-a-project"/>
+                            <telerik:RadRibbonButton
+	                            Text="Connecting a Device"
+	                            Size="Large"
+	                            SmallImage="../Icons/SolutionExplorer/Drivers.png"
+	                            Command="{Binding RibbonOpenDocumentationCommand}" CommandParameter="connecting-a-device/add-a-driver"/>
+                        </telerik:RadRibbonGroup>
+                        <telerik:RadRibbonGroup Header="User Guide">
+                            <telerik:RadRibbonButton
+	                            Text="Variables"
+	                            Size="Large"
+	                            SmallImage="../Icons/SolutionExplorer/Variable.png"
+	                            Command="{Binding RibbonOpenDocumentationCommand}" CommandParameter="variables/what-is-a-variable"/>
+                            <telerik:RadRibbonButton
+	                            Text="Visualization"
+	                            Size="Large"
+	                            SmallImage="../Icons/SolutionExplorer/Presentations.png"
+	                            Command="{Binding RibbonOpenDocumentationCommand}" CommandParameter="visualization/create-a-workspace"/>
+                            <telerik:RadRibbonButton
+	                            Text="Running"
+	                            Size="Large"
+	                            SmallImage="../Icons/Menu/Connect.png"
+	                            Command="{Binding RibbonOpenDocumentationCommand}" CommandParameter="running/start-and-stop"/>
+                            <telerik:RadRibbonButton
+	                            Text="Logging &amp; Replay"
+	                            Size="Large"
+	                            SmallImage="../Icons/Menu/HelpLogging.png"
+	                            Command="{Binding RibbonOpenDocumentationCommand}" CommandParameter="logging-and-replay/logging-data"/>
+                            <telerik:RadRibbonButton
+	                            Text="Python Scripts"
+	                            Size="Large"
+	                            SmallImage="../Icons/SolutionExplorer/ScriptFile.png"
+	                            Command="{Binding RibbonOpenDocumentationCommand}" CommandParameter="python-scripts/scripts-overview"/>
+                        </telerik:RadRibbonGroup>
+                        <telerik:RadRibbonGroup Header="Advanced">
+                            <telerik:RadRibbonButton
+	                            Text="Custom Extensions"
+	                            Size="Large"
+	                            SmallImage="../Icons/SolutionExplorer/Protocols.png"
+	                            Command="{Binding RibbonOpenDocumentationCommand}" CommandParameter="custom-extensions/custom-driver"/>
+                            <telerik:RadRibbonButton
+	                            Text="Reference"
+	                            Size="Large"
+	                            SmallImage="../Icons/Menu/HelpReference.png"
+	                            Command="{Binding RibbonOpenDocumentationCommand}" CommandParameter="reference/drivers"/>
+                            <telerik:RadRibbonButton
+	                            Text="Examples"
+	                            Size="Large"
+	                            SmallImage="../Icons/Menu/HelpExamples.png"
+	                            Command="{Binding RibbonOpenDocumentationCommand}" CommandParameter="examples/filter-script"/>
                         </telerik:RadRibbonGroup>
                     </telerik:RadRibbonTab>
                 </telerik:RadRibbonView.Items>

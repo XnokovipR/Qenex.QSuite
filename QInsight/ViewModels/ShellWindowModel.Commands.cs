@@ -110,6 +110,7 @@ public partial class ShellWindowModel
     public RelayCommand<RadDocking> RibbonVariableWatchCommand { get; set; }
     public RelayCommand<object> RibbonLicenseCommand { get; set; }
     public RelayCommand<object> RibbonAboutAppCommand { get; set; }
+    public RelayCommand<string> RibbonOpenDocumentationCommand { get; set; }
 
     #endregion
     
@@ -193,8 +194,10 @@ public partial class ShellWindowModel
             aboutViewModel.SetParentWindow(aboutDlg);
             aboutDlg.ShowDialog();
         });
-        
-        
+
+        RibbonOpenDocumentationCommand = new RelayCommand<string>(OpenDocumentation);
+
+
         PanelCloseCommandAsync = new RelayCommandAsync<StateChangeEventArgs>(ClosePanelAsync);
         DockingElementLayoutCleaningCommand =
             new RelayCommand<LayoutSerializationCleaningEventArgs>(DockingElementLayoutCleaning);
@@ -202,6 +205,19 @@ public partial class ShellWindowModel
     }
 
     #endregion
+
+    private const string DocumentationBaseUrl = "https://qinsight.qenex.net/";
+
+    // Opens the online documentation in the default browser; the parameter is the section
+    // slug on qinsight.qenex.net (null or empty opens the documentation home page).
+    private void OpenDocumentation(string? sectionSlug)
+    {
+        var url = DocumentationBaseUrl + sectionSlug;
+        if (!WebBrowserLauncher.OpenUrl(url))
+        {
+            eventAggregator.Publish(new LogMessage(LogLevel.Error, $"Failed to open the documentation page {url}."));
+        }
+    }
     
     #region Window command methods
 
