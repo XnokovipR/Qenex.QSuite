@@ -18,12 +18,14 @@
         Title="{Binding WindowTitle}" Height="450" Width="800">
 
 	<Window.Resources>
-		<converters:RibbonRemainingWidthConverter x:Key="ReplayTimelineWidthConverter"
-		                                          ReservedWidth="170"
-		                                          MinWidth="560"/>
+		<converters:FontScaledRibbonWidthConverter x:Key="ReplayTimelineWidthConverter"
+		                                           ReservedWidth="170"
+		                                           ReferenceFontSize="12"
+		                                           MinWidth="560"/>
 		<converters:RibbonRemainingWidthConverter x:Key="ReplayDataContentWidthConverter"
 		                                          ReservedWidth="32"
 		                                          MinWidth="520"/>
+		<converters:FontSizeToWidthConverter x:Key="ReplaySeekBoxWidthConverter" Factor="7.4"/>
 		<BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
 	</Window.Resources>
 	
@@ -167,8 +169,17 @@
 	                            Command="{Binding RibbonDisconnectCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
 						</telerik:RadRibbonGroup>
 						<telerik:RadRibbonGroup x:Name="ReplayDataGroup"
-						                        DefaultVariant="Large"
-						                        Width="{Binding ActualWidth, ElementName=RibbonMenu, Converter={StaticResource ReplayTimelineWidthConverter}}">
+						                        DefaultVariant="Large">
+							<telerik:RadRibbonGroup.Width>
+								<!-- The reserve for the Run group scales with the theme font (the app applies
+								     the font via the Telerik palette, not WPF inheritance). Deliberately no
+								     ActualWidth of another group here: that feeds the ribbon layout back into
+								     itself and collapses the group. -->
+								<MultiBinding Converter="{StaticResource ReplayTimelineWidthConverter}">
+									<Binding Path="ActualWidth" ElementName="RibbonMenu"/>
+									<Binding Source="{x:Static telerik:Windows11Palette.Palette}" Path="FontSize"/>
+								</MultiBinding>
+							</telerik:RadRibbonGroup.Width>
 							<telerik:RadRibbonGroup.Variants>
 								<telerik:GroupVariant Variant="Large" Priority="100" />
 							</telerik:RadRibbonGroup.Variants>
@@ -222,8 +233,8 @@
 
 								<Grid Grid.Column="1">
 									<Grid.RowDefinitions>
-										<RowDefinition Height="24"/>
-										<RowDefinition Height="28"/>
+										<RowDefinition Height="Auto"/>
+										<RowDefinition Height="Auto"/>
 									</Grid.RowDefinitions>
 									<Grid.ColumnDefinitions>
 										<ColumnDefinition Width="*"/>
@@ -235,8 +246,7 @@
 									           IsEnabled="{Binding IsReplayControlEnabled}"
 									           Text="{Binding ReplayCurrentTimeText}"/>
 									<q:QTextBox Grid.ColumnSpan="2"
-									            Width="88"
-									            Height="22"
+									            Width="{Binding Source={x:Static telerik:Windows11Palette.Palette}, Path=FontSize, Converter={StaticResource ReplaySeekBoxWidthConverter}}"
 									            HorizontalAlignment="Center"
 									            VerticalAlignment="Center"
 									            VerticalContentAlignment="Center"
