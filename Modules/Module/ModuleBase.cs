@@ -252,6 +252,7 @@ public abstract class ModuleBase : IModuleBase
     public virtual async Task StartAsync(CancellationToken ct = default)
     {
         SetState(CommunicationState.Starting);
+        RegisterScriptWrittenVariableRouting();
         await Scripting.InitializeSharedScopeAsync(Variables);
         SubscribeOnValueChangedScriptTriggers();
 
@@ -282,6 +283,7 @@ public abstract class ModuleBase : IModuleBase
             .ToList();
 
         Scripting.RequestStop();
+        Scripting.VariableWrittenCallback = null;
         await Task.WhenAll(sourceDrivers.Select(driver => driver.StopAsync(ct)));
         UnsubscribeProtocolVariableCommandDrivers();
         UnsubscribeProtocolVariableSinkDrivers();
@@ -349,6 +351,46 @@ public abstract class ModuleBase : IModuleBase
         }
 
         onValueChangedScriptSubscriptions.Clear();
+    }
+
+    /// <summary>
+    /// Routes successful script writes to protocols that publish script-computed variables
+    /// (IScriptWriteAwareProtocol). The scripting engine only reports "variable X was written";
+    /// which protocols care is the module's knowledge, resolved here into a lookup by id.
+    /// </summary>
+    private void RegisterScriptWrittenVariableRouting()
+    {
+        var protocolsByVariableId = new Dictionary<int, List<IScriptWriteAwareProtocol>>();
+        foreach (var protocol in Drivers.SelectMany(driver => driver.Protocols))
+        {
+            if (protocol is not IScriptWriteAwareProtocol scriptWriteProtocol)
+            {
+                continue;
+            }
+
+            foreach (var protocolVariable in protocol.Variables.Where(protocolVariable => protocolVariable.IsCommunicated))
+            {
+                if (!protocolsByVariableId.TryGetValue(protocolVariable.Variable.Id, out var protocols))
+                {
+                    protocolsByVariableId[protocolVariable.Variable.Id] = protocols = [];
+                }
+
+                protocols.Add(scriptWriteProtocol);
+            }
+        }
+
+        Scripting.VariableWrittenCallback = variable =>
+        {
+            if (!protocolsByVariableId.TryGetValue(variable.Id, out var protocols))
+            {
+                return;
+            }
+
+            foreach (var protocol in protocols)
+            {
+                protocol.OnVariableWrittenByScript(variable);
+            }
+        };
     }
 
     private void SubscribeProtocolVariableSinkDrivers(

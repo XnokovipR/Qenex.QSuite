@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace Qenex.QSuite.Scripting.ScriptingEngine;
 
-public class VariableBridge(IVariableBase variable)
+public class VariableBridge(IVariableBase variable, Func<Action<IVariableBase>?>? variableWrittenCallbackProvider = null)
 {
     public string Name => variable.Name;
     public int Id => variable.Id;
@@ -16,7 +16,11 @@ public class VariableBridge(IVariableBase variable)
     public object RawValue
     {
         get => variable.GetValue();
-        set => variable.SetValue(ConvertValueForVariable(value));
+        set
+        {
+            variable.SetValue(ConvertValueForVariable(value));
+            NotifyVariableWritten();
+        }
     }
 
     /// <summary>
@@ -44,7 +48,16 @@ public class VariableBridge(IVariableBase variable)
                 throw new InvalidOperationException(
                     $"Engineering value {value} cannot be converted to the raw type of variable '{variable.Name}' (overflow, NaN or unsupported type).");
             }
+
+            NotifyVariableWritten();
         }
+    }
+
+    // A successful write is reported to the host so protocols publishing script-computed
+    // variables can enqueue the new sample; runs on the Python thread, so it must not block.
+    private void NotifyVariableWritten()
+    {
+        variableWrittenCallbackProvider?.Invoke()?.Invoke(variable);
     }
 
     public override string ToString() => variable.GetValue().ToString() ?? "null";

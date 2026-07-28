@@ -55,6 +55,13 @@ public class ScriptingContext
     public IList<OnValueChangedScriptTrigger> OnValueChangedScriptTriggers { get; set; }
     public ScriptEngineSettings EngineSettings { get; set; }
     public bool IsReplayMode { get; set; }
+
+    /// <summary>
+    /// Invoked after a script successfully writes a variable value (raw or eng). The host
+    /// (module) routes the write to protocols that publish script-computed variables. Runs on
+    /// the Python execution thread, so the callback must only enqueue and never block.
+    /// </summary>
+    public Action<IVariableBase>? VariableWrittenCallback { get; set; }
     public PyModule? SharedScope { get; internal set; }
     public bool HasAbandonedExecutions { get; private set; }
     public event EventHandler<ScriptExecutedEventArgs>? ScriptExecuted;
@@ -115,7 +122,7 @@ public class ScriptingContext
                     continue;
                 }
 
-                SharedScope.Set(binding.PythonName, new VariableBridge(variable));
+                SharedScope.Set(binding.PythonName, new VariableBridge(variable, () => VariableWrittenCallback));
             }
 
             //SharedScope.Exec("print(\"Ahoj - toto je test\")");
