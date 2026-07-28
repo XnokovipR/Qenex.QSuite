@@ -206,6 +206,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VirtualDataProtocol", "Prot
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VirtualDataDriver", "Drivers\VirtualDataDriver\VirtualDataDriver.csproj", "{E7588511-73E4-4E8D-A688-721054BA33B1}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "QInsightSetup", "QInsightSetup", "{FD7120E7-1BE4-4ECF-8F0B-C15B727749D2}"
+	ProjectSection(SolutionItems) = preProject
+		QInsightSetup\QInsightLicense.rtf = QInsightSetup\QInsightLicense.rtf
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
