@@ -31,8 +31,8 @@ public class ModbusSlaveProtocol : ProtocolBase<byte[]>, ITransportProtocol<byte
         Specification = new SpecificationBase
         {
             Name = "ModbusSlaveProtocol",
-            Label = "Modbus Slave",
-            Description = "Modbus slave (server): serves variables as coils, discrete inputs, input and holding registers.",
+            Label = "Modbus Slave (RTU/TCP)",
+            Description = "Serves variables as coils/registers to a remote master. RTU: Serial Port; TCP: TCP Server.",
             CreatedOn = new DateTime(2026, 7, 10),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",

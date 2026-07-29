@@ -3073,12 +3073,18 @@ public sealed record ProjectConfigurationNavigationItem(ProjectConfigurationSect
 
 public sealed record ProjectConfigurationDriverPluginOption(PluginDetails Plugin)
 {
-    public string DisplayName => $"{Plugin.Name} ({Plugin.Version})";
+    // Show the user-facing Label; Name is the technical id stored in .qproj.
+    public string DisplayName => string.IsNullOrWhiteSpace(Plugin.Label)
+        ? $"{Plugin.Name} ({Plugin.Version})"
+        : $"{Plugin.Label} ({Plugin.Version})";
 }
 
 public sealed record ProjectConfigurationProtocolPluginOption(PluginDetails Plugin)
 {
-    public string DisplayName => $"{Plugin.Name} ({Plugin.Version})";
+    // Show the user-facing Label; Name is the technical id stored in .qproj.
+    public string DisplayName => string.IsNullOrWhiteSpace(Plugin.Label)
+        ? $"{Plugin.Name} ({Plugin.Version})"
+        : $"{Plugin.Label} ({Plugin.Version})";
 }
 
 public enum ProjectConfigurationSection

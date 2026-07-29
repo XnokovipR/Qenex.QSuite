@@ -38,8 +38,8 @@ public class TcpClientDriver : DriverBase, IProtocolVariableCommandDriver
         Specification = new SpecificationBase
         {
             Name = "TcpClientDriver",
-            Label = "TCP Client Driver",
-            Description = "Bidirectional TCP client transporting raw byte chunks; framing/encoding is the protocol's job.",
+            Label = "TCP Client",
+            Description = "Connects to a device over TCP and transports raw bytes.",
             CreatedOn = new DateTime(2026, 6, 1),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",

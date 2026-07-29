@@ -19,8 +19,8 @@ public class SimDriver : DriverBase
         Specification = new SpecificationBase()
         {
             Name = "SimulDataDriver",
-            Label = "Simulation Data Driver",
-            Description = "Testing driver for simulating data communication.",
+            Label = "Simulation",
+            Description = "Runs the Simulation Signals protocol - try a project without hardware.",
             CreatedOn = new DateTime(2025, 2, 1),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",

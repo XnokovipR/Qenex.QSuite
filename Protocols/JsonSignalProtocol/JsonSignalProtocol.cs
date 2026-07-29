@@ -30,8 +30,8 @@ public class JsonSignalProtocol : ProtocolBase<byte[]>
         Specification = new SpecificationBase
         {
             Name = "JsonSignalProtocol",
-            Label = "JSON Signal Protocol",
-            Description = "Decodes newline-delimited JSON signal messages from raw byte chunks into protocol variable values.",
+            Label = "JSON Signal Stream",
+            Description = "Decodes newline-delimited JSON signal messages. Use with the TCP Client driver.",
             CreatedOn = new DateTime(2026, 6, 1),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",

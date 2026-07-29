@@ -44,8 +44,8 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
         Specification = new SpecificationBase
         {
             Name = "FileDataLoggerDriver",
-            Label = "File Data Logger Driver",
-            Description = "Driver for logging observed protocol variable values into a file.",
+            Label = "Data Log Recorder",
+            Description = "Records selected variable values into a .qilog file.",
             CreatedOn = new DateTime(2026, 5, 25),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",

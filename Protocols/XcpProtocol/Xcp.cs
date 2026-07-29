@@ -37,8 +37,8 @@ public class Xcp : ProtocolBase<CanFrame>, ITransportProtocol<CanFrame>, IProtoc
         Specification = new SpecificationBase
         {
             Name = "XcpProtocol",
-            Label = "XCP Protocol",
-            Description = "Simplified XCP master: polled SHORT_UPLOAD reads and SET_MTA+DOWNLOAD writes.",
+            Label = "XCP on CAN",
+            Description = "XCP master: periodic ECU memory reads and operator writes. Use with the PEAK CAN Adapter driver.",
             CreatedOn = new DateTime(2026, 7, 10),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",

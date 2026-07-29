@@ -34,8 +34,8 @@ public class TcpServer : DriverBase
         Specification = new SpecificationBase
         {
             Name = "TcpServerDriver",
-            Label = "TCP Server Driver",
-            Description = "Binary TCP server (listener) transporting raw byte chunks (e.g. for a Modbus TCP slave).",
+            Label = "TCP Server",
+            Description = "Listens for one TCP connection and transports raw bytes.",
             CreatedOn = new DateTime(2026, 7, 10),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",

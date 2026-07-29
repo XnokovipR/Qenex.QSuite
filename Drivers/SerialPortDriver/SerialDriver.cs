@@ -37,8 +37,8 @@ public class SerialDriver : DriverBase, IProtocolVariableCommandDriver
         Specification = new SpecificationBase
         {
             Name = "SerialPortDriver",
-            Label = "Serial Port Driver",
-            Description = "Serial COM port driver transporting raw byte chunks (e.g. for Modbus RTU).",
+            Label = "Serial Port (COM)",
+            Description = "Transports raw bytes over a serial COM port (RS-232/485).",
             CreatedOn = new DateTime(2026, 7, 10),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",

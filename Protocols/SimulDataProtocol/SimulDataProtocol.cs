@@ -31,8 +31,8 @@ public class SimulDataProtocol : ProtocolBase<int>
         Specification = new SpecificationBase()
         {
             Name = "SimulDataProtocol",
-            Label = "Simulation Data Protocol",
-            Description = "Protocol simulating five signal generators; each variable is generated in the period of its event. Use with the SimDataDriver.",
+            Label = "Simulation Signals",
+            Description = "Generates five test signal shapes; each variable in the period of its event. Use with the Simulation driver.",
             CreatedOn = new DateTime(2021, 11, 23),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? throw new Exception("Version not found"),
             Author = "Qenex",

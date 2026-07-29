@@ -36,8 +36,8 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
         Specification = new SpecificationBase
         {
             Name = "ModbusMasterProtocol",
-            Label = "Modbus Master",
-            Description = "Modbus master (client): polled reads and operator writes over RTU or TCP framing.",
+            Label = "Modbus Master (RTU/TCP)",
+            Description = "Polls coils/registers and writes on demand. RTU: Serial Port; TCP: TCP Client.",
             CreatedOn = new DateTime(2026, 7, 10),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",

@@ -39,8 +39,8 @@ public class CanDriver : DriverBase, IProtocolVariableCommandDriver
         Specification = new SpecificationBase()
         {
             Name = "PeakCANDriver",
-            Label = "Peak CAN Driver",
-            Description = "Peak CAN Driver",
+            Label = "PEAK CAN Adapter",
+            Description = "CAN bus access via a PEAK PCAN-USB adapter; carries CAN frames.",
             CreatedOn = new DateTime(2021, 11, 21),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",

@@ -29,8 +29,8 @@ public class VirtualDataProtocol : ProtocolBase<VirtualWrite>, IScriptWriteAware
         Specification = new SpecificationBase
         {
             Name = "VirtualDataProtocol",
-            Label = "Virtual Data Protocol",
-            Description = "Publishes script-computed (virtual) variable values so they show up in controls and data logs.",
+            Label = "Virtual Variables",
+            Description = "Publishes script-computed values as signal samples. Use with the Virtual Variables Host driver.",
             CreatedOn = new DateTime(2026, 7, 28),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",

@@ -14,8 +14,8 @@ public class One2OneProtocol : ProtocolBase<IProtocolVariable>, IProtocolVariabl
         Specification = new SpecificationBase
         {
             Name = "One2OneProtocol",
-            Label = "One2One Protocol",
-            Description = "Pass-through protocol for observed protocol variable values.",
+            Label = "Data Log Pass-Through",
+            Description = "Passes observed variable values 1:1 to the Data Log Recorder driver.",
             CreatedOn = new DateTime(2026, 5, 25),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",

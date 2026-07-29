@@ -50,6 +50,7 @@ public class PluginLoader(ILogger? logger = null)
                             pluginDetails.Add(new PluginDetails()
                             {
                                 Name = pluginInstance.Specification.Name,
+                                Label = pluginInstance.Specification.Label,
                                 Version = pluginInstance.Specification.Version ?? throw new Exception("Loaded plugin version not found."),
                                 PathName = dllFile
                             });

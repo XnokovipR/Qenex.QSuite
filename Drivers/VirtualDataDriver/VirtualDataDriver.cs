@@ -19,8 +19,8 @@ public class VirtualDataDriver : DriverBase
         Specification = new SpecificationBase
         {
             Name = "VirtualDataDriver",
-            Label = "Virtual Data Driver",
-            Description = "Hosts virtual variables computed by scripts.",
+            Label = "Virtual Variables Host",
+            Description = "Hosts variables computed by Python scripts; no device communication.",
             CreatedOn = new DateTime(2026, 7, 28),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
             Author = "Qenex",
