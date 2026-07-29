@@ -1,1 +1,0 @@
-C:\Users\radek\AppData\Local\Python\pythoncore-3.13-64\python.exe Zero01.py
