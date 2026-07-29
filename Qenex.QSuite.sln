@@ -57,7 +57,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XmlReadWriteTest", "Modules
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimulDataProtocol", "Protocols\SimulDataProtocol\SimulDataProtocol.csproj", "{673ED106-3B85-48BA-B173-D3D0E8F99E1F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "One2OneProtocol", "Protocols\One2OneProtocol\One2OneProtocol.csproj", "{0A176EA7-B35E-4A40-908B-ECC7651DA12A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PassThroughProtocol", "Protocols\PassThroughProtocol\PassThroughProtocol.csproj", "{0A176EA7-B35E-4A40-908B-ECC7651DA12A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataLogReplayProtocol", "Protocols\DataLogReplayProtocol\DataLogReplayProtocol.csproj", "{8D665DB9-AC51-4B87-90BF-DA3F960BB5CA}"
 EndProject

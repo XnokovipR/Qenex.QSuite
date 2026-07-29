@@ -5,8 +5,8 @@
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.Protocols.One2OneProtocol</AssemblyName>
-        <RootNamespace>Qenex.QSuite.Protocols.One2OneProtocol</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Protocols.PassThroughProtocol</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Protocols.PassThroughProtocol</RootNamespace>
         <AssemblyVersion>1.0.0.0</AssemblyVersion>
         <FileVersion>1.0.0.0</FileVersion>
     </PropertyGroup>

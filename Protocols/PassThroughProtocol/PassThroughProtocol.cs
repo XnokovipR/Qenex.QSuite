@@ -5,15 +5,15 @@ using Qenex.QSuite.Specifications.Specification;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.VariableEvents;
 
-namespace Qenex.QSuite.Protocols.One2OneProtocol;
+namespace Qenex.QSuite.Protocols.PassThroughProtocol;
 
-public class One2OneProtocol : ProtocolBase<IProtocolVariable>, IProtocolVariableSinkProtocol
+public class PassThroughProtocol : ProtocolBase<IProtocolVariable>, IProtocolVariableSinkProtocol
 {
-    public One2OneProtocol()
+    public PassThroughProtocol()
     {
         Specification = new SpecificationBase
         {
-            Name = "One2OneProtocol",
+            Name = "PassThroughProtocol",
             Label = "Data Log Pass-Through",
             Description = "Passes observed variable values 1:1 to the Data Log Recorder driver.",
             CreatedOn = new DateTime(2026, 5, 25),
@@ -29,11 +29,11 @@ public class One2OneProtocol : ProtocolBase<IProtocolVariable>, IProtocolVariabl
 
     public override IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated)
     {
-        return new One2OneProtocolVariable
+        return new PassThroughProtocolVariable
         {
             Variable = variable,
             IsCommunicated = isCommunicated,
-            ProtocolVariableSpecification = One2OneProtocolVariableSpecification.Create(commParams)
+            ProtocolVariableSpecification = PassThroughProtocolVariableSpecification.Create(commParams)
         };
     }
 

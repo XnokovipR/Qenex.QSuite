@@ -26,7 +26,7 @@ using Qenex.QSuite.Drivers.FileDataLoggerDriver;
 using Qenex.QSuite.Drivers.FileDataReplayDriver;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.DataLogReplayProtocol;
-using Qenex.QSuite.Protocols.One2OneProtocol;
+using Qenex.QSuite.Protocols.PassThroughProtocol;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.QVariables.Values;
@@ -87,11 +87,11 @@ ScalarVariable IntVariable(int id, string name) => new()
     Values = new Values<int> { Value = 0, ValueType = ValueDataType.Int }
 };
 
-(FileDataLoggerDriver Driver, One2OneProtocol Protocol, TestLogger Log) CreateLogger(
+(FileDataLoggerDriver Driver, PassThroughProtocol Protocol, TestLogger Log) CreateLogger(
     string dir, string fileName, params ScalarVariable[] variables)
 {
     var log = new TestLogger();
-    var protocol = new One2OneProtocol { IsEnabled = true };
+    var protocol = new PassThroughProtocol { IsEnabled = true };
     foreach (var variable in variables)
     {
         var pv = protocol.CreateProtocolVariable(variable, $"id=\"{variable.Id}\"", true)!;
@@ -110,7 +110,7 @@ ScalarVariable IntVariable(int id, string name) => new()
     return (driver, protocol, log);
 }
 
-IProtocolVariable SinkVariable(One2OneProtocol protocol, int variableId)
+IProtocolVariable SinkVariable(PassThroughProtocol protocol, int variableId)
     => protocol.Variables.First(v => v.Variable.Id == variableId);
 
 string SingleLogFile(string dir)

@@ -36,7 +36,7 @@
       <settings>file=DataLogs;append=true;flushOnWrite=false</settings>
       <encryptedSettings />
       <protocolReferences>
-        <protocolReference ref="One2OneProtocol">
+        <protocolReference ref="PassThroughProtocol">
           <isEnabled>true</isEnabled>
           <settings />
           <encryptedSettings />
@@ -89,7 +89,7 @@
     <protocol id="1" name="SimulDataProtocol" label="Simulation Data Protocol">
       <version>1.0.0.0</version>
     </protocol>
-    <protocol id="1" name="One2OneProtocol" label="One2One Protocol">
+    <protocol id="1" name="PassThroughProtocol" label="Data Log Pass-Through">
       <version>1.0.0.0</version>
     </protocol>
     <protocol id="1" name="DataLogReplayProtocol" label="Data Log Replay Protocol">

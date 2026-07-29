@@ -13,7 +13,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\Drivers\FileDataLoggerDriver\FileDataLoggerDriver.csproj" />
         <ProjectReference Include="..\..\Drivers\FileDataReplayDriver\FileDataReplayDriver.csproj" />
-        <ProjectReference Include="..\..\Protocols\One2OneProtocol\One2OneProtocol.csproj" />
+        <ProjectReference Include="..\..\Protocols\PassThroughProtocol\PassThroughProtocol.csproj" />
         <ProjectReference Include="..\..\Protocols\DataLogReplayProtocol\DataLogReplayProtocol.csproj" />
     </ItemGroup>
 
