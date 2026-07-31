@@ -303,7 +303,17 @@
                             Margin="0,0,8,8"
                             ItemsSource="{Binding ProtocolPluginOptions}"
                             SelectedItem="{Binding SelectedProtocolPlugin, Mode=TwoWay}"
-                            DisplayMemberPath="DisplayName"/>
+                            DisplayMemberPath="DisplayName">
+                            <telerik:RadComboBox.ItemContainerStyle>
+                                <!-- BasedOn keeps the Telerik theme style; the local style only greys
+                                     out protocols incompatible with the selected driver's transport. -->
+                                <Style TargetType="telerik:RadComboBoxItem" BasedOn="{StaticResource RadComboBoxItemStyle}">
+                                    <Setter Property="IsEnabled" Value="{Binding IsCompatible}"/>
+                                    <Setter Property="ToolTip" Value="{Binding CompatibilityHint}"/>
+                                    <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
+                                </Style>
+                            </telerik:RadComboBox.ItemContainerStyle>
+                        </telerik:RadComboBox>
                         <telerik:RadButton
                             Grid.Row="0"
                             Grid.Column="1"

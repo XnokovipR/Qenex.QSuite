@@ -10,7 +10,7 @@ using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.FileDataLoggerDriver;
 
-public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDataLogFileNameDriver
+public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDataLogFileNameDriver, ITransportSource<IProtocolVariable>
 {
     private const string DataLogExtension = ".qilog";
     private const string TimestampFormat = "yyyyMMdd'_'HH'h'mm";

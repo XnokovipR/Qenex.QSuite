@@ -33,6 +33,14 @@ public interface IProtocolBase: ICoreCommunication, IComponentSpecification
     string DefaultRawSettings { get; }
 
     /// <summary>
+    /// Optional narrowing to specific driver Names for protocols designed for one concrete
+    /// driver (its data format, not just the transport payload type). Null = any
+    /// type-compatible driver; evaluated by the Project Configurator on top of the
+    /// transport-type match, never on the communication hot path.
+    /// </summary>
+    IReadOnlyList<string>? CompatibleDrivers { get; }
+
+    /// <summary>
     /// Logger for protocol-level diagnostics (dropped records, conversion failures).
     /// Propagated by the owning driver; setting it also flows to already-added variables.
     /// </summary>

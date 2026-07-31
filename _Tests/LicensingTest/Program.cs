@@ -438,6 +438,7 @@ internal static class Program
         public string RawSettings { get; set; } = string.Empty;
         public string RawEncryptedSettings { get; set; } = string.Empty;
         public string DefaultRawSettings => string.Empty;
+        public IReadOnlyList<string>? CompatibleDrivers => null;
         public ILogger? Logger { get; set; }
         public bool IsEnabled { get; set; }
         public CommunicationState State => default;

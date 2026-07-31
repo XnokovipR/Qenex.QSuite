@@ -8,6 +8,7 @@ using Qenex.QInsight.Licensing;
 using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QLibs.QUI;
 using Qenex.QLibs.XmlInOut;
+using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.ModuleXmlHandler;
@@ -124,11 +125,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
             .OrderBy(option => option.DisplayName)
             .ToList();
         SelectedDriverPlugin = DriverPluginOptions.FirstOrDefault();
-        ProtocolPluginOptions = this.protocolPlugins
-            .Select(plugin => new ProjectConfigurationProtocolPluginOption(plugin))
-            .OrderBy(option => option.DisplayName)
-            .ToList();
-        SelectedProtocolPlugin = ProtocolPluginOptions.FirstOrDefault();
+        RefreshProtocolPluginOptions();
         Variables = new ObservableCollection<ProjectConfigurationVariableWrapper>(
             this.variables.Select(variable => new ProjectConfigurationVariableWrapper(variable, presentations)));
         foreach (var variable in Variables)
@@ -222,7 +219,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     public ProjectConfigurationProjectWrapper Project { get; }
     public ObservableCollection<ProjectConfigurationDriverWrapper> Drivers { get; }
     public IReadOnlyList<ProjectConfigurationDriverPluginOption> DriverPluginOptions { get; }
-    public IReadOnlyList<ProjectConfigurationProtocolPluginOption> ProtocolPluginOptions { get; }
+    public IReadOnlyList<ProjectConfigurationProtocolPluginOption> ProtocolPluginOptions { get; private set; } = [];
     public ObservableCollection<ProjectConfigurationVariableWrapper> Variables { get; }
     public ObservableCollection<ProjectConfigurationConversionWrapper> Conversions { get; }
     public ObservableCollection<ProjectConfigurationPresentationWrapper> Presentations { get; }
@@ -293,6 +290,7 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
 
             field = value;
             SelectedProtocol = field?.Protocols.FirstOrDefault();
+            RefreshProtocolPluginOptions();
             ErrorMessage = string.Empty;
             OnPropertyChanged();
             AddDriverCommand?.OnCanExecuteChanged();
@@ -1203,10 +1201,97 @@ public class ProjectConfigurationViewModel : PropertyChangedBase
     private bool CanAddProtocol()
     {
         return SelectedDriver != null
-               && SelectedProtocolPlugin != null
+               && SelectedProtocolPlugin is { IsCompatible: true }
                && SelectedDriver.Protocols.All(protocol => !protocol.Protocol.Specification.Name.Equals(
                    SelectedProtocolPlugin.Plugin.Name,
                    StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void RefreshProtocolPluginOptions()
+    {
+        // Grey out protocols whose ProtocolBase<T> frame type the selected driver does not
+        // provide (declared via ITransportSource<T>); an undeclared side stays unrestricted.
+        // Protocols designed for one concrete driver additionally narrow themselves by
+        // driver Names (CompatibleDrivers); an empty list keeps the type-only match.
+        IReadOnlyList<Type> driverTransports = SelectedDriver is { } driverWrapper
+            ? TransportTypes.GetDriverTransports(driverWrapper.Driver.GetType())
+            : [];
+        var driverName = SelectedDriver?.Name;
+        var previousPlugin = SelectedProtocolPlugin?.Plugin;
+
+        ProtocolPluginOptions = protocolPlugins
+            .Select(plugin =>
+            {
+                var typeCompatible = TransportTypes.AreCompatible(driverTransports, plugin.Transports);
+                var nameCompatible = plugin.CompatibleDrivers.Count == 0
+                                     || driverName == null
+                                     || plugin.CompatibleDrivers.Contains(driverName, StringComparer.OrdinalIgnoreCase);
+                var compatible = typeCompatible && nameCompatible;
+                return new ProjectConfigurationProtocolPluginOption(
+                    plugin,
+                    compatible,
+                    compatible
+                        ? null
+                        : nameCompatible
+                            ? BuildCompatibilityHint(plugin.Transports)
+                            : BuildCompatibleDriversHint(plugin.CompatibleDrivers));
+            })
+            .OrderBy(option => option.DisplayName)
+            .ToList();
+        OnPropertyChanged(nameof(ProtocolPluginOptions));
+
+        SelectedProtocolPlugin =
+            ProtocolPluginOptions.FirstOrDefault(option =>
+                option.IsCompatible && ReferenceEquals(option.Plugin, previousPlugin))
+            ?? ProtocolPluginOptions.FirstOrDefault(option => option.IsCompatible);
+    }
+
+    private static string BuildCompatibilityHint(IReadOnlyList<Type> protocolTransports)
+    {
+        var required = string.Join(" or ", protocolTransports.Select(DescribeTransport));
+        return $"Not compatible with the selected driver — requires a driver providing {required}.";
+    }
+
+    private string BuildCompatibleDriversHint(IReadOnlyList<string> compatibleDrivers)
+    {
+        // Show user-facing driver labels; Names are the stable technical ids.
+        var drivers = string.Join(" or ", compatibleDrivers.Select(name =>
+            driverPlugins.FirstOrDefault(driver =>
+                driver.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is { } driver
+                && !string.IsNullOrWhiteSpace(driver.Label)
+                ? driver.Label
+                : name));
+        return $"Not compatible with the selected driver — designed for the {drivers} driver.";
+    }
+
+    private static string DescribeTransport(Type transport)
+    {
+        if (transport == typeof(byte[]))
+        {
+            return "raw bytes";
+        }
+
+        if (transport == typeof(CanFrame))
+        {
+            return "CAN frames";
+        }
+
+        if (transport == typeof(string))
+        {
+            return "text data";
+        }
+
+        if (transport == typeof(DataLogRecord))
+        {
+            return "data-log records";
+        }
+
+        if (transport == typeof(IProtocolVariable))
+        {
+            return "live variable values";
+        }
+
+        return transport.Name;
     }
 
     private void RemoveProtocol()
@@ -3079,7 +3164,10 @@ public sealed record ProjectConfigurationDriverPluginOption(PluginDetails Plugin
         : $"{Plugin.Label} ({Plugin.Version})";
 }
 
-public sealed record ProjectConfigurationProtocolPluginOption(PluginDetails Plugin)
+public sealed record ProjectConfigurationProtocolPluginOption(
+    PluginDetails Plugin,
+    bool IsCompatible = true,
+    string? CompatibilityHint = null)
 {
     // Show the user-facing Label; Name is the technical id stored in .qproj.
     public string DisplayName => string.IsNullOrWhiteSpace(Plugin.Label)

@@ -1,6 +1,7 @@
 using System.Reflection;
 using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.SimDataDriver;
@@ -10,7 +11,7 @@ namespace Qenex.QSuite.Drivers.SimDataDriver;
 /// The hosted SimulDataProtocol generates the data itself in the periods of its variables'
 /// events; this driver only starts and stops the protocols.
 /// </summary>
-public class SimDriver : DriverBase
+public class SimDriver : DriverBase, ITransportSource<int>
 {
     #region Constructors
 

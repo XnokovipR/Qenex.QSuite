@@ -40,6 +40,10 @@ public class TempSensorProtocol : ProtocolBase<string>, ITransportProtocol<strin
         };
     }
 
+    // The transport type (string) alone cannot tell text-line drivers apart, and this
+    // protocol only understands the "chN=value" sensor lines, so it narrows itself to its driver.
+    public override IReadOnlyList<string> CompatibleDrivers => ["TempSensorDriver"];
+
     #region Configuration
 
     // The protocol has no protocol-level settings; everything is per-variable commParams.

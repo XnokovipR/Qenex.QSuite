@@ -1,6 +1,7 @@
 using System.Reflection;
 using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
+using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.VirtualDataDriver;
@@ -10,7 +11,7 @@ namespace Qenex.QSuite.Drivers.VirtualDataDriver;
 /// The hosted VirtualDataProtocol publishes values written by scripts; this driver only
 /// starts and stops the protocols.
 /// </summary>
-public class VirtualDataDriver : DriverBase
+public class VirtualDataDriver : DriverBase, ITransportSource<VirtualWrite>
 {
     #region Constructors
 

@@ -272,8 +272,9 @@ public partial class ShellWindowModel
             // the app is started via the .qproj file association or a shortcut.
             var pluginBaseDir = AppContext.BaseDirectory;
             pluginLoader = new PluginLoader(logger);
-            driverPlugins = pluginLoader.GetPluginDetails<IDriverBase>(Path.Combine(pluginBaseDir, "Drivers"));
-            protocolPlugins = pluginLoader.GetPluginDetails<IProtocolBase>(Path.Combine(pluginBaseDir, "Protocols"));
+            driverPlugins = pluginLoader.GetPluginDetails<IDriverBase>(Path.Combine(pluginBaseDir, "Drivers"), TransportTypes.Probe);
+            protocolPlugins = pluginLoader.GetPluginDetails<IProtocolBase>(Path.Combine(pluginBaseDir, "Protocols"), TransportTypes.Probe,
+                TransportTypes.ProbeCompatibleDrivers);
             // Controls are loaded dynamically as plugins; the folder may not exist (e.g. nothing copied)
             var controlsDir = Path.Combine(pluginBaseDir, "Controls");
             controlPlugins = Directory.Exists(controlsDir)

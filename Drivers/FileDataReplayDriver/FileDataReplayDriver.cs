@@ -11,7 +11,7 @@ using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.FileDataReplayDriver;
 
-public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExportDriver
+public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExportDriver, ITransportSource<DataLogRecord>
 {
     private static readonly TimeSpan DataLoadProgressUpdateInterval = TimeSpan.FromMilliseconds(100);
     private string logFilePath = Path.Combine(DriverEnvironment.DataRootDirectory, "DataLogs", "values.qilog");

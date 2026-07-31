@@ -32,6 +32,10 @@ public class IssJsonProtocol : ProtocolBase<string>
         };
     }
 
+    // The transport type (string) alone cannot tell text-line drivers apart, and this
+    // protocol only understands the ISS position JSON, so it narrows itself to its driver.
+    public override IReadOnlyList<string> CompatibleDrivers => ["IssDriver"];
+
     #region Configuration
 
     // The protocol has no protocol-level settings; everything is per-variable commParams.

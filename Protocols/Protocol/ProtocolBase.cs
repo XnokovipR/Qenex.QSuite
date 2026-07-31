@@ -59,6 +59,10 @@ public abstract class ProtocolBase<T> : IProtocolBase
     // Overridden by protocols that have protocol-level settings; base returns empty.
     public virtual string DefaultRawSettings => string.Empty;
 
+    // Overridden only by protocols tied to one concrete driver (e.g. paired examples);
+    // base returns null = any type-compatible driver.
+    public virtual IReadOnlyList<string>? CompatibleDrivers => null;
+
     public IList<IProtocolVariable> Variables { get; set; }
 
     #endregion

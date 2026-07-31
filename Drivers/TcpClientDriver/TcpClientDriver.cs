@@ -17,7 +17,7 @@ namespace Qenex.QSuite.Drivers.TcpClientDriver;
 /// IProtocolVariableWriteProtocol implementations (same pattern as the CAN and serial drivers).
 /// Reconnects on failure; numberOfReconnections="0" retries forever.
 /// </summary>
-public class TcpClientDriver : DriverBase, IProtocolVariableCommandDriver
+public class TcpClientDriver : DriverBase, IProtocolVariableCommandDriver, ITransportSource<byte[]>
 {
     private string host = "127.0.0.1";
     private int port = 5000;

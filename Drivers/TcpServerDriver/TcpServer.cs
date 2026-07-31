@@ -16,7 +16,7 @@ namespace Qenex.QSuite.Drivers.TcpServerDriver;
 /// embedded Modbus TCP servers). Received data is pushed to every ProtocolBase&lt;byte[]&gt;
 /// protocol; transmitting protocols (responses) get their TX path via ITransportProtocol&lt;byte[]&gt;.
 /// </summary>
-public class TcpServer : DriverBase
+public class TcpServer : DriverBase, ITransportSource<byte[]>
 {
     private string bindAddress = "0.0.0.0";
     private int port = 502;

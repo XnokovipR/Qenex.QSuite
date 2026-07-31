@@ -14,7 +14,7 @@ namespace Qenex.QSuite.Examples.TempSensorDriver;
 /// An operator write coming back through Send re-bases the channel's temperature, so the whole
 /// read/write chain can be tried without any hardware.
 /// </summary>
-public class TempSensorDriver : DriverBase, IProtocolVariableCommandDriver
+public class TempSensorDriver : DriverBase, IProtocolVariableCommandDriver, ITransportSource<string>
 {
     private int periodMs = 500;
     private int channelCount = 2;

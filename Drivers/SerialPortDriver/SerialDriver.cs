@@ -16,7 +16,7 @@ namespace Qenex.QSuite.Drivers.SerialPortDriver;
 /// IProtocolVariableWriteProtocol implementations (same pattern as the CAN driver).
 /// One driver instance = one COM port. Reopens the port automatically after failures (USB unplug).
 /// </summary>
-public class SerialDriver : DriverBase, IProtocolVariableCommandDriver
+public class SerialDriver : DriverBase, IProtocolVariableCommandDriver, ITransportSource<byte[]>
 {
     private string portName = string.Empty;
     private int baudRate = 9600;

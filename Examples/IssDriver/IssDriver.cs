@@ -14,7 +14,7 @@ namespace Qenex.QSuite.Examples.IssDriver;
 /// (see the IssJsonProtocol example).
 /// This is about the smallest possible real-data driver: read-only, one fixed URL, one setting.
 /// </summary>
-public class IssDriver : DriverBase
+public class IssDriver : DriverBase, ITransportSource<string>
 {
     // Free, key-less API returning one flat JSON object with the current ISS position.
     // Be polite to the public service: do not poll faster than ~1 request per second.

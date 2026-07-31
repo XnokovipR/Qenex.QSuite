@@ -10,7 +10,7 @@ using Qenex.QSuite.Specifications.Specification;
 
 namespace Qenex.QSuite.Drivers.PeakCanDriver;
 
-public class CanDriver : DriverBase, IProtocolVariableCommandDriver
+public class CanDriver : DriverBase, IProtocolVariableCommandDriver, ITransportSource<CanFrame>
 {
     #region Fields
 

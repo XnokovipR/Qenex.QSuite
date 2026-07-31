@@ -20,7 +20,11 @@ public class PluginLoader(ILogger? logger = null)
         };
     }
 
-    public List<PluginDetails> GetPluginDetails<T>(string directoryPath)
+    // The probes keep this loader independent of the driver/protocol assemblies: the caller
+    // supplies the reflection reading a plugin's transport payload types (from the Type) and
+    // its declared compatible driver Names (from the instance — it is a virtual property).
+    public List<PluginDetails> GetPluginDetails<T>(string directoryPath, Func<Type, IReadOnlyList<Type>>? transportProbe = null,
+        Func<object, IReadOnlyList<string>>? compatibleDriversProbe = null)
     {
         if (!Directory.Exists(directoryPath))
         {
@@ -52,7 +56,9 @@ public class PluginLoader(ILogger? logger = null)
                                 Name = pluginInstance.Specification.Name,
                                 Label = pluginInstance.Specification.Label,
                                 Version = pluginInstance.Specification.Version ?? throw new Exception("Loaded plugin version not found."),
-                                PathName = dllFile
+                                PathName = dllFile,
+                                Transports = transportProbe?.Invoke(plugin) ?? [],
+                                CompatibleDrivers = compatibleDriversProbe?.Invoke(instance) ?? []
                             });
                         }
                     }
