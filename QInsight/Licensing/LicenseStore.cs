@@ -5,7 +5,9 @@ using Qenex.QSuite.LogSystems.LogSystem;
 namespace Qenex.QInsight.Licensing;
 
 /// <summary>License data persisted on this machine. An empty token with a kept key means
-/// the machine was deactivated in the portal — the key stays for easy re-activation.</summary>
+/// the machine was deactivated in the portal — the key stays for easy re-activation.
+/// A token without a key is an offline (air-gapped) activation — no heartbeats run and
+/// the token simply lasts until its own expiry.</summary>
 public sealed record StoredLicense(string LicenseKey, string Token);
 
 /// <summary>Persists the license key and the last issued token. Lives in %LOCALAPPDATA% (with
@@ -39,9 +41,17 @@ public class LicenseStore
             }
 
             var stored = JsonSerializer.Deserialize<StoredLicense>(File.ReadAllText(filePath));
-            return string.IsNullOrWhiteSpace(stored?.LicenseKey)
-                ? null
-                : stored with { Token = stored.Token ?? string.Empty };
+            if (stored is null
+                || (string.IsNullOrWhiteSpace(stored.LicenseKey) && string.IsNullOrWhiteSpace(stored.Token)))
+            {
+                return null;
+            }
+
+            return stored with
+            {
+                LicenseKey = stored.LicenseKey ?? string.Empty,
+                Token = stored.Token ?? string.Empty
+            };
         }
         catch (Exception e)
         {

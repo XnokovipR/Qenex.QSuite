@@ -36,6 +36,9 @@ internal static class Program
         Heartbeat_Revoked_ClearsLicense();
         Heartbeat_NotActivated_DisablesLicenseWithoutReactivating();
         StoredKeyWithoutToken_IsNotLicensedButKeepsKey();
+        OfflineActivation_ValidCode_ActivatesWithoutServer();
+        OfflineActivation_ForeignMachineCode_IsRejected();
+        OfflineActivation_PersistsAcrossRestartAndSkipsHeartbeat();
         LicenseStore_CorruptFile_ReturnsNull();
         FreeTier_HasCommunicatedSignalLimit();
         NonFreeTierOrNoLicense_HasNoCommunicatedSignalLimit();
@@ -209,6 +212,52 @@ internal static class Program
 
         Check(harness.Service.Status == LicenseStatus.NotLicensed, "key-only store -> NotLicensed after restart");
         Check(harness.Service.LicenseKey == "QNX-ABCD-EFGH-JKLM-NPQR", "key-only store -> key available for prefill");
+    }
+
+    private static void OfflineActivation_ValidCode_ActivatesWithoutServer()
+    {
+        var keys = LicenseToken.CreateKeyPair();
+        using var harness = new Harness(keys.PublicKeyPem);
+        var code = LicenseToken.Sign(MakeClaims(), keys.PrivateKeyPem);
+
+        var status = harness.Service.ActivateOffline($"  {code}  ");
+
+        Check(status == LicenseStatus.Valid, "offline code -> Valid (whitespace tolerated)");
+        Check(harness.Service.IsRuntimeAllowed, "offline code -> runtime allowed");
+        Check(harness.Handler.RequestCount == 0, "offline activation -> no server request");
+        Check(harness.Store.TryLoad() is { LicenseKey: "" }, "offline activation -> stored without a key");
+    }
+
+    private static void OfflineActivation_ForeignMachineCode_IsRejected()
+    {
+        var keys = LicenseToken.CreateKeyPair();
+        using var harness = new Harness(keys.PublicKeyPem);
+        var code = LicenseToken.Sign(MakeClaims() with { MachineFingerprint = "someone-elses-machine" },
+            keys.PrivateKeyPem);
+
+        var status = harness.Service.ActivateOffline(code);
+
+        Check(status == LicenseStatus.Invalid, "foreign offline code -> Invalid");
+        Check(!harness.Service.IsRuntimeAllowed, "foreign offline code -> runtime blocked");
+        Check(harness.Store.TryLoad() is null, "foreign offline code -> nothing persisted");
+    }
+
+    private static void OfflineActivation_PersistsAcrossRestartAndSkipsHeartbeat()
+    {
+        var keys = LicenseToken.CreateKeyPair();
+        using var harness = new Harness(keys.PublicKeyPem);
+        harness.Service.ActivateOffline(LicenseToken.Sign(MakeClaims(), keys.PrivateKeyPem));
+
+        // Simulated restart: reload from the same store.
+        harness.Service.LoadStoredLicense();
+        Check(harness.Service.Status == LicenseStatus.Valid, "offline license survives a restart");
+        Check(harness.Service.LicenseKey is null, "offline license -> no key after reload");
+
+        // Without a key there is nothing to heartbeat — the subscription-long token
+        // must never be replaced by a short-lived online one.
+        harness.Service.RefreshAsync().GetAwaiter().GetResult();
+        Check(harness.Handler.RequestCount == 0, "offline license -> heartbeat is skipped");
+        Check(harness.Service.IsRuntimeAllowed, "offline license -> runtime still allowed");
     }
 
     private static void FreeTier_HasCommunicatedSignalLimit()

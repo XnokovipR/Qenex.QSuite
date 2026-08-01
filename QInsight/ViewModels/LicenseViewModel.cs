@@ -1,3 +1,4 @@
+using System.Windows;
 using Qenex.Licensing;
 using Qenex.QInsight.Licensing;
 using Qenex.QLibs.QUI;
@@ -21,6 +22,9 @@ public class LicenseViewModel : PropertyChangedBaseWithValidation
         this.communicatedSignalCountProvider = communicatedSignalCountProvider;
 
         ActivateCommand = new RelayCommandAsync<object>(ActivateAsync, _ => CanActivate());
+        CopyMachineCodeCommand = new RelayCommand<object>(_ => CopyMachineCode());
+        ActivateOfflineCommand = new RelayCommand<object>(_ => ActivateOffline(),
+            _ => !IsBusy && !string.IsNullOrWhiteSpace(OfflineCodeInput));
         CloseCommand = new RelayCommand<object>(_ => parentWindow?.Close());
 
         licenseService.StateChanged += OnLicenseStateChanged;
@@ -53,8 +57,24 @@ public class LicenseViewModel : PropertyChangedBaseWithValidation
             field = value;
             OnPropertyChanged();
             ActivateCommand.OnCanExecuteChanged();
+            ActivateOfflineCommand.OnCanExecuteChanged();
         }
     }
+
+    /// <summary>Machine code for offline activation on account.qenex.net — the machine
+    /// fingerprint the signed activation code will be bound to.</summary>
+    public string MachineCodeText => MachineFingerprint.Get();
+
+    public string OfflineCodeInput
+    {
+        get;
+        set
+        {
+            field = value;
+            OnPropertyChanged();
+            ActivateOfflineCommand.OnCanExecuteChanged();
+        }
+    } = string.Empty;
 
     public string ErrorMessage
     {
@@ -128,6 +148,8 @@ public class LicenseViewModel : PropertyChangedBaseWithValidation
     } = string.Empty;
 
     public RelayCommandAsync<object> ActivateCommand { get; }
+    public RelayCommand<object> CopyMachineCodeCommand { get; }
+    public RelayCommand<object> ActivateOfflineCommand { get; }
     public RelayCommand<object> CloseCommand { get; }
 
     public void SetParentWindow(RadWindow window)
@@ -165,6 +187,38 @@ public class LicenseViewModel : PropertyChangedBaseWithValidation
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    private void CopyMachineCode()
+    {
+        try
+        {
+            Clipboard.SetText(MachineCodeText);
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Warn, $"Could not copy the machine code to the clipboard: {e.Message}");
+        }
+    }
+
+    private void ActivateOffline()
+    {
+        ErrorMessage = string.Empty;
+        var status = licenseService.ActivateOffline(OfflineCodeInput);
+        if (status == LicenseStatus.Valid)
+        {
+            OfflineCodeInput = string.Empty;
+            RefreshStatus();
+        }
+        else
+        {
+            ErrorMessage = status switch
+            {
+                LicenseStatus.Expired => "The activation code has expired. Request a new one at account.qenex.net.",
+                _ => "The activation code is not valid for this machine. Copy the machine code again and request "
+                     + "a new activation code at account.qenex.net."
+            };
         }
     }
 

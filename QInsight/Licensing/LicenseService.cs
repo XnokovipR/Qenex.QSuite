@@ -124,6 +124,30 @@ public class LicenseService : IDisposable
         return result;
     }
 
+    /// <summary>Offline (air-gapped) activation: accepts an activation code issued by the
+    /// account portal for this machine — the code IS a signed token, validated locally
+    /// with the embedded public key. Persisted WITHOUT a license key so no heartbeats run:
+    /// a heartbeat would replace the subscription-long token with a short-lived one.</summary>
+    public LicenseStatus ActivateOffline(string activationCode)
+    {
+        var token = activationCode.Trim();
+        var status = EvaluateToken(token, out var claims);
+        if (status != LicenseStatus.Valid)
+        {
+            logger.Log(LogLevel.Warn, $"Offline activation code rejected ({status}).");
+            return status;
+        }
+
+        store.Save(new StoredLicense(string.Empty, token));
+        LicenseKey = null;
+        CurrentClaims = claims;
+        Status = LicenseStatus.Valid;
+        RaiseStateChanged();
+        logger.Log(LogLevel.Info,
+            $"License activated offline ({claims!.Tier}, valid until {claims.ExpiresAtUtc:u}).");
+        return LicenseStatus.Valid;
+    }
+
     public void Dispose()
     {
         if (disposed)
@@ -165,7 +189,8 @@ public class LicenseService : IDisposable
             return;
         }
 
-        LicenseKey = stored.LicenseKey;
+        // A key-less record is an offline activation — no heartbeats run for it.
+        LicenseKey = string.IsNullOrWhiteSpace(stored.LicenseKey) ? null : stored.LicenseKey;
         if (string.IsNullOrWhiteSpace(stored.Token))
         {
             // Key-only record: the machine was deactivated; the key is kept for re-activation.

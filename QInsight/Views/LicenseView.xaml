@@ -22,6 +22,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- License status -->
@@ -93,8 +94,44 @@
                       Text="Format: QNX-XXXX-XXXX-XXXX-XXXX (from your account at account.qenex.net)"
                       Opacity="0.7"/>
 
+        <!-- Offline activation for machines without internet access -->
+        <Grid Grid.Row="4" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <q:QTextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Margin="0,0,0,4"
+                          Text="Offline activation" FontWeight="Bold"/>
+
+            <q:QTextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Text="Machine code"/>
+            <q:QTextBox Grid.Row="1" Grid.Column="1" Margin="0,0,6,0" VerticalAlignment="Center"
+                        FontFamily="Consolas" IsReadOnly="True"
+                        Text="{Binding MachineCodeText, Mode=OneWay}"/>
+            <telerik:RadButton Grid.Row="1" Grid.Column="2" MinWidth="80" Content="Copy"
+                               Command="{Binding CopyMachineCodeCommand}"/>
+
+            <q:QTextBlock Grid.Row="2" Grid.Column="0" Margin="0,6,12,0" VerticalAlignment="Center" Text="Activation code"/>
+            <q:QTextBox Grid.Row="2" Grid.Column="1" Margin="0,6,6,0" VerticalAlignment="Center"
+                        FontFamily="Consolas"
+                        Text="{Binding OfflineCodeInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+            <telerik:RadButton Grid.Row="2" Grid.Column="2" MinWidth="80" Margin="0,6,0,0" Content="Activate"
+                               Command="{Binding ActivateOfflineCommand}"/>
+
+            <q:QTextBlock Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,4,0,0"
+                          Opacity="0.7" TextWrapping="Wrap"
+                          Text="For computers without internet access: copy the machine code, request an activation code at account.qenex.net (paid licenses only) and paste it here."/>
+        </Grid>
+
         <!-- Busy / error -->
-        <StackPanel Grid.Row="4" Margin="0,8,0,0">
+        <StackPanel Grid.Row="5" Margin="0,8,0,0">
             <q:QTextBlock Text="Contacting license server…"
                           Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}"/>
             <q:QTextBlock Foreground="Tomato"
@@ -103,7 +140,7 @@
                           Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <telerik:RadButton MinWidth="80" Content="Close" Command="{Binding CloseCommand}"/>
         </StackPanel>
     </Grid>
