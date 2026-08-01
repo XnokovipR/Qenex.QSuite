@@ -48,6 +48,8 @@ public partial class ShellWindowModel
     private bool canExportDataLog = true;
     private bool canReplay = true;
     private bool canStopReplay;
+    private bool isHandlingLicenseLoss;
+    private bool isLicenseDialogOpen;
     private bool isUpdatingReplayPositionFromDriver;
     private bool isUpdatingReplayPositionTextFromPosition;
     private int replaySeekRequestVersion;
@@ -124,8 +126,12 @@ public partial class ShellWindowModel
         ShellWindowLocationChangedCommand = new RelayCommand<object>(OnShellWindowLocationChanged);
         ShellWindowSizeChangedCommand = new RelayCommand<object>(OnShellWindowSizeChanged);
         
-        RibbonNewProjectCommand = new RelayCommandAsync<RadDocking>(NewProjectAsync, _ => canUseHomeRibbon);
-        RibbonOpenProjectCommand = new RelayCommandAsync<RadDocking>(OpenProjectAsync, _ => canUseHomeRibbon);
+        // License gate (defense in depth next to the disabled Home tab): no project
+        // creation or opening without a valid license.
+        RibbonNewProjectCommand = new RelayCommandAsync<RadDocking>(NewProjectAsync,
+            _ => canUseHomeRibbon && licenseService.IsRuntimeAllowed);
+        RibbonOpenProjectCommand = new RelayCommandAsync<RadDocking>(OpenProjectAsync,
+            _ => canUseHomeRibbon && licenseService.IsRuntimeAllowed);
         RibbonSaveProjectCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsync, _ => CanUseProjectCommand());
         RibbonSaveProjectAsCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsAsync, _ => CanUseProjectCommand());
         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(CloseProjectAsync, _ => CanUseProjectCommand());
@@ -284,21 +290,45 @@ public partial class ShellWindowModel
 
             ValidatePythonDllPath();
 
-            // process app arguments
-            var cmdArgs = Environment.GetCommandLineArgs();
-            if (cmdArgs.Length == 2)
+            // License gate: with no valid license (missing file, failed validation or
+            // expired token) the ribbon is locked to Help — bring the user straight to
+            // the activation dialog and skip any command-line project open, which would
+            // otherwise bypass the disabled ribbon (file association double-click).
+            if (!licenseService.IsRuntimeAllowed)
             {
-                var projectFilePath = cmdArgs[1];
-                if (File.Exists(projectFilePath) && Path.GetExtension(projectFilePath).Equals(".qproj", StringComparison.OrdinalIgnoreCase))
+                SelectedRibbonTabIndex = HelpTabIndex;
+                if (GetCommandLineProjectFilePath() is { } skippedProjectFilePath)
                 {
-                    await OpenProjectFileAsync(projectFilePath);
+                    logger.Log(LogLevel.Warn,
+                        $"Project \"{Path.GetFileName(skippedProjectFilePath)}\" was not opened: no valid license.");
                 }
+
+                OpenLicenseDialog();
+            }
+            else if (GetCommandLineProjectFilePath() is { } projectFilePath)
+            {
+                await OpenProjectFileAsync(projectFilePath);
             }
         }
         catch (Exception e)
         {
             eventAggregator.Publish(new LogMessage(LogLevel.Error, e.Message));
         }
+    }
+
+    private static string? GetCommandLineProjectFilePath()
+    {
+        var cmdArgs = Environment.GetCommandLineArgs();
+        if (cmdArgs.Length != 2)
+        {
+            return null;
+        }
+
+        var projectFilePath = cmdArgs[1];
+        return File.Exists(projectFilePath)
+               && Path.GetExtension(projectFilePath).Equals(".qproj", StringComparison.OrdinalIgnoreCase)
+            ? projectFilePath
+            : null;
     }
 
     // This method is called when the docking manager is closing
@@ -469,7 +499,60 @@ public partial class ShellWindowModel
         };
 
         licenseViewModel.SetParentWindow(licenseDialog);
-        licenseDialog.ShowDialog();
+        // The flag stops HandleLicenseStateChangedAsync from opening a second dialog
+        // when a heartbeat refusal arrives while the user is already in this one.
+        isLicenseDialogOpen = true;
+        try
+        {
+            licenseDialog.ShowDialog();
+        }
+        finally
+        {
+            isLicenseDialogOpen = false;
+        }
+    }
+
+    /// <summary>License-gate follow-up to every license state change. When the license
+    /// stops being valid mid-session, an open project is saved on demand and closed so
+    /// the application ends in the same Help-only state as an unlicensed startup.</summary>
+    private async Task HandleLicenseStateChangedAsync()
+    {
+        if (licenseService.IsRuntimeAllowed || isHandlingLicenseLoss)
+        {
+            return;
+        }
+
+        isHandlingLicenseLoss = true;
+        try
+        {
+            if (isProjectMade)
+            {
+                var saveRequested = await ConfirmCloseProjectAsync(
+                    "The license is no longer valid and the project will be closed.\n"
+                    + "Do you want to save the project first?",
+                    "License Required");
+                if (saveRequested)
+                {
+                    await SaveProjectAsync(shellRadDocking);
+                }
+
+                await CloseProjectCoreAsync();
+            }
+
+            SelectedRibbonTabIndex = HelpTabIndex;
+            if (!isLicenseDialogOpen)
+            {
+                OpenLicenseDialog();
+            }
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, e.Message);
+        }
+        finally
+        {
+            isHandlingLicenseLoss = false;
+        }
     }
 
     private void OpenGeneralPreferences()
@@ -2332,6 +2415,8 @@ public partial class ShellWindowModel
 
     private void NotifyLicenseDependentCommands()
     {
+        RibbonNewProjectCommand.OnCanExecuteChanged();
+        RibbonOpenProjectCommand.OnCanExecuteChanged();
         RibbonConnectCommand.OnCanExecuteChanged();
         RibbonReplayCommand.OnCanExecuteChanged();
     }

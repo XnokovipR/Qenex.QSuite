@@ -23,6 +23,9 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	#region Private
 
 	private const string AppTitle = "QInsight";
+
+	/// <summary>Index of the Help tab; must match the tab order in ShellWindow.xaml.</summary>
+	private const int HelpTabIndex = 4;
 	
 	private readonly string runtimeSettingLayoutFile = AppDataPaths.RuntimeLayoutFile;
 	private readonly string editModeSettingLayoutFile = AppDataPaths.EditLayoutFile;
@@ -73,6 +76,8 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		{
 			NotifyLicenseDependentCommands();
 			UpdateLicenseBadge();
+			OnPropertyChanged(nameof(IsLicensedUiEnabled));
+			_ = HandleLicenseStateChangedAsync();
 		};
 		licenseService.Initialize();
 		UpdateLicenseBadge();
@@ -190,6 +195,19 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 		get;
 		set { field = value; OnPropertyChanged(); }
 	} = AppTitle;
+
+	/// <summary>License gate for the ribbon: without a valid license every tab except
+	/// Help is disabled (bound in ShellWindow.xaml). Evaluated at read time like
+	/// IsRuntimeAllowed itself; change notifications come from the StateChanged handler.</summary>
+	public bool IsLicensedUiEnabled => licenseService.IsRuntimeAllowed;
+
+	/// <summary>Two-way bound ribbon tab selection so the license gate can force the
+	/// selection to Help — disabling the selected RadRibbonTab does not switch tabs.</summary>
+	public int SelectedRibbonTabIndex
+	{
+		get;
+		set { field = value; OnPropertyChanged(); }
+	}
 
 	/// <summary>Shows the "FREE NON-COMMERCIAL LICENCE" badge in the top-right corner
 	/// of the main window while a Free-tier license is active.</summary>

@@ -64,11 +64,12 @@
 			</Grid.RowDefinitions>
 			
 			<telerik:RadRibbonView x:Name="RibbonMenu" Grid.Row="0"
-			                       TitleBarVisibility="Collapsed" ContentHeight="NaN" ApplicationButtonVisibility="Collapsed">
+			                       TitleBarVisibility="Collapsed" ContentHeight="NaN" ApplicationButtonVisibility="Collapsed"
+			                       SelectedIndex="{Binding SelectedRibbonTabIndex, Mode=TwoWay}">
 
 				<telerik:RadRibbonView.Items>
 					<!-- Ribbon Menu - Home -->
-					<telerik:RadRibbonTab Header="Home" x:Name="HomeTab">
+					<telerik:RadRibbonTab Header="Home" x:Name="HomeTab" IsEnabled="{Binding IsLicensedUiEnabled}">
 						<telerik:RadRibbonGroup Header="Project">
 							<telerik:RadRibbonButton
 	                            Text="New" 
@@ -155,7 +156,7 @@
 					</telerik:RadRibbonTab>
 
 					<!-- Ribbon Menu - Runtime -->
-					<telerik:RadRibbonTab Header="Runtime" x:Name="RuntimeTab">
+					<telerik:RadRibbonTab Header="Runtime" x:Name="RuntimeTab" IsEnabled="{Binding IsLicensedUiEnabled}">
 						<telerik:RadRibbonGroup Header="Run">
 							<telerik:RadRibbonButton
 								Text="Connect"
@@ -275,7 +276,7 @@
 					</telerik:RadRibbonTab>
 					
 					<!-- Tools-->
-					<telerik:RadRibbonTab Header="Tools" x:Name="ToolsTab">
+					<telerik:RadRibbonTab Header="Tools" x:Name="ToolsTab" IsEnabled="{Binding IsLicensedUiEnabled}">
 						<telerik:RadRibbonGroup Header="Interpreter">
 							<telerik:RadRibbonButton
 								Text="Python"
@@ -293,7 +294,7 @@
 					</telerik:RadRibbonTab>
 					
 					<!-- Options-->
-					<telerik:RadRibbonTab Header="Options" x:Name="OptionsTab">
+					<telerik:RadRibbonTab Header="Options" x:Name="OptionsTab" IsEnabled="{Binding IsLicensedUiEnabled}">
 						<telerik:RadRibbonGroup Header="Layout">
 							<telerik:RadRibbonButton
 								Text="Save" 
