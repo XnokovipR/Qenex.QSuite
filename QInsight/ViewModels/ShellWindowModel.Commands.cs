@@ -61,6 +61,24 @@ public partial class ShellWindowModel
     private RadOpenFileDialog? importDataLogDialog;
     private RadSaveFileDialog? exportDataLogDialog;
     private string? lastProjectDialogDirectory;
+
+    // Session value first, persisted app-settings value as the cross-session fallback.
+    // The setter mirrors into app settings, which are written to disk on app close.
+    private string? LastProjectDialogDirectory
+    {
+        get => lastProjectDialogDirectory
+               ?? (string.IsNullOrWhiteSpace(ShellWindow.MainAppSettings?.LastProjectDirectory)
+                   ? null
+                   : ShellWindow.MainAppSettings!.LastProjectDirectory);
+        set
+        {
+            lastProjectDialogDirectory = value;
+            if (ShellWindow.MainAppSettings != null && !string.IsNullOrWhiteSpace(value))
+            {
+                ShellWindow.MainAppSettings.LastProjectDirectory = value;
+            }
+        }
+    }
     private string? lastDataLogDialogDirectory;
     private string? lastGraphExportDialogDirectory;
     
@@ -660,7 +678,7 @@ public partial class ShellWindowModel
 
     private async Task OpenProjectAsync(object obj)
     {
-        var initialDirectory = GetInitialDialogDirectory(lastProjectDialogDirectory, currentProjectFilePath);
+        var initialDirectory = GetInitialDialogDirectory(LastProjectDialogDirectory, currentProjectFilePath);
         var dlg = openProjectDialog ??= CreateOpenFileDialog("QInsight project files (*.qproj)|*.qproj", initialDirectory);
         PrepareFileDialog(dlg, initialDirectory);
 
@@ -669,7 +687,7 @@ public partial class ShellWindowModel
         
         if (dlg.DialogResult == true)
         {
-            lastProjectDialogDirectory = Path.GetDirectoryName(dlg.FileName);
+            LastProjectDialogDirectory = Path.GetDirectoryName(dlg.FileName);
             await OpenProjectFileAsync(dlg.FileName);
         }
     }
@@ -756,7 +774,7 @@ public partial class ShellWindowModel
             return;
         }
         
-        var initialDirectory = GetInitialDialogDirectory(lastProjectDialogDirectory, currentProjectFilePath);
+        var initialDirectory = GetInitialDialogDirectory(LastProjectDialogDirectory, currentProjectFilePath);
         var dlg = saveProjectDialog ??= CreateSaveFileDialog("QInsight project files (*.qproj)|*.qproj", initialDirectory);
         PrepareFileDialog(dlg, initialDirectory);
 
@@ -765,7 +783,7 @@ public partial class ShellWindowModel
         
         if (dlg.DialogResult == true)
         {
-            lastProjectDialogDirectory = Path.GetDirectoryName(dlg.FileName);
+            LastProjectDialogDirectory = Path.GetDirectoryName(dlg.FileName);
             var saved = await SaveProjectFileAsync(dlg.FileName);
             if (saved)
             {

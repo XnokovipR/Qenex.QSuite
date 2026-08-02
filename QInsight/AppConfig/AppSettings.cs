@@ -21,6 +21,8 @@ public class AppSettings
 	[XmlElement("WindowStyle")] public WindowStyle WinStyle { get; set; } = null!;
 	[XmlElement("DesignManager")] public DesignManager Design { get; set; } = null!;
 	[XmlElement("ScriptEngineSettings")] public ScriptEngineSettings ScriptEngine { get; set; } = null!;
+	// Last directory the project Open/Save As dialog was used in; restored across sessions.
+	[XmlElement("LastProjectDirectory")] public string LastProjectDirectory { get; set; } = string.Empty;
 
 	#endregion
 
@@ -87,6 +89,7 @@ public class AppSettings
 		settings.WinStyle ??= defaults.WinStyle;
 		settings.Design ??= defaults.Design;
 		settings.ScriptEngine ??= defaults.ScriptEngine;
+		settings.LastProjectDirectory ??= string.Empty;
 		return settings;
 	}
 
