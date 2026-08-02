@@ -467,10 +467,10 @@ public partial class ShellWindowModel
             Owner = Application.Current.MainWindow,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Header = "Theme Preferences",
-            Width = 680,
-            Height = 540,
-            MinWidth = 680,
-            MinHeight = 540,
+            Width = 500,
+            Height = 300,
+            MinWidth = 500,
+            MinHeight = 300,
             ResizeMode = ResizeMode.NoResize,
             Content = preferencesView
         };

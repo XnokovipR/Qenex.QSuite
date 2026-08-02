@@ -7,13 +7,9 @@
              xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
              xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
              mc:Ignorable="d"
-             MinWidth="680"
-             MinHeight="460"
+             MinWidth="460"
+             MinHeight="200"
              d:DataContext="{d:DesignInstance vm:ThemePreferencesViewModel, IsDesignTimeCreatable=False}">
-    <UserControl.Resources>
-        <Style TargetType="{x:Type q:QTextBox}" BasedOn="{StaticResource {x:Type TextBox}}"/>
-    </UserControl.Resources>
-
     <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -24,7 +20,6 @@
         <ScrollViewer x:Name="ThemeSettingsScrollViewer" Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Grid Width="{Binding ViewportWidth, ElementName=ThemeSettingsScrollViewer}" MaxWidth="700" HorizontalAlignment="Stretch">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
@@ -51,72 +46,6 @@
                     <q:QTextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Text="Font Size"/>
                     <telerik:RadComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding FontSizeOptions}" SelectedItem="{Binding FontSize, Mode=TwoWay}"/>
                 </Grid>
-
-                <GroupBox Grid.Row="2" Header="Design Manager" Margin="0,0,0,12">
-                    <Grid Margin="8">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <Grid Grid.Row="0" Margin="0,0,0,6" HorizontalAlignment="Stretch">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" MinWidth="240"/>
-                                <ColumnDefinition Width="112"/>
-                                <ColumnDefinition Width="54"/>
-                                <ColumnDefinition Width="54"/>
-                                <ColumnDefinition Width="54"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <q:QTextBlock Grid.Column="0" FontWeight="SemiBold" Text="Property"/>
-                            <q:QTextBlock Grid.Column="1" FontWeight="SemiBold" Text="Color" Margin="3,0,0,0"/>
-                            <q:QTextBlock Grid.Column="2" FontWeight="SemiBold" Text="R" Margin="3,0,0,0"/>
-                            <q:QTextBlock Grid.Column="3" FontWeight="SemiBold" Text="G" Margin="3,0,0,0"/>
-                            <q:QTextBlock Grid.Column="4" FontWeight="SemiBold" Text="B" Margin="3,0,0,0"/>
-                        </Grid>
-
-                        <ItemsControl Grid.Row="1" ItemsSource="{Binding ColorSettings}">
-                            <ItemsControl.ItemContainerStyle>
-                                <Style TargetType="{x:Type ContentPresenter}">
-                                    <Setter Property="HorizontalAlignment" Value="Stretch"/>
-                                </Style>
-                            </ItemsControl.ItemContainerStyle>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type vm:ColorPreferenceViewModel}">
-                                    <Grid Margin="0,0,0,6" HorizontalAlignment="Stretch">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" MinWidth="240"/>
-                                            <ColumnDefinition Width="112"/>
-                                            <ColumnDefinition Width="54"/>
-                                            <ColumnDefinition Width="54"/>
-                                            <ColumnDefinition Width="54"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <q:QTextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Text="{Binding DisplayName}"/>
-                                        <telerik:RadColorPicker
-                                            Grid.Column="1"
-                                            Width="90"
-                                            HorizontalAlignment="Left"
-                                            SelectedColor="{Binding SelectedColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                            HeaderPalette="Standard"
-                                            HeaderPaletteVisibility="Visible"
-                                            MainPalette="Default"
-                                            StandardPalette="Standard"
-                                            StandardPaletteVisibility="Collapsed"
-                                            NoColorText="Color"/>
-                                        <q:QTextBox Grid.Column="2" Margin="0,0,6,0" Text="{Binding Red, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
-                                        <q:QTextBox Grid.Column="3" Margin="0,0,6,0" Text="{Binding Green, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
-                                        <q:QTextBox Grid.Column="4" Margin="0,0,6,0" Text="{Binding Blue, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
-                                        <telerik:RadButton Grid.Column="5" MinWidth="72" Content="Default" Command="{Binding ResetDefaultCommand}"/>
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </Grid>
-                </GroupBox>
-
             </Grid>
         </ScrollViewer>
 
