@@ -2,6 +2,7 @@
 using System.Text;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using Qenex.QInsight.Helpers;
 using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Common.WpfComm;
@@ -44,7 +45,7 @@ public class DriverSeWrapper : PropertyChangedBase, IViewableItem
             sb.Append(Environment.NewLine);
             sb.Append($"Desc.\t{Driver.Specification.Description}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Version\t{Driver.Specification.Version}");
+            sb.Append($"Version\t{Driver.Specification.Version.ToDisplayString()}");
             sb.Append(Environment.NewLine);
             sb.Append($"Author\t{Driver.Specification.Author}");
             sb.Append(Environment.NewLine);

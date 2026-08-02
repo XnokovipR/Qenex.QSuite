@@ -46,7 +46,7 @@ public class FileDataReplayDriver : DriverBase, IReplayDriver, IDataLogCsvExport
             Label = "Data Log Replay",
             Description = "Plays a recorded .qilog file back into the project (added by Import).",
             CreatedOn = new DateTime(2026, 5, 25),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

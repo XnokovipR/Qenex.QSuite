@@ -3160,8 +3160,8 @@ public sealed record ProjectConfigurationDriverPluginOption(PluginDetails Plugin
 {
     // Show the user-facing Label; Name is the technical id stored in .qproj.
     public string DisplayName => string.IsNullOrWhiteSpace(Plugin.Label)
-        ? $"{Plugin.Name} ({Plugin.Version})"
-        : $"{Plugin.Label} ({Plugin.Version})";
+        ? $"{Plugin.Name} ({Plugin.Version.ToDisplayString()})"
+        : $"{Plugin.Label} ({Plugin.Version.ToDisplayString()})";
 }
 
 public sealed record ProjectConfigurationProtocolPluginOption(
@@ -3171,8 +3171,8 @@ public sealed record ProjectConfigurationProtocolPluginOption(
 {
     // Show the user-facing Label; Name is the technical id stored in .qproj.
     public string DisplayName => string.IsNullOrWhiteSpace(Plugin.Label)
-        ? $"{Plugin.Name} ({Plugin.Version})"
-        : $"{Plugin.Label} ({Plugin.Version})";
+        ? $"{Plugin.Name} ({Plugin.Version.ToDisplayString()})"
+        : $"{Plugin.Label} ({Plugin.Version.ToDisplayString()})";
 }
 
 public enum ProjectConfigurationSection

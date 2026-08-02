@@ -39,7 +39,7 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 			Name = ControlName,
 			Label = Label,
 			Description = Description,
-			Version = GetType().Assembly.GetName().Version ?? new Version(1, 0, 0, 0)
+			Version = GetType().Assembly.GetName().Version ?? new Version(1, 0, 0)
 		};
 
 	[DataMember]

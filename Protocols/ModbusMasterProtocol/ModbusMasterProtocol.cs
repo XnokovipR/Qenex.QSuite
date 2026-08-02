@@ -39,7 +39,7 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
             Label = "Modbus Master (RTU/TCP)",
             Description = "Polls coils/registers and writes on demand. RTU: Serial Port; TCP: TCP Client.",
             CreatedOn = new DateTime(2026, 7, 10),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

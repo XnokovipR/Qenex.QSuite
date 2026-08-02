@@ -37,7 +37,7 @@ public class TcpServer : DriverBase, ITransportSource<byte[]>
             Label = "TCP Server",
             Description = "Listens for one TCP connection and transports raw bytes.",
             CreatedOn = new DateTime(2026, 7, 10),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

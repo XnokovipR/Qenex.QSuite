@@ -2,6 +2,7 @@
 using System.Text;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using Qenex.QInsight.Helpers;
 using Qenex.QInsight.ViewModels.ViewableItem;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Common.WpfComm;
@@ -40,7 +41,7 @@ public class ProtocolSeWrapper : PropertyChangedBase, IViewableItem
             sb.Append(Environment.NewLine);
             sb.Append($"Desc.\t{Protocol.Specification.Description}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Version\t{Protocol.Specification.Version}");
+            sb.Append($"Version\t{Protocol.Specification.Version.ToDisplayString()}");
             sb.Append(Environment.NewLine);
             sb.Append($"Author\t{Protocol.Specification.Author}");
             sb.Append(Environment.NewLine);

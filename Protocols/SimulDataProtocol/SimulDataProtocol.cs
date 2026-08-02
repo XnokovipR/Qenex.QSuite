@@ -34,7 +34,7 @@ public class SimulDataProtocol : ProtocolBase<int>
             Label = "Simulation Signals",
             Description = "Generates five test signal shapes; each variable in the period of its event. Use with the Simulation driver.",
             CreatedOn = new DateTime(2021, 11, 23),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? throw new Exception("Version not found"),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

@@ -34,7 +34,7 @@ public class IssDriver : DriverBase, ITransportSource<string>
             Label = "ISS Position (example)",
             Description = "Example driver polling the ISS position from a public REST API.",
             CreatedOn = new DateTime(2026, 7, 27),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

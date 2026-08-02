@@ -26,7 +26,7 @@ public class IssJsonProtocol : ProtocolBase<string>
             Label = "ISS JSON Protocol (example)",
             Description = "Example protocol decoding numeric fields of the ISS position JSON into variables.",
             CreatedOn = new DateTime(2026, 7, 27),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

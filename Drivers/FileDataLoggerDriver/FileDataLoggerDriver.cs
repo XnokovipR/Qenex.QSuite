@@ -47,7 +47,7 @@ public class FileDataLoggerDriver : DriverBase, IProtocolVariableSinkDriver, IDa
             Label = "Data Log Recorder",
             Description = "Records selected variable values into a .qilog file.",
             CreatedOn = new DateTime(2026, 5, 25),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

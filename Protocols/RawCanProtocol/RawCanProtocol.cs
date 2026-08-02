@@ -27,7 +27,7 @@ public class RawCanProtocol : ProtocolBase<CanFrame>
             Label = "Raw CAN Frames",
             Description = "Maps standard 11-bit CAN frames to variables by CAN id. Use with the PEAK CAN Adapter driver.",
             CreatedOn = new DateTime(2026, 6, 19),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

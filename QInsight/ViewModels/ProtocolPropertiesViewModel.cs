@@ -1,3 +1,4 @@
+using Qenex.QInsight.Helpers;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Protocols.Protocol;
 
@@ -16,7 +17,7 @@ public class ProtocolPropertiesViewModel : PropertyChangedBaseWithValidation, IP
     public string Name => protocol.Specification.Name;
     public string Label => protocol.Specification.Label;
     public string Description => protocol.Specification.Description;
-    public string Version => protocol.Specification.Version?.ToString() ?? string.Empty;
+    public string Version => protocol.Specification.Version.ToDisplayString();
     public string Author => protocol.Specification.Author ?? string.Empty;
     public string Company => protocol.Specification.Company ?? string.Empty;
     public string CreatedOn => protocol.Specification.CreatedOn.ToString("yyyy/MM/dd");

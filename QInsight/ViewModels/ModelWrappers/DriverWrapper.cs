@@ -1,4 +1,5 @@
 using System.Text;
+using Qenex.QInsight.Helpers;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Drivers.Driver;
 
@@ -30,7 +31,7 @@ public class DriverWrapper(IDriverBase driver) : PropertyChangedBase
             sb.Append(Environment.NewLine);
             sb.Append($"Desc.\t{driver.Specification.Description}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Version\t{driver.Specification.Version}");
+            sb.Append($"Version\t{driver.Specification.Version.ToDisplayString()}");
             sb.Append(Environment.NewLine);
             sb.Append($"Author\t{driver.Specification.Author}");
             sb.Append(Environment.NewLine);

@@ -34,7 +34,7 @@ public class TempSensorProtocol : ProtocolBase<string>, ITransportProtocol<strin
             Label = "Temperature Sensor Protocol (example)",
             Description = "Example protocol decoding text lines of the simulated temperature sensor.",
             CreatedOn = new DateTime(2026, 7, 26),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

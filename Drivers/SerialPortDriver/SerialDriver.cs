@@ -40,7 +40,7 @@ public class SerialDriver : DriverBase, IProtocolVariableCommandDriver, ITranspo
             Label = "Serial Port (COM)",
             Description = "Transports raw bytes over a serial COM port (RS-232/485).",
             CreatedOn = new DateTime(2026, 7, 10),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

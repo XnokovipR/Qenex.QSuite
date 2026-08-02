@@ -32,7 +32,7 @@ public class VirtualDataProtocol : ProtocolBase<VirtualWrite>, IScriptWriteAware
             Label = "Virtual Variables",
             Description = "Publishes script-computed values as signal samples. Use with the Virtual Variables Host driver.",
             CreatedOn = new DateTime(2026, 7, 28),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

@@ -1,4 +1,5 @@
 using System.Text;
+using Qenex.QInsight.Helpers;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Protocols.Protocol;
 
@@ -19,7 +20,7 @@ public class ProjectConfigurationLoadedProtocolWrapper(IProtocolBase protocol, b
         : protocol.Specification.Label;
 
     public string Name => protocol.Specification.Name;
-    public string Version => protocol.Specification.Version?.ToString() ?? string.Empty;
+    public string Version => protocol.Specification.Version.ToDisplayString();
 
     public string DisplayName => string.IsNullOrWhiteSpace(protocol.Specification.Label)
         ? protocol.Specification.Name
@@ -38,7 +39,7 @@ public class ProjectConfigurationLoadedProtocolWrapper(IProtocolBase protocol, b
             sb.Append(Environment.NewLine);
             sb.Append($"Desc.\t{protocol.Specification.Description}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Version\t{protocol.Specification.Version}");
+            sb.Append($"Version\t{protocol.Specification.Version.ToDisplayString()}");
             sb.Append(Environment.NewLine);
             sb.Append($"Author\t{protocol.Specification.Author}");
             sb.Append(Environment.NewLine);

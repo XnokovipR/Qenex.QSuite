@@ -34,7 +34,7 @@ public class ModbusSlaveProtocol : ProtocolBase<byte[]>, ITransportProtocol<byte
             Label = "Modbus Slave (RTU/TCP)",
             Description = "Serves variables as coils/registers to a remote master. RTU: Serial Port; TCP: TCP Server.",
             CreatedOn = new DateTime(2026, 7, 10),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

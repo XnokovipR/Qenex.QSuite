@@ -40,7 +40,7 @@ public class Xcp : ProtocolBase<CanFrame>, ITransportProtocol<CanFrame>, IProtoc
             Label = "XCP on CAN",
             Description = "XCP master: periodic ECU memory reads and operator writes. Use with the PEAK CAN Adapter driver.",
             CreatedOn = new DateTime(2026, 7, 10),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

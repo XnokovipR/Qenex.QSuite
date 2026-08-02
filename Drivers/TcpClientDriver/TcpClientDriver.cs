@@ -41,7 +41,7 @@ public class TcpClientDriver : DriverBase, IProtocolVariableCommandDriver, ITran
             Label = "TCP Client",
             Description = "Connects to a device over TCP and transports raw bytes.",
             CreatedOn = new DateTime(2026, 6, 1),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

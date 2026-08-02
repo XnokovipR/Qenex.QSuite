@@ -23,7 +23,7 @@ public class SimDriver : DriverBase, ITransportSource<int>
             Label = "Simulation",
             Description = "Runs the Simulation Signals protocol - try a project without hardware.",
             CreatedOn = new DateTime(2025, 2, 1),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

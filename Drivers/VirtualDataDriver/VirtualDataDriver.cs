@@ -23,7 +23,7 @@ public class VirtualDataDriver : DriverBase, ITransportSource<VirtualWrite>
             Label = "Virtual Variables Host",
             Description = "Hosts variables computed by Python scripts; no device communication.",
             CreatedOn = new DateTime(2026, 7, 28),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

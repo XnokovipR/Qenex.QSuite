@@ -36,7 +36,7 @@ public class TempSensorDriver : DriverBase, IProtocolVariableCommandDriver, ITra
             Label = "Temperature Sensor (example)",
             Description = "Example driver simulating a multi-channel temperature sensor.",
             CreatedOn = new DateTime(2026, 7, 26),
-            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0, 0),
+            Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
             Company = "QENEX Ltd."
         };

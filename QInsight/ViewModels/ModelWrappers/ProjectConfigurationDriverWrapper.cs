@@ -1,5 +1,6 @@
 using System.Text;
 using System.Collections.ObjectModel;
+using Qenex.QInsight.Helpers;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.Drivers.Driver;
 
@@ -23,7 +24,7 @@ public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = 
         driver.Protocols.Select(protocol => new ProjectConfigurationLoadedProtocolWrapper(protocol)));
 
     public string Name => driver.Specification.Name;
-    public string Version => driver.Specification.Version?.ToString() ?? string.Empty;
+    public string Version => driver.Specification.Version.ToDisplayString();
 
     public string Label
     {
@@ -68,7 +69,7 @@ public class ProjectConfigurationDriverWrapper(IDriverBase driver, bool isNew = 
             sb.Append(Environment.NewLine);
             sb.Append($"Desc.\t{driver.Specification.Description}");
             sb.Append(Environment.NewLine);
-            sb.Append($"Version\t{driver.Specification.Version}");
+            sb.Append($"Version\t{driver.Specification.Version.ToDisplayString()}");
             sb.Append(Environment.NewLine);
             sb.Append($"Author\t{driver.Specification.Author}");
             sb.Append(Environment.NewLine);
