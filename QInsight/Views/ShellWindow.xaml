@@ -39,7 +39,7 @@
 		</i:EventTrigger>
 
 		<i:EventTrigger EventName="Closing">
-			<i:InvokeCommandAction Command="{Binding ShellWindowClosingCommand}" CommandParameter="{Binding ElementName=RadDocking}"/>
+			<i:InvokeCommandAction Command="{Binding ShellWindowClosingCommand}" PassEventArgsToCommand="True"/>
 		</i:EventTrigger>
 
 		<i:EventTrigger EventName="SizeChanged">

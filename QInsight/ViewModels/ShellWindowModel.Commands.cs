@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.ComponentModel;
+using System.IO;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
@@ -43,6 +44,8 @@ public partial class ShellWindowModel
     private string? replayDataLogFilePath;
     private bool canUseHomeRibbon = true;
     private bool canConnectRuntime = true;
+    private bool isAppCloseConfirmed;
+    private bool isAppClosePromptOpen;
     private bool canDisconnectRuntime;
     private bool canImportDataLog = true;
     private bool canExportDataLog = true;
@@ -68,7 +71,7 @@ public partial class ShellWindowModel
     public RelayCommand<object> ShellWindowLocationChangedCommand { get; set; }
     public RelayCommand<object> ShellWindowSizeChangedCommand { get; set; }
     public RelayCommandAsync<RadDocking> ShellWindowLoadedCommandAsync { get; set; }
-    public RelayCommand<RadDocking> ShellWindowClosingCommand { get; set; }
+    public RelayCommand<CancelEventArgs> ShellWindowClosingCommand { get; set; }
     
     public RelayCommandAsync<StateChangeEventArgs> PanelCloseCommandAsync { get; set; }
     
@@ -121,7 +124,7 @@ public partial class ShellWindowModel
     private void CreateCommands()
     {
         ShellWindowLoadedCommandAsync = new RelayCommandAsync<RadDocking>(OnShellWindowLoadedAsync);
-        ShellWindowClosingCommand = new RelayCommand<RadDocking>(OnShellWindowClosing);
+        ShellWindowClosingCommand = new RelayCommand<CancelEventArgs>(OnShellWindowClosing);
 
         ShellWindowLocationChangedCommand = new RelayCommand<object>(OnShellWindowLocationChanged);
         ShellWindowSizeChangedCommand = new RelayCommand<object>(OnShellWindowSizeChanged);
@@ -331,17 +334,58 @@ public partial class ShellWindowModel
             : null;
     }
 
-    // This method is called when the docking manager is closing
-    private void OnShellWindowClosing(RadDocking docking)
+    // This method is called when the shell window is closing. With a project open the
+    // close is cancelled first and re-triggered after the user confirms it.
+    private void OnShellWindowClosing(CancelEventArgs e)
     {
+        if (isProjectMade && !isAppCloseConfirmed)
+        {
+            // Dialogs cannot be shown while the window is still closing — cancel the
+            // close first and ask only after this Closing event has fully unwound.
+            e.Cancel = true;
+            _ = Application.Current.Dispatcher.InvokeAsync(
+                () => _ = ConfirmAppCloseAsync(),
+                DispatcherPriority.Background);
+            return;
+        }
+
         try
         {
             licenseService.Dispose();
             AppSettings.SaveAppSettingsToFile(AppDataPaths.AppSettingsFile, ShellWindow.MainAppSettings);
         }
+        catch (Exception ex)
+        {
+            eventAggregator.Publish(new LogMessage(LogLevel.Error, ex.Message));
+        }
+    }
+
+    private async Task ConfirmAppCloseAsync()
+    {
+        if (isAppClosePromptOpen)
+        {
+            return;
+        }
+
+        isAppClosePromptOpen = true;
+        try
+        {
+            var confirmed = await ConfirmCloseProjectAsync(
+                "A project is open and will be closed.\nDo you want to close the application?",
+                "Close Application");
+            if (confirmed)
+            {
+                isAppCloseConfirmed = true;
+                Application.Current.MainWindow?.Close();
+            }
+        }
         catch (Exception e)
         {
-            eventAggregator.Publish(new LogMessage(LogLevel.Error, e.Message));
+            logger.Log(LogLevel.Error, e.Message);
+        }
+        finally
+        {
+            isAppClosePromptOpen = false;
         }
     }
     
@@ -588,7 +632,13 @@ public partial class ShellWindowModel
         {
             if (isProjectMade)
             {
-                if (!await ConfirmCloseProjectAsync("Do you want to close current project and create a new one?", "New Project"))
+                var decision = PromptCloseOpenProject("New Project");
+                if (decision == CloseProjectDecision.Cancel)
+                {
+                    return;
+                }
+
+                if (decision == CloseProjectDecision.SaveAndClose && !await TrySaveProjectForCloseAsync())
                 {
                     return;
                 }
@@ -628,6 +678,20 @@ public partial class ShellWindowModel
     {
         try
         {
+            if (isProjectMade)
+            {
+                var decision = PromptCloseOpenProject("Open Project");
+                if (decision == CloseProjectDecision.Cancel)
+                {
+                    return;
+                }
+
+                if (decision == CloseProjectDecision.SaveAndClose && !await TrySaveProjectForCloseAsync())
+                {
+                    return;
+                }
+            }
+
             var projectData = await ProjectZip.UnzipProjectFileAsync(filePath, logger);
             if (projectData == null)
             {
@@ -711,6 +775,19 @@ public partial class ShellWindowModel
         }
     }
     
+    /// <summary>Save used by the close-project prompts. Returns false when nothing was
+    /// saved (Save As cancelled or save failed) so the caller can abort the close.</summary>
+    private async Task<bool> TrySaveProjectForCloseAsync()
+    {
+        if (string.IsNullOrWhiteSpace(currentProjectFilePath))
+        {
+            await SaveProjectAsAsync(shellRadDocking);
+            return !string.IsNullOrWhiteSpace(currentProjectFilePath);
+        }
+
+        return await SaveProjectFileAsync(currentProjectFilePath);
+    }
+
     private async Task<bool> SaveProjectFileAsync(string filePath)
     {
         var tempFilePath = GetTempProjectFilePath(filePath);
@@ -811,6 +888,38 @@ public partial class ShellWindowModel
     private Task<bool> ConfirmCloseProjectAsync()
     {
         return ConfirmCloseProjectAsync("Do you want to close current project?", "Close Project");
+    }
+
+    /// <summary>Modal three-way prompt shown before an open project is replaced by
+    /// New/Open. Closing the window without choosing means Cancel.</summary>
+    private CloseProjectDecision PromptCloseOpenProject(string header)
+    {
+        var projectName = !string.IsNullOrWhiteSpace(currentProjectFilePath)
+            ? Path.GetFileName(currentProjectFilePath)
+            : realProjectData.Module.Specification.Label;
+        var promptViewModel = new CloseProjectPromptViewModel(
+            $"Project \"{projectName}\" is open and will be closed.\nDo you want to save it first?");
+        var promptView = new CloseProjectPromptView
+        {
+            DataContext = promptViewModel
+        };
+
+        var promptDialog = new RadWindow
+        {
+            Owner = Application.Current.MainWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Header = header,
+            Width = 560,
+            Height = 200,
+            MinWidth = 560,
+            MinHeight = 200,
+            ResizeMode = ResizeMode.NoResize,
+            Content = promptView
+        };
+
+        promptViewModel.SetParentWindow(promptDialog);
+        promptDialog.ShowDialog();
+        return promptViewModel.Decision;
     }
 
     private Task<bool> ConfirmCloseProjectAsync(string content, string header)

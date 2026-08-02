@@ -1,0 +1,28 @@
+<UserControl x:Class="Qenex.QInsight.Views.CloseProjectPromptView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
+             xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
+             xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance vm:CloseProjectPromptViewModel, IsDesignTimeCreatable=False}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <q:QTextBlock Grid.Row="0"
+                      Margin="0,0,0,16"
+                      Text="{Binding Message}"
+                      TextWrapping="Wrap"/>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+            <telerik:RadButton MinWidth="110" Margin="0,0,8,0" Content="Save and close" Command="{Binding SaveAndCloseCommand}"/>
+            <telerik:RadButton MinWidth="140" Margin="0,0,8,0" Content="Close without saving" Command="{Binding CloseWithoutSavingCommand}"/>
+            <telerik:RadButton MinWidth="80" Content="Cancel" Command="{Binding CancelCommand}"/>
+        </StackPanel>
+    </Grid>
+</UserControl>
