@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Qenex.QLibs.QUI;
 
 namespace Qenex.QSuite.Controls.WatchTableControl.Models;
 
@@ -16,6 +17,43 @@ public sealed class WatchRow : INotifyPropertyChanged
 
 	/// <summary>Last update time - used for throttling (RefreshTime).</summary>
 	internal DateTime LastUpdate { get; set; } = DateTime.MinValue;
+
+	#region Write mode (per row)
+
+	/// <summary>Set by the view model: writes EditValue of this row to the device.</summary>
+	public Action<WatchRow>? WriteRequested { get; set; }
+
+	/// <summary>Write capability of the bound variable (decided by the protocol via the host
+	/// provider); re-evaluated on every (re)bind by RefreshWriteCapability.</summary>
+	public bool CanWrite
+	{
+		get;
+		set { field = value; OnChanged(); OnChanged(nameof(IsWriteActive)); }
+	}
+
+	/// <summary>User toggle (Write column checkbox); persisted through
+	/// WatchTableControlViewModel.WriteModeReferences.</summary>
+	public bool IsWriteMode
+	{
+		get;
+		set { field = value; OnChanged(); OnChanged(nameof(IsWriteActive)); }
+	}
+
+	/// <summary>While active, incoming updates do not overwrite this row's display.</summary>
+	public bool IsWriteActive => IsWriteMode && CanWrite;
+
+	/// <summary>Edited engineering value; any edit clears the error state.</summary>
+	public string EditValue
+	{
+		get;
+		set { field = value; OnChanged(); IsWriteError = false; }
+	} = string.Empty;
+
+	public bool IsWriteError { get; set { field = value; OnChanged(); } }
+
+	public RelayCommand<object> WriteCommand => field ??= new RelayCommand<object>(_ => WriteRequested?.Invoke(this));
+
+	#endregion
 
 	public event PropertyChangedEventHandler? PropertyChanged;
 

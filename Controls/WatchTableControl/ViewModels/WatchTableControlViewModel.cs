@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.Serialization;
 using System.Windows;
 using Qenex.QLibs.QUI;
@@ -11,7 +13,7 @@ using Qenex.QSuite.Variables.QVariables;
 namespace Qenex.QSuite.Controls.WatchTableControl.ViewModels;
 
 [DataContract]
-public class WatchTableControlViewModel : ControlBase
+public class WatchTableControlViewModel : ControlBase, IVariableWriteControl
 {
 	public WatchTableControlViewModel()
 	{
@@ -50,6 +52,7 @@ public class WatchTableControlViewModel : ControlBase
 	private bool? isValueColumnVisible;
 	private bool? isUnitColumnVisible;
 	private bool? isTimeColumnVisible;
+	private bool? isWriteColumnVisible;
 
 	[IgnoreDataMember]
 	public bool IsNameColumnVisible
@@ -79,6 +82,13 @@ public class WatchTableControlViewModel : ControlBase
 		set { isTimeColumnVisible = value; OnPropertyChanged(); }
 	}
 
+	[IgnoreDataMember]
+	public bool IsWriteColumnVisible
+	{
+		get => isWriteColumnVisible ?? true;
+		set { isWriteColumnVisible = value; OnPropertyChanged(); }
+	}
+
 	[DataMember]
 	public int RefreshTime
 	{
@@ -102,6 +112,111 @@ public class WatchTableControlViewModel : ControlBase
 			field = value;
 			OnPropertyChanged();
 		}
+	}
+
+	#endregion
+
+	#region Write mode (IVariableWriteControl, per row)
+
+	[IgnoreDataMember]
+	public Func<IVariableBase, bool>? CanWriteVariableProvider { get; set; }
+
+	[IgnoreDataMember]
+	public Func<IVariableBase, double, Task<bool>>? WriteVariableEngValueAsync { get; set; }
+
+	/// <summary>References of rows with write mode turned on - persisted per-row state.
+	/// Lazy - DataContractSerializer does not run initializers.</summary>
+	[DataMember]
+	public List<string> WriteModeReferences
+	{
+		get => field ??= [];
+		set;
+	}
+
+	public void RefreshWriteCapability()
+	{
+		foreach (var row in Rows)
+		{
+			RefreshRowWriteCapability(row);
+		}
+	}
+
+	private void RefreshRowWriteCapability(WatchRow row)
+	{
+		// Only scalar rows are writable - the write path parses an engineering value
+		// (string variables stay read-only in the table).
+		var variable = FindVariable(row.Reference);
+		row.CanWrite = variable is ScalarVariable && (CanWriteVariableProvider?.Invoke(variable) ?? false);
+	}
+
+	private void OnRowPropertyChanged(object? sender, PropertyChangedEventArgs e)
+	{
+		if (sender is not WatchRow row || e.PropertyName != nameof(WatchRow.IsWriteMode))
+		{
+			return;
+		}
+
+		if (row.IsWriteMode)
+		{
+			if (!WriteModeReferences.Contains(row.Reference))
+			{
+				WriteModeReferences.Add(row.Reference);
+			}
+
+			PrefillEditValue(row);
+		}
+		else
+		{
+			WriteModeReferences.Remove(row.Reference);
+			row.IsWriteError = false;
+		}
+	}
+
+	private void PrefillEditValue(WatchRow row)
+	{
+		row.EditValue = FindVariable(row.Reference) is ScalarVariable scalar
+			? scalar.GetEngValue().ToString(CultureInfo.InvariantCulture)
+			: string.Empty;
+		row.IsWriteError = false;
+	}
+
+	private async Task WriteRowAsync(WatchRow row)
+	{
+		// Writes are allowed only in the Run mode (outside Run the command drivers
+		// are not subscribed and a SetValue would only confuse the UI).
+		if (!row.IsWriteActive || !IsRun || WriteVariableEngValueAsync == null)
+		{
+			row.IsWriteError = true;
+			return;
+		}
+
+		var variable = FindVariable(row.Reference);
+		if (variable == null || !TryParseEngValue(row.EditValue, out var engValue))
+		{
+			row.IsWriteError = true;
+			return;
+		}
+
+		try
+		{
+			var written = await WriteVariableEngValueAsync(variable, engValue);
+			row.IsWriteError = !written;
+		}
+		catch
+		{
+			row.IsWriteError = true;
+		}
+	}
+
+	private static bool TryParseEngValue(string text, out double engValue)
+	{
+		return double.TryParse((text ?? string.Empty).Replace(',', '.'),
+			NumberStyles.Float, CultureInfo.InvariantCulture, out engValue);
+	}
+
+	private IVariableBase? FindVariable(string reference)
+	{
+		return Variables.FirstOrDefault(v => GetVariableReference(v) == reference);
 	}
 
 	#endregion
@@ -139,12 +254,24 @@ public class WatchTableControlViewModel : ControlBase
 			Variables.Add(protVariable);
 		}
 
-		Rows.Add(new WatchRow
+		var row = new WatchRow
 		{
 			Reference = reference,
 			Name = protVariable.Label,
-			Unit = protVariable is ScalarVariable scalar ? scalar.Values.ValPresentation.Unit : string.Empty
-		});
+			Unit = protVariable is ScalarVariable scalar ? scalar.Values.ValPresentation.Unit : string.Empty,
+			// Restore the persisted per-row write mode before the change handler is attached.
+			IsWriteMode = WriteModeReferences.Contains(reference),
+			WriteRequested = r => _ = WriteRowAsync(r)
+		};
+		row.PropertyChanged += OnRowPropertyChanged;
+		Rows.Add(row);
+
+		// Writability must be re-evaluated on every (re)bind.
+		RefreshRowWriteCapability(row);
+		if (row.IsWriteActive)
+		{
+			PrefillEditValue(row);
+		}
 	}
 
 	public override void RefreshVariableBinding(IVariableBase variable)
@@ -174,6 +301,10 @@ public class WatchTableControlViewModel : ControlBase
 		var row = Rows.FirstOrDefault(r => r.Reference == GetVariableReference(protVariable));
 		if (row == null) return;
 
+		// In write mode only this row's display freezes (communication keeps running,
+		// other rows and controls showing the same variable update normally).
+		if (row.IsWriteActive) return;
+
 		if (protVariable.Timestamp < row.LastUpdate) row.LastUpdate = DateTime.MinValue;
 		if ((protVariable.Timestamp - row.LastUpdate).TotalMilliseconds < RefreshTime) return;
 		row.LastUpdate = protVariable.Timestamp;
@@ -191,6 +322,8 @@ public class WatchTableControlViewModel : ControlBase
 		var row = SelectedRow;
 		if (row == null) return;
 
+		row.PropertyChanged -= OnRowPropertyChanged;
+		WriteModeReferences.Remove(row.Reference);
 		Rows.Remove(row);
 		LinkedVariables.RemoveAll(reference => reference == row.Reference);
 		var variable = Variables.FirstOrDefault(v => GetVariableReference(v) == row.Reference);
