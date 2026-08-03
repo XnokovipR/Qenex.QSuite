@@ -3,10 +3,10 @@ using System.Runtime.CompilerServices;
 
 namespace Qenex.QSuite.Controls.WatchTableControl.Models;
 
-/// <summary>Jeden radek watch table - jedna napojena promenna.</summary>
+/// <summary>One watch table row - one bound variable.</summary>
 public sealed class WatchRow : INotifyPropertyChanged
 {
-	/// <summary>Reference na promennou (ControlBase.GetVariableReference) - identifikuje radek.</summary>
+	/// <summary>Variable reference (ControlBase.GetVariableReference) - identifies the row.</summary>
 	public string Reference { get; init; } = string.Empty;
 
 	public string Name { get; set { field = value; OnChanged(); } } = string.Empty;
@@ -14,7 +14,7 @@ public sealed class WatchRow : INotifyPropertyChanged
 	public string Value { get; set { field = value; OnChanged(); } } = string.Empty;
 	public DateTime Time { get; set { field = value; OnChanged(); } }
 
-	/// <summary>Posledni cas aktualizace - pro throttle (RefreshTime).</summary>
+	/// <summary>Last update time - used for throttling (RefreshTime).</summary>
 	internal DateTime LastUpdate { get; set; } = DateTime.MinValue;
 
 	public event PropertyChangedEventHandler? PropertyChanged;

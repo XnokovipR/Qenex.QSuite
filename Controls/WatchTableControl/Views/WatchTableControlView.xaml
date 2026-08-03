@@ -5,6 +5,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              xmlns:vm="clr-namespace:Qenex.QSuite.Controls.WatchTableControl.ViewModels"
+             xmlns:behaviors="clr-namespace:Qenex.QSuite.Controls.WatchTableControl.Behaviors"
+             xmlns:control="clr-namespace:Qenex.QSuite.Controls.Control;assembly=Qenex.QSuite.Controls.Control"
              xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
              mc:Ignorable="d"
              d:DesignHeight="180" d:DesignWidth="280"
@@ -16,6 +18,8 @@
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceDictionary Source="pack://application:,,,/Qenex.QSuite.Controls.Control;component/Style/SharedStyles.xaml"/>
 			</ResourceDictionary.MergedDictionaries>
+			<!-- Grid columns are outside the visual tree and do not inherit DataContext. -->
+			<control:BindingProxy x:Key="RootProxy" Data="{Binding}"/>
 		</ResourceDictionary>
 	</UserControl.Resources>
 
@@ -23,10 +27,14 @@
 		<telerik:RadContextMenu>
 			<telerik:RadMenuItem Header="Remove" Command="{Binding RemoveSelectedCommand}"/>
 			<telerik:RadMenuItem Header="Columns">
-				<telerik:RadMenuItem x:Name="ColNameItem" Header="Name" IsCheckable="True" Tag="Name" Click="OnColumnVisibilityClick"/>
-				<telerik:RadMenuItem x:Name="ColValueItem" Header="Value" IsCheckable="True" Tag="Value" Click="OnColumnVisibilityClick"/>
-				<telerik:RadMenuItem x:Name="ColUnitItem" Header="Unit" IsCheckable="True" Tag="Unit" Click="OnColumnVisibilityClick"/>
-				<telerik:RadMenuItem x:Name="ColTimeItem" Header="Time" IsCheckable="True" Tag="Time" Click="OnColumnVisibilityClick"/>
+				<telerik:RadMenuItem Header="Name" IsCheckable="True" StaysOpenOnClick="True"
+				                     IsChecked="{Binding IsNameColumnVisible, Mode=TwoWay}"/>
+				<telerik:RadMenuItem Header="Value" IsCheckable="True" StaysOpenOnClick="True"
+				                     IsChecked="{Binding IsValueColumnVisible, Mode=TwoWay}"/>
+				<telerik:RadMenuItem Header="Unit" IsCheckable="True" StaysOpenOnClick="True"
+				                     IsChecked="{Binding IsUnitColumnVisible, Mode=TwoWay}"/>
+				<telerik:RadMenuItem Header="Time" IsCheckable="True" StaysOpenOnClick="True"
+				                     IsChecked="{Binding IsTimeColumnVisible, Mode=TwoWay}"/>
 			</telerik:RadMenuItem>
 			<telerik:RadMenuItem Header="Lock" IsCheckable="True" IsChecked="{Binding IsLocked, Mode=TwoWay}"/>
 		</telerik:RadContextMenu>
@@ -38,7 +46,7 @@
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
 
-		<!-- Nastaveni -->
+		<!-- Settings -->
 		<telerik:RadExpander Grid.Row="0" Style="{StaticResource SquareExpanderStyle}" HorizontalAlignment="Left">
 			<Grid Margin="5">
 				<Grid.ColumnDefinitions>
@@ -51,8 +59,10 @@
 			</Grid>
 		</telerik:RadExpander>
 
-		<!-- Tabulka napojenych promennych -->
-		<telerik:RadGridView Grid.Row="1" x:Name="VariablesGrid"
+		<!-- Bound variables table -->
+		<telerik:RadGridView Grid.Row="1"
+		                     behaviors:ColumnLayoutBehavior.IsEnabled="True"
+		                     behaviors:ColumnLayoutBehavior.Layout="{Binding ColumnLayout, Mode=TwoWay}"
 		                     ItemsSource="{Binding Rows}"
 		                     SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
 		                     AutoGenerateColumns="False"
@@ -62,10 +72,14 @@
 		                     ShowGroupPanel="False"
 		                     RowIndicatorVisibility="Collapsed">
 			<telerik:RadGridView.Columns>
-				<telerik:GridViewDataColumn UniqueName="Name" Header="Name" DataMemberBinding="{Binding Name}" Width="*"/>
-				<telerik:GridViewDataColumn UniqueName="Value" Header="Value" DataMemberBinding="{Binding Value}" Width="Auto"/>
-				<telerik:GridViewDataColumn UniqueName="Unit" Header="Unit" DataMemberBinding="{Binding Unit}" Width="Auto"/>
-				<telerik:GridViewDataColumn UniqueName="Time" Header="Time" DataMemberBinding="{Binding Time, StringFormat='HH:mm:ss.fff'}" Width="Auto"/>
+				<telerik:GridViewDataColumn UniqueName="Name" Header="Name" DataMemberBinding="{Binding Name}" Width="*"
+				                            IsVisible="{Binding Data.IsNameColumnVisible, Source={StaticResource RootProxy}, Mode=TwoWay}"/>
+				<telerik:GridViewDataColumn UniqueName="Value" Header="Value" DataMemberBinding="{Binding Value}" Width="Auto"
+				                            IsVisible="{Binding Data.IsValueColumnVisible, Source={StaticResource RootProxy}, Mode=TwoWay}"/>
+				<telerik:GridViewDataColumn UniqueName="Unit" Header="Unit" DataMemberBinding="{Binding Unit}" Width="Auto"
+				                            IsVisible="{Binding Data.IsUnitColumnVisible, Source={StaticResource RootProxy}, Mode=TwoWay}"/>
+				<telerik:GridViewDataColumn UniqueName="Time" Header="Time" DataMemberBinding="{Binding Time, StringFormat='HH:mm:ss.fff'}" Width="Auto"
+				                            IsVisible="{Binding Data.IsTimeColumnVisible, Source={StaticResource RootProxy}, Mode=TwoWay}"/>
 			</telerik:RadGridView.Columns>
 		</telerik:RadGridView>
 

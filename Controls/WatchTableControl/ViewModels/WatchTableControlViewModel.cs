@@ -19,10 +19,10 @@ public class WatchTableControlViewModel : ControlBase
 		Height = 180;
 	}
 
-	#region Properties (neserializovane - lazy, funguje i po deserializaci)
+	#region Properties (not serialized - lazy, keeps working after deserialization)
 
-	/// <summary>Radky tabulky (jeden na napojenou promennou). Lazy - DataContractSerializer
-	/// nevola ctor/initializery, proto `field ??=`.</summary>
+	/// <summary>Table rows (one per bound variable). Lazy - DataContractSerializer
+	/// does not run ctors/initializers, hence `field ??=`.</summary>
 	[IgnoreDataMember]
 	public ObservableCollection<WatchRow> Rows => field ??= [];
 
@@ -42,6 +42,43 @@ public class WatchTableControlViewModel : ControlBase
 	public RelayCommand<object> RemoveSelectedCommand =>
 		field ??= new RelayCommand<object>(_ => RemoveSelected(), _ => SelectedRow != null);
 
+	// Column visibility flags bound by the context menu and (via BindingProxy) by the grid
+	// columns. Runtime state only - persisted through ColumnLayout, which the layout behavior
+	// re-applies to the columns after load. Nullable backing defaults to visible because
+	// DataContractSerializer does not run initializers.
+	private bool? isNameColumnVisible;
+	private bool? isValueColumnVisible;
+	private bool? isUnitColumnVisible;
+	private bool? isTimeColumnVisible;
+
+	[IgnoreDataMember]
+	public bool IsNameColumnVisible
+	{
+		get => isNameColumnVisible ?? true;
+		set { isNameColumnVisible = value; OnPropertyChanged(); }
+	}
+
+	[IgnoreDataMember]
+	public bool IsValueColumnVisible
+	{
+		get => isValueColumnVisible ?? true;
+		set { isValueColumnVisible = value; OnPropertyChanged(); }
+	}
+
+	[IgnoreDataMember]
+	public bool IsUnitColumnVisible
+	{
+		get => isUnitColumnVisible ?? true;
+		set { isUnitColumnVisible = value; OnPropertyChanged(); }
+	}
+
+	[IgnoreDataMember]
+	public bool IsTimeColumnVisible
+	{
+		get => isTimeColumnVisible ?? true;
+		set { isTimeColumnVisible = value; OnPropertyChanged(); }
+	}
+
 	[DataMember]
 	public int RefreshTime
 	{
@@ -54,10 +91,18 @@ public class WatchTableControlViewModel : ControlBase
 		}
 	} = 250;
 
-	/// <summary>Layout sloupcu (poradi + sirka + viditelnost) prebrany z gridu. Serializuje se
-	/// do projektu, po nacteni se znovu aplikuje na grid (View code-behind).</summary>
+	/// <summary>Column layout (order + width + visibility) captured from the grid by
+	/// ColumnLayoutBehavior. Serialized into the project and re-applied after load.</summary>
 	[DataMember]
-	public List<GridColumnLayout>? ColumnLayout { get; set; }
+	public List<GridColumnLayout>? ColumnLayout
+	{
+		get;
+		set
+		{
+			field = value;
+			OnPropertyChanged();
+		}
+	}
 
 	#endregion
 
@@ -66,13 +111,13 @@ public class WatchTableControlViewModel : ControlBase
 	public override string ControlName => "WatchTableControl";
 	public override string Label => "Watch Table";
 	public override BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/WatchTable.png");
-	public override string Description => "Watch table - vice promennych najednou (nazev, hodnota, jednotka, cas).";
+	public override string Description => "Watch table - several variables at once (name, value, unit, time).";
 
 	#endregion
 
 	#region Variable binding
 
-	// Radky tabulky jsou jednohodnotove: skalar nebo string (matice ma vlastni control)
+	// Table rows are single-value: scalar or string (matrices have their own control)
 	public override bool CanBindVariable(IVariableBase variable) => variable is ScalarVariable or StringVariable;
 
 	public override void BindVariable(IVariableBase protVariable)

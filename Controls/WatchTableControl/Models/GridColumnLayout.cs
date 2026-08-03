@@ -2,7 +2,7 @@ using System.Runtime.Serialization;
 
 namespace Qenex.QSuite.Controls.WatchTableControl.Models;
 
-/// <summary>Ulozeny layout jednoho sloupce gridu (poradi, sirka, viditelnost) - serializuje se do projektu.</summary>
+/// <summary>Saved layout of one grid column (order, width, visibility) - serialized into the project.</summary>
 [DataContract]
 public sealed class GridColumnLayout
 {
