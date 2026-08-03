@@ -73,7 +73,9 @@ public partial class ShellWindowModel
                 RadWindow.Alert(new DialogParameters
                 {
                     Header = "Run Script",
-                    Content = "Scripts can be run only while measurement or replay is running."
+                    Content = "Scripts can be run only while measurement or replay is running.",
+                    Owner = Application.Current.MainWindow,
+                    DialogStartupLocation = WindowStartupLocation.CenterOwner
                 });
                 return;
             }

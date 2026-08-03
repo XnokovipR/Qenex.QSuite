@@ -78,6 +78,7 @@ public class XmlModuleHandler
     {
         return new XmlModule
         {
+            FormatVersion = XmlModule.CurrentFormatVersion,
             Name = module.Specification.Name,
             Label = module.Specification.Label,
             Description = module.Specification.Description,

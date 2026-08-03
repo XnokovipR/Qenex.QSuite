@@ -23,6 +23,9 @@ public class ProjectFilesData
     public List<WorkspaceProjectData> Workspaces { get; set; } = [];
     public List<ScriptDocumentProjectData> ScriptDocuments { get; set; } = [];
     public byte[]? WorkspaceLayout { get; set; }
+    // Script file names listed in XmlModule.xml whose .py entry was not found in the
+    // project zip; the validation alert reports them (content cannot tell — empty is legal).
+    public List<string> MissingScriptFiles { get; set; } = [];
 
     #endregion
 }

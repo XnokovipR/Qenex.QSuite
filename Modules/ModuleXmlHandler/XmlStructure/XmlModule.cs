@@ -9,6 +9,15 @@ namespace Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 [XmlRoot("module")]
 public class XmlModule
 {
+    /// <summary>Format version written into newly saved project files.</summary>
+    public const string CurrentFormatVersion = "1.0";
+
+    // Version of the project file format itself (not the module version below, which is
+    // authored by the user). Empty after deserialization = file predates format versioning.
+    [XmlAttribute("formatVersion")] public string FormatVersion { get; set; } = string.Empty;
+
+    public bool ShouldSerializeFormatVersion() => !string.IsNullOrEmpty(FormatVersion);
+
     // Module information
     [XmlAttribute("name")] public string Name { get; set; } = string.Empty;
     [XmlAttribute("label")] public string Label { get; set; } = string.Empty;

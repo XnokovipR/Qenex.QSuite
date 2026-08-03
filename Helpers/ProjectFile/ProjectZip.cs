@@ -90,6 +90,7 @@ public class ProjectZip(ILogger? logger = null)
     {
         var xmlModuleForProjectFile = new XmlModule
         {
+            FormatVersion = xmlModule.FormatVersion,
             Name = xmlModule.Name,
             Label = xmlModule.Label,
             Description = xmlModule.Description,

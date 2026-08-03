@@ -75,6 +75,10 @@ public class ProjectZip
             {
                 script.Content = content;
             }
+            else
+            {
+                projectData.MissingScriptFiles.Add(script.FileName);
+            }
         }
         
         // test all properties of the projectData
@@ -142,6 +146,7 @@ public class ProjectZip
     {
         var xmlModuleForProjectFile = new XmlModule
         {
+            FormatVersion = xmlModule.FormatVersion,
             Name = xmlModule.Name,
             Label = xmlModule.Label,
             Description = xmlModule.Description,

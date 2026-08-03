@@ -20,6 +20,7 @@ using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.ModuleXmlHandler;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Scripting.ScriptingEngine;
 using Qenex.QSuite.Variables.QVariables;
@@ -717,6 +718,8 @@ public partial class ShellWindowModel
                 return;
             }
 
+            ReportProjectValidationFindings(projectData, Path.GetFileName(filePath));
+
             await CloseProjectWorkspacesAsync();
             isEditProjectEnabled = false;
             isEditVariableEnabled = false;
@@ -749,6 +752,42 @@ public partial class ShellWindowModel
         }        
     }
     
+    // Consistency checks of the loaded project file (format version, plugin references,
+    // driver-protocol compatibility, variable references, missing script files). Findings
+    // go to the log and one Alert window; the project opens regardless.
+    private void ReportProjectValidationFindings(ProjectFilesData projectData, string fileName)
+    {
+        const int maxAlertLines = 15;
+
+        var findings = new List<string>(XmlModuleValidator.Validate(projectData.Module, driverPlugins, protocolPlugins));
+        findings.AddRange(projectData.MissingScriptFiles.Select(scriptFile =>
+            $"Script file \"{scriptFile}\" is listed in the project but missing in the project file."));
+
+        if (findings.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var finding in findings)
+        {
+            logger.Log(LogLevel.Warn, $"Project validation: {finding}");
+        }
+
+        var alertLines = findings.Take(maxAlertLines).Select(finding => $"• {finding}");
+        var overflow = findings.Count > maxAlertLines
+            ? $"\n… and {findings.Count - maxAlertLines} more issue(s), see the log."
+            : string.Empty;
+
+        RadWindow.Alert(new DialogParameters
+        {
+            Header = "Project Validation",
+            Content = $"The project \"{fileName}\" was opened with {findings.Count} issue(s):\n\n"
+                      + string.Join("\n", alertLines) + overflow,
+            Owner = Application.Current.MainWindow,
+            DialogStartupLocation = WindowStartupLocation.CenterOwner
+        });
+    }
+
     private async Task SaveProjectAsync(object obj)
     {
         if (!isProjectMade)
@@ -1479,7 +1518,9 @@ public partial class ShellWindowModel
             RadWindow.Alert(new DialogParameters
             {
                 Header = "License Required",
-                Content = "A valid license is required to start measurement.\nOpen Help -> License to enter your license key."
+                Content = "A valid license is required to start measurement.\nOpen Help -> License to enter your license key.",
+                Owner = Application.Current.MainWindow,
+                DialogStartupLocation = WindowStartupLocation.CenterOwner
             });
             return;
         }
@@ -1497,7 +1538,9 @@ public partial class ShellWindowModel
                 {
                     Header = "Free License Limit",
                     Content = CommunicatedSignals.BuildOverLimitMessage(communicatedCount, connectSignalLimit)
-                              + "\nUncheck 'Communicated' on some variables in Project Configuration -> Variables."
+                              + "\nUncheck 'Communicated' on some variables in Project Configuration -> Variables.",
+                    Owner = Application.Current.MainWindow,
+                    DialogStartupLocation = WindowStartupLocation.CenterOwner
                 });
                 return;
             }
@@ -1633,7 +1676,9 @@ public partial class ShellWindowModel
             RadWindow.Alert(new DialogParameters
             {
                 Header = "License Required",
-                Content = "A valid license is required to start replay.\nOpen Help -> License to enter your license key."
+                Content = "A valid license is required to start replay.\nOpen Help -> License to enter your license key.",
+                Owner = Application.Current.MainWindow,
+                DialogStartupLocation = WindowStartupLocation.CenterOwner
             });
             return;
         }
@@ -1651,7 +1696,9 @@ public partial class ShellWindowModel
                 {
                     Header = "Free License Limit",
                     Content = CommunicatedSignals.BuildOverLimitMessage(communicatedCount, replaySignalLimit)
-                              + "\nUncheck 'Communicated' on some variables in Project Configuration -> Variables."
+                              + "\nUncheck 'Communicated' on some variables in Project Configuration -> Variables.",
+                    Owner = Application.Current.MainWindow,
+                    DialogStartupLocation = WindowStartupLocation.CenterOwner
                 });
                 return;
             }
