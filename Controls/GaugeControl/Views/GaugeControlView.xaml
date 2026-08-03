@@ -6,6 +6,7 @@
              xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
              xmlns:conv="clr-namespace:Qenex.QSuite.Controls.GaugeControl.Converters"
              xmlns:vm="clr-namespace:Qenex.QSuite.Controls.GaugeControl.ViewModels"
+             xmlns:control="clr-namespace:Qenex.QSuite.Controls.Control;assembly=Qenex.QSuite.Controls.Control"
              xmlns:q="clr-namespace:Qenex.QSuite.Controls.OverridenWinControls;assembly=Qenex.QSuite.Controls.OverridenWinControls"
              mc:Ignorable="d"
              d:DesignHeight="220" d:DesignWidth="200"
@@ -18,6 +19,13 @@
 				<ResourceDictionary Source="pack://application:,,,/Qenex.QSuite.Controls.Control;component/Style/SharedStyles.xaml"/>
 			</ResourceDictionary.MergedDictionaries>
 			<conv:GaugeKindToVisibilityConverter x:Key="KindToVisibility"/>
+			<!-- Gauge ranges are not regular visual-tree children and DataContext inheritance
+			     does not reliably reach them (zones vanished after project load) - bind them
+			     through the proxy with an explicit Source instead. -->
+			<control:BindingProxy x:Key="RootProxy" Data="{Binding}"/>
+			<SolidColorBrush x:Key="NormalZoneBrush" Color="Green"/>
+			<SolidColorBrush x:Key="WarningZoneBrush" Color="Yellow"/>
+			<SolidColorBrush x:Key="ErrorZoneBrush" Color="Red"/>
 		</ResourceDictionary>
 	</UserControl.Resources>
 
@@ -38,7 +46,7 @@
 			<ColumnDefinition Width="*"/>
 		</Grid.ColumnDefinitions>
 
-		<!-- Nastaveni controlu (typ, rozsah, 4 hladiny) -->
+		<!-- Control settings (type, range, 4 levels) -->
 		<telerik:RadExpander Grid.Row="0" Grid.Column="0" Style="{StaticResource SquareExpanderStyle}" HorizontalAlignment="Left">
 			<Grid Margin="5">
 				<Grid.ColumnDefinitions>
@@ -91,21 +99,34 @@
 			</Grid>
 		</telerik:RadExpander>
 
-		<!-- Nazev navazane promenne -->
+		<!-- Bound variable label -->
 		<q:QTextBlock Grid.Row="0" Grid.Column="1" Text="{Binding VariableLabel, Mode=OneWay}"
 		              Margin="5,3,0,0" TextWrapping="NoWrap" HorizontalAlignment="Left" VerticalAlignment="Top"/>
 
-		<!-- Gauge - prepina se podle Kind (jen jeden je viditelny). Viewbox proporcionalne
-		     zmensi cely gauge (vc. stupnice) do velikosti tile; ClipToBounds orizne pretok. -->
+		<!-- Gauge - switched by Kind (only one is visible). The Viewbox scales the whole
+		     gauge (incl. the scale) into the tile size; ClipToBounds cuts any overflow. -->
 		<Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" ClipToBounds="True">
 
 			<Viewbox Stretch="Uniform" Margin="4"
 			         Visibility="{Binding Kind, Converter={StaticResource KindToVisibility}, ConverterParameter=Radial}">
 				<telerik:RadRadialGauge Width="200" Height="200">
-					<telerik:RadialScale x:Name="RadialScale"
-					                     Min="{Binding Minimum}" Max="{Binding Maximum}">
+					<telerik:RadialScale Min="{Binding Minimum}" Max="{Binding Maximum}">
+						<!-- Five fixed zones with clamped boundaries from the view model; a zone
+						     collapses to zero width when its level is not set or out of range. -->
+						<telerik:RadialScale.Ranges>
+							<telerik:GaugeRange Min="{Binding Data.LowErrorZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.LowErrorZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource ErrorZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.LowWarningZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.LowWarningZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource WarningZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.NormalZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.NormalZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource NormalZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.HighWarningZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.HighWarningZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource WarningZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.HighErrorZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.HighErrorZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource ErrorZoneBrush}"/>
+						</telerik:RadialScale.Ranges>
 						<telerik:RadialScale.Indicators>
-							<telerik:Needle Value="{Binding Value}"/>
+							<telerik:Needle Value="{Binding DisplayValue}"/>
 						</telerik:RadialScale.Indicators>
 					</telerik:RadialScale>
 				</telerik:RadRadialGauge>
@@ -114,10 +135,21 @@
 			<Viewbox Stretch="Uniform" Margin="4"
 			         Visibility="{Binding Kind, Converter={StaticResource KindToVisibility}, ConverterParameter=LinearVertical}">
 				<telerik:RadVerticalLinearGauge Width="120" Height="220">
-					<telerik:VerticalLinearScale x:Name="VerticalScale"
-					                             Min="{Binding Minimum}" Max="{Binding Maximum}">
+					<telerik:VerticalLinearScale Min="{Binding Minimum}" Max="{Binding Maximum}">
+						<telerik:VerticalLinearScale.Ranges>
+							<telerik:GaugeRange Min="{Binding Data.LowErrorZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.LowErrorZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource ErrorZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.LowWarningZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.LowWarningZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource WarningZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.NormalZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.NormalZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource NormalZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.HighWarningZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.HighWarningZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource WarningZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.HighErrorZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.HighErrorZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource ErrorZoneBrush}"/>
+						</telerik:VerticalLinearScale.Ranges>
 						<telerik:VerticalLinearScale.Indicators>
-							<telerik:BarIndicator Value="{Binding Value}"/>
+							<telerik:BarIndicator Value="{Binding DisplayValue}"/>
 						</telerik:VerticalLinearScale.Indicators>
 					</telerik:VerticalLinearScale>
 				</telerik:RadVerticalLinearGauge>
@@ -126,10 +158,21 @@
 			<Viewbox Stretch="Uniform" Margin="4"
 			         Visibility="{Binding Kind, Converter={StaticResource KindToVisibility}, ConverterParameter=LinearHorizontal}">
 				<telerik:RadHorizontalLinearGauge Width="220" Height="120">
-					<telerik:HorizontalLinearScale x:Name="HorizontalScale"
-					                               Min="{Binding Minimum}" Max="{Binding Maximum}">
+					<telerik:HorizontalLinearScale Min="{Binding Minimum}" Max="{Binding Maximum}">
+						<telerik:HorizontalLinearScale.Ranges>
+							<telerik:GaugeRange Min="{Binding Data.LowErrorZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.LowErrorZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource ErrorZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.LowWarningZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.LowWarningZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource WarningZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.NormalZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.NormalZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource NormalZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.HighWarningZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.HighWarningZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource WarningZoneBrush}"/>
+							<telerik:GaugeRange Min="{Binding Data.HighErrorZoneMin, Source={StaticResource RootProxy}}" Max="{Binding Data.HighErrorZoneMax, Source={StaticResource RootProxy}}"
+							                    StartWidth="0.1" EndWidth="0.1" Background="{StaticResource ErrorZoneBrush}"/>
+						</telerik:HorizontalLinearScale.Ranges>
 						<telerik:HorizontalLinearScale.Indicators>
-							<telerik:BarIndicator Value="{Binding Value}"/>
+							<telerik:BarIndicator Value="{Binding DisplayValue}"/>
 						</telerik:HorizontalLinearScale.Indicators>
 					</telerik:HorizontalLinearScale>
 				</telerik:RadHorizontalLinearGauge>
@@ -137,7 +180,7 @@
 
 		</Grid>
 
-		<!-- Aktualni hodnota + jednotka -->
+		<!-- Current value + unit -->
 		<StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,3,0,0">
 			<q:QTextBlock Text="{Binding Value, Mode=OneWay, StringFormat={}{0:0.###}}"/>
 			<q:QTextBlock Text="[" Margin="6,0,3,0"/>

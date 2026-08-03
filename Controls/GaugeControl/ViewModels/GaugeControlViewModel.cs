@@ -8,7 +8,7 @@ using Qenex.QSuite.Variables.QVariables;
 
 namespace Qenex.QSuite.Controls.GaugeControl.ViewModels;
 
-/// <summary>Typ/orientace gauge prvku.</summary>
+/// <summary>Gauge type/orientation.</summary>
 public enum GaugeKind
 {
 	Radial,
@@ -16,20 +16,12 @@ public enum GaugeKind
 	LinearVertical
 }
 
-/// <summary>Stav zony / aktualni hodnoty z pohledu prahu.</summary>
+/// <summary>Zone classification of the current value against the configured levels.</summary>
 public enum GaugeZoneKind
 {
 	Normal,
 	Warning,
 	Error
-}
-
-/// <summary>Datovy popis jedne barevne zony (bez Telerik zavislosti - mapuje se ve View).</summary>
-public sealed class GaugeZone
-{
-	public double Min { get; init; }
-	public double Max { get; init; }
-	public GaugeZoneKind Kind { get; init; }
 }
 
 [DataContract]
@@ -45,7 +37,7 @@ public class GaugeControlViewModel : ControlBase
 		VariableUnit = "-";
 	}
 
-	#region Display properties (neserializovane)
+	#region Display properties (not serialized)
 
 	[IgnoreDataMember]
 	public string VariableLabel { get; set { field = value; OnPropertyChanged(); } }
@@ -57,8 +49,19 @@ public class GaugeControlViewModel : ControlBase
 	public double Value
 	{
 		get;
-		set { field = value; OnPropertyChanged(); UpdateAlarmState(); }
+		set
+		{
+			field = value;
+			OnPropertyChanged();
+			OnPropertyChanged(nameof(DisplayValue));
+			UpdateAlarmState();
+		}
 	}
+
+	/// <summary>Value shown by the needle/bar, clamped to the scale range - an out-of-range
+	/// value must not draw the indicator beyond the scale ends.</summary>
+	[IgnoreDataMember]
+	public double DisplayValue => ClampToScale(Value);
 
 	[IgnoreDataMember]
 	public GaugeZoneKind AlarmState
@@ -69,35 +72,35 @@ public class GaugeControlViewModel : ControlBase
 
 	private static readonly GaugeKind[] AllKinds = Enum.GetValues<GaugeKind>();
 
-	/// <summary>Nabidka typu pro prepinac v nastaveni controlu. Staticke - funguje i po deserializaci
-	/// projektu (DataContractSerializer obchazi konstruktor i property initializery).</summary>
+	/// <summary>Options for the type switcher in the control settings. Static - keeps working
+	/// after deserialization (DataContractSerializer bypasses ctors and initializers).</summary>
 	[IgnoreDataMember]
 	public IReadOnlyList<GaugeKind> AvailableKinds => AllKinds;
 
 	#endregion
 
-	#region Configuration (serializovane)
+	#region Configuration (serialized)
 
 	[DataMember]
 	public GaugeKind Kind { get; set { field = value; OnPropertyChanged(); } } = GaugeKind.Radial;
 
 	[DataMember]
-	public double Minimum { get; set { field = value; OnPropertyChanged(); UpdateAlarmState(); } }
+	public double Minimum { get; set { field = value; OnPropertyChanged(); OnScaleConfigChanged(); } }
 
 	[DataMember]
-	public double Maximum { get; set { field = value; OnPropertyChanged(); UpdateAlarmState(); } } = 100;
+	public double Maximum { get; set { field = value; OnPropertyChanged(); OnScaleConfigChanged(); } } = 100;
 
 	[DataMember]
-	public double? LowErrorLevel { get; set { field = value; OnPropertyChanged(); UpdateAlarmState(); } }
+	public double? LowErrorLevel { get; set { field = value; OnPropertyChanged(); OnScaleConfigChanged(); } }
 
 	[DataMember]
-	public double? LowWarningLevel { get; set { field = value; OnPropertyChanged(); UpdateAlarmState(); } }
+	public double? LowWarningLevel { get; set { field = value; OnPropertyChanged(); OnScaleConfigChanged(); } }
 
 	[DataMember]
-	public double? HighWarningLevel { get; set { field = value; OnPropertyChanged(); UpdateAlarmState(); } }
+	public double? HighWarningLevel { get; set { field = value; OnPropertyChanged(); OnScaleConfigChanged(); } }
 
 	[DataMember]
-	public double? HighErrorLevel { get; set { field = value; OnPropertyChanged(); UpdateAlarmState(); } }
+	public double? HighErrorLevel { get; set { field = value; OnPropertyChanged(); OnScaleConfigChanged(); } }
 
 	[DataMember]
 	public int RefreshTime
@@ -118,13 +121,13 @@ public class GaugeControlViewModel : ControlBase
 	public override string ControlName => "GaugeControl";
 	public override string Label => "Gauge";
 	public override BitmapImage Icon => ImageGetter.GetBitmapImage("Icons/Gauge.png");
-	public override string Description => "Gauge (radial / linear) s hladinami Warning a Error pro spodni i horni mez.";
+	public override string Description => "Gauge (radial / linear) with Warning and Error levels for both the low and high bound.";
 
 	#endregion
 
 	#region Levels / zones
 
-	/// <summary>Zarazeni hodnoty do zony podle nastavenych prahu (4 hladiny, kazda volitelna).</summary>
+	/// <summary>Classification of a value against the configured levels (4 levels, each optional).</summary>
 	public GaugeZoneKind Classify(double value)
 	{
 		if (LowErrorLevel is { } lowError && value < lowError) return GaugeZoneKind.Error;
@@ -134,41 +137,44 @@ public class GaugeControlViewModel : ControlBase
 		return GaugeZoneKind.Normal;
 	}
 
-	/// <summary>Souvisle barevne zony pres cely rozsah (Min..Max) podle nastavenych prahu.</summary>
-	public IReadOnlyList<GaugeZone> GetZones()
+	// Five fixed zones declared in the view (low error, low warning, normal, high warning,
+	// high error), each bound to the clamped boundaries below. Boundaries are monotonically
+	// non-decreasing and always inside [Minimum, Maximum], so a level outside the scale range
+	// (or a missing level) collapses its zone to zero width instead of drawing outside the
+	// scale - that was one source of leftover artifacts next to the gauge.
+
+	public double LowErrorZoneMin => Minimum;
+	public double LowErrorZoneMax => LowErrorBound;
+	public double LowWarningZoneMin => LowErrorBound;
+	public double LowWarningZoneMax => LowWarningBound;
+	public double NormalZoneMin => LowWarningBound;
+	public double NormalZoneMax => Math.Max(HighWarningBound, LowWarningBound);
+	public double HighWarningZoneMin => NormalZoneMax;
+	public double HighWarningZoneMax => Math.Max(HighErrorBound, NormalZoneMax);
+	public double HighErrorZoneMin => HighWarningZoneMax;
+	public double HighErrorZoneMax => Maximum;
+
+	private double LowErrorBound => LowErrorLevel is { } level ? ClampToScale(level) : Minimum;
+	private double LowWarningBound => Math.Max(LowWarningLevel is { } level ? ClampToScale(level) : LowErrorBound, LowErrorBound);
+	private double HighErrorBound => HighErrorLevel is { } level ? ClampToScale(level) : Maximum;
+	private double HighWarningBound => Math.Min(HighWarningLevel is { } level ? ClampToScale(level) : HighErrorBound, HighErrorBound);
+
+	private double ClampToScale(double value) => Math.Min(Math.Max(value, Minimum), Maximum);
+
+	private void OnScaleConfigChanged()
 	{
-		var bounds = new List<double> { Minimum, Maximum };
-		foreach (var level in new[] { LowErrorLevel, LowWarningLevel, HighWarningLevel, HighErrorLevel })
-		{
-			if (level is { } value && value > Minimum && value < Maximum)
-			{
-				bounds.Add(value);
-			}
-		}
-
-		bounds = bounds.Distinct().OrderBy(x => x).ToList();
-
-		// Nepatrna mezera na vnitrnich hranicich, aby se sousedni GaugeRange neprekryvaly
-		// (Telerik kresli pozdeji pridanou zonu pres sdilenou hranici -> "cervena nad zlutou").
-		var range = Maximum - Minimum;
-		var gap = range > 0 ? range * 0.004 : 0;
-
-		var zones = new List<GaugeZone>();
-		for (var i = 0; i < bounds.Count - 1; i++)
-		{
-			var min = bounds[i];
-			var max = bounds[i + 1];
-			if (max <= min) continue;
-
-			var kind = Classify((min + max) / 2);
-			var zoneMin = i == 0 ? min : min + gap / 2;
-			var zoneMax = i == bounds.Count - 2 ? max : max - gap / 2;
-			if (zoneMax <= zoneMin) continue;
-
-			zones.Add(new GaugeZone { Min = zoneMin, Max = zoneMax, Kind = kind });
-		}
-
-		return zones;
+		UpdateAlarmState();
+		OnPropertyChanged(nameof(DisplayValue));
+		OnPropertyChanged(nameof(LowErrorZoneMin));
+		OnPropertyChanged(nameof(LowErrorZoneMax));
+		OnPropertyChanged(nameof(LowWarningZoneMin));
+		OnPropertyChanged(nameof(LowWarningZoneMax));
+		OnPropertyChanged(nameof(NormalZoneMin));
+		OnPropertyChanged(nameof(NormalZoneMax));
+		OnPropertyChanged(nameof(HighWarningZoneMin));
+		OnPropertyChanged(nameof(HighWarningZoneMax));
+		OnPropertyChanged(nameof(HighErrorZoneMin));
+		OnPropertyChanged(nameof(HighErrorZoneMax));
 	}
 
 	private void UpdateAlarmState() => AlarmState = Classify(Value);
@@ -177,7 +183,7 @@ public class GaugeControlViewModel : ControlBase
 
 	#region Variable binding
 
-	// Rucicka ukazuje jednu ciselnou hodnotu: jen skalarni promenne
+	// The needle shows a single numeric value: scalar variables only
 	public override bool CanBindVariable(IVariableBase variable) => variable is ScalarVariable;
 
 	public override void BindVariable(IVariableBase protVariable)

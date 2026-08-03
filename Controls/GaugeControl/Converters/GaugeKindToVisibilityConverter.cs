@@ -4,7 +4,7 @@ using System.Windows.Data;
 
 namespace Qenex.QSuite.Controls.GaugeControl.Converters;
 
-/// <summary>Zviditelni prvek pokud aktualni GaugeKind odpovida ConverterParameter (nazev kindu).</summary>
+/// <summary>Shows the element when the current GaugeKind matches ConverterParameter (kind name).</summary>
 public class GaugeKindToVisibilityConverter : IValueConverter
 {
 	public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
