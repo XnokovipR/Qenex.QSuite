@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:Qenex.QInsight.Views"
              xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
+             xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation"
 			 xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
              xmlns:editing="clr-namespace:ICSharpCode.AvalonEdit.Editing;assembly=ICSharpCode.AvalonEdit"
@@ -14,8 +15,26 @@
              d:DataContext="{d:DesignInstance vm:ScriptViewModel, IsDesignTimeCreatable=False}">
     
     <Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
 
-		<avalonEdit:TextEditor 
+		<StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Left">
+			<telerik:RadButton Margin="4,4,0,4"
+			                   Padding="10,2"
+			                   Content="Run"
+			                   Command="{Binding RunScriptCommand}"
+			                   ToolTip="Run this script now. Available only for scripts with the Manual execution mode, while measurement or replay is running."/>
+			<telerik:RadButton Margin="4,4,4,4"
+			                   Padding="10,2"
+			                   Content="Stop"
+			                   Command="{Binding StopScriptCommand}"
+			                   ToolTip="Stop the running script. The script is interrupted at its next executed Python line."/>
+		</StackPanel>
+
+		<avalonEdit:TextEditor
+            Grid.Row="1"
             Document="{Binding Document}"
             ShowLineNumbers="True"
             FontFamily="Consolas, Cascadia Code,Menlo,Monospace"

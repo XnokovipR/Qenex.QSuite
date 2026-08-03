@@ -31,6 +31,67 @@ public partial class ShellWindowModel
         eventAggregator.SubscribeAction<ScriptsRemovedMsg>(RemoveScriptDocuments);
         eventAggregator.SubscribeAction<ProjectConfigurationAppliedMsg>(_ => RefreshProjectConfigurationAppliedProperties());
         eventAggregator.SubscribeAction<WorkspaceControlSelectedMsg>(OnWorkspaceControlSelected);
+        eventAggregator.SubscribeAction<RunManualScriptMsg>(msg => _ = RunManualScriptAsync(msg.Script));
+        eventAggregator.SubscribeAction<StopManualScriptMsg>(msg => StopManualScript(msg.Script));
+    }
+
+    private void StopManualScript(ScriptWrapper scriptWrapper)
+    {
+        try
+        {
+            var scripting = realProjectData?.Module.Scripting;
+            if (scripting?.SharedScope == null)
+            {
+                logger.Log(LogLevel.Warn, $"Manual script \"{scriptWrapper.FileName}\" cannot be stopped because no measurement or replay is running.");
+                return;
+            }
+
+            var script = scripting.Scripts.FirstOrDefault(s => ReferenceEquals(s, scriptWrapper.Script))
+                         ?? scripting.Scripts.FirstOrDefault(s => s.FileName == scriptWrapper.FileName);
+            if (script == null)
+            {
+                logger.Log(LogLevel.Warn, $"Manual script \"{scriptWrapper.FileName}\" was not found among the project scripts.");
+                return;
+            }
+
+            scripting.StopManualScript(script);
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, $"Stopping manual script \"{scriptWrapper.FileName}\" failed: {e.Message}");
+        }
+    }
+
+    private async Task RunManualScriptAsync(ScriptWrapper scriptWrapper)
+    {
+        try
+        {
+            var scripting = realProjectData?.Module.Scripting;
+            if (scripting?.SharedScope == null)
+            {
+                logger.Log(LogLevel.Warn, $"Manual script \"{scriptWrapper.FileName}\" can run only while measurement or replay is running.");
+                RadWindow.Alert(new DialogParameters
+                {
+                    Header = "Run Script",
+                    Content = "Scripts can be run only while measurement or replay is running."
+                });
+                return;
+            }
+
+            var script = scripting.Scripts.FirstOrDefault(s => ReferenceEquals(s, scriptWrapper.Script))
+                         ?? scripting.Scripts.FirstOrDefault(s => s.FileName == scriptWrapper.FileName);
+            if (script == null)
+            {
+                logger.Log(LogLevel.Warn, $"Manual script \"{scriptWrapper.FileName}\" was not found among the project scripts.");
+                return;
+            }
+
+            await scripting.ExecuteManualScriptAsync(script);
+        }
+        catch (Exception e)
+        {
+            logger.Log(LogLevel.Error, $"Manual script \"{scriptWrapper.FileName}\" failed: {e.Message}");
+        }
     }
 
     private void OnWorkspaceControlSelected(WorkspaceControlSelectedMsg msg)
@@ -280,7 +341,10 @@ public partial class ShellWindowModel
                 else
                 {
                     var targetGroup = GetTargetDocumentPaneGroup(shellRadDocking);
-                    var scriptViewModel = new ScriptViewModel(eventAggregator, scriptSeWrapper.ScriptWrapper);
+                    var scriptViewModel = new ScriptViewModel(eventAggregator, scriptSeWrapper.ScriptWrapper)
+                    {
+                        IsRuntimeRunning = IsRuntimeStarted
+                    };
                     ViewModels.Add(scriptViewModel);
                     _ = MoveNewWorkspaceDocumentToTargetGroupAsync(shellRadDocking, scriptViewModel, targetGroup);
                 }

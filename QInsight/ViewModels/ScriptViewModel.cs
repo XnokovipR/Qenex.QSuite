@@ -2,6 +2,7 @@
 using System.Windows.Media;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Highlighting;
+using Qenex.QInsight.EventAggregatorMsgs;
 using Qenex.QInsight.Models;
 using Qenex.QInsight.ViewModels.ModelWrappers;
 using Qenex.QInsight.Views;
@@ -26,7 +27,13 @@ public class ScriptViewModel : WorkspaceViewModelBase
         Document.TextChanged += (_, _) => ScriptWrapper.Content = Document.Text;
 
         WinTitle = ScriptWrapper.FileName;
-        
+        RunScriptCommand = new RelayCommand<object>(
+            _ => EventAggregator.Publish(new RunManualScriptMsg { Script = ScriptWrapper }),
+            _ => IsRuntimeRunning && ScriptWrapper.ExecutionMode == ScriptExecutionMode.Manual);
+        StopScriptCommand = new RelayCommand<object>(
+            _ => EventAggregator.Publish(new StopManualScriptMsg { Script = ScriptWrapper }),
+            _ => IsRuntimeRunning && ScriptWrapper.ExecutionMode == ScriptExecutionMode.Manual);
+
         if (ScriptWrapper is INotifyPropertyChanged npc)
         {
 	        npc.PropertyChanged += (_, e) =>
@@ -34,6 +41,12 @@ public class ScriptViewModel : WorkspaceViewModelBase
 		        if (e.PropertyName == nameof(ScriptWrapper.FileName))
 		        {
 			        WinTitle = ScriptWrapper.FileName;
+		        }
+
+		        if (e.PropertyName == nameof(ScriptWrapper.ExecutionMode))
+		        {
+			        RunScriptCommand.OnCanExecuteChanged();
+			        StopScriptCommand.OnCanExecuteChanged();
 		        }
 	        };
         }
@@ -44,7 +57,22 @@ public class ScriptViewModel : WorkspaceViewModelBase
     #region Properties
     
     public ScriptWrapper ScriptWrapper;
-    
+
+    public bool IsRuntimeRunning
+    {
+        get;
+        set
+        {
+            if (field == value) return;
+            field = value;
+            RunScriptCommand.OnCanExecuteChanged();
+            StopScriptCommand.OnCanExecuteChanged();
+        }
+    }
+
+    public RelayCommand<object> RunScriptCommand { get; }
+    public RelayCommand<object> StopScriptCommand { get; }
+
     public IHighlightingDefinition PyHighlighting { get; }
     public Color ForegroundColor { get;  }
     public Color BackgroundColor { get; }

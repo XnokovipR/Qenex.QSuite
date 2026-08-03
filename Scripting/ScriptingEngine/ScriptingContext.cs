@@ -20,6 +20,9 @@ public class ScriptingContext
     private PythonLogWriter stderrWriter = null!;
     private CancellationTokenSource? periodicScriptsCts;
     private readonly List<Task> periodicScriptTasks = [];
+    private readonly object manualRunLock = new();
+    private readonly Dictionary<IScriptBase, CancellationTokenSource> manualRunSources = [];
+    private static readonly TimeSpan ManualStopGracePeriod = TimeSpan.FromSeconds(2);
     private readonly object executionStateLock = new();
     private readonly object onValueChangedStateLock = new();
     private readonly object scriptOverloadStateLock = new();
@@ -381,6 +384,93 @@ if "__qenex_interactive_console" not in globals():
         }
     }
 
+    /// <summary>Runs a Manual-mode script on explicit user request. Scripts with any other
+    /// execution mode are refused; every refusal is logged so the request never no-ops silently.</summary>
+    public async Task<bool> ExecuteManualScriptAsync(IScriptBase script, CancellationToken ct = default)
+    {
+        if (script.ExecutionMode != ScriptExecutionMode.Manual)
+        {
+            logger?.Log(LogLevel.Warn, $"Script \"{script.FileName}\" cannot be run manually because its execution mode is {script.ExecutionMode}.");
+            return false;
+        }
+
+        if (SharedScope == null)
+        {
+            logger?.Log(LogLevel.Warn, $"Manual script \"{script.FileName}\" cannot run because the scripting context is not running.");
+            return false;
+        }
+
+        if (!CanExecuteScript(script))
+        {
+            logger?.Log(LogLevel.Warn, $"Manual script \"{script.FileName}\" is disabled and was not run.");
+            return false;
+        }
+
+        CancellationTokenSource runCts;
+        lock (manualRunLock)
+        {
+            if (manualRunSources.ContainsKey(script))
+            {
+                logger?.Log(LogLevel.Warn, $"Manual script \"{script.FileName}\" is already running.");
+                return false;
+            }
+
+            runCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            manualRunSources[script] = runCts;
+        }
+
+        try
+        {
+            var executed = await ExecuteScriptAsync(
+                script,
+                GetScriptExecutionOptions(script),
+                runCts.Token,
+                cancellationGracePeriod: ManualStopGracePeriod);
+            if (!executed)
+            {
+                logger?.Log(LogLevel.Warn, $"Manual script \"{script.FileName}\" was not executed (already running or the execution was cancelled).");
+            }
+
+            return executed;
+        }
+        finally
+        {
+            lock (manualRunLock)
+            {
+                manualRunSources.Remove(script);
+            }
+
+            runCts.Dispose();
+        }
+    }
+
+    /// <summary>Stops a running Manual-mode script started by <see cref="ExecuteManualScriptAsync"/>.
+    /// The stop token interrupts the script at its next executed Python line; a script stuck in
+    /// a blocking native call falls back to the hard-interrupt path after a short grace period.</summary>
+    public void StopManualScript(IScriptBase script)
+    {
+        CancellationTokenSource? runCts;
+        lock (manualRunLock)
+        {
+            manualRunSources.TryGetValue(script, out runCts);
+        }
+
+        if (runCts == null)
+        {
+            logger?.Log(LogLevel.Warn, $"Manual script \"{script.FileName}\" is not running.");
+            return;
+        }
+
+        try
+        {
+            runCts.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The run finished between the lookup and the cancel; nothing to stop.
+        }
+    }
+
     private async Task ExecuteScriptsAsync(
         ScriptExecutionMode scriptMode,
         bool allowNonBlocking,
@@ -422,7 +512,8 @@ if "__qenex_interactive_console" not in globals():
         ScriptExecutionOptions options,
         CancellationToken ct = default,
         Action? beforeExecute = null,
-        bool allowStopCancellation = true)
+        bool allowStopCancellation = true,
+        TimeSpan? cancellationGracePeriod = null)
     {
         if (!CanExecuteScript(script))
         {
@@ -470,6 +561,18 @@ if "__qenex_interactive_console" not in globals():
         {
             await AwaitExecutionTaskAsync(executionTask, ct);
             return true;
+        }
+
+        // A cancelled run gets a grace period to end itself via the stop token (raised at the
+        // next executed Python line) before it is written off as a hard interrupt.
+        if (cancellationGracePeriod.HasValue)
+        {
+            await linkedCts.CancelAsync();
+            if (await WaitForTaskCompletionAsync(executionTask, cancellationGracePeriod.Value, CancellationToken.None))
+            {
+                await AwaitExecutionTaskAsync(executionTask, CancellationToken.None);
+                return true;
+            }
         }
 
         MarkScriptInterrupted(script, $"script \"{script.FileName}\" was interrupted because scripting context is stopping.");

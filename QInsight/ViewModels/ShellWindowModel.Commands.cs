@@ -1093,7 +1093,8 @@ public partial class ShellWindowModel
             var scriptWrapper = new ScriptWrapper(script, realProjectData.Module.Scripting);
             var scriptViewModel = new ScriptViewModel(eventAggregator, scriptWrapper)
             {
-                Name = scriptDocument.Name
+                Name = scriptDocument.Name,
+                IsRuntimeRunning = IsRuntimeStarted
             };
 
             ViewModels.Add(scriptViewModel);
@@ -2228,6 +2229,11 @@ public partial class ShellWindowModel
         foreach (var workspaceViewModel in ViewModels.OfType<WorkspaceViewModel>())
         {
             workspaceViewModel.SetControlsRunState(runtimeStarted);
+        }
+
+        foreach (var scriptViewModel in ViewModels.OfType<ScriptViewModel>())
+        {
+            scriptViewModel.IsRuntimeRunning = runtimeStarted;
         }
     }
 
