@@ -55,11 +55,13 @@
 				
 				<q:QTextBlock Grid.Column="0" Grid.Row="0" Text="Refresh [ms]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
 				<q:QTextBox Grid.Column="1" Grid.Row="0" Text="{Binding RefreshTime, Mode=TwoWay}"
-				            Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="50" VerticalAlignment="Center" />
-				
-				<q:QTextBlock Grid.Column="0" Grid.Row="1" Text="DeathBand [%]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
-				<q:QTextBox Grid.Column="1" Grid.Row="1" Text="{Binding DeathBendPercentage, Mode=TwoWay}"
-				            Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="50" VerticalAlignment="Center" />
+				            Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="50" VerticalAlignment="Center"
+				            ToolTip="Refresh period of the displayed value"/>
+
+				<q:QTextBlock Grid.Column="0" Grid.Row="1" Text="Peak threshold [%]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Column="1" Grid.Row="1" Text="{Binding PeakThresholdPercentage, Mode=TwoWay}"
+				            Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="50" VerticalAlignment="Center"
+				            ToolTip="Value change (in % of the presentation Min-Max range) shown immediately, without waiting for the refresh period; 0 = every change is shown immediately"/>
 				
 			</Grid>
 		</telerik:RadExpander>

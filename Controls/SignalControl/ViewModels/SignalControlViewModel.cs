@@ -38,17 +38,20 @@ public class SignalControlViewModel : ControlBase, IVariableWriteControl
     
     [DataMember]
     public int RefreshTime
-    { 
+    {
 	    get;
 	    set
 	    {
 		    if (value < 0) value = 0;
 		    field = value; OnPropertyChanged();
-	    } 
-    } = 250;
-    
+	    }
+    } = 500;
+
+    // Change in % of the presentation Min-Max range that redraws immediately,
+    // without waiting for RefreshTime (so short peaks are not lost);
+    // 0 = every change redraws immediately.
     [DataMember]
-    public int DeathBendPercentage
+    public int PeakThresholdPercentage
     {
 	    get;
 	    set
@@ -57,6 +60,12 @@ public class SignalControlViewModel : ControlBase, IVariableWriteControl
 		    field = value; OnPropertyChanged();
 	    }
     } = 5;
+
+    // Legacy member name in older .qproj files; alphabetical member order makes
+    // the serializer read it before PeakThresholdPercentage. Never serialized
+    // back (always 0 + EmitDefaultValue false).
+    [DataMember(Name = "DeathBendPercentage", EmitDefaultValue = false)]
+    private int LegacyDeathBendPercentage { get => 0; set => PeakThresholdPercentage = value; }
 
     #endregion
 
@@ -192,20 +201,37 @@ public class SignalControlViewModel : ControlBase, IVariableWriteControl
 		    prevValue = 0;
 	    }
 
-	    if ((protVariable.Timestamp - previousUpdateTime).TotalMilliseconds < RefreshTime) return;
+	    // Regular redraw on the RefreshTime tick; a change exceeding
+	    // PeakThresholdPercentage of the presentation range redraws immediately.
+	    var tickElapsed = (protVariable.Timestamp - previousUpdateTime).TotalMilliseconds >= RefreshTime;
+	    if (protVariable is ScalarVariable scalarVariable)
+	    {
+		    var engValue = scalarVariable.GetEngValue();
+		    if (!tickElapsed && !ExceedsPeakThreshold(scalarVariable, engValue)) return;
+		    prevValue = engValue;
+	    }
+	    else if (!tickElapsed) return;
+
 	    previousUpdateTime = protVariable.Timestamp;
 
-	    if (double.TryParse(dataValue, out double doubleValue))
-	    {
-		    if (Math.Abs((doubleValue - prevValue) / prevValue * 100) < DeathBendPercentage) return;
-		    prevValue = doubleValue;
-	    }
-	    
 	    _ = Application.Current.Dispatcher.BeginInvoke(() =>
 	    {
 		    VariableValue = dataValue;
 	    });
-	    
+
+    }
+
+    private bool ExceedsPeakThreshold(ScalarVariable variable, double engValue)
+    {
+	    if (engValue == prevValue) return false;
+	    if (PeakThresholdPercentage <= 0) return true;
+
+	    // String/enum presentations have no numeric range -> tick only
+	    var presentation = variable.Values.ValPresentation;
+	    var range = presentation == null ? 0 : presentation.Max - presentation.Min;
+	    if (range <= 0) return false;
+
+	    return Math.Abs(engValue - prevValue) / range * 100 >= PeakThresholdPercentage;
     }
 
     // Zobrazuje jednu hodnotu: skalar nebo string (matice apod. patri specializovanym controlum)
