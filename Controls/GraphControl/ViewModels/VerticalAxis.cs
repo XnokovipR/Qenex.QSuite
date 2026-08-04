@@ -1,11 +1,16 @@
-﻿using RtGraphControl.Models;
+﻿using System.ComponentModel;
+using RtGraphControl.Models;
 using ScottPlot;
 using ScottPlot.AxisPanels;
 
 namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
-public sealed class VerticalAxis : YAxisBase
+public sealed class VerticalAxis : YAxisBase, INotifyPropertyChanged
 {
+    // The axes settings grid binds to Minimum/Maximum; without change notification it would keep
+    // showing the values from binding time while autoscale moves the real limits underneath.
+    public event PropertyChangedEventHandler? PropertyChanged;
+
     public Action? RefreshAction;
     public VerticalAxis(Edge edge = Edge.Right)
     {
@@ -84,17 +89,18 @@ public sealed class VerticalAxis : YAxisBase
 
     public bool IsAutoScale { get; set; } = true;
 
-    public double Minimum 
-    { 
+    public double Minimum
+    {
         get;
-        set 
+        set
         {
             field = value;
             Min = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Minimum)));
             RefreshAction?.Invoke();
-        } 
+        }
     } = -10.0;
-    
+
     public double Maximum
     {
         get;
@@ -102,6 +108,7 @@ public sealed class VerticalAxis : YAxisBase
         {
             field = value;
             Max = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Maximum)));
             RefreshAction?.Invoke();
         }
     } = 10.0;

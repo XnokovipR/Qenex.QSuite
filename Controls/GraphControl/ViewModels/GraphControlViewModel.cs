@@ -662,28 +662,29 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
 
     private void RecalculateVerticalAxisLimits(double xVal, double yVal, int axisIndex)
     {
-        var yAxis = PlotControl.Plot.Axes.GetAxes().Where(x => x is VerticalAxis).Cast<VerticalAxis>().FirstOrDefault(x => x.Name.Contains($"Y->{axisIndex}"));
-        if (yAxis is null) return;
+        // The axis is identified by its index, never by Name - the name is user-editable.
+        if (VerticalAxes[axisIndex] is not VerticalAxis yAxis)
+        {
+            return;
+        }
 
         var top = yAxis.Max;
         var bottom = yAxis.Min;
-        
-        //var top = PlotControl.Plot.Axes.GetLimits().Top;
-        //var bottom = PlotControl.Plot.Axes.GetLimits().Bottom;
+
+        // Written through Minimum/Maximum, not the raw ScottPlot range - the axes settings grid
+        // binds to these properties, and a manual edit only reaches the axis when the entered
+        // value differs from them.
         if (yVal > top)
         {
-            yAxis.Max = yVal * 1.1;
-            //PlotControl.Plot.Axes.SetLimitsY(bottom, yVal * 1.1);    
+            yAxis.Maximum = yVal * 1.1;
         }
         else if (yVal < bottom && yVal > 0)
         {
-            yAxis.Min = yVal * 0.7;
-            //PlotControl.Plot.Axes.SetLimitsY(yVal * 0.7, top);
+            yAxis.Minimum = yVal * 0.7;
         }
         else if (yVal < bottom && yVal < 0)
         {
-            yAxis.Min = yVal * 1.1;
-            //PlotControl.Plot.Axes.SetLimitsY(yVal * 1.1, top);
+            yAxis.Minimum = yVal * 1.1;
         }
     }
 
