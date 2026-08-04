@@ -1,12 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
         <LangVersion>latestmajor</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.Protocols.XcpProtocol</AssemblyName>
-        <RootNamespace>Qenex.QSuite.Protocols.XcpProtocol</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Protocols.XcpTcpProtocol</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Protocols.XcpTcpProtocol</RootNamespace>
         <AssemblyVersion>1.0.0.0</AssemblyVersion>
         <FileVersion>1.0.0.0</FileVersion>
     </PropertyGroup>

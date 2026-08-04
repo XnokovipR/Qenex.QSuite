@@ -1,6 +1,6 @@
 using Qenex.QSuite.Protocols.Protocol;
 
-namespace Qenex.QSuite.Protocols.XcpProtocol;
+namespace Qenex.QSuite.Protocols.XcpCore;
 
 public class XcpProtocolVariable : ProtocolVariable
 {

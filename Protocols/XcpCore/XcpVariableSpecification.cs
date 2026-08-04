@@ -4,7 +4,7 @@ using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.VariableEvents;
 using ValueDataType = Qenex.QSuite.Variables.QVariables.Values.ValuesGlobal.ValueDataType;
 
-namespace Qenex.QSuite.Protocols.XcpProtocol;
+namespace Qenex.QSuite.Protocols.XcpCore;
 
 /// <summary>
 /// Per-variable XCP mapping: ECU memory address (+ address extension), value size/type, transfer
@@ -43,8 +43,10 @@ public class XcpVariableSpecification : ProtVariableSpecification
 
     /// <summary>
     /// Controlled serialization so the configuration round-trips: read back by <see cref="Create"/>.
-    /// Must include eventRef when an event is bound — the XML module handler routes commParams
-    /// containing "eventRef" to the events-aware CreateProtocolVariable overload.
+    /// dataType and size are NOT written — they always equal the bound variable's own type (there
+    /// is no type remapping in the simplified XCP), so spelling them out only suggests a choice
+    /// that does not exist. Must include eventRef when an event is bound — the XML module handler
+    /// routes commParams containing "eventRef" to the events-aware CreateProtocolVariable overload.
     /// </summary>
     public string CommParams
     {
@@ -58,8 +60,8 @@ public class XcpVariableSpecification : ProtVariableSpecification
             };
 
             var commParams =
-                $"address=\"0x{Address:X}\";addressExtension=\"{AddressExtension}\";size=\"{Size}\";" +
-                $"dataType=\"{DataType}\";direction=\"{direction}\";multiplier=\"{Multiplier}\"";
+                $"address=\"0x{Address:X}\";addressExtension=\"{AddressExtension}\";" +
+                $"direction=\"{direction}\";multiplier=\"{Multiplier}\"";
 
             if (VariableEvent != null)
             {
@@ -71,11 +73,11 @@ public class XcpVariableSpecification : ProtVariableSpecification
     }
 
     // commParam example:
-    //   address="0x1A0000";addressExtension="0";size="4";dataType="Float";direction="readWrite";
-    //   multiplier="1";eventRef="poll100ms"
-    // Only address is mandatory. size/dataType default to the bound variable's own value type and
-    // are validated against it — a mismatch is a configuration error (the decoded value could not
-    // be assigned to the variable at runtime).
+    //   address="0x1A0000";addressExtension="0";direction="readWrite";multiplier="1";eventRef="poll100ms"
+    // Only address is mandatory. size/dataType may still appear in hand-written or legacy XML:
+    // they default to the bound variable's own value type and are validated against it — a
+    // mismatch is a configuration error (the decoded value could not be assigned to the variable
+    // at runtime).
     public static XcpVariableSpecification Create(string commParams, IEnumerable<IVarEvent>? variableEvents, IVariableBase variable)
     {
         var settings = Parse(commParams);

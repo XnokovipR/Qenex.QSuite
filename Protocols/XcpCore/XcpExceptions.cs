@@ -1,4 +1,4 @@
-namespace Qenex.QSuite.Protocols.XcpProtocol;
+namespace Qenex.QSuite.Protocols.XcpCore;
 
 /// <summary>The slave answered a command with a negative response (PID 0xFE).</summary>
 public class XcpErrorException(byte errorCode) : Exception(XcpErrorCode.Describe(errorCode))

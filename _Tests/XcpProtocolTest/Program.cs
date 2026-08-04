@@ -11,7 +11,9 @@ internal static class Program
         SpecificationTests.Run();
         CodecTests.Run();
         MasterTests.Run();
+        EthernetFramerTests.Run();
         IntegrationTests.Run();
+        TcpIntegrationTests.Run();
 
         Console.WriteLine(failures == 0 ? "ALL TESTS PASSED" : $"{failures} TEST(S) FAILED");
         return failures == 0 ? 0 : 1;

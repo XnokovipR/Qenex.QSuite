@@ -1,4 +1,4 @@
-using Qenex.QSuite.Protocols.XcpProtocol;
+using Qenex.QSuite.Protocols.XcpCore;
 using ValueDataType = Qenex.QSuite.Variables.QVariables.Values.ValuesGlobal.ValueDataType;
 using static Qenex.QSuite.Tests.XcpProtocolTest.Program;
 
@@ -68,8 +68,13 @@ internal static class CodecTests
     private static void Download_RejectsInvalidLength()
     {
         CheckThrows<ArgumentOutOfRangeException>(() => XcpCodec.BuildDownload([]), "DOWNLOAD with 0 bytes is rejected");
-        CheckThrows<ArgumentOutOfRangeException>(() => XcpCodec.BuildDownload([1, 2, 3, 4, 5, 6, 7]),
-            "DOWNLOAD with 7 bytes is rejected (max 6 on classic CAN)");
+        CheckThrows<ArgumentOutOfRangeException>(() => XcpCodec.BuildDownload(new byte[256]),
+            "DOWNLOAD with 256 bytes is rejected (count is a single byte)");
+
+        // Per-packet limits are MAX_CTO-derived and enforced by XcpMaster, not the codec: 8 data
+        // bytes are a valid single packet on XCP on Ethernet.
+        Check(XcpCodec.BuildDownload([1, 2, 3, 4, 5, 6, 7, 8]).Length == 10,
+            "DOWNLOAD with 8 bytes builds (large-CTO transports)");
     }
 
     private static void ConnectResponse_LittleEndian_Parses()

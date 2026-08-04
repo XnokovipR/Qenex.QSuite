@@ -1,4 +1,5 @@
 using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Protocols.XcpCore;
 using Qenex.QSuite.Protocols.XcpProtocol;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.QVariables.Values;
@@ -80,6 +81,8 @@ internal static class SpecificationTests
 
         Check(original.CommParams.Contains("eventRef=\"poll100ms\""),
             "serialized commParams contain eventRef (routes XML loading to the events overload)");
+        Check(!original.CommParams.Contains("dataType") && !original.CommParams.Contains("size"),
+            "serialized commParams omit dataType/size (always derived from the variable, writing them suggests a choice that does not exist)");
         Check(reparsed.Address == original.Address, "round-trip preserves address");
         Check(reparsed.AddressExtension == original.AddressExtension, "round-trip preserves address extension");
         Check(reparsed.Size == original.Size, "round-trip preserves size");

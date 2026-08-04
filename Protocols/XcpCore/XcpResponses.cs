@@ -1,4 +1,4 @@
-namespace Qenex.QSuite.Protocols.XcpProtocol;
+namespace Qenex.QSuite.Protocols.XcpCore;
 
 /// <summary>Parsed CONNECT positive response (ASAM XCP 1.1 Part 2, section 1.6.1.1.1).</summary>
 public sealed record XcpConnectResponse(

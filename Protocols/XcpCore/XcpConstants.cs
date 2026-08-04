@@ -1,4 +1,4 @@
-namespace Qenex.QSuite.Protocols.XcpProtocol;
+namespace Qenex.QSuite.Protocols.XcpCore;
 
 /// <summary>XCP command packet codes (ASAM XCP 1.1 Part 2, section 1.4).</summary>
 public static class XcpCommand

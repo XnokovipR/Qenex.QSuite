@@ -1,6 +1,6 @@
 using Qenex.QSuite.LogSystems.LogSystem;
 
-namespace Qenex.QSuite.Protocols.XcpProtocol;
+namespace Qenex.QSuite.Protocols.XcpCore;
 
 /// <summary>
 /// Transport-agnostic XCP master session engine. Owns the strictly serialized request/response
@@ -11,9 +11,13 @@ namespace Qenex.QSuite.Protocols.XcpProtocol;
 /// </summary>
 public sealed class XcpMaster(ILogger? logger = null)
 {
-    // Classic CAN limits with MAX_CTO=8 and AG=1: RES carries up to 7 data bytes, DOWNLOAD up to 6.
-    private const int MaxReadBytesPerPacket = 7;
-    private const int MaxWriteBytesPerPacket = 6;
+    // Per-packet data limits derived from the slave's MAX_CTO (CONNECT response, spec minimum 8).
+    // Classic CAN (MAX_CTO=8, AG=1): RES carries up to 7 data bytes, DOWNLOAD up to 6. Larger CTOs
+    // (XCP on Ethernet) fit any supported value (max 8 bytes) into a single packet, so chained
+    // multi-packet transfers only ever happen on CAN.
+    private int EffectiveMaxCto => Math.Max((int)(ConnectInfo?.MaxCto ?? 8), 8);
+    private int MaxReadBytesPerPacket => EffectiveMaxCto - 1;
+    private int MaxWriteBytesPerPacket => EffectiveMaxCto - 2;
 
     private readonly SemaphoreSlim requestLock = new(1, 1);
     private volatile TaskCompletionSource<byte[]>? pendingResponse;
@@ -157,10 +161,10 @@ public sealed class XcpMaster(ILogger? logger = null)
     #region Memory transfer
 
     /// <summary>
-    /// Reads <paramref name="size"/> bytes (1..8) from the ECU. Up to 7 bytes fit a single
-    /// SHORT_UPLOAD; 8-byte values are chained as SHORT_UPLOAD(7) + UPLOAD(1) using the
-    /// auto-incremented MTA (each frame individually acknowledged, no block mode). The chained
-    /// transfer is not atomic.
+    /// Reads <paramref name="size"/> bytes (1..8) from the ECU. Values that fit MAX_CTO − 1 are a
+    /// single SHORT_UPLOAD; on classic CAN (7-byte limit) 8-byte values are chained as
+    /// SHORT_UPLOAD(7) + UPLOAD(1) using the auto-incremented MTA (each frame individually
+    /// acknowledged, no block mode). A chained transfer is not atomic.
     /// </summary>
     public Task<byte[]> ReadMemoryAsync(byte addressExtension, uint address, int size, CancellationToken ct = default)
     {
@@ -194,9 +198,9 @@ public sealed class XcpMaster(ILogger? logger = null)
 
     /// <summary>
     /// Writes bytes to the ECU as SET_MTA + DOWNLOAD (never SHORT_DOWNLOAD). Values larger than
-    /// 6 bytes are chained as consecutive DOWNLOADs at the auto-incremented MTA (8 bytes = 6+2),
-    /// each individually acknowledged. On timeout the whole transaction retries, which re-issues
-    /// SET_MTA — the MTA is never trusted across a recovery.
+    /// MAX_CTO − 2 are chained as consecutive DOWNLOADs at the auto-incremented MTA (on classic
+    /// CAN 8 bytes = 6+2), each individually acknowledged. On timeout the whole transaction
+    /// retries, which re-issues SET_MTA — the MTA is never trusted across a recovery.
     /// </summary>
     public Task WriteMemoryAsync(byte addressExtension, uint address, byte[] data, CancellationToken ct = default)
     {

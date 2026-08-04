@@ -1,4 +1,5 @@
 using Qenex.QSuite.Common.CoreComm;
+using Qenex.QSuite.Protocols.XcpCore;
 using Qenex.QSuite.Protocols.XcpProtocol;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.QVariables.Values;

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <LangVersion>latestmajor</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AssemblyName>Qenex.QSuite.Protocols.XcpCore</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Protocols.XcpCore</RootNamespace>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <FileVersion>1.0.0.0</FileVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Protocol\Protocol.csproj" />
+      <ProjectReference Include="..\..\Variables\VariableEvents\VariableEvents.csproj" />
+      <ProjectReference Include="..\..\Common\CoreComm\CoreComm.csproj" />
+    </ItemGroup>
+
+</Project>

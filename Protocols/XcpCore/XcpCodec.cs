@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using ValueDataType = Qenex.QSuite.Variables.QVariables.Values.ValuesGlobal.ValueDataType;
 
-namespace Qenex.QSuite.Protocols.XcpProtocol;
+namespace Qenex.QSuite.Protocols.XcpCore;
 
 /// <summary>
 /// Transport-agnostic XCP packet codec. Works purely on XCP packets (PID + data bytes) — framing
@@ -50,13 +50,14 @@ public sealed class XcpCodec
     public static byte[] BuildUpload(byte count) => [XcpCommand.Upload, count];
 
     /// <summary>DOWNLOAD: 0xF0 | element count | data. Writes to the current MTA and post-increments it.
-    /// On classic CAN (MAX_CTO=8, AG=1) at most 6 data bytes fit into one packet.</summary>
+    /// Keeping the packet within the slave's MAX_CTO (e.g. 6 data bytes on classic CAN) is the
+    /// caller's contract — XcpMaster chunks by the limit learned from the CONNECT response.</summary>
     public static byte[] BuildDownload(ReadOnlySpan<byte> data)
     {
-        if (data.Length is < 1 or > 6)
+        if (data.Length is < 1 or > byte.MaxValue)
         {
             throw new ArgumentOutOfRangeException(nameof(data), data.Length,
-                "A single DOWNLOAD packet carries 1..6 data bytes on classic CAN.");
+                "A single DOWNLOAD packet carries 1..255 data bytes.");
         }
 
         var packet = new byte[2 + data.Length];

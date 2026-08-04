@@ -5,13 +5,13 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <AssemblyName>Qenex.QSuite.Tests.XcpProtocolTest</AssemblyName>
-        <RootNamespace>Qenex.QSuite.Tests.XcpProtocolTest</RootNamespace>
+        <AssemblyName>Qenex.QSuite.Tests.XcpTcpLiveTest</AssemblyName>
+        <RootNamespace>Qenex.QSuite.Tests.XcpTcpLiveTest</RootNamespace>
         <LangVersion>latestmajor</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Protocols\XcpProtocol\XcpProtocol.csproj" />
+      <ProjectReference Include="..\..\Drivers\TcpClientDriver\TcpClientDriver.csproj" />
       <ProjectReference Include="..\..\Protocols\XcpTcpProtocol\XcpTcpProtocol.csproj" />
     </ItemGroup>
 

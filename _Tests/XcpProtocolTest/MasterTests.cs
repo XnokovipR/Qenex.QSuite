@@ -1,4 +1,4 @@
-using Qenex.QSuite.Protocols.XcpProtocol;
+using Qenex.QSuite.Protocols.XcpCore;
 using static Qenex.QSuite.Tests.XcpProtocolTest.Program;
 
 namespace Qenex.QSuite.Tests.XcpProtocolTest;
@@ -13,6 +13,7 @@ internal static class MasterTests
         Connect_ProtectedCalibration_DisablesWrites().GetAwaiter().GetResult();
         Read_SingleFrame().GetAwaiter().GetResult();
         Read_EightBytes_ChainsShortUploadAndUpload().GetAwaiter().GetResult();
+        LargeCto_EightBytes_SinglePacketTransfers().GetAwaiter().GetResult();
         Write_SingleFrame().GetAwaiter().GetResult();
         Write_EightBytes_ChainsDownloads().GetAwaiter().GetResult();
         Write_WhenProtected_ThrowsWithoutTransmit().GetAwaiter().GetResult();
@@ -213,6 +214,35 @@ internal static class MasterTests
             "read 8B: first packet SHORT_UPLOAD(7)");
         Check(slave.Sent[1].SequenceEqual(new byte[] { 0xF5, 0x01 }),
             "read 8B: second packet UPLOAD(1) at auto-incremented MTA");
+    }
+
+    private static async Task LargeCto_EightBytes_SinglePacketTransfers()
+    {
+        // XCP on Ethernet slave: MAX_CTO=250 — every supported value (max 8 bytes) fits one packet.
+        var slave = new FakeSlave
+        {
+            Responder = cmd => cmd[0] switch
+            {
+                XcpCommand.Connect => [0xFF, 0x05, 0x00, 0xFA, 0xFF, 0x05, 0x01, 0x01],
+                XcpCommand.ShortUpload => [0xFF, 1, 2, 3, 4, 5, 6, 7, 8],
+                _ => FakeSlave.DefaultResponder(cmd)
+            }
+        };
+        await slave.Master.ConnectAsync();
+        slave.Sent.Clear();
+
+        var data = await slave.Master.ReadMemoryAsync(0, 0x2000, 8);
+
+        Check(data.SequenceEqual(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }), "large CTO read 8B: payload extracted");
+        Check(slave.Sent.Count == 1 && slave.Sent[0][0] == XcpCommand.ShortUpload && slave.Sent[0][1] == 8,
+            "large CTO read 8B: single SHORT_UPLOAD(8), no chaining");
+
+        slave.Sent.Clear();
+        await slave.Master.WriteMemoryAsync(0, 0x3000, [1, 2, 3, 4, 5, 6, 7, 8]);
+
+        Check(slave.Sent.Count == 2, "large CTO write 8B: SET_MTA + one DOWNLOAD");
+        Check(slave.Sent[1].SequenceEqual(new byte[] { 0xF0, 0x08, 1, 2, 3, 4, 5, 6, 7, 8 }),
+            "large CTO write 8B: single DOWNLOAD carries all bytes");
     }
 
     private static async Task Write_SingleFrame()
