@@ -11,6 +11,60 @@ public static class XcpCommand
     public const byte Upload = 0xF5;
     public const byte ShortUpload = 0xF4;
     public const byte Download = 0xF0;
+
+    // DAQ commands (ASAM XCP 1.1 Part 2, section 1.5.3).
+    public const byte SetDaqPtr = 0xE2;
+    public const byte WriteDaq = 0xE1;
+    public const byte SetDaqListMode = 0xE0;
+    public const byte StartStopDaqList = 0xDE;
+    public const byte StartStopSynch = 0xDD;
+    public const byte GetDaqProcessorInfo = 0xDA;
+    public const byte GetDaqResolutionInfo = 0xD9;
+    public const byte GetDaqEventInfo = 0xD7;
+    public const byte FreeDaq = 0xD6;
+    public const byte AllocDaq = 0xD5;
+    public const byte AllocOdt = 0xD4;
+    public const byte AllocOdtEntry = 0xD3;
+}
+
+/// <summary>SET_DAQ_LIST_MODE mode bits. Only the timestamp bit is ever set by this master —
+/// alternating/STIM/DTO_CTR/PID_OFF stay unsupported (measurement-only DAQ).</summary>
+public static class XcpDaqListModeBits
+{
+    public const byte Timestamp = 0x10;
+}
+
+/// <summary>START_STOP_DAQ_LIST mode parameter.</summary>
+public static class XcpDaqStartStopMode
+{
+    public const byte Stop = 0x00;
+    public const byte Start = 0x01;
+    public const byte Select = 0x02;
+}
+
+/// <summary>START_STOP_SYNCH mode parameter.</summary>
+public static class XcpDaqSynchMode
+{
+    public const byte StopAll = 0x00;
+    public const byte StartSelected = 0x01;
+    public const byte StopSelected = 0x02;
+}
+
+/// <summary>DTO identification field layout, from GET_DAQ_PROCESSOR_INFO DAQ_KEY_BYTE bits 6–7.
+/// Determines how a received DAQ packet names its ODT and DAQ list (and where data starts).</summary>
+public enum XcpDaqIdentificationType
+{
+    /// <summary>Absolute ODT number as single PID byte.</summary>
+    AbsolutePid = 0,
+
+    /// <summary>Relative ODT number (byte) + absolute DAQ list number (byte).</summary>
+    OdtWithDaqByte = 1,
+
+    /// <summary>Relative ODT number (byte) + absolute DAQ list number (word, unaligned).</summary>
+    OdtWithDaqWord = 2,
+
+    /// <summary>Relative ODT number (byte) + fill byte + absolute DAQ list number (word, aligned).</summary>
+    OdtWithFillAndDaqWord = 3
 }
 
 /// <summary>Kind of a packet received from the slave, classified by its PID (first byte).</summary>

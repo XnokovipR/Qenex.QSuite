@@ -1,4 +1,5 @@
 using System.Globalization;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.VariableEvents;
@@ -37,6 +38,11 @@ public class XcpVariableSpecification : ProtVariableSpecification
 
     /// <summary>Transfer direction: polled read, operator write, or both.</summary>
     public CommDirection Direction { get; init; } = CommDirection.Read;
+
+    /// <summary>ECU DAQ event channel number when the bound event carries
+    /// direction="DAQ";daqId="N" in its eventExtraParams — reads then come from a DAQ list
+    /// instead of polling. Null for ordinary polling events and write-only variables.</summary>
+    public ushort? DaqEventChannel { get; init; }
 
     /// <summary>Reserved for the staged engineering-value write phase; not applied yet.</summary>
     public int Multiplier { get; init; } = 1;
@@ -78,7 +84,8 @@ public class XcpVariableSpecification : ProtVariableSpecification
     // they default to the bound variable's own value type and are validated against it — a
     // mismatch is a configuration error (the decoded value could not be assigned to the variable
     // at runtime).
-    public static XcpVariableSpecification Create(string commParams, IEnumerable<IVarEvent>? variableEvents, IVariableBase variable)
+    public static XcpVariableSpecification Create(string commParams, IEnumerable<IVarEvent>? variableEvents, IVariableBase variable,
+        ILogger? logger = null)
     {
         var settings = Parse(commParams);
 
@@ -89,6 +96,7 @@ public class XcpVariableSpecification : ProtVariableSpecification
         var variableEvent = ResolveEvent(settings, variableEvents);
         var dataType = ResolveDataType(settings, variable);
         var size = ResolveSize(settings, dataType);
+        var daqEventChannel = variableEvent == null ? null : XcpEventExtraParams.GetDaqChannel(variableEvent, logger);
 
         if (variableEvent == null && direction != CommDirection.Write)
         {
@@ -104,6 +112,7 @@ public class XcpVariableSpecification : ProtVariableSpecification
             Size = size,
             DataType = dataType,
             Direction = direction,
+            DaqEventChannel = daqEventChannel,
             Multiplier = multiplier
         };
     }

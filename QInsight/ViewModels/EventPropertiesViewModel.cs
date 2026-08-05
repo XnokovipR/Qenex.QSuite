@@ -38,7 +38,8 @@ public class EventPropertiesViewModel : PropertyChangedBaseWithValidation, IProp
     {
         var properties = new ObservableCollection<EditablePropertyWrapper>
         {
-            Create("Event", "Name", () => variableEvent.Name, value => variableEvent.Name = value)
+            Create("Event", "Name", () => variableEvent.Name, value => variableEvent.Name = value),
+            Create("Event", "Extra Params", () => variableEvent.EventExtraParams, value => variableEvent.EventExtraParams = value)
         };
 
         if (variableEvent is PeriodicVarEvent periodicVarEvent)

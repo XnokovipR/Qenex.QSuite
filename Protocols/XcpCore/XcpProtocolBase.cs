@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
@@ -113,7 +114,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
             {
                 Variable = variable,
                 IsCommunicated = isCommunicated,
-                ProtocolVariableSpecification = XcpVariableSpecification.Create(commParams, variableEvents, variable)
+                ProtocolVariableSpecification = XcpVariableSpecification.Create(commParams, variableEvents, variable, Logger)
             };
         }
         catch (Exception e)
@@ -203,7 +204,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                 try
                 {
                     await ConnectSessionAsync(ct);
-                    await PollLoopAsync(ct);
+                    await RunSessionAsync(ct);
                 }
                 catch (OperationCanceledException)
                 {
@@ -288,6 +289,47 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
     #endregion
 
+    #region Session body (DAQ + polling)
+
+    /// <summary>
+    /// Runs one connected session: sets up DAQ for variables bound to DAQ events (D1–D6; a failed
+    /// setup falls back to polling for everything), then serves polling and the DAQ DTO stream
+    /// concurrently until the session dies or the protocol stops.
+    /// </summary>
+    private async Task RunSessionAsync(CancellationToken ct)
+    {
+        var daqSession = await TrySetupDaqAsync(ct);
+        if (daqSession == null)
+        {
+            await PollLoopAsync(null, ct);
+            return;
+        }
+
+        var consumer = ConsumeDaqDtosAsync(daqSession, ct);
+        try
+        {
+            await PollLoopAsync(daqSession.VariablesInDaq, ct);
+        }
+        finally
+        {
+            if (master is { } session)
+            {
+                session.DaqDtoReceived = null;
+            }
+
+            daqSession.Dtos.Writer.TryComplete();
+            try
+            {
+                await consumer;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+    }
+
+    #endregion
+
     #region Polling
 
     private sealed class PollEntry
@@ -299,13 +341,27 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
         public long NextDueMs { get; set; }
     }
 
-    private async Task PollLoopAsync(CancellationToken ct)
+    private async Task PollLoopAsync(IReadOnlySet<IProtocolVariable>? daqServedVariables, CancellationToken ct)
     {
-        var entries = BuildPollEntries();
+        var entries = BuildPollEntries(daqServedVariables);
         if (entries.Count == 0)
         {
-            Logger?.Log(LogLevel.Info, "XCP: no pollable variables configured; serving writes only.");
-            await Task.Delay(Timeout.Infinite, ct);
+            Logger?.Log(LogLevel.Info, daqServedVariables == null
+                ? "XCP: no pollable variables configured; serving writes only."
+                : "XCP: all read variables are served by DAQ; polling is idle.");
+
+            // Keep the session alive but notice a dead transport (the driver nulls the
+            // transmitter on connection loss) — otherwise a DAQ-only session would never reconnect.
+            while (!ct.IsCancellationRequested && !exitRequested)
+            {
+                if (transmitter == null)
+                {
+                    throw new XcpProtocolException($"{TransportName} transport is no longer available.");
+                }
+
+                await Task.Delay(500, ct);
+            }
+
             return;
         }
 
@@ -358,7 +414,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
         }
     }
 
-    private List<PollEntry> BuildPollEntries()
+    private List<PollEntry> BuildPollEntries(IReadOnlySet<IProtocolVariable>? daqServedVariables)
     {
         var entries = new List<PollEntry>();
         var now = Environment.TickCount64;
@@ -368,7 +424,8 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
             if (protocolVariable is not XcpProtocolVariable xcpVariable ||
                 !xcpVariable.IsCommunicated ||
                 xcpVariable.ProtocolVariableSpecification is not XcpVariableSpecification spec ||
-                spec.Direction == CommDirection.Write)
+                spec.Direction == CommDirection.Write ||
+                daqServedVariables?.Contains(protocolVariable) == true)
             {
                 continue;
             }
@@ -414,19 +471,396 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
         var bytes = await session.ReadMemoryAsync(entry.Spec.AddressExtension, entry.Spec.Address, entry.Spec.Size, ct);
         var value = session.Codec.DecodeValue(bytes, entry.Spec.DataType);
 
-        entry.Scalar.SetValue(value);
-        entry.Scalar.Timestamp = DateTime.UtcNow;
+        await ApplyBusValueAsync(entry.ProtocolVariable, entry.Scalar, value, DateTime.UtcNow);
+    }
 
-        // The operator-write path listens on this notification; the flag keeps a polled update from
-        // echoing back to the ECU (NotifyValueChangedAsync awaits its handlers, so the scope holds).
-        entry.ProtocolVariable.IsUpdatingFromBus = true;
+    private static async Task ApplyBusValueAsync(XcpProtocolVariable protocolVariable, ScalarVariable scalar,
+        object value, DateTime timestampUtc)
+    {
+        scalar.SetValue(value);
+        scalar.Timestamp = timestampUtc;
+
+        // The operator-write path listens on this notification; the flag keeps a bus-sourced update
+        // from echoing back to the ECU (NotifyValueChangedAsync awaits its handlers, so the scope holds).
+        protocolVariable.IsUpdatingFromBus = true;
         try
         {
-            await entry.ProtocolVariable.NotifyValueChangedAsync();
+            await protocolVariable.NotifyValueChangedAsync();
         }
         finally
         {
-            entry.ProtocolVariable.IsUpdatingFromBus = false;
+            protocolVariable.IsUpdatingFromBus = false;
+        }
+    }
+
+    #endregion
+
+    #region DAQ (measurement, decisions D1-D6)
+
+    private readonly record struct DaqDto(byte[] Packet, DateTime ReceivedUtc);
+
+    private sealed record DaqTarget(XcpProtocolVariable ProtocolVariable, ScalarVariable Scalar, XcpVariableSpecification Spec);
+
+    private sealed class DaqSessionState
+    {
+        public required XcpDaqDecoder Decoder { get; init; }
+        public required XcpCodec Codec { get; init; }
+        public required DaqTarget[][][] Targets { get; init; } // [daq list][odt][entry], mirrors the plans
+        public required Channel<DaqDto> Dtos { get; init; }
+        public required IReadOnlySet<IProtocolVariable> VariablesInDaq { get; init; }
+    }
+
+    /// <summary>
+    /// Builds and starts the DAQ side of the session for all variables bound to DAQ events.
+    /// Returns null when there is nothing to acquire or when DAQ cannot be used — then every
+    /// variable stays with polling (D4: polling is the fallback), which is always reported.
+    /// </summary>
+    private async Task<DaqSessionState?> TrySetupDaqAsync(CancellationToken ct)
+    {
+        var session = master;
+        if (session is not { IsConnected: true })
+        {
+            return null;
+        }
+
+        var channels = CollectDaqCandidates();
+        if (channels.Count == 0)
+        {
+            return null;
+        }
+
+        var connectInfo = session.ConnectInfo!;
+        if (!connectInfo.SupportsDaq)
+        {
+            Logger?.Log(LogLevel.Warn,
+                "XCP: the slave has no DAQ resource; variables with DAQ events fall back to polling.");
+            return null;
+        }
+
+        if (session.LastStatus?.IsDaqProtected == true)
+        {
+            Logger?.Log(LogLevel.Warn,
+                "XCP: the slave protects DAQ with seed & key, which is not supported; variables with DAQ events fall back to polling.");
+            return null;
+        }
+
+        try
+        {
+            var processor = await session.GetDaqProcessorInfoAsync(ct);
+            if (!processor.HasDynamicLists)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    "XCP: the slave only supports static DAQ lists, which is not implemented; falling back to polling.");
+                return null;
+            }
+
+            XcpDaqResolutionInfo? resolution = null;
+            try
+            {
+                resolution = await session.GetDaqResolutionInfoAsync(ct);
+            }
+            catch (XcpErrorException e) when (e.ErrorCode == XcpErrorCode.CmdUnknown)
+            {
+                Logger?.Log(LogLevel.Info, "XCP: GET_DAQ_RESOLUTION_INFO not implemented by the slave; using defaults.");
+            }
+
+            await ValidateDaqChannelsAsync(session, processor, channels, ct);
+            if (channels.Count == 0)
+            {
+                Logger?.Log(LogLevel.Warn, "XCP: no DAQ event channel survived validation; falling back to polling.");
+                return null;
+            }
+
+            var includeTimestamp = resolution is { TimestampFixed: true, TimestampSize: > 0 };
+            var timestampSize = includeTimestamp ? resolution!.TimestampSize : 0;
+            var (plans, targets) = PackDaqLists(channels, connectInfo, processor, resolution, timestampSize);
+            if (plans.Count == 0)
+            {
+                Logger?.Log(LogLevel.Warn, "XCP: no variable fits into a DAQ packet; falling back to polling.");
+                return null;
+            }
+
+            var decoder = new XcpDaqDecoder(processor.IdentificationType, session.Codec.IsBigEndian,
+                timestampSize, processor.OverloadIndicationByPid, plans, Logger);
+
+            var variablesInDaq = targets
+                .SelectMany(list => list.SelectMany(odt => odt))
+                .Select(IProtocolVariable (target) => target.ProtocolVariable)
+                .ToHashSet();
+
+            var droppedDtos = 0L;
+            var dtos = Channel.CreateBounded<DaqDto>(
+                new BoundedChannelOptions(8192)
+                {
+                    SingleReader = true,
+                    FullMode = BoundedChannelFullMode.DropOldest
+                },
+                _ =>
+                {
+                    // D6: overload never faults the session; dropping the oldest keeps the view live.
+                    droppedDtos++;
+                    if (droppedDtos == 1 || droppedDtos % 1000 == 0)
+                    {
+                        Logger?.Log(LogLevel.Warn,
+                            $"XCP: DAQ processing cannot keep up — {droppedDtos} packets dropped so far (oldest first).");
+                    }
+                });
+
+            // Wired before START_STOP_SYNCH — the slave starts streaming the instant it acks, and
+            // nothing may fall into the gap. (Absolute-PID slaves still drop DTOs until the FIRST_PIDs
+            // arrive right below; those are counted by the decoder.)
+            session.DaqDtoReceived = packet => dtos.Writer.TryWrite(new DaqDto(packet, DateTime.UtcNow));
+
+            var firstPids = await session.ConfigureAndStartDaqAsync(plans, includeTimestamp, ct);
+            decoder.SetFirstPids(firstPids);
+
+            Logger?.Log(LogLevel.Info,
+                $"XCP: DAQ started — {plans.Count} list(s) on event channel(s) " +
+                $"{string.Join(", ", plans.Select(p => p.EventChannel))}, {variablesInDaq.Count} variable(s).");
+
+            return new DaqSessionState
+            {
+                Decoder = decoder,
+                Codec = session.Codec,
+                Targets = targets,
+                Dtos = dtos,
+                VariablesInDaq = variablesInDaq
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception e) when (e is XcpErrorException or XcpTimeoutException or XcpProtocolException)
+        {
+            session.DaqDtoReceived = null;
+            Logger?.Log(LogLevel.Warn, $"XCP: DAQ setup failed ({e.Message}); falling back to polling for all variables.");
+            return null;
+        }
+    }
+
+    /// <summary>Read variables bound to a DAQ event, grouped by ECU event channel (stable order).</summary>
+    private SortedDictionary<ushort, List<DaqTarget>> CollectDaqCandidates()
+    {
+        var channels = new SortedDictionary<ushort, List<DaqTarget>>();
+
+        foreach (var protocolVariable in Variables)
+        {
+            if (protocolVariable is not XcpProtocolVariable xcpVariable ||
+                !xcpVariable.IsCommunicated ||
+                xcpVariable.ProtocolVariableSpecification is not XcpVariableSpecification spec ||
+                spec.DaqEventChannel is not { } channel ||
+                spec.Direction == CommDirection.Write)
+            {
+                continue;
+            }
+
+            if (xcpVariable.Variable is not ScalarVariable scalarVariable)
+            {
+                Logger?.Log(LogLevel.Warn, $"XCP: variable '{xcpVariable.Variable.Name}' is not scalar; not acquired via DAQ.");
+                continue;
+            }
+
+            if (!channels.TryGetValue(channel, out var targets))
+            {
+                channels[channel] = targets = [];
+            }
+
+            targets.Add(new DaqTarget(xcpVariable, scalarVariable, spec));
+        }
+
+        return channels;
+    }
+
+    /// <summary>
+    /// D3: every used channel is validated via GET_DAQ_EVENT_INFO — the ECU name is logged and the
+    /// event's configured period is compared with the ECU's nominal TIMECYCLE (mismatch = warning
+    /// with both values). Channels the slave rejects are removed and their variables fall back to
+    /// polling. Slaves without GET_DAQ_EVENT_INFO skip validation with a notice.
+    /// </summary>
+    private async Task ValidateDaqChannelsAsync(XcpMaster session, XcpDaqProcessorInfo processor,
+        SortedDictionary<ushort, List<DaqTarget>> channels, CancellationToken ct)
+    {
+        foreach (var channel in channels.Keys.ToList())
+        {
+            if (processor.MaxEventChannel > 0 && channel >= processor.MaxEventChannel)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"XCP: DAQ event channel {channel} is out of the slave's range (0..{processor.MaxEventChannel - 1}); " +
+                    $"its variables ({DescribeTargets(channels[channel])}) fall back to polling.");
+                channels.Remove(channel);
+                continue;
+            }
+
+            XcpDaqEventInfo info;
+            string ecuName;
+            try
+            {
+                (info, ecuName) = await session.GetDaqEventInfoAsync(channel, ct);
+            }
+            catch (XcpErrorException e) when (e.ErrorCode == XcpErrorCode.CmdUnknown)
+            {
+                Logger?.Log(LogLevel.Info,
+                    "XCP: GET_DAQ_EVENT_INFO not implemented by the slave; DAQ event channels are used unvalidated.");
+                return;
+            }
+            catch (XcpErrorException e) when (e.ErrorCode == XcpErrorCode.OutOfRange)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"XCP: the slave rejected DAQ event channel {channel} (ERR_OUT_OF_RANGE); " +
+                    $"its variables ({DescribeTargets(channels[channel])}) fall back to polling.");
+                channels.Remove(channel);
+                continue;
+            }
+
+            if (!info.SupportsDaq)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"XCP: event channel {channel} ('{ecuName}') does not support the DAQ direction; " +
+                    $"its variables ({DescribeTargets(channels[channel])}) fall back to polling.");
+                channels.Remove(channel);
+                continue;
+            }
+
+            Logger?.Log(LogLevel.Info,
+                $"XCP: DAQ event channel {channel} = '{ecuName}'" +
+                (info.CycleTimeMs is { } cycle ? $", nominal cycle {cycle:0.###} ms." : ", sporadic (no nominal cycle)."));
+
+            WarnOnPeriodMismatch(channels[channel], channel, ecuName, info);
+        }
+    }
+
+    private void WarnOnPeriodMismatch(List<DaqTarget> targets, ushort channel, string ecuName, XcpDaqEventInfo info)
+    {
+        if (info.CycleTimeMs is not { } cycleMs)
+        {
+            return;
+        }
+
+        foreach (var target in targets)
+        {
+            if (target.Spec.VariableEvent is not PeriodicVarEvent periodicEvent)
+            {
+                continue;
+            }
+
+            var configuredMs = (double)periodicEvent.Period * (int)periodicEvent.Unit;
+            if (configuredMs > 0 && Math.Abs(configuredMs - cycleMs) > cycleMs * 0.5)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"XCP: event '{periodicEvent.Name}' is configured with {configuredMs:0.###} ms but ECU channel {channel} " +
+                    $"('{ecuName}') reports a nominal cycle of {cycleMs:0.###} ms — the ECU timing wins; " +
+                    "adjust the event period if the difference is unintended.");
+            }
+        }
+    }
+
+    private static string DescribeTargets(List<DaqTarget> targets)
+    {
+        return string.Join(", ", targets.Select(t => $"'{t.Scalar.Name}'"));
+    }
+
+    /// <summary>
+    /// Packs each channel's entries into ODTs (first-fit, configuration order). ODT capacity is
+    /// MAX_DTO minus the identification field (and the timestamp in ODT 0); entry size is further
+    /// capped by MAX_ODT_ENTRY_SIZE_DAQ. Oversized variables are skipped with a warning.
+    /// </summary>
+    private (List<XcpDaqListPlan> Plans, DaqTarget[][][] Targets) PackDaqLists(
+        SortedDictionary<ushort, List<DaqTarget>> channels, XcpConnectResponse connectInfo,
+        XcpDaqProcessorInfo processor, XcpDaqResolutionInfo? resolution, int timestampSize)
+    {
+        var maxEntrySize = resolution is { MaxOdtEntrySizeDaq: > 0 } ? resolution.MaxOdtEntrySizeDaq : byte.MaxValue;
+        var headerSize = processor.DtoHeaderSize;
+
+        var plans = new List<XcpDaqListPlan>();
+        var targets = new List<DaqTarget[][]>();
+
+        foreach (var (channel, channelTargets) in channels)
+        {
+            var odts = new List<List<XcpDaqEntryPlan>>();
+            var odtTargets = new List<List<DaqTarget>>();
+
+            foreach (var target in channelTargets)
+            {
+                var size = target.Spec.Size;
+                var capacityNext = connectInfo.MaxDto - headerSize - (odts.Count == 0 ? timestampSize : 0);
+                if (size > maxEntrySize || size > capacityNext)
+                {
+                    Logger?.Log(LogLevel.Warn,
+                        $"XCP: variable '{target.Scalar.Name}' ({size} B) does not fit a DAQ packet " +
+                        $"(MAX_ODT_ENTRY_SIZE {maxEntrySize}, free ODT capacity {capacityNext}); it falls back to polling.");
+                    continue;
+                }
+
+                var capacityCurrent = connectInfo.MaxDto - headerSize - (odts.Count <= 1 ? timestampSize : 0);
+                if (odts.Count == 0 ||
+                    odts[^1].Sum(e => (int)e.Size) + size > capacityCurrent ||
+                    odts[^1].Count == byte.MaxValue)
+                {
+                    odts.Add([]);
+                    odtTargets.Add([]);
+                }
+
+                odts[^1].Add(new XcpDaqEntryPlan((byte)size, target.Spec.AddressExtension, target.Spec.Address));
+                odtTargets[^1].Add(target);
+            }
+
+            if (odts.Count == 0)
+            {
+                continue;
+            }
+
+            if (odts.Count > 0xFC)
+            {
+                throw new XcpProtocolException(
+                    $"DAQ list for event channel {channel} needs {odts.Count} ODTs; at most 252 are addressable.");
+            }
+
+            plans.Add(new XcpDaqListPlan(channel, odts.Select(IReadOnlyList<XcpDaqEntryPlan> (o) => o).ToList()));
+            targets.Add(odtTargets.Select(o => o.ToArray()).ToArray());
+        }
+
+        return (plans, targets.ToArray());
+    }
+
+    /// <summary>
+    /// Consumes queued DAQ packets and pushes decoded values into their variables. Timestamp is
+    /// the PC receive time (D5 stage 4a); the ECU timestamp in ODT 0 is skipped by the decoder.
+    /// </summary>
+    private async Task ConsumeDaqDtosAsync(DaqSessionState daq, CancellationToken ct)
+    {
+        var decoded = new List<XcpDaqDecoder.DecodedEntry>(capacity: 16);
+        var decodeFailures = 0L;
+
+        await foreach (var dto in daq.Dtos.Reader.ReadAllAsync(ct))
+        {
+            if (!daq.Decoder.TryDecode(dto.Packet, decoded))
+            {
+                continue;
+            }
+
+            foreach (var entry in decoded)
+            {
+                var target = daq.Targets[entry.ListIndex][entry.OdtIndex][entry.EntryIndex];
+                object value;
+                try
+                {
+                    value = daq.Codec.DecodeValue(dto.Packet.AsSpan(entry.DataOffset, entry.Size), target.Spec.DataType);
+                }
+                catch (XcpProtocolException e)
+                {
+                    decodeFailures++;
+                    if (decodeFailures == 1 || decodeFailures % 1000 == 0)
+                    {
+                        Logger?.Log(LogLevel.Warn,
+                            $"XCP: DAQ value for '{target.Scalar.Name}' could not be decoded ({e.Message}); {decodeFailures} failures so far.");
+                    }
+
+                    continue;
+                }
+
+                await ApplyBusValueAsync(target.ProtocolVariable, target.Scalar, value, dto.ReceivedUtc);
+            }
         }
     }
 

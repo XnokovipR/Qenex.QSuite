@@ -38,7 +38,13 @@ public class PeriodicVariableEventSeSeWrapper : PropertyChangedBase, IVariableEv
             sb.Append($"Label\t{VariableEvent.Name}");
             sb.Append(Environment.NewLine);
             sb.Append($"Period\t{((PeriodicVarEvent)VariableEvent).Period} {((PeriodicVarEvent)VariableEvent).Unit}");
-            
+
+            if (!string.IsNullOrEmpty(VariableEvent.EventExtraParams))
+            {
+                sb.Append(Environment.NewLine);
+                sb.Append($"Extra\t{VariableEvent.EventExtraParams}");
+            }
+
             return sb.ToString();
         }
     }

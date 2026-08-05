@@ -27,6 +27,10 @@ public sealed class XcpMaster(ILogger? logger = null)
     /// transport is usable, null otherwise.</summary>
     public Func<byte[], CancellationToken, Task>? Transmitter { get; set; }
 
+    /// <summary>Receives every DAQ DTO packet (PID ≤ 0xFB) from the slave. Called on the receive
+    /// path — implementations must only enqueue, never block.</summary>
+    public Action<byte[]>? DaqDtoReceived { get; set; }
+
     /// <summary>Response timeout per command; each EV_CMD_PENDING restarts it.</summary>
     public int TimeoutMs { get; set; } = 1000;
 
@@ -38,6 +42,9 @@ public sealed class XcpMaster(ILogger? logger = null)
 
     public bool IsConnected { get; private set; }
     public XcpConnectResponse? ConnectInfo { get; private set; }
+
+    /// <summary>GET_STATUS response captured during connect (resource protection for DAQ checks).</summary>
+    public XcpStatusResponse? LastStatus { get; private set; }
 
     /// <summary>False when the slave has no calibration resource or protects it with seed &amp; key.</summary>
     public bool WritesAllowed { get; private set; }
@@ -75,7 +82,7 @@ public sealed class XcpMaster(ILogger? logger = null)
                 break;
 
             case XcpPacketKind.DaqDto:
-                // DAQ is a future extension; DTO packets are ignored for now.
+                DaqDtoReceived?.Invoke(packet);
                 break;
         }
     }
@@ -94,6 +101,13 @@ public sealed class XcpMaster(ILogger? logger = null)
             case XcpEventCode.SessionTerminated:
                 IsConnected = false;
                 logger?.Log(LogLevel.Warn, "XCP: session terminated by the slave (EV_SESSION_TERMINATED).");
+                break;
+
+            case XcpEventCode.DaqOverload:
+                // D6: overload is a warning, never a session fault — the slave dropped samples
+                // but keeps measuring; values catch up with the next transmitted cycle.
+                logger?.Log(LogLevel.Warn,
+                    "XCP: EV_DAQ_OVERLOAD — the slave's DAQ buffers overflowed and samples were lost; the session continues.");
                 break;
 
             default:
@@ -130,6 +144,7 @@ public sealed class XcpMaster(ILogger? logger = null)
             var statusPacket = await ExecuteCommandAsync(XcpCodec.BuildGetStatus(), "GET_STATUS", token);
             var status = Codec.ParseGetStatusResponse(statusPacket);
             WritesAllowed = connect.SupportsCalibration && !status.IsCalibrationProtected;
+            LastStatus = status;
 
             return status;
         }, ct);
@@ -151,6 +166,7 @@ public sealed class XcpMaster(ILogger? logger = null)
         {
             IsConnected = false;
             ConnectInfo = null;
+            LastStatus = null;
             WritesAllowed = false;
             requestLock.Release();
         }
@@ -248,6 +264,150 @@ public sealed class XcpMaster(ILogger? logger = null)
         }
 
         response.AsSpan(1, destination.Length).CopyTo(destination);
+    }
+
+    #endregion
+
+    #region DAQ
+
+    public Task<XcpDaqProcessorInfo> GetDaqProcessorInfoAsync(CancellationToken ct = default)
+    {
+        EnsureConnected();
+        return ExecuteTransactionAsync(async token =>
+        {
+            var packet = await ExecuteCommandAsync(XcpCodec.BuildGetDaqProcessorInfo(), "GET_DAQ_PROCESSOR_INFO", token);
+            return Codec.ParseDaqProcessorInfoResponse(packet);
+        }, ct);
+    }
+
+    public Task<XcpDaqResolutionInfo> GetDaqResolutionInfoAsync(CancellationToken ct = default)
+    {
+        EnsureConnected();
+        return ExecuteTransactionAsync(async token =>
+        {
+            var packet = await ExecuteCommandAsync(XcpCodec.BuildGetDaqResolutionInfo(), "GET_DAQ_RESOLUTION_INFO", token);
+            return Codec.ParseDaqResolutionInfoResponse(packet);
+        }, ct);
+    }
+
+    /// <summary>
+    /// Queries one ECU event channel. The command leaves the MTA pointing at the channel name,
+    /// which is uploaded within the same transaction (chained UPLOADs for names longer than one
+    /// packet), so the two steps can never interleave with other commands.
+    /// </summary>
+    public Task<(XcpDaqEventInfo Info, string Name)> GetDaqEventInfoAsync(ushort eventChannel, CancellationToken ct = default)
+    {
+        EnsureConnected();
+        return ExecuteTransactionAsync(async token =>
+        {
+            var packet = await ExecuteCommandAsync(Codec.BuildGetDaqEventInfo(eventChannel), "GET_DAQ_EVENT_INFO", token);
+            var info = XcpCodec.ParseDaqEventInfoResponse(packet);
+
+            var name = string.Empty;
+            if (info.NameLength > 0)
+            {
+                var nameBytes = new byte[info.NameLength];
+                for (var offset = 0; offset < nameBytes.Length; offset += MaxReadBytesPerPacket)
+                {
+                    var count = Math.Min(MaxReadBytesPerPacket, nameBytes.Length - offset);
+                    var part = await ExecuteCommandAsync(XcpCodec.BuildUpload((byte)count), "UPLOAD", token);
+                    CopyResponseData(part, "UPLOAD", nameBytes.AsSpan(offset, count));
+                }
+
+                name = System.Text.Encoding.ASCII.GetString(nameBytes).TrimEnd('\0');
+            }
+
+            return (info, name);
+        }, ct);
+    }
+
+    /// <summary>
+    /// Replays the whole DAQ configuration to the slave and starts acquisition, as one
+    /// transaction: FREE_DAQ → ALLOC_DAQ/ALLOC_ODT/ALLOC_ODT_ENTRY → WRITE_DAQ per entry →
+    /// SET_DAQ_LIST_MODE → START_STOP_DAQ_LIST (select) → START_STOP_SYNCH (start selected).
+    /// A timeout retry restarts from FREE_DAQ, so the slave never keeps a half-built config.
+    /// Returns FIRST_PID per list (meaningful for absolute-PID identification only).
+    /// </summary>
+    public Task<byte[]> ConfigureAndStartDaqAsync(IReadOnlyList<XcpDaqListPlan> lists, bool includeTimestamp,
+        CancellationToken ct = default)
+    {
+        EnsureConnected();
+        if (lists.Count == 0)
+        {
+            throw new ArgumentException("At least one DAQ list is required.", nameof(lists));
+        }
+
+        return ExecuteTransactionAsync(async token =>
+        {
+            await ExecuteCommandAsync(XcpCodec.BuildFreeDaq(), "FREE_DAQ", token);
+            await ExecuteCommandAsync(Codec.BuildAllocDaq((ushort)lists.Count), "ALLOC_DAQ", token);
+
+            for (var daq = 0; daq < lists.Count; daq++)
+            {
+                await ExecuteCommandAsync(Codec.BuildAllocOdt((ushort)daq, (byte)lists[daq].Odts.Count), "ALLOC_ODT", token);
+            }
+
+            for (var daq = 0; daq < lists.Count; daq++)
+            {
+                for (var odt = 0; odt < lists[daq].Odts.Count; odt++)
+                {
+                    await ExecuteCommandAsync(
+                        Codec.BuildAllocOdtEntry((ushort)daq, (byte)odt, (byte)lists[daq].Odts[odt].Count),
+                        "ALLOC_ODT_ENTRY", token);
+                }
+            }
+
+            for (var daq = 0; daq < lists.Count; daq++)
+            {
+                for (var odt = 0; odt < lists[daq].Odts.Count; odt++)
+                {
+                    // WRITE_DAQ auto-increments the DAQ pointer, so it is set once per ODT.
+                    await ExecuteCommandAsync(Codec.BuildSetDaqPtr((ushort)daq, (byte)odt, 0), "SET_DAQ_PTR", token);
+                    foreach (var entry in lists[daq].Odts[odt])
+                    {
+                        await ExecuteCommandAsync(
+                            Codec.BuildWriteDaq(entry.Size, entry.AddressExtension, entry.Address), "WRITE_DAQ", token);
+                    }
+                }
+            }
+
+            var mode = includeTimestamp ? XcpDaqListModeBits.Timestamp : (byte)0;
+            for (var daq = 0; daq < lists.Count; daq++)
+            {
+                await ExecuteCommandAsync(
+                    Codec.BuildSetDaqListMode(mode, (ushort)daq, lists[daq].EventChannel, prescaler: 1, priority: 0),
+                    "SET_DAQ_LIST_MODE", token);
+            }
+
+            var firstPids = new byte[lists.Count];
+            for (var daq = 0; daq < lists.Count; daq++)
+            {
+                var response = await ExecuteCommandAsync(
+                    Codec.BuildStartStopDaqList(XcpDaqStartStopMode.Select, (ushort)daq), "START_STOP_DAQ_LIST", token);
+                firstPids[daq] = XcpCodec.ParseStartStopDaqListResponse(response);
+            }
+
+            await ExecuteCommandAsync(XcpCodec.BuildStartStopSynch(XcpDaqSynchMode.StartSelected), "START_STOP_SYNCH", token);
+            return firstPids;
+        }, ct);
+    }
+
+    /// <summary>Best-effort stop of all DAQ lists; failures are only logged (the slave stops DAQ
+    /// on DISCONNECT anyway).</summary>
+    public async Task StopDaqAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            await ExecuteTransactionAsync<object?>(async token =>
+            {
+                await ExecuteCommandAsync(XcpCodec.BuildStartStopSynch(XcpDaqSynchMode.StopAll), "START_STOP_SYNCH", token);
+                return null;
+            }, ct);
+        }
+        catch (Exception e) when (e is XcpErrorException or XcpTimeoutException or XcpProtocolException)
+        {
+            logger?.Log(LogLevel.Warn, $"XCP: stopping DAQ failed ({e.Message}).");
+        }
     }
 
     #endregion

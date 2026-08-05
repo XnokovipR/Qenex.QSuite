@@ -165,19 +165,21 @@ public static class XmlComponentMapper
                 xmlVarEvents.Add(new PeriodicXmlVarEvent
                 {
                     Name = periodicVarEvent.Name,
+                    EventExtraParams = periodicVarEvent.EventExtraParams,
                     Period = periodicVarEvent.Period,
                     Unit = periodicVarEvent.Unit.ToString()
                 });
             }
             else if (varEvent is OnRequestVarEvent)
             {
-                xmlVarEvents.Add(new OnRequestXmlVarEvent { Name = varEvent.Name });
+                xmlVarEvents.Add(new OnRequestXmlVarEvent { Name = varEvent.Name, EventExtraParams = varEvent.EventExtraParams });
             }
             else if (varEvent is OnValueChangedVarEvent onValueChangedVarEvent)
             {
                 xmlVarEvents.Add(new OnValueChangedXmlVarEvent
                 {
                     Name = onValueChangedVarEvent.Name,
+                    EventExtraParams = onValueChangedVarEvent.EventExtraParams,
                     Threshold = onValueChangedVarEvent.Threshold
                 });
             }
@@ -206,6 +208,7 @@ public static class XmlComponentMapper
             {
                 var varEvent = EventsGlobal.CreateInstance(varEventType);
                 varEvent.Name = xmlEvent.Name;
+                varEvent.EventExtraParams = xmlEvent.EventExtraParams;
 
                 if (varEvent is PeriodicVarEvent periodicVarEvent && xmlEvent is PeriodicXmlVarEvent xmlPeriodicEvent)
                 {

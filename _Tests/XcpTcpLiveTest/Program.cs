@@ -13,14 +13,18 @@ namespace Qenex.QSuite.Tests.XcpTcpLiveTest;
 /// <summary>
 /// Manual smoke test of the real TcpClientDriver + XcpTcp chain against a live XCP on Ethernet
 /// slave (XCPlite hello_xcp on localhost). Connect-only when no variables are given; with
-/// variable specs it polls for a few seconds, prints the values and optionally writes.
+/// variable specs it polls (or acquires via DAQ) for a few seconds, prints the values and
+/// optionally writes.
 ///
-///   XcpTcpLiveTest &lt;ip&gt; &lt;port&gt; [name:type:0xADDRESS[:write=VALUE]] ...
+///   XcpTcpLiveTest &lt;ip&gt; &lt;port&gt; [name:type:0xADDRESS[:ext][:daq=CHANNEL][:write=VALUE]] ...
 ///   e.g. XcpTcpLiveTest 127.0.0.1 5555 global_counter:UInt:0x1A0 heat_energy:Double:0x1A8
 ///        flow_rate:Float:0x10004:write=0.5
+///        XcpTcpLiveTest 127.0.0.1 5555 global_counter:UInt:0x1A0:daq=0 heat_energy:Double:0x1A8:daq=1
 ///
-/// Addresses come from the A2L file the slave generates (ECU_ADDRESS). Exit code 0 = session
-/// established (and every polled variable changed at least once).
+/// daq=N binds the variable to ECU event channel N (measurement via a DAQ list instead of
+/// polling; the channel's ECU name is validated and logged at connect). Addresses come from the
+/// A2L file the slave generates (ECU_ADDRESS). Exit code 0 = session established (and every
+/// acquired variable changed at least once).
 /// </summary>
 internal static class Program
 {
@@ -62,13 +66,15 @@ internal static class Program
         driver.AddProtocol(protocol);
 
         var pollEvent = new PeriodicVarEvent { Name = "poll100ms", Period = 100, Unit = TimeUnit.Milisec };
+        var daqEvents = new Dictionary<ushort, PeriodicVarEvent>();
         var polled = new List<(ScalarVariable Variable, object InitialValue)>();
         var writes = new List<(ScalarVariable Variable, double Value)>();
 
         var id = 0;
+        var daqVariableCount = 0;
         foreach (var spec in variableSpecs)
         {
-            // name:type:0xADDRESS[:ext][:write=VALUE]
+            // name:type:0xADDRESS[:ext][:daq=CHANNEL][:write=VALUE]
             var parts = spec.Split(':');
             if (parts.Length < 3)
             {
@@ -79,11 +85,32 @@ internal static class Program
             var type = Enum.Parse<ValueDataType>(parts[1], ignoreCase: true);
             var extension = parts.Skip(3).FirstOrDefault(p => byte.TryParse(p, out _)) ?? "0";
             var writePart = parts.FirstOrDefault(p => p.StartsWith("write=", StringComparison.OrdinalIgnoreCase));
+            var daqPart = parts.FirstOrDefault(p => p.StartsWith("daq=", StringComparison.OrdinalIgnoreCase));
             var direction = writePart != null ? "readWrite" : "read";
 
+            var variableEvent = pollEvent;
+            if (daqPart != null)
+            {
+                var channel = ushort.Parse(daqPart["daq=".Length..], CultureInfo.InvariantCulture);
+                if (!daqEvents.TryGetValue(channel, out var daqEvent))
+                {
+                    // The period is only the expected nominal cycle — the ECU's own timing drives
+                    // the acquisition; a mismatch against TIMECYCLE is reported at connect.
+                    daqEvents[channel] = daqEvent = new PeriodicVarEvent
+                    {
+                        Name = $"daq{channel}",
+                        Period = 1,
+                        Unit = TimeUnit.Milisec,
+                        EventExtraParams = $"direction=\"DAQ\";daqId=\"{channel}\""
+                    };
+                }
+
+                variableEvent = daqEvent;
+            }
+
             var variable = CreateScalar(++id, parts[0], type);
-            var protocolVariable = protocol.CreateProtocolVariable(variable, [pollEvent],
-                $"address=\"{parts[2]}\";addressExtension=\"{extension}\";direction=\"{direction}\";eventRef=\"poll100ms\"", true);
+            var protocolVariable = protocol.CreateProtocolVariable(variable, [pollEvent, .. daqEvents.Values],
+                $"address=\"{parts[2]}\";addressExtension=\"{extension}\";direction=\"{direction}\";eventRef=\"{variableEvent.Name}\"", true);
             if (protocolVariable == null)
             {
                 Console.WriteLine($"variable spec '{spec}' was rejected by the protocol");
@@ -92,13 +119,20 @@ internal static class Program
 
             protocol.AddVariable(protocolVariable);
             polled.Add((variable, variable.GetValue()));
+            if (daqPart != null)
+            {
+                daqVariableCount++;
+            }
+
             if (writePart != null)
             {
                 writes.Add((variable, double.Parse(writePart["write=".Length..], CultureInfo.InvariantCulture)));
             }
         }
 
-        Console.WriteLine($"connecting to {ip}:{port} with {polled.Count} polled variable(s)...");
+        Console.WriteLine($"connecting to {ip}:{port} with {polled.Count} variable(s) " +
+                          $"({polled.Count - daqVariableCount} polled, {daqVariableCount} via DAQ" +
+                          $"{(daqEvents.Count == 0 ? "" : $" on channel(s) {string.Join(", ", daqEvents.Keys)}")})...");
         await driver.StartAsync();
 
         var connected = await WaitUntilAsync(() => protocol.State == CommunicationState.Running, 8000);

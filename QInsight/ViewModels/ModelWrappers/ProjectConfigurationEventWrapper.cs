@@ -51,6 +51,7 @@ public class ProjectConfigurationEventWrapper : PropertyChangedBase
         }
 
         VariableEvent.Name = currentState.Name;
+        VariableEvent.EventExtraParams = currentState.ExtraParams;
 
         if (VariableEvent is PeriodicVarEvent periodicVarEvent && currentState.PeriodicState != null)
         {
@@ -81,6 +82,7 @@ public class ProjectConfigurationEventWrapper : PropertyChangedBase
     public IVarEvent CreateEventSnapshot(string name)
     {
         var snapshot = CreateEvent(name, currentState.VariableEventType);
+        snapshot.EventExtraParams = currentState.ExtraParams;
         if (snapshot is PeriodicVarEvent periodicVarEvent && currentState.PeriodicState != null)
         {
             periodicVarEvent.Period = currentState.PeriodicState.Period;
@@ -100,6 +102,7 @@ public class ProjectConfigurationEventWrapper : PropertyChangedBase
         Properties.Clear();
 
         AddProperty(Create("Event", "Name", () => currentState.Name, value => UpdateState(currentState with { Name = value })));
+        AddProperty(Create("Event", "Extra Params", () => currentState.ExtraParams, value => UpdateState(currentState with { ExtraParams = value })));
         AddProperty(Create(
             "Event",
             "Type",
@@ -178,7 +181,7 @@ public class ProjectConfigurationEventWrapper : PropertyChangedBase
             return;
         }
 
-        currentState = CreateDefaultState(currentState.Name, variableEventType);
+        currentState = CreateDefaultState(currentState.Name, currentState.ExtraParams, variableEventType);
         RebuildProperties();
         NotifyStateChanged();
     }
@@ -247,26 +250,29 @@ public class ProjectConfigurationEventWrapper : PropertyChangedBase
         return variableEvent;
     }
 
-    private static EventState CreateDefaultState(string name, EventsGlobal.VariableEventType variableEventType)
+    private static EventState CreateDefaultState(string name, string extraParams, EventsGlobal.VariableEventType variableEventType)
     {
         return variableEventType switch
         {
             EventsGlobal.VariableEventType.Periodic => new EventState(
                 name,
+                extraParams,
                 EventsGlobal.VariableEventType.Periodic,
                 new PeriodicEventState(1, TimeUnit.Sec),
                 null),
             EventsGlobal.VariableEventType.OnValueChanged => new EventState(
                 name,
+                extraParams,
                 EventsGlobal.VariableEventType.OnValueChanged,
                 null,
                 new OnValueChangedEventState(0)),
             EventsGlobal.VariableEventType.OnRequest => new EventState(
                 name,
+                extraParams,
                 EventsGlobal.VariableEventType.OnRequest,
                 null,
                 null),
-            _ => new EventState(name, variableEventType, null, null)
+            _ => new EventState(name, extraParams, variableEventType, null, null)
         };
     }
 
@@ -277,6 +283,7 @@ public class ProjectConfigurationEventWrapper : PropertyChangedBase
 
     private sealed record EventState(
         string Name,
+        string ExtraParams,
         EventsGlobal.VariableEventType VariableEventType,
         PeriodicEventState? PeriodicState,
         OnValueChangedEventState? OnValueChangedState)
@@ -287,20 +294,23 @@ public class ProjectConfigurationEventWrapper : PropertyChangedBase
             {
                 PeriodicVarEvent periodicVarEvent => new EventState(
                     periodicVarEvent.Name,
+                    periodicVarEvent.EventExtraParams,
                     EventsGlobal.VariableEventType.Periodic,
                     new PeriodicEventState(periodicVarEvent.Period, periodicVarEvent.Unit),
                     null),
                 OnRequestVarEvent => new EventState(
                     variableEvent.Name,
+                    variableEvent.EventExtraParams,
                     EventsGlobal.VariableEventType.OnRequest,
                     null,
                     null),
                 OnValueChangedVarEvent onValueChangedVarEvent => new EventState(
                     onValueChangedVarEvent.Name,
+                    onValueChangedVarEvent.EventExtraParams,
                     EventsGlobal.VariableEventType.OnValueChanged,
                     null,
                     new OnValueChangedEventState(onValueChangedVarEvent.Threshold)),
-                _ => new EventState(variableEvent.Name, EventsGlobal.VariableEventType.Undefined, null, null)
+                _ => new EventState(variableEvent.Name, variableEvent.EventExtraParams, EventsGlobal.VariableEventType.Undefined, null, null)
             };
         }
     }

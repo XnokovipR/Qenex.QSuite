@@ -22,4 +22,69 @@ public sealed record XcpStatusResponse(
 {
     /// <summary>Calibration commands are seed &amp; key protected and would return ERR_ACCESS_LOCKED.</summary>
     public bool IsCalibrationProtected => (ResourceProtection & XcpResource.Calibration) != 0;
+
+    /// <summary>DAQ commands are seed &amp; key protected and would return ERR_ACCESS_LOCKED.</summary>
+    public bool IsDaqProtected => (ResourceProtection & XcpResource.Daq) != 0;
+}
+
+/// <summary>Parsed GET_DAQ_PROCESSOR_INFO positive response (ASAM XCP 1.1 Part 2, 1.6.1.3.1).</summary>
+public sealed record XcpDaqProcessorInfo(
+    byte Properties,
+    ushort MaxDaq,
+    ushort MaxEventChannel,
+    byte MinDaq,
+    byte KeyByte)
+{
+    /// <summary>DAQ_PROPERTIES bit 0: lists are configured dynamically (ALLOC_*), not static.</summary>
+    public bool HasDynamicLists => (Properties & 0x01) != 0;
+
+    public bool SupportsTimestamps => (Properties & 0x10) != 0;
+
+    /// <summary>Overload is indicated by the MSB of the DTO's PID/ODT byte.</summary>
+    public bool OverloadIndicationByPid => (Properties & 0xC0) == 0x40;
+
+    /// <summary>Overload is indicated by the EV_DAQ_OVERLOAD event packet.</summary>
+    public bool OverloadIndicationByEvent => (Properties & 0xC0) == 0x80;
+
+    public XcpDaqIdentificationType IdentificationType => (XcpDaqIdentificationType)((KeyByte >> 6) & 0x03);
+
+    /// <summary>Bytes the identification field occupies at the start of every DTO.</summary>
+    public int DtoHeaderSize => IdentificationType switch
+    {
+        XcpDaqIdentificationType.AbsolutePid => 1,
+        XcpDaqIdentificationType.OdtWithDaqByte => 2,
+        XcpDaqIdentificationType.OdtWithDaqWord => 3,
+        _ => 4
+    };
+}
+
+/// <summary>Parsed GET_DAQ_RESOLUTION_INFO positive response (ASAM XCP 1.1 Part 2, 1.6.1.3.2).</summary>
+public sealed record XcpDaqResolutionInfo(
+    byte GranularityOdtEntrySizeDaq,
+    byte MaxOdtEntrySizeDaq,
+    byte TimestampMode,
+    ushort TimestampTicks)
+{
+    /// <summary>Timestamp width in bytes (0/1/2/4); the TIMESTAMP_MODE size bits carry it directly.</summary>
+    public int TimestampSize => TimestampMode & 0x07;
+
+    /// <summary>The slave always sends timestamps regardless of the DAQ list mode bit.</summary>
+    public bool TimestampFixed => (TimestampMode & 0x08) != 0;
+}
+
+/// <summary>Parsed GET_DAQ_EVENT_INFO positive response (ASAM XCP 1.1 Part 2, 1.6.1.3.5);
+/// the event channel name is uploaded separately via the MTA the command leaves behind.</summary>
+public sealed record XcpDaqEventInfo(
+    byte Properties,
+    byte MaxDaqList,
+    byte NameLength,
+    byte TimeCycle,
+    byte TimeUnit,
+    byte Priority)
+{
+    public bool SupportsDaq => (Properties & 0x04) != 0;
+
+    /// <summary>Nominal cycle in ms computed from TIME_CYCLE × 10^TIME_UNIT ns;
+    /// null when the event is sporadic (TIME_CYCLE = 0).</summary>
+    public double? CycleTimeMs => TimeCycle == 0 ? null : TimeCycle * Math.Pow(10, TimeUnit) / 1_000_000.0;
 }

@@ -69,6 +69,167 @@ public sealed class XcpCodec
 
     #endregion
 
+    #region DAQ command builders
+
+    public static byte[] BuildFreeDaq() => [XcpCommand.FreeDaq];
+
+    /// <summary>ALLOC_DAQ: 0xD5 | reserved | DAQ_COUNT (WORD).</summary>
+    public byte[] BuildAllocDaq(ushort daqCount)
+    {
+        var packet = new byte[4];
+        packet[0] = XcpCommand.AllocDaq;
+        WriteUInt16(packet.AsSpan(2), daqCount);
+        return packet;
+    }
+
+    /// <summary>ALLOC_ODT: 0xD4 | reserved | DAQ_LIST_NUMBER (WORD) | ODT_COUNT.</summary>
+    public byte[] BuildAllocOdt(ushort daqList, byte odtCount)
+    {
+        var packet = new byte[5];
+        packet[0] = XcpCommand.AllocOdt;
+        WriteUInt16(packet.AsSpan(2), daqList);
+        packet[4] = odtCount;
+        return packet;
+    }
+
+    /// <summary>ALLOC_ODT_ENTRY: 0xD3 | reserved | DAQ_LIST_NUMBER (WORD) | ODT_NUMBER | ENTRY_COUNT.</summary>
+    public byte[] BuildAllocOdtEntry(ushort daqList, byte odt, byte entryCount)
+    {
+        var packet = new byte[6];
+        packet[0] = XcpCommand.AllocOdtEntry;
+        WriteUInt16(packet.AsSpan(2), daqList);
+        packet[4] = odt;
+        packet[5] = entryCount;
+        return packet;
+    }
+
+    /// <summary>SET_DAQ_PTR: 0xE2 | reserved | DAQ_LIST_NUMBER (WORD) | ODT_NUMBER | ENTRY_NUMBER.</summary>
+    public byte[] BuildSetDaqPtr(ushort daqList, byte odt, byte entryIndex)
+    {
+        var packet = new byte[6];
+        packet[0] = XcpCommand.SetDaqPtr;
+        WriteUInt16(packet.AsSpan(2), daqList);
+        packet[4] = odt;
+        packet[5] = entryIndex;
+        return packet;
+    }
+
+    /// <summary>WRITE_DAQ: 0xE1 | BIT_OFFSET (0xFF = whole element) | SIZE | ADDR_EXT | ADDRESS (DWORD).
+    /// Writes the ODT entry at the current DAQ pointer and auto-increments the pointer.</summary>
+    public byte[] BuildWriteDaq(byte size, byte addressExtension, uint address)
+    {
+        var packet = new byte[8];
+        packet[0] = XcpCommand.WriteDaq;
+        packet[1] = 0xFF;
+        packet[2] = size;
+        packet[3] = addressExtension;
+        WriteUInt32(packet.AsSpan(4), address);
+        return packet;
+    }
+
+    /// <summary>SET_DAQ_LIST_MODE: 0xE0 | MODE | DAQ_LIST_NUMBER (WORD) | EVENT_CHANNEL (WORD) |
+    /// PRESCALER | PRIORITY.</summary>
+    public byte[] BuildSetDaqListMode(byte mode, ushort daqList, ushort eventChannel, byte prescaler, byte priority)
+    {
+        var packet = new byte[8];
+        packet[0] = XcpCommand.SetDaqListMode;
+        packet[1] = mode;
+        WriteUInt16(packet.AsSpan(2), daqList);
+        WriteUInt16(packet.AsSpan(4), eventChannel);
+        packet[6] = prescaler;
+        packet[7] = priority;
+        return packet;
+    }
+
+    /// <summary>START_STOP_DAQ_LIST: 0xDE | MODE (stop/start/select) | DAQ_LIST_NUMBER (WORD).</summary>
+    public byte[] BuildStartStopDaqList(byte mode, ushort daqList)
+    {
+        var packet = new byte[4];
+        packet[0] = XcpCommand.StartStopDaqList;
+        packet[1] = mode;
+        WriteUInt16(packet.AsSpan(2), daqList);
+        return packet;
+    }
+
+    /// <summary>START_STOP_SYNCH: 0xDD | MODE (stop all / start selected / stop selected).</summary>
+    public static byte[] BuildStartStopSynch(byte mode) => [XcpCommand.StartStopSynch, mode];
+
+    public static byte[] BuildGetDaqProcessorInfo() => [XcpCommand.GetDaqProcessorInfo];
+
+    public static byte[] BuildGetDaqResolutionInfo() => [XcpCommand.GetDaqResolutionInfo];
+
+    /// <summary>GET_DAQ_EVENT_INFO: 0xD7 | reserved | EVENT_CHANNEL_NUMBER (WORD).</summary>
+    public byte[] BuildGetDaqEventInfo(ushort eventChannel)
+    {
+        var packet = new byte[4];
+        packet[0] = XcpCommand.GetDaqEventInfo;
+        WriteUInt16(packet.AsSpan(2), eventChannel);
+        return packet;
+    }
+
+    #endregion
+
+    #region DAQ response parsers
+
+    public XcpDaqProcessorInfo ParseDaqProcessorInfoResponse(ReadOnlySpan<byte> packet)
+    {
+        if (packet.Length < 8 || packet[0] != 0xFF)
+        {
+            throw new XcpProtocolException($"Malformed GET_DAQ_PROCESSOR_INFO response ({packet.Length} bytes).");
+        }
+
+        return new XcpDaqProcessorInfo(
+            Properties: packet[1],
+            MaxDaq: ReadUInt16(packet[2..4]),
+            MaxEventChannel: ReadUInt16(packet[4..6]),
+            MinDaq: packet[6],
+            KeyByte: packet[7]);
+    }
+
+    public XcpDaqResolutionInfo ParseDaqResolutionInfoResponse(ReadOnlySpan<byte> packet)
+    {
+        if (packet.Length < 8 || packet[0] != 0xFF)
+        {
+            throw new XcpProtocolException($"Malformed GET_DAQ_RESOLUTION_INFO response ({packet.Length} bytes).");
+        }
+
+        return new XcpDaqResolutionInfo(
+            GranularityOdtEntrySizeDaq: packet[1],
+            MaxOdtEntrySizeDaq: packet[2],
+            TimestampMode: packet[5],
+            TimestampTicks: ReadUInt16(packet[6..8]));
+    }
+
+    public static XcpDaqEventInfo ParseDaqEventInfoResponse(ReadOnlySpan<byte> packet)
+    {
+        if (packet.Length < 7 || packet[0] != 0xFF)
+        {
+            throw new XcpProtocolException($"Malformed GET_DAQ_EVENT_INFO response ({packet.Length} bytes).");
+        }
+
+        return new XcpDaqEventInfo(
+            Properties: packet[1],
+            MaxDaqList: packet[2],
+            NameLength: packet[3],
+            TimeCycle: packet[4],
+            TimeUnit: packet[5],
+            Priority: packet[6]);
+    }
+
+    /// <summary>FIRST_PID from the START_STOP_DAQ_LIST response; only meaningful for slaves using
+    /// absolute-PID DTO identification. Optional in the spec — 0 when the slave omits it.</summary>
+    public static byte ParseStartStopDaqListResponse(ReadOnlySpan<byte> packet)
+    {
+        if (packet.Length < 1 || packet[0] != 0xFF)
+        {
+            throw new XcpProtocolException($"Malformed START_STOP_DAQ_LIST response ({packet.Length} bytes).");
+        }
+
+        return packet.Length >= 2 ? packet[1] : (byte)0;
+    }
+
+    #endregion
+
     #region Response parsers
 
     /// <summary>
@@ -224,6 +385,25 @@ public sealed class XcpCodec
         {
             BinaryPrimitives.WriteUInt32LittleEndian(destination, value);
         }
+    }
+
+    private void WriteUInt16(Span<byte> destination, ushort value)
+    {
+        if (IsBigEndian)
+        {
+            BinaryPrimitives.WriteUInt16BigEndian(destination, value);
+        }
+        else
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(destination, value);
+        }
+    }
+
+    internal ushort ReadUInt16(ReadOnlySpan<byte> source)
+    {
+        return IsBigEndian
+            ? BinaryPrimitives.ReadUInt16BigEndian(source)
+            : BinaryPrimitives.ReadUInt16LittleEndian(source);
     }
 
     #endregion
