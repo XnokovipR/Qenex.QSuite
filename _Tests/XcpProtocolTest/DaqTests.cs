@@ -17,6 +17,7 @@ internal static class DaqTests
         Decoder_OdtFillDaqWord_WithTimestamp();
         Decoder_DropsAndOverload();
         Decoder_AbsolutePid();
+        Mapper_SlaveSpacingWrapAndFallbacks();
         Master_ConfigureAndStartDaq_Sequence().GetAwaiter().GetResult();
         Master_GetDaqEventInfo_UploadsName().GetAwaiter().GetResult();
     }
@@ -98,6 +99,14 @@ internal static class DaqTests
         var resolution = codec.ParseDaqResolutionInfoResponse([0xFF, 0x01, 0x08, 0x01, 0x08, 0x6C, 0x01, 0x00]);
         Check(resolution is { MaxOdtEntrySizeDaq: 8, TimestampSize: 4, TimestampFixed: true, TimestampTicks: 1 },
             "codec: GET_DAQ_RESOLUTION_INFO parsed (timestamp mode decomposed)");
+        Check(Math.Abs(resolution.TimestampTickSeconds - 1e-3) < 1e-12,
+            "codec: tick duration = TICKS x UNIT (1 tick of 1 ms)");
+
+        // XCPlite on a 1 us clock reports unit 1 ns with 1000 ticks -> 1 us per tick (TICKS x UNIT,
+        // never UNIT / TICKS - the inverse reading froze the DAQ time axis on live hardware).
+        var xcplite = codec.ParseDaqResolutionInfoResponse([0xFF, 0x01, 0xF8, 0x01, 0xF8, 0x0C, 0xE8, 0x03]);
+        Check(Math.Abs(xcplite.TimestampTickSeconds - 1e-6) < 1e-15,
+            "codec: XCPlite-style resolution (1 ns unit, 1000 ticks) = 1 us per tick");
 
         var eventInfo = XcpCodec.ParseDaqEventInfoResponse([0xFF, 0x84, 0xFF, 0x04, 0x01, 0x06, 0x00]);
         Check(eventInfo is { SupportsDaq: true, NameLength: 4, CycleTimeMs: 1.0 },
@@ -130,14 +139,15 @@ internal static class DaqTests
 
         // ODT 0: header(4) + timestamp(4) + 4B + 2B.
         byte[] odt0 = [0x00, 0xAA, 0x00, 0x00, 1, 2, 3, 4, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66];
-        Check(decoder.TryDecode(odt0, entries), "decoder: ODT 0 with timestamp decodes");
+        Check(decoder.TryDecode(odt0, entries, out var ts0), "decoder: ODT 0 with timestamp decodes");
         Check(entries is [{ OdtIndex: 0, EntryIndex: 0, DataOffset: 8, Size: 4 }, { EntryIndex: 1, DataOffset: 12, Size: 2 }],
-            "decoder: ODT 0 entries sit after the skipped timestamp");
+            "decoder: ODT 0 entries sit after the extracted timestamp");
+        Check(ts0 == 0x04030201, "decoder: ODT 0 timestamp extracted (little-endian raw ticks)");
 
         // ODT 1: header(4) + 8B, no timestamp outside ODT 0.
         byte[] odt1 = [0x01, 0xAA, 0x00, 0x00, 1, 2, 3, 4, 5, 6, 7, 8];
-        Check(decoder.TryDecode(odt1, entries), "decoder: ODT 1 decodes");
-        Check(entries is [{ OdtIndex: 1, EntryIndex: 0, DataOffset: 4, Size: 8 }],
+        Check(decoder.TryDecode(odt1, entries, out var ts1), "decoder: ODT 1 decodes");
+        Check(entries is [{ OdtIndex: 1, EntryIndex: 0, DataOffset: 4, Size: 8 }] && ts1 == null,
             "decoder: only ODT 0 carries the timestamp");
     }
 
@@ -147,18 +157,20 @@ internal static class DaqTests
             timestampSizeOdt0: 4, overloadIndicationByPid: true, TwoOdtPlan);
         var entries = new List<XcpDaqDecoder.DecodedEntry>();
 
-        Check(!decoder.TryDecode([0x00, 0xAA], entries), "decoder: packet shorter than the header is dropped");
-        Check(!decoder.TryDecode([0x00, 0xAA, 0x05, 0x00, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6], entries),
+        Check(!decoder.TryDecode([0x00, 0xAA], entries, out _), "decoder: packet shorter than the header is dropped");
+        Check(!decoder.TryDecode([0x00, 0xAA, 0x05, 0x00, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6], entries, out _),
             "decoder: unknown DAQ list number is dropped");
-        Check(!decoder.TryDecode([0x07, 0xAA, 0x00, 0x00, 1, 2, 3, 4], entries),
+        Check(!decoder.TryDecode([0x07, 0xAA, 0x00, 0x00, 1, 2, 3, 4], entries, out _),
             "decoder: unknown ODT number is dropped");
-        Check(!decoder.TryDecode([0x00, 0xAA, 0x00, 0x00, 0, 0, 0, 0, 1, 2], entries),
+        Check(!decoder.TryDecode([0x00, 0xAA, 0x00, 0x00, 0, 0, 0, 0, 1, 2], entries, out _),
             "decoder: truncated data part is dropped");
-        Check(decoder.DroppedPackets == 4, "decoder: drops are counted");
+        Check(!decoder.TryDecode([0x00, 0xAA, 0x00, 0x00, 1, 2], entries, out _),
+            "decoder: packet shorter than its ODT 0 timestamp is dropped");
+        Check(decoder.DroppedPackets == 5, "decoder: drops are counted");
 
         // Overload: MSB of the relative ODT byte set — packet still decodes as ODT 1.
         byte[] overloaded = [0x81, 0xAA, 0x00, 0x00, 1, 2, 3, 4, 5, 6, 7, 8];
-        Check(decoder.TryDecode(overloaded, entries) && entries is [{ OdtIndex: 1 }],
+        Check(decoder.TryDecode(overloaded, entries, out _) && entries is [{ OdtIndex: 1 }],
             "decoder: overload MSB is stripped and the packet still decodes");
     }
 
@@ -168,14 +180,51 @@ internal static class DaqTests
             timestampSizeOdt0: 0, overloadIndicationByPid: false, TwoOdtPlan);
         var entries = new List<XcpDaqDecoder.DecodedEntry>();
 
-        Check(!decoder.TryDecode([0x10, 1, 2, 3, 4, 0x11, 0x22], entries),
+        Check(!decoder.TryDecode([0x10, 1, 2, 3, 4, 0x11, 0x22], entries, out _),
             "decoder: absolute PID without FIRST_PID knowledge is dropped");
 
         decoder.SetFirstPids([0x10]);
-        Check(decoder.TryDecode([0x11, 1, 2, 3, 4, 5, 6, 7, 8], entries) &&
+        Check(decoder.TryDecode([0x11, 1, 2, 3, 4, 5, 6, 7, 8], entries, out _) &&
               entries is [{ ListIndex: 0, OdtIndex: 1, DataOffset: 1, Size: 8 }],
             "decoder: absolute PID maps through FIRST_PID to list and relative ODT");
-        Check(!decoder.TryDecode([0x30, 1, 2], entries), "decoder: PID outside every list range is dropped");
+        Check(!decoder.TryDecode([0x30, 1, 2], entries, out _), "decoder: PID outside every list range is dropped");
+    }
+
+    #endregion
+
+    #region Timestamp mapper (4b/4c)
+
+    private static void Mapper_SlaveSpacingWrapAndFallbacks()
+    {
+        var t0 = new DateTime(2026, 8, 9, 12, 0, 0, DateTimeKind.Utc);
+        var mapper = new XcpDaqTimestampMapper(timestampSize: 4, tickSeconds: 1e-6, listCount: 2);
+
+        // Anchor: the first timestamped sample takes its receive time; from then on the
+        // spacing follows the slave clock even when TCP delivers in bursts.
+        Check(mapper.Map(0, 1_000_000, t0) == t0, "mapper: first sample anchors to the receive time");
+        var second = mapper.Map(0, 1_010_000, t0.AddMilliseconds(48));
+        Check(CloseTo(second, t0.AddMilliseconds(10)), "mapper: spacing follows the slave clock, not the arrival burst");
+
+        // ODTs 1..n have no timestamp: they reuse the cycle time of their list; a list that has
+        // not seen any ODT 0 yet falls back to the receive time.
+        Check(mapper.Map(0, null, t0.AddMilliseconds(49)) == second, "mapper: timestamp-less ODT reuses the cycle time");
+        Check(mapper.Map(1, null, t0.AddMilliseconds(50)) == t0.AddMilliseconds(50),
+            "mapper: a list without any ODT 0 yet uses the receive time");
+
+        // Counter overflow: a smaller raw value continues the time axis (32-bit unwrap).
+        var wrapMapper = new XcpDaqTimestampMapper(timestampSize: 4, tickSeconds: 1e-6, listCount: 1);
+        Check(wrapMapper.Map(0, uint.MaxValue - 4_999, t0) == t0, "mapper: pre-wrap sample anchors");
+        var afterWrap = wrapMapper.Map(0, 5_000, t0.AddMilliseconds(12));
+        Check(CloseTo(afterWrap, t0.AddMilliseconds(10)), "mapper: 32-bit counter wrap is unwrapped");
+
+        // Slave restart: the counter jump maps far away from the receive time -> re-anchor.
+        var restarted = mapper.Map(0, 500, t0.AddSeconds(5));
+        Check(restarted == t0.AddSeconds(5), "mapper: slave restart re-anchors to the receive time");
+    }
+
+    private static bool CloseTo(DateTime actual, DateTime expected)
+    {
+        return Math.Abs((actual - expected).TotalMilliseconds) < 0.001;
     }
 
     #endregion

@@ -5,8 +5,8 @@ namespace Qenex.QSuite.Protocols.XcpCore;
 
 /// <summary>
 /// Decodes received DAQ DTO packets against the configured list structure: resolves the
-/// identification field (per the slave's DAQ_KEY_BYTE type), skips the ODT-0 timestamp when the
-/// session runs with timestamps, and yields one slice per ODT entry in configuration order.
+/// identification field (per the slave's DAQ_KEY_BYTE type), extracts the ODT-0 timestamp when
+/// the session runs with timestamps, and yields one slice per ODT entry in configuration order.
 /// Malformed or unmappable packets are dropped with a throttled warning — a live DAQ stream must
 /// never spam the log.
 /// </summary>
@@ -43,14 +43,28 @@ public sealed class XcpDaqDecoder(
     /// <summary>
     /// Decodes one DTO into <paramref name="entries"/> (cleared first). Returns false when the
     /// packet had to be dropped. The caller slices the packet by the returned offsets.
+    /// <paramref name="timestampRaw"/> carries the slave timestamp of ODT-0 packets (raw ticks);
+    /// it is null for ODTs 1..n and for sessions without timestamps.
     /// </summary>
-    public bool TryDecode(byte[] packet, List<DecodedEntry> entries)
+    public bool TryDecode(byte[] packet, List<DecodedEntry> entries, out uint? timestampRaw)
     {
         entries.Clear();
+        timestampRaw = null;
 
         if (!TryResolveHeader(packet, out var listIndex, out var odtIndex, out var headerSize))
         {
             return false;
+        }
+
+        if (odtIndex == 0 && timestampSizeOdt0 > 0)
+        {
+            if (packet.Length < headerSize + timestampSizeOdt0)
+            {
+                return Drop($"DTO for DAQ list {listIndex} ODT 0 carries {packet.Length} bytes, " +
+                            $"its {timestampSizeOdt0}-byte timestamp needs bytes up to {headerSize + timestampSizeOdt0}");
+            }
+
+            timestampRaw = ReadTimestamp(packet.AsSpan(headerSize, timestampSizeOdt0));
         }
 
         var offset = headerSize + (odtIndex == 0 ? timestampSizeOdt0 : 0);
@@ -186,6 +200,18 @@ public sealed class XcpDaqDecoder(
         }
 
         return false;
+    }
+
+    private uint ReadTimestamp(ReadOnlySpan<byte> source)
+    {
+        return source.Length switch
+        {
+            1 => source[0],
+            2 => ReadUInt16(source),
+            _ => isBigEndian
+                ? BinaryPrimitives.ReadUInt32BigEndian(source)
+                : BinaryPrimitives.ReadUInt32LittleEndian(source)
+        };
     }
 
     private ushort ReadUInt16(ReadOnlySpan<byte> source)

@@ -508,6 +508,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
         public required DaqTarget[][][] Targets { get; init; } // [daq list][odt][entry], mirrors the plans
         public required Channel<DaqDto> Dtos { get; init; }
         public required IReadOnlySet<IProtocolVariable> VariablesInDaq { get; init; }
+        public required XcpDaqTimestampMapper? TimestampMapper { get; init; } // null = stamp with receive time
     }
 
     /// <summary>
@@ -614,9 +615,18 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
             var firstPids = await session.ConfigureAndStartDaqAsync(plans, includeTimestamp, ct);
             decoder.SetFirstPids(firstPids);
 
+            // 4b/4c: with timestamps in the stream, samples keep the slave-side spacing on the
+            // time axis instead of clustering at the TCP receive bursts.
+            var timestampMapper = includeTimestamp
+                ? new XcpDaqTimestampMapper(timestampSize, resolution!.TimestampTickSeconds, plans.Count, Logger)
+                : null;
+
             Logger?.Log(LogLevel.Info,
                 $"XCP: DAQ started — {plans.Count} list(s) on event channel(s) " +
-                $"{string.Join(", ", plans.Select(p => p.EventChannel))}, {variablesInDaq.Count} variable(s).");
+                $"{string.Join(", ", plans.Select(p => p.EventChannel))}, {variablesInDaq.Count} variable(s), " +
+                (timestampMapper != null
+                    ? $"slave timestamps on ({resolution!.TimestampTickSeconds * 1e6:0.###} µs/tick)."
+                    : "slave timestamps off — samples carry the receive time."));
 
             return new DaqSessionState
             {
@@ -624,7 +634,8 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                 Codec = session.Codec,
                 Targets = targets,
                 Dtos = dtos,
-                VariablesInDaq = variablesInDaq
+                VariablesInDaq = variablesInDaq,
+                TimestampMapper = timestampMapper
             };
         }
         catch (OperationCanceledException)
@@ -824,8 +835,9 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
     }
 
     /// <summary>
-    /// Consumes queued DAQ packets and pushes decoded values into their variables. Timestamp is
-    /// the PC receive time (D5 stage 4a); the ECU timestamp in ODT 0 is skipped by the decoder.
+    /// Consumes queued DAQ packets and pushes decoded values into their variables. With slave
+    /// timestamps (D5 stages 4b/4c) the sample time comes from the ECU clock mapped onto host
+    /// UTC; sessions without timestamps stamp with the PC receive time (stage 4a behaviour).
     /// </summary>
     private async Task ConsumeDaqDtosAsync(DaqSessionState daq, CancellationToken ct)
     {
@@ -834,10 +846,13 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
         await foreach (var dto in daq.Dtos.Reader.ReadAllAsync(ct))
         {
-            if (!daq.Decoder.TryDecode(dto.Packet, decoded))
+            if (!daq.Decoder.TryDecode(dto.Packet, decoded, out var timestampRaw) || decoded.Count == 0)
             {
                 continue;
             }
+
+            var sampleUtc = daq.TimestampMapper?.Map(decoded[0].ListIndex, timestampRaw, dto.ReceivedUtc)
+                            ?? dto.ReceivedUtc;
 
             foreach (var entry in decoded)
             {
@@ -859,7 +874,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                     continue;
                 }
 
-                await ApplyBusValueAsync(target.ProtocolVariable, target.Scalar, value, dto.ReceivedUtc);
+                await ApplyBusValueAsync(target.ProtocolVariable, target.Scalar, value, sampleUtc);
             }
         }
     }

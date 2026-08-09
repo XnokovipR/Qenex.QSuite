@@ -70,6 +70,14 @@ public sealed record XcpDaqResolutionInfo(
 
     /// <summary>The slave always sends timestamps regardless of the DAQ list mode bit.</summary>
     public bool TimestampFixed => (TimestampMode & 0x08) != 0;
+
+    /// <summary>
+    /// Duration of one slave timestamp tick in seconds: TIMESTAMP_TICKS × unit, with the unit
+    /// from TIMESTAMP_MODE bits 4..7 (10^exponent ns per the ASAM table). Example (XCPlite on
+    /// a 1 µs clock): unit 1 ns, ticks 1000 → 1 µs per tick.
+    /// </summary>
+    public double TimestampTickSeconds =>
+        Math.Pow(10.0, (TimestampMode >> 4) & 0x0F) * 1e-9 * Math.Max((int)TimestampTicks, 1);
 }
 
 /// <summary>Parsed GET_DAQ_EVENT_INFO positive response (ASAM XCP 1.1 Part 2, 1.6.1.3.5);
