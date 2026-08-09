@@ -27,10 +27,14 @@ public static class XcpCommand
     public const byte AllocOdtEntry = 0xD3;
 }
 
-/// <summary>SET_DAQ_LIST_MODE mode bits. Only the timestamp bit is ever set by this master —
-/// alternating/STIM/DTO_CTR/PID_OFF stay unsupported (measurement-only DAQ).</summary>
+/// <summary>SET_DAQ_LIST_MODE mode bits (ASAM XCP 1.1 Part 2, 1.6.4.1.1.3). This master sets
+/// the timestamp bit and, for STIM lists, the direction bit — alternating and PID_OFF stay
+/// unsupported (PID_OFF would leave STIM DTOs without ODT identification).</summary>
 public static class XcpDaqListModeBits
 {
+    /// <summary>Bit 1: 0 = DAQ (slave sends), 1 = STIM (master sends).</summary>
+    public const byte Direction = 0x02;
+
     public const byte Timestamp = 0x10;
 }
 

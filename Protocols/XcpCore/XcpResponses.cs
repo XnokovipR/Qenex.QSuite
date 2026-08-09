@@ -12,6 +12,7 @@ public sealed record XcpConnectResponse(
 {
     public bool SupportsCalibration => (Resource & XcpResource.Calibration) != 0;
     public bool SupportsDaq => (Resource & XcpResource.Daq) != 0;
+    public bool SupportsStim => (Resource & XcpResource.Stim) != 0;
 }
 
 /// <summary>Parsed GET_STATUS positive response (ASAM XCP 1.1 Part 2, section 1.6.1.1.3).</summary>
@@ -25,6 +26,9 @@ public sealed record XcpStatusResponse(
 
     /// <summary>DAQ commands are seed &amp; key protected and would return ERR_ACCESS_LOCKED.</summary>
     public bool IsDaqProtected => (ResourceProtection & XcpResource.Daq) != 0;
+
+    /// <summary>STIM is seed &amp; key protected and would return ERR_ACCESS_LOCKED.</summary>
+    public bool IsStimProtected => (ResourceProtection & XcpResource.Stim) != 0;
 }
 
 /// <summary>Parsed GET_DAQ_PROCESSOR_INFO positive response (ASAM XCP 1.1 Part 2, 1.6.1.3.1).</summary>
@@ -62,6 +66,8 @@ public sealed record XcpDaqProcessorInfo(
 public sealed record XcpDaqResolutionInfo(
     byte GranularityOdtEntrySizeDaq,
     byte MaxOdtEntrySizeDaq,
+    byte GranularityOdtEntrySizeStim,
+    byte MaxOdtEntrySizeStim,
     byte TimestampMode,
     ushort TimestampTicks)
 {
@@ -91,6 +97,9 @@ public sealed record XcpDaqEventInfo(
     byte Priority)
 {
     public bool SupportsDaq => (Properties & 0x04) != 0;
+
+    /// <summary>The event channel accepts DAQ lists in STIM direction (DAQ_EVENT_PROPERTIES bit 3).</summary>
+    public bool SupportsStim => (Properties & 0x08) != 0;
 
     /// <summary>Nominal cycle in ms computed from TIME_CYCLE × 10^TIME_UNIT ns;
     /// null when the event is sporadic (TIME_CYCLE = 0).</summary>

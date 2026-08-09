@@ -196,6 +196,8 @@ public sealed class XcpCodec
         return new XcpDaqResolutionInfo(
             GranularityOdtEntrySizeDaq: packet[1],
             MaxOdtEntrySizeDaq: packet[2],
+            GranularityOdtEntrySizeStim: packet[3],
+            MaxOdtEntrySizeStim: packet[4],
             TimestampMode: packet[5],
             TimestampTicks: ReadUInt16(packet[6..8]));
     }

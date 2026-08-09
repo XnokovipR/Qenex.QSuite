@@ -12,10 +12,12 @@ internal static class Program
         CodecTests.Run();
         MasterTests.Run();
         DaqTests.Run();
+        StimTests.Run();
         EthernetFramerTests.Run();
         IntegrationTests.Run();
         TcpIntegrationTests.Run();
         TcpDaqIntegrationTests.Run();
+        TcpStimIntegrationTests.Run();
 
         Console.WriteLine(failures == 0 ? "ALL TESTS PASSED" : $"{failures} TEST(S) FAILED");
         return failures == 0 ? 0 : 1;

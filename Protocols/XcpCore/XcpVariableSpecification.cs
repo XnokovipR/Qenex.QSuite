@@ -39,10 +39,14 @@ public class XcpVariableSpecification : ProtVariableSpecification
     /// <summary>Transfer direction: polled read, operator write, or both.</summary>
     public CommDirection Direction { get; init; } = CommDirection.Read;
 
-    /// <summary>ECU DAQ event channel number when the bound event carries
-    /// direction="DAQ";daqId="N" in its eventExtraParams — reads then come from a DAQ list
-    /// instead of polling. Null for ordinary polling events and write-only variables.</summary>
+    /// <summary>ECU event channel number when the bound event carries
+    /// direction="DAQ"/"STIM";daqId="N" in its eventExtraParams — reads then come from a DAQ
+    /// list instead of polling, writes are streamed as STIM. Null for ordinary polling events.</summary>
     public ushort? DaqEventChannel { get; init; }
+
+    /// <summary>True when the bound event is a STIM event channel (S2): the variable's value is
+    /// then streamed to the ECU as STIM DTOs instead of being written via SET_MTA + DOWNLOAD.</summary>
+    public bool IsStimEvent { get; init; }
 
     /// <summary>Reserved for the staged engineering-value write phase; not applied yet.</summary>
     public int Multiplier { get; init; } = 1;
@@ -96,12 +100,21 @@ public class XcpVariableSpecification : ProtVariableSpecification
         var variableEvent = ResolveEvent(settings, variableEvents);
         var dataType = ResolveDataType(settings, variable);
         var size = ResolveSize(settings, dataType);
-        var daqEventChannel = variableEvent == null ? null : XcpEventExtraParams.GetDaqChannel(variableEvent, logger);
+        var binding = variableEvent == null ? null : XcpEventExtraParams.GetEventBinding(variableEvent, logger);
 
         if (variableEvent == null && direction != CommDirection.Write)
         {
             throw new ArgumentException(
                 $"Variable '{variable.Name}' has direction '{direction}' but no eventRef; a periodic event is required for polled reads.");
+        }
+
+        // S2: a STIM event feeds values master -> slave, so only write variables may bind to it;
+        // reading the stimulated value back needs a second variable on a DAQ/polling event.
+        if (binding is { IsStim: true } && direction != CommDirection.Write)
+        {
+            throw new ArgumentException(
+                $"Variable '{variable.Name}' has direction '{direction}' but its event '{variableEvent!.Name}' is a STIM event channel; " +
+                "only direction=\"write\" variables can bind to a STIM event.");
         }
 
         return new XcpVariableSpecification
@@ -112,7 +125,8 @@ public class XcpVariableSpecification : ProtVariableSpecification
             Size = size,
             DataType = dataType,
             Direction = direction,
-            DaqEventChannel = daqEventChannel,
+            DaqEventChannel = binding?.Channel,
+            IsStimEvent = binding is { IsStim: true },
             Multiplier = multiplier
         };
     }

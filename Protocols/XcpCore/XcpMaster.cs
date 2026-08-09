@@ -20,6 +20,11 @@ public sealed class XcpMaster(ILogger? logger = null)
     private int MaxWriteBytesPerPacket => EffectiveMaxCto - 2;
 
     private readonly SemaphoreSlim requestLock = new(1, 1);
+
+    // Serializes every transmitter call: commands (under the request lock) and STIM DTOs (sent
+    // by the stimulation loop outside it) must never interleave their bytes on the transport.
+    private readonly SemaphoreSlim transmitLock = new(1, 1);
+
     private volatile TaskCompletionSource<byte[]>? pendingResponse;
     private int pendingEventGeneration;
 
@@ -110,10 +115,31 @@ public sealed class XcpMaster(ILogger? logger = null)
                     "XCP: EV_DAQ_OVERLOAD — the slave's DAQ buffers overflowed and samples were lost; the session continues.");
                 break;
 
+            case XcpEventCode.StimTimeout:
+                // S6: an event fired before fresh STIM data arrived — the slave stimulated with
+                // old/partial data per its own policy. A warning, never a session fault.
+                logger?.Log(LogLevel.Warn, $"XCP: EV_STIM_TIMEOUT — {DescribeStimTimeout(packet)}; the session continues.");
+                break;
+
             default:
                 logger?.Log(LogLevel.Info, $"XCP: event 0x{eventCode:X2} from slave.");
                 break;
         }
+    }
+
+    /// <summary>EV_STIM_TIMEOUT detail: info type at byte 2 (0 = event channel, 1 = DAQ list),
+    /// the affected number as WORD at byte 4 (slave byte order).</summary>
+    private string DescribeStimTimeout(byte[] packet)
+    {
+        if (packet.Length < 6)
+        {
+            return "an event fired before the slave had fresh stimulation data";
+        }
+
+        var number = Codec.ReadUInt16(packet.AsSpan(4, 2));
+        return packet[2] == 0
+            ? $"event channel {number} fired before the slave had fresh stimulation data"
+            : $"DAQ list {number} could not (fully) be stimulated";
     }
 
     #endregion
@@ -322,14 +348,17 @@ public sealed class XcpMaster(ILogger? logger = null)
     }
 
     /// <summary>
-    /// Replays the whole DAQ configuration to the slave and starts acquisition, as one
+    /// Replays the whole DAQ/STIM configuration to the slave and starts the transfer, as one
     /// transaction: FREE_DAQ → ALLOC_DAQ/ALLOC_ODT/ALLOC_ODT_ENTRY → WRITE_DAQ per entry →
     /// SET_DAQ_LIST_MODE → START_STOP_DAQ_LIST (select) → START_STOP_SYNCH (start selected).
-    /// A timeout retry restarts from FREE_DAQ, so the slave never keeps a half-built config.
-    /// Returns FIRST_PID per list (meaningful for absolute-PID identification only).
+    /// STIM lists (S4) differ only in their mode byte: the DIRECTION bit, with the timestamp
+    /// bit governed by <paramref name="includeStimTimestamp"/> (TIMESTAMP_FIXED slaves reject
+    /// switching it off with ERR_CMD_SYNTAX). A timeout retry restarts from FREE_DAQ, so the
+    /// slave never keeps a half-built config. Returns FIRST_PID per list (meaningful for
+    /// absolute-PID identification only).
     /// </summary>
     public Task<byte[]> ConfigureAndStartDaqAsync(IReadOnlyList<XcpDaqListPlan> lists, bool includeTimestamp,
-        CancellationToken ct = default)
+        bool includeStimTimestamp = false, CancellationToken ct = default)
     {
         EnsureConnected();
         if (lists.Count == 0)
@@ -371,9 +400,11 @@ public sealed class XcpMaster(ILogger? logger = null)
                 }
             }
 
-            var mode = includeTimestamp ? XcpDaqListModeBits.Timestamp : (byte)0;
             for (var daq = 0; daq < lists.Count; daq++)
             {
+                var mode = lists[daq].IsStim
+                    ? (byte)(XcpDaqListModeBits.Direction | (includeStimTimestamp ? XcpDaqListModeBits.Timestamp : 0))
+                    : includeTimestamp ? XcpDaqListModeBits.Timestamp : (byte)0;
                 await ExecuteCommandAsync(
                     Codec.BuildSetDaqListMode(mode, (ushort)daq, lists[daq].EventChannel, prescaler: 1, priority: 0),
                     "SET_DAQ_LIST_MODE", token);
@@ -390,6 +421,29 @@ public sealed class XcpMaster(ILogger? logger = null)
             await ExecuteCommandAsync(XcpCodec.BuildStartStopSynch(XcpDaqSynchMode.StartSelected), "START_STOP_SYNCH", token);
             return firstPids;
         }, ct);
+    }
+
+    /// <summary>
+    /// Sends one STIM DTO packet to the slave. DTOs are fire-and-forget (no response, no PID in
+    /// the CTO space), so they bypass the request/response engine entirely and only serialize
+    /// against command transmissions via the transmit lock (S7). Transport failures surface as
+    /// exceptions for the stimulation loop's failure counting.
+    /// </summary>
+    public async Task SendStimDtoAsync(byte[] packet, CancellationToken ct = default)
+    {
+        EnsureConnected();
+        var currentTransmitter = Transmitter
+                                 ?? throw new XcpProtocolException("XCP transport is not available (no transmitter injected).");
+
+        await transmitLock.WaitAsync(ct);
+        try
+        {
+            await currentTransmitter(packet, ct);
+        }
+        finally
+        {
+            transmitLock.Release();
+        }
     }
 
     /// <summary>Best-effort stop of all DAQ lists; failures are only logged (the slave stops DAQ
@@ -479,7 +533,15 @@ public sealed class XcpMaster(ILogger? logger = null)
         pendingResponse = responseSource;
         try
         {
-            await transmitter(command, ct);
+            await transmitLock.WaitAsync(ct);
+            try
+            {
+                await transmitter(command, ct);
+            }
+            finally
+            {
+                transmitLock.Release();
+            }
 
             while (true)
             {

@@ -31,14 +31,20 @@ internal static class DaqTests
         Check(Channel("") == null, "extraParams: empty string -> ordinary event");
         Check(Channel("   ") == null, "extraParams: whitespace -> ordinary event");
         Check(Channel("direction=\"DAQ\";daqId=\"3\"") == 3, "extraParams: DAQ + daqId parsed");
+        Check(Binding("direction=\"DAQ\";daqId=\"3\"") is { IsStim: false }, "extraParams: DAQ direction is not STIM");
+        Check(Binding("direction=\"STIM\";daqId=\"5\"") is { Channel: 5, IsStim: true },
+            "extraParams: STIM + daqId parsed (S2)");
         Check(Channel("DAQID=\"7\";DIRECTION=\"daq\"") == 7, "extraParams: keys and value are case-insensitive");
+        Check(Binding("direction=\"stim\";daqId=\"1\"") is { IsStim: true }, "extraParams: STIM value is case-insensitive");
         Check(Channel("foo=\"1\"") == null, "extraParams: unknown key alone -> warning only, still an ordinary event");
 
         CheckThrows<ArgumentException>(() => Channel("direction=\"DAQ\""),
             "extraParams: direction without daqId is rejected");
+        CheckThrows<ArgumentException>(() => Channel("direction=\"STIM\""),
+            "extraParams: STIM direction without daqId is rejected");
         CheckThrows<ArgumentException>(() => Channel("daqId=\"3\""),
             "extraParams: daqId without direction is rejected");
-        CheckThrows<ArgumentException>(() => Channel("direction=\"STIM\";daqId=\"3\""),
+        CheckThrows<ArgumentException>(() => Channel("direction=\"BYPASS\";daqId=\"3\""),
             "extraParams: unsupported direction is rejected");
         CheckThrows<ArgumentException>(() => Channel("direction=\"DAQ\";daqId=\"70000\""),
             "extraParams: daqId out of 0..65535 is rejected");
@@ -46,10 +52,15 @@ internal static class DaqTests
             "extraParams: a segment without key=value form is rejected");
     }
 
+    private static XcpEventBinding? Binding(string extraParams)
+    {
+        return XcpEventExtraParams.GetEventBinding(
+            new PeriodicVarEvent { Name = "e", EventExtraParams = extraParams });
+    }
+
     private static ushort? Channel(string extraParams)
     {
-        return XcpEventExtraParams.GetDaqChannel(
-            new PeriodicVarEvent { Name = "e", EventExtraParams = extraParams });
+        return Binding(extraParams)?.Channel;
     }
 
     #endregion

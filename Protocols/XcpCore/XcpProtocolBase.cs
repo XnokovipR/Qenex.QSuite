@@ -28,6 +28,10 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
     private volatile XcpMaster? master;
     private volatile Func<TFrame, CancellationToken, Task>? transmitter;
 
+    /// <summary>Variables currently streamed by the STIM loop (S3); their operator writes must
+    /// not additionally go through SET_MTA + DOWNLOAD. Null outside an active STIM session.</summary>
+    private volatile IReadOnlySet<IProtocolVariable>? stimServedVariables;
+
     private volatile bool exitRequested;
     private CancellationTokenSource? runCts;
     private Task? runTask;
@@ -294,35 +298,59 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
     #endregion
 
-    #region Session body (DAQ + polling)
+    #region Session body (DAQ + STIM + polling)
 
     /// <summary>
-    /// Runs one connected session: sets up DAQ for variables bound to DAQ events (D1–D6; a failed
-    /// setup falls back to polling for everything), then serves polling and the DAQ DTO stream
-    /// concurrently until the session dies or the protocol stops.
+    /// Runs one connected session: sets up DAQ and STIM for variables bound to DAQ/STIM events
+    /// (D1–D6, S1–S7; a failed setup falls back to polling and direct writes), then serves
+    /// polling, the DAQ DTO stream and the STIM transmission loop concurrently until the session
+    /// dies or the protocol stops.
     /// </summary>
     private async Task RunSessionAsync(CancellationToken ct)
     {
-        var daqSession = await TrySetupDaqAsync(ct);
-        if (daqSession == null)
-        {
-            await PollLoopAsync(null, ct);
-            return;
-        }
+        var (daqSession, stimSession) = await TrySetupDaqStimAsync(ct);
+        stimServedVariables = stimSession?.VariablesInStim;
 
-        var consumer = ConsumeDaqDtosAsync(daqSession, ct);
+        var consumer = daqSession != null ? ConsumeDaqDtosAsync(daqSession, ct) : Task.CompletedTask;
+        using var loopCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         try
         {
-            await PollLoopAsync(daqSession.VariablesInDaq, ct);
+            var loops = new List<Task> { PollLoopAsync(daqSession?.VariablesInDaq, loopCts.Token) };
+            if (stimSession != null)
+            {
+                loops.Add(StimLoopAsync(stimSession, loopCts.Token));
+            }
+
+            // The first loop to finish decides the session's fate (normal stop or failure); the
+            // other one is cancelled and only its unexpected failures are logged.
+            var first = await Task.WhenAny(loops);
+            await loopCts.CancelAsync();
+            foreach (var loop in loops.Where(l => l != first))
+            {
+                try
+                {
+                    await loop;
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception e)
+                {
+                    Logger?.Log(LogLevel.Warn, $"XCP: session loop failed while stopping ({e.Message}).");
+                }
+            }
+
+            await first;
         }
         finally
         {
+            stimServedVariables = null;
             if (master is { } session)
             {
                 session.DaqDtoReceived = null;
             }
 
-            daqSession.Dtos.Writer.TryComplete();
+            daqSession?.Dtos.Writer.TryComplete();
             try
             {
                 await consumer;
@@ -510,44 +538,89 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
     {
         public required XcpDaqDecoder Decoder { get; init; }
         public required XcpCodec Codec { get; init; }
-        public required DaqTarget[][][] Targets { get; init; } // [daq list][odt][entry], mirrors the plans
+        public required DaqTarget[][][] Targets { get; init; } // [daq list][odt][entry], mirrors the combined plans
         public required Channel<DaqDto> Dtos { get; init; }
         public required IReadOnlySet<IProtocolVariable> VariablesInDaq { get; init; }
-        public required XcpDaqTimestampMapper? TimestampMapper { get; init; } // null = stamp with receive time
+        public XcpDaqTimestampMapper? TimestampMapper { get; set; } // null = stamp with receive time
+    }
+
+    private sealed class StimList
+    {
+        public required ushort DaqListNumber { get; init; } // global list number in the combined config
+        public required DaqTarget[][] Odts { get; init; }   // [odt][entry], mirrors the list's plan
+        public required long IntervalMs { get; init; }
+        public byte FirstPid { get; set; }                  // slave-assigned, absolute-PID identification only
+        public long NextDueMs { get; set; }
+    }
+
+    private sealed class StimSessionState
+    {
+        public required XcpStimEncoder Encoder { get; init; }
+        public required XcpCodec Codec { get; init; }
+        public required StimList[] Lists { get; init; }
+        public required IReadOnlySet<IProtocolVariable> VariablesInStim { get; init; }
+        public required double TimestampTickSeconds { get; init; } // 0 = untimestamped STIM lists
+        public long AnchorMs { get; } = Environment.TickCount64;   // zero point of the master clock sent in ODT 0
     }
 
     /// <summary>
-    /// Builds and starts the DAQ side of the session for all variables bound to DAQ events.
-    /// Returns null when there is nothing to acquire or when DAQ cannot be used — then every
-    /// variable stays with polling (D4: polling is the fallback), which is always reported.
+    /// Builds and starts the DAQ and STIM sides of the session for all variables bound to
+    /// DAQ/STIM events, as one slave configuration (S4: FREE_DAQ wipes everything, so both
+    /// directions must be replayed together; DAQ lists first, STIM lists after them). Either
+    /// side degrades independently — DAQ variables fall back to polling (D4), STIM variables to
+    /// direct writes on change (S5) — and every degradation is reported with its reason.
     /// </summary>
-    private async Task<DaqSessionState?> TrySetupDaqAsync(CancellationToken ct)
+    private async Task<(DaqSessionState? Daq, StimSessionState? Stim)> TrySetupDaqStimAsync(CancellationToken ct)
     {
         var session = master;
         if (session is not { IsConnected: true })
         {
-            return null;
+            return (null, null);
         }
 
-        var channels = CollectDaqCandidates();
-        if (channels.Count == 0)
+        var daqChannels = CollectDaqCandidates();
+        var stimChannels = CollectStimCandidates();
+        if (daqChannels.Count == 0 && stimChannels.Count == 0)
         {
-            return null;
+            return (null, null);
         }
 
         var connectInfo = session.ConnectInfo!;
-        if (!connectInfo.SupportsDaq)
+        if (daqChannels.Count > 0)
         {
-            Logger?.Log(LogLevel.Warn,
-                "XCP: the slave has no DAQ resource; variables with DAQ events fall back to polling.");
-            return null;
+            if (!connectInfo.SupportsDaq)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    "XCP: the slave has no DAQ resource; variables with DAQ events fall back to polling.");
+                daqChannels.Clear();
+            }
+            else if (session.LastStatus?.IsDaqProtected == true)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    "XCP: the slave protects DAQ with seed & key, which is not supported; variables with DAQ events fall back to polling.");
+                daqChannels.Clear();
+            }
         }
 
-        if (session.LastStatus?.IsDaqProtected == true)
+        if (stimChannels.Count > 0)
         {
-            Logger?.Log(LogLevel.Warn,
-                "XCP: the slave protects DAQ with seed & key, which is not supported; variables with DAQ events fall back to polling.");
-            return null;
+            if (!connectInfo.SupportsStim)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    "XCP: the slave has no STIM resource; variables with STIM events fall back to direct writes on change.");
+                stimChannels.Clear();
+            }
+            else if (session.LastStatus?.IsStimProtected == true)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    "XCP: the slave protects STIM with seed & key, which is not supported; variables with STIM events fall back to direct writes on change.");
+                stimChannels.Clear();
+            }
+        }
+
+        if (daqChannels.Count == 0 && stimChannels.Count == 0)
+        {
+            return (null, null);
         }
 
         try
@@ -556,8 +629,8 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
             if (!processor.HasDynamicLists)
             {
                 Logger?.Log(LogLevel.Warn,
-                    "XCP: the slave only supports static DAQ lists, which is not implemented; falling back to polling.");
-                return null;
+                    "XCP: the slave only supports static DAQ lists, which is not implemented; falling back to polling and direct writes.");
+                return (null, null);
             }
 
             XcpDaqResolutionInfo? resolution = null;
@@ -570,85 +643,134 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                 Logger?.Log(LogLevel.Info, "XCP: GET_DAQ_RESOLUTION_INFO not implemented by the slave; using defaults.");
             }
 
-            await ValidateDaqChannelsAsync(session, processor, channels, ct);
-            if (channels.Count == 0)
+            await ValidateChannelsAsync(session, processor, daqChannels, isStim: false, ct);
+            await ValidateChannelsAsync(session, processor, stimChannels, isStim: true, ct);
+            if (daqChannels.Count == 0 && stimChannels.Count == 0)
             {
-                Logger?.Log(LogLevel.Warn, "XCP: no DAQ event channel survived validation; falling back to polling.");
-                return null;
+                Logger?.Log(LogLevel.Warn,
+                    "XCP: no DAQ/STIM event channel survived validation; falling back to polling and direct writes.");
+                return (null, null);
             }
 
             // Standard choice via the SET_DAQ_LIST_MODE timestamp bit: request slave timestamps
             // when configured (daqTimestamps=slave); a TIMESTAMP_FIXED slave sends them always,
             // so the packet layout must include them even in master mode.
             var slaveTimestampSize = resolution?.TimestampSize ?? 0;
-            var includeTimestamp = slaveTimestampSize > 0 &&
+            var includeTimestamp = daqChannels.Count > 0 && slaveTimestampSize > 0 &&
                                    (UseSlaveDaqTimestamps || resolution is { TimestampFixed: true });
-            var timestampSize = includeTimestamp ? slaveTimestampSize : 0;
-            var (plans, targets) = PackDaqLists(channels, connectInfo, processor, resolution, timestampSize);
-            if (plans.Count == 0)
+            var daqTimestampSize = includeTimestamp ? slaveTimestampSize : 0;
+            var (daqPlans, daqTargets) = PackDaqLists(daqChannels, connectInfo, processor, resolution, daqTimestampSize);
+            if (daqChannels.Count > 0 && daqPlans.Count == 0)
             {
-                Logger?.Log(LogLevel.Warn, "XCP: no variable fits into a DAQ packet; falling back to polling.");
-                return null;
+                Logger?.Log(LogLevel.Warn, "XCP: no variable fits into a DAQ packet; DAQ variables fall back to polling.");
             }
 
-            var decoder = new XcpDaqDecoder(processor.IdentificationType, session.Codec.IsBigEndian,
-                timestampSize, processor.OverloadIndicationByPid, plans, Logger);
+            // S4: a TIMESTAMP_FIXED slave rejects switching the timestamp off (ERR_CMD_SYNTAX),
+            // so STIM lists then run timestamped and the master emits its clock in ODT 0.
+            var includeStimTimestamp = stimChannels.Count > 0 && slaveTimestampSize > 0 &&
+                                       resolution is { TimestampFixed: true };
+            var stimTimestampSize = includeStimTimestamp ? slaveTimestampSize : 0;
+            var (stimPlans, stimTargets) = PackStimLists(stimChannels, connectInfo, processor, resolution, stimTimestampSize);
+            if (stimChannels.Count > 0 && stimPlans.Count == 0)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    "XCP: no variable fits into a STIM packet; STIM variables fall back to direct writes on change.");
+            }
 
-            var variablesInDaq = targets
-                .SelectMany(list => list.SelectMany(odt => odt))
-                .Select(IProtocolVariable (target) => target.ProtocolVariable)
-                .ToHashSet();
+            if (daqPlans.Count == 0 && stimPlans.Count == 0)
+            {
+                return (null, null);
+            }
 
-            var droppedDtos = 0L;
-            var dtos = Channel.CreateBounded<DaqDto>(
-                new BoundedChannelOptions(8192)
-                {
-                    SingleReader = true,
-                    FullMode = BoundedChannelFullMode.DropOldest
-                },
-                _ =>
-                {
-                    // D6: overload never faults the session; dropping the oldest keeps the view live.
-                    droppedDtos++;
-                    if (droppedDtos == 1 || droppedDtos % 1000 == 0)
+            var lists = daqPlans.Concat(stimPlans).ToList();
+
+            DaqSessionState? daqState = null;
+            if (daqPlans.Count > 0)
+            {
+                // The decoder gets the combined plans so incoming DTOs resolve global list
+                // numbers; the targets array is combined for the same reason (a conforming slave
+                // never sends DTOs for STIM lists, but a misbehaving one must not crash us).
+                var decoder = new XcpDaqDecoder(processor.IdentificationType, session.Codec.IsBigEndian,
+                    daqTimestampSize, processor.OverloadIndicationByPid, lists, Logger);
+
+                var variablesInDaq = daqTargets
+                    .SelectMany(list => list.SelectMany(odt => odt))
+                    .Select(IProtocolVariable (target) => target.ProtocolVariable)
+                    .ToHashSet();
+
+                var droppedDtos = 0L;
+                var dtos = Channel.CreateBounded<DaqDto>(
+                    new BoundedChannelOptions(8192)
                     {
-                        Logger?.Log(LogLevel.Warn,
-                            $"XCP: DAQ processing cannot keep up — {droppedDtos} packets dropped so far (oldest first).");
-                    }
-                });
+                        SingleReader = true,
+                        FullMode = BoundedChannelFullMode.DropOldest
+                    },
+                    _ =>
+                    {
+                        // D6: overload never faults the session; dropping the oldest keeps the view live.
+                        droppedDtos++;
+                        if (droppedDtos == 1 || droppedDtos % 1000 == 0)
+                        {
+                            Logger?.Log(LogLevel.Warn,
+                                $"XCP: DAQ processing cannot keep up — {droppedDtos} packets dropped so far (oldest first).");
+                        }
+                    });
 
-            // Wired before START_STOP_SYNCH — the slave starts streaming the instant it acks, and
-            // nothing may fall into the gap. (Absolute-PID slaves still drop DTOs until the FIRST_PIDs
-            // arrive right below; those are counted by the decoder.)
-            session.DaqDtoReceived = packet => dtos.Writer.TryWrite(new DaqDto(packet, DateTime.UtcNow));
+                daqState = new DaqSessionState
+                {
+                    Decoder = decoder,
+                    Codec = session.Codec,
+                    Targets = daqTargets.Concat(stimTargets).ToArray(),
+                    Dtos = dtos,
+                    VariablesInDaq = variablesInDaq
+                };
+            }
 
-            var firstPids = await session.ConfigureAndStartDaqAsync(plans, includeTimestamp, ct);
-            decoder.SetFirstPids(firstPids);
+            if (daqState != null)
+            {
+                // Wired before START_STOP_SYNCH — the slave starts streaming the instant it acks,
+                // and nothing may fall into the gap. (Absolute-PID slaves still drop DTOs until
+                // the FIRST_PIDs arrive right below; those are counted by the decoder.)
+                session.DaqDtoReceived = packet => daqState.Dtos.Writer.TryWrite(new DaqDto(packet, DateTime.UtcNow));
+            }
+
+            var firstPids = await session.ConfigureAndStartDaqAsync(lists, includeTimestamp, includeStimTimestamp, ct);
+            daqState?.Decoder.SetFirstPids(firstPids);
 
             // 4b/4c: with timestamps in the stream, samples keep the slave-side spacing on the
             // time axis instead of clustering at the TCP receive bursts.
-            var timestampMapper = includeTimestamp && UseSlaveDaqTimestamps
-                ? new XcpDaqTimestampMapper(timestampSize, resolution!.TimestampTickSeconds, plans.Count, Logger)
+            var timestampMapper = daqState != null && includeTimestamp && UseSlaveDaqTimestamps
+                ? new XcpDaqTimestampMapper(daqTimestampSize, resolution!.TimestampTickSeconds, lists.Count, Logger)
                 : null;
-
-            Logger?.Log(LogLevel.Info,
-                $"XCP: DAQ started — {plans.Count} list(s) on event channel(s) " +
-                $"{string.Join(", ", plans.Select(p => p.EventChannel))}, {variablesInDaq.Count} variable(s), " +
-                (timestampMapper != null
-                    ? $"slave timestamps on ({resolution!.TimestampTickSeconds * 1e6:0.###} µs/tick)."
-                    : includeTimestamp
-                        ? "slave timestamps ignored (daqTimestamps=master) — samples carry the receive time."
-                        : "slave timestamps off — samples carry the receive time."));
-
-            return new DaqSessionState
+            if (daqState != null)
             {
-                Decoder = decoder,
-                Codec = session.Codec,
-                Targets = targets,
-                Dtos = dtos,
-                VariablesInDaq = variablesInDaq,
-                TimestampMapper = timestampMapper
-            };
+                daqState.TimestampMapper = timestampMapper;
+            }
+
+            var stimState = BuildStimState(session, processor, resolution, stimPlans, stimTargets,
+                daqPlans.Count, firstPids, includeStimTimestamp ? slaveTimestampSize : 0);
+
+            if (daqState != null)
+            {
+                Logger?.Log(LogLevel.Info,
+                    $"XCP: DAQ started — {daqPlans.Count} list(s) on event channel(s) " +
+                    $"{string.Join(", ", daqPlans.Select(p => p.EventChannel))}, {daqState.VariablesInDaq.Count} variable(s), " +
+                    (timestampMapper != null
+                        ? $"slave timestamps on ({resolution!.TimestampTickSeconds * 1e6:0.###} µs/tick)."
+                        : includeTimestamp
+                            ? "slave timestamps ignored (daqTimestamps=master) — samples carry the receive time."
+                            : "slave timestamps off — samples carry the receive time."));
+            }
+
+            if (stimState != null)
+            {
+                Logger?.Log(LogLevel.Info,
+                    $"XCP: STIM started — {stimPlans.Count} list(s) on event channel(s) " +
+                    $"{string.Join(", ", stimPlans.Select(p => p.EventChannel))}, {stimState.VariablesInStim.Count} variable(s)" +
+                    (includeStimTimestamp ? ", timestamped (TIMESTAMP_FIXED slave)." : "."));
+            }
+
+            return (daqState, stimState);
         }
         catch (OperationCanceledException)
         {
@@ -657,9 +779,64 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
         catch (Exception e) when (e is XcpErrorException or XcpTimeoutException or XcpProtocolException)
         {
             session.DaqDtoReceived = null;
-            Logger?.Log(LogLevel.Warn, $"XCP: DAQ setup failed ({e.Message}); falling back to polling for all variables.");
+            Logger?.Log(LogLevel.Warn,
+                $"XCP: DAQ/STIM setup failed ({e.Message}); falling back to polling and direct writes for all variables.");
+            return (null, null);
+        }
+    }
+
+    /// <summary>
+    /// Builds the STIM runtime state once the configuration is started. Validates the spec's
+    /// STIM PID window for absolute-PID slaves (FIRST_PID + ODT count must stay ≤ 0xBF) — a
+    /// violation aborts the whole setup, because the packets could not be identified.
+    /// </summary>
+    private StimSessionState? BuildStimState(XcpMaster session, XcpDaqProcessorInfo processor,
+        XcpDaqResolutionInfo? resolution, List<XcpDaqListPlan> stimPlans, DaqTarget[][][] stimTargets,
+        int firstStimListNumber, byte[] firstPids, int stimTimestampSize)
+    {
+        if (stimPlans.Count == 0)
+        {
             return null;
         }
+
+        var lists = new StimList[stimPlans.Count];
+        for (var i = 0; i < stimPlans.Count; i++)
+        {
+            var listNumber = firstStimListNumber + i;
+            var firstPid = firstPids[listNumber];
+            if (processor.IdentificationType == XcpDaqIdentificationType.AbsolutePid &&
+                firstPid + stimPlans[i].Odts.Count - 1 > 0xBF)
+            {
+                throw new XcpProtocolException(
+                    $"The slave assigned FIRST_PID 0x{firstPid:X2} to STIM list {listNumber} with {stimPlans[i].Odts.Count} ODT(s), " +
+                    "which leaves the STIM PID range 0x00..0xBF.");
+            }
+
+            // The interval was validated in CollectStimCandidates (periodic event, positive period).
+            var periodicEvent = (PeriodicVarEvent)stimTargets[i][0][0].Spec.VariableEvent!;
+            lists[i] = new StimList
+            {
+                DaqListNumber = (ushort)listNumber,
+                Odts = stimTargets[i],
+                IntervalMs = (long)periodicEvent.Period * (int)periodicEvent.Unit,
+                FirstPid = firstPid,
+                NextDueMs = Environment.TickCount64
+            };
+        }
+
+        var variablesInStim = stimTargets
+            .SelectMany(list => list.SelectMany(odt => odt))
+            .Select(IProtocolVariable (target) => target.ProtocolVariable)
+            .ToHashSet();
+
+        return new StimSessionState
+        {
+            Encoder = new XcpStimEncoder(processor.IdentificationType, session.Codec.IsBigEndian, stimTimestampSize),
+            Codec = session.Codec,
+            Lists = lists,
+            VariablesInStim = variablesInStim,
+            TimestampTickSeconds = stimTimestampSize > 0 ? resolution!.TimestampTickSeconds : 0
+        };
     }
 
     /// <summary>Read variables bound to a DAQ event, grouped by ECU event channel (stable order).</summary>
@@ -673,6 +850,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                 !xcpVariable.IsCommunicated ||
                 xcpVariable.ProtocolVariableSpecification is not XcpVariableSpecification spec ||
                 spec.DaqEventChannel is not { } channel ||
+                spec.IsStimEvent ||
                 spec.Direction == CommDirection.Write)
             {
                 continue;
@@ -695,22 +873,70 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
         return channels;
     }
 
-    /// <summary>
-    /// D3: every used channel is validated via GET_DAQ_EVENT_INFO — the ECU name is logged and the
-    /// event's configured period is compared with the ECU's nominal TIMECYCLE (mismatch = warning
-    /// with both values). Channels the slave rejects are removed and their variables fall back to
-    /// polling. Slaves without GET_DAQ_EVENT_INFO skip validation with a notice.
-    /// </summary>
-    private async Task ValidateDaqChannelsAsync(XcpMaster session, XcpDaqProcessorInfo processor,
-        SortedDictionary<ushort, List<DaqTarget>> channels, CancellationToken ct)
+    /// <summary>Write variables bound to a STIM event (S2), grouped by ECU event channel. The
+    /// bound event must be periodic — its period is the STIM transmission interval (S3).</summary>
+    private SortedDictionary<ushort, List<DaqTarget>> CollectStimCandidates()
     {
+        var channels = new SortedDictionary<ushort, List<DaqTarget>>();
+
+        foreach (var protocolVariable in Variables)
+        {
+            if (protocolVariable is not XcpProtocolVariable xcpVariable ||
+                !xcpVariable.IsCommunicated ||
+                xcpVariable.ProtocolVariableSpecification is not XcpVariableSpecification spec ||
+                spec.DaqEventChannel is not { } channel ||
+                !spec.IsStimEvent)
+            {
+                continue;
+            }
+
+            if (xcpVariable.Variable is not ScalarVariable scalarVariable)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"XCP: variable '{xcpVariable.Variable.Name}' is not scalar; not stimulated via STIM.");
+                continue;
+            }
+
+            if (spec.VariableEvent is not PeriodicVarEvent periodicEvent ||
+                (long)periodicEvent.Period * (int)periodicEvent.Unit <= 0)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"XCP: variable '{scalarVariable.Name}' has no positive period on its STIM event " +
+                    $"('{spec.VariableEvent?.Name}'); it falls back to direct writes on change.");
+                continue;
+            }
+
+            if (!channels.TryGetValue(channel, out var targets))
+            {
+                channels[channel] = targets = [];
+            }
+
+            targets.Add(new DaqTarget(xcpVariable, scalarVariable, spec));
+        }
+
+        return channels;
+    }
+
+    /// <summary>
+    /// D3/S2: every used channel is validated via GET_DAQ_EVENT_INFO — the ECU name is logged and
+    /// the event's configured period is compared with the ECU's nominal TIMECYCLE (mismatch =
+    /// warning with both values). Channels the slave rejects or that lack the required direction
+    /// are removed and their variables fall back (DAQ → polling, STIM → direct writes on change).
+    /// Slaves without GET_DAQ_EVENT_INFO skip validation with a notice.
+    /// </summary>
+    private async Task ValidateChannelsAsync(XcpMaster session, XcpDaqProcessorInfo processor,
+        SortedDictionary<ushort, List<DaqTarget>> channels, bool isStim, CancellationToken ct)
+    {
+        var direction = isStim ? "STIM" : "DAQ";
+        var fallback = isStim ? "fall back to direct writes on change" : "fall back to polling";
+
         foreach (var channel in channels.Keys.ToList())
         {
             if (processor.MaxEventChannel > 0 && channel >= processor.MaxEventChannel)
             {
                 Logger?.Log(LogLevel.Warn,
-                    $"XCP: DAQ event channel {channel} is out of the slave's range (0..{processor.MaxEventChannel - 1}); " +
-                    $"its variables ({DescribeTargets(channels[channel])}) fall back to polling.");
+                    $"XCP: {direction} event channel {channel} is out of the slave's range (0..{processor.MaxEventChannel - 1}); " +
+                    $"its variables ({DescribeTargets(channels[channel])}) {fallback}.");
                 channels.Remove(channel);
                 continue;
             }
@@ -724,29 +950,29 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
             catch (XcpErrorException e) when (e.ErrorCode == XcpErrorCode.CmdUnknown)
             {
                 Logger?.Log(LogLevel.Info,
-                    "XCP: GET_DAQ_EVENT_INFO not implemented by the slave; DAQ event channels are used unvalidated.");
+                    $"XCP: GET_DAQ_EVENT_INFO not implemented by the slave; {direction} event channels are used unvalidated.");
                 return;
             }
             catch (XcpErrorException e) when (e.ErrorCode == XcpErrorCode.OutOfRange)
             {
                 Logger?.Log(LogLevel.Warn,
-                    $"XCP: the slave rejected DAQ event channel {channel} (ERR_OUT_OF_RANGE); " +
-                    $"its variables ({DescribeTargets(channels[channel])}) fall back to polling.");
+                    $"XCP: the slave rejected {direction} event channel {channel} (ERR_OUT_OF_RANGE); " +
+                    $"its variables ({DescribeTargets(channels[channel])}) {fallback}.");
                 channels.Remove(channel);
                 continue;
             }
 
-            if (!info.SupportsDaq)
+            if (isStim ? !info.SupportsStim : !info.SupportsDaq)
             {
                 Logger?.Log(LogLevel.Warn,
-                    $"XCP: event channel {channel} ('{ecuName}') does not support the DAQ direction; " +
-                    $"its variables ({DescribeTargets(channels[channel])}) fall back to polling.");
+                    $"XCP: event channel {channel} ('{ecuName}') does not support the {direction} direction; " +
+                    $"its variables ({DescribeTargets(channels[channel])}) {fallback}.");
                 channels.Remove(channel);
                 continue;
             }
 
             Logger?.Log(LogLevel.Info,
-                $"XCP: DAQ event channel {channel} = '{ecuName}'" +
+                $"XCP: {direction} event channel {channel} = '{ecuName}'" +
                 (info.CycleTimeMs is { } cycle ? $", nominal cycle {cycle:0.###} ms." : ", sporadic (no nominal cycle)."));
 
             WarnOnPeriodMismatch(channels[channel], channel, ecuName, info);
@@ -847,6 +1073,169 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
     }
 
     /// <summary>
+    /// Packs each STIM channel's entries into ODTs (first-fit, configuration order — the mirror
+    /// of <see cref="PackDaqLists"/> with the STIM-side limits): ODT capacity is MAX_DTO minus
+    /// the identification field (and the timestamp in ODT 0 of timestamped lists); entry size is
+    /// capped by MAX_ODT_ENTRY_SIZE_STIM, and address and size must be multiples of
+    /// GRANULARITY_ODT_ENTRY_SIZE_STIM. Non-conforming variables fall back to direct writes (S5).
+    /// </summary>
+    private (List<XcpDaqListPlan> Plans, DaqTarget[][][] Targets) PackStimLists(
+        SortedDictionary<ushort, List<DaqTarget>> channels, XcpConnectResponse connectInfo,
+        XcpDaqProcessorInfo processor, XcpDaqResolutionInfo? resolution, int timestampSize)
+    {
+        var maxEntrySize = resolution is { MaxOdtEntrySizeStim: > 0 } ? resolution.MaxOdtEntrySizeStim : byte.MaxValue;
+        var granularity = resolution is { GranularityOdtEntrySizeStim: > 0 } ? resolution.GranularityOdtEntrySizeStim : 1;
+        var headerSize = processor.DtoHeaderSize;
+
+        var plans = new List<XcpDaqListPlan>();
+        var targets = new List<DaqTarget[][]>();
+
+        foreach (var (channel, channelTargets) in channels)
+        {
+            var odts = new List<List<XcpDaqEntryPlan>>();
+            var odtTargets = new List<List<DaqTarget>>();
+
+            foreach (var target in channelTargets)
+            {
+                var size = target.Spec.Size;
+                if (size % granularity != 0 || target.Spec.Address % granularity != 0)
+                {
+                    Logger?.Log(LogLevel.Warn,
+                        $"XCP: variable '{target.Scalar.Name}' ({size} B at 0x{target.Spec.Address:X}) violates the slave's " +
+                        $"STIM granularity ({granularity} B); it falls back to direct writes on change.");
+                    continue;
+                }
+
+                var capacityNext = connectInfo.MaxDto - headerSize - (odts.Count == 0 ? timestampSize : 0);
+                if (size > maxEntrySize || size > capacityNext)
+                {
+                    Logger?.Log(LogLevel.Warn,
+                        $"XCP: variable '{target.Scalar.Name}' ({size} B) does not fit a STIM packet " +
+                        $"(MAX_ODT_ENTRY_SIZE_STIM {maxEntrySize}, free ODT capacity {capacityNext}); it falls back to direct writes on change.");
+                    continue;
+                }
+
+                var capacityCurrent = connectInfo.MaxDto - headerSize - (odts.Count <= 1 ? timestampSize : 0);
+                if (odts.Count == 0 ||
+                    odts[^1].Sum(e => (int)e.Size) + size > capacityCurrent ||
+                    odts[^1].Count == byte.MaxValue)
+                {
+                    odts.Add([]);
+                    odtTargets.Add([]);
+                }
+
+                odts[^1].Add(new XcpDaqEntryPlan((byte)size, target.Spec.AddressExtension, target.Spec.Address));
+                odtTargets[^1].Add(target);
+            }
+
+            if (odts.Count == 0)
+            {
+                continue;
+            }
+
+            // The STIM PID window is 0x00..0xBF (narrower than DAQ), so a list is limited to
+            // 192 ODTs even before the slave assigns FIRST_PIDs.
+            if (odts.Count > 0xC0)
+            {
+                throw new XcpProtocolException(
+                    $"STIM list for event channel {channel} needs {odts.Count} ODTs; at most 192 are addressable.");
+            }
+
+            plans.Add(new XcpDaqListPlan(channel, odts.Select(IReadOnlyList<XcpDaqEntryPlan> (o) => o).ToList(), IsStim: true));
+            targets.Add(odtTargets.Select(o => o.ToArray()).ToArray());
+        }
+
+        return (plans, targets.ToArray());
+    }
+
+    /// <summary>
+    /// The STIM transmission loop (S3): every list's current variable values are encoded and
+    /// sent as its complete set of ODT DTOs back-to-back, at the period of the bound event.
+    /// The first round goes out immediately after the configuration starts, so the slave has
+    /// data before its first event. Transport failures are counted like poll failures — too
+    /// many in a row kill the session (reconnect path).
+    /// </summary>
+    private async Task StimLoopAsync(StimSessionState stim, CancellationToken ct)
+    {
+        var consecutiveFailures = 0;
+
+        while (!ct.IsCancellationRequested && !exitRequested)
+        {
+            var now = Environment.TickCount64;
+            var anyDue = false;
+
+            foreach (var list in stim.Lists)
+            {
+                if (list.NextDueMs > now)
+                {
+                    continue;
+                }
+
+                anyDue = true;
+                try
+                {
+                    await SendStimListAsync(stim, list, ct);
+                    consecutiveFailures = 0;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception e) when (e is XcpErrorException or XcpTimeoutException or XcpProtocolException)
+                {
+                    consecutiveFailures++;
+                    Logger?.Log(LogLevel.Warn, $"XCP: STIM transmission for list {list.DaqListNumber} failed: {e.Message}");
+                    SetState(CommunicationState.Running, $"STIM transmission failed: {e.Message}");
+
+                    if (consecutiveFailures >= MaxConsecutiveBusFailures)
+                    {
+                        throw new XcpProtocolException(
+                            $"{consecutiveFailures} consecutive STIM transmissions failed (last: {e.Message}).");
+                    }
+                }
+
+                // Re-anchor to now: after a stall the missed cycles are skipped instead of bursting.
+                list.NextDueMs = Environment.TickCount64 + list.IntervalMs;
+            }
+
+            if (!anyDue)
+            {
+                var nextDueIn = stim.Lists.Min(l => l.NextDueMs) - Environment.TickCount64;
+                var delay = (int)Math.Clamp(nextDueIn, 1, SchedulerIdleMs);
+                await Task.Delay(delay, ct);
+            }
+        }
+    }
+
+    /// <summary>Encodes and sends one complete STIM list (all ODTs back-to-back). The ODT-0
+    /// timestamp — required by TIMESTAMP_FIXED slaves — is the master's free-running time since
+    /// session start, scaled to slave ticks.</summary>
+    private async Task SendStimListAsync(StimSessionState stim, StimList list, CancellationToken ct)
+    {
+        var session = master ?? throw new XcpProtocolException("Not connected to the XCP slave.");
+
+        for (var odt = 0; odt < list.Odts.Length; odt++)
+        {
+            var odtTargets = list.Odts[odt];
+            var payload = new byte[odtTargets.Sum(t => t.Spec.Size)];
+            var offset = 0;
+            foreach (var target in odtTargets)
+            {
+                var bytes = stim.Codec.EncodeValue(target.Scalar.GetValue(), target.Spec.DataType);
+                bytes.CopyTo(payload, offset);
+                offset += bytes.Length;
+            }
+
+            uint? timestamp = odt == 0 && stim.TimestampTickSeconds > 0
+                ? (uint)((Environment.TickCount64 - stim.AnchorMs) / 1000.0 / stim.TimestampTickSeconds)
+                : null;
+
+            var dto = stim.Encoder.BuildDto(list.DaqListNumber, (byte)odt, list.FirstPid, timestamp, payload);
+            await session.SendStimDtoAsync(dto, ct);
+        }
+    }
+
+    /// <summary>
     /// Consumes queued DAQ packets and pushes decoded values into their variables. With slave
     /// timestamps (D5 stages 4b/4c) the sample time comes from the ECU clock mapped onto host
     /// UTC; sessions without timestamps stamp with the PC receive time (stage 4a behaviour).
@@ -911,6 +1300,14 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
             xcpVariable.IsUpdatingFromBus || // echo of our own poll update
             xcpVariable.Variable is not ScalarVariable scalarVariable ||
             xcpVariable.ProtocolVariableSpecification is not XcpVariableSpecification spec)
+        {
+            return;
+        }
+
+        // S3/S5: while the STIM loop streams this variable, its current value goes out with the
+        // next cycle automatically; only outside an active STIM session (fallback) is the value
+        // written directly.
+        if (spec.IsStimEvent && stimServedVariables?.Contains(protocolVariable) == true)
         {
             return;
         }
