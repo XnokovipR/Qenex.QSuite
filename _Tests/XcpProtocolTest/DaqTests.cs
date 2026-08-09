@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Qenex.QSuite.Protocols.XcpCore;
+using XcpTcpSessionSettings = Qenex.QSuite.Protocols.XcpTcpProtocol.XcpTcpSessionSettings;
 using Qenex.QSuite.Variables.VariableEvents;
 using static Qenex.QSuite.Tests.XcpProtocolTest.Program;
 
@@ -18,6 +19,7 @@ internal static class DaqTests
         Decoder_DropsAndOverload();
         Decoder_AbsolutePid();
         Mapper_SlaveSpacingWrapAndFallbacks();
+        Settings_DaqTimestamps();
         Master_ConfigureAndStartDaq_Sequence().GetAwaiter().GetResult();
         Master_GetDaqEventInfo_UploadsName().GetAwaiter().GetResult();
     }
@@ -225,6 +227,18 @@ internal static class DaqTests
     private static bool CloseTo(DateTime actual, DateTime expected)
     {
         return Math.Abs((actual - expected).TotalMilliseconds) < 0.001;
+    }
+
+    private static void Settings_DaqTimestamps()
+    {
+        Check(XcpTcpSessionSettings.Parse("timeoutMs=1000").UseSlaveDaqTimestamps,
+            "settings: daqTimestamps defaults to slave");
+        Check(XcpTcpSessionSettings.Parse("daqTimestamps=\"SLAVE\"").UseSlaveDaqTimestamps,
+            "settings: daqTimestamps=slave parsed (case-insensitive)");
+        Check(!XcpTcpSessionSettings.Parse("daqTimestamps=master").UseSlaveDaqTimestamps,
+            "settings: daqTimestamps=master parsed");
+        CheckThrows<ArgumentException>(() => XcpTcpSessionSettings.Parse("daqTimestamps=ecu"),
+            "settings: unknown daqTimestamps value is rejected");
     }
 
     #endregion

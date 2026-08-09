@@ -43,6 +43,11 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
     /// <summary>Response timeout per command, from the parsed session settings.</summary>
     protected abstract int SessionTimeoutMs { get; }
 
+    /// <summary>DAQ time axis source per the daqTimestamps setting: true = ECU timestamps
+    /// (default), false = PC receive time (a TIMESTAMP_FIXED slave still sends them,
+    /// they are then ignored).</summary>
+    protected abstract bool UseSlaveDaqTimestamps { get; }
+
     /// <summary>Transport name for diagnostics, e.g. "CAN" or "TCP".</summary>
     protected abstract string TransportName { get; }
 
@@ -572,8 +577,13 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                 return null;
             }
 
-            var includeTimestamp = resolution is { TimestampFixed: true, TimestampSize: > 0 };
-            var timestampSize = includeTimestamp ? resolution!.TimestampSize : 0;
+            // Standard choice via the SET_DAQ_LIST_MODE timestamp bit: request slave timestamps
+            // when configured (daqTimestamps=slave); a TIMESTAMP_FIXED slave sends them always,
+            // so the packet layout must include them even in master mode.
+            var slaveTimestampSize = resolution?.TimestampSize ?? 0;
+            var includeTimestamp = slaveTimestampSize > 0 &&
+                                   (UseSlaveDaqTimestamps || resolution is { TimestampFixed: true });
+            var timestampSize = includeTimestamp ? slaveTimestampSize : 0;
             var (plans, targets) = PackDaqLists(channels, connectInfo, processor, resolution, timestampSize);
             if (plans.Count == 0)
             {
@@ -617,7 +627,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
             // 4b/4c: with timestamps in the stream, samples keep the slave-side spacing on the
             // time axis instead of clustering at the TCP receive bursts.
-            var timestampMapper = includeTimestamp
+            var timestampMapper = includeTimestamp && UseSlaveDaqTimestamps
                 ? new XcpDaqTimestampMapper(timestampSize, resolution!.TimestampTickSeconds, plans.Count, Logger)
                 : null;
 
@@ -626,7 +636,9 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                 $"{string.Join(", ", plans.Select(p => p.EventChannel))}, {variablesInDaq.Count} variable(s), " +
                 (timestampMapper != null
                     ? $"slave timestamps on ({resolution!.TimestampTickSeconds * 1e6:0.###} µs/tick)."
-                    : "slave timestamps off — samples carry the receive time."));
+                    : includeTimestamp
+                        ? "slave timestamps ignored (daqTimestamps=master) — samples carry the receive time."
+                        : "slave timestamps off — samples carry the receive time."));
 
             return new DaqSessionState
             {

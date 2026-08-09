@@ -1,10 +1,11 @@
 using System.Globalization;
+using Qenex.QSuite.Protocols.XcpCore;
 
 namespace Qenex.QSuite.Protocols.XcpProtocol;
 
 /// <summary>
 /// XCP session configuration parsed from the protocol's RawSettings, e.g.
-/// masterId="0x200";slaveId="0x201";extendedIds="false";timeoutMs="1000".
+/// masterId="0x200";slaveId="0x201";extendedIds="false";timeoutMs="1000";daqTimestamps="slave".
 /// Both CAN identifiers are entered in hexadecimal (0x prefix optional), matching the repo
 /// convention for CAN ids. Byte order and address granularity are NOT configured — they come
 /// from the slave's CONNECT response.
@@ -22,6 +23,9 @@ public sealed class XcpSessionSettings
 
     /// <summary>Response timeout per command (EV_CMD_PENDING restarts it).</summary>
     public int TimeoutMs { get; init; } = 1000;
+
+    /// <summary>DAQ time axis source: true = ECU timestamps (default), false = PC receive time.</summary>
+    public bool UseSlaveDaqTimestamps { get; init; } = true;
 
     public static XcpSessionSettings Parse(string rawSettings)
     {
@@ -53,7 +57,8 @@ public sealed class XcpSessionSettings
             MasterId = masterId,
             SlaveId = slaveId,
             IsExtendedId = isExtended,
-            TimeoutMs = timeoutMs
+            TimeoutMs = timeoutMs,
+            UseSlaveDaqTimestamps = XcpSettingsParsing.ParseUseSlaveDaqTimestamps(settings)
         };
     }
 
