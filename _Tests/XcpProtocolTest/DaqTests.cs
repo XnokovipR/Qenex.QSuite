@@ -233,6 +233,40 @@ internal static class DaqTests
         // Slave restart: the counter jump maps far away from the receive time -> re-anchor.
         var restarted = mapper.Map(0, 500, t0.AddSeconds(5));
         Check(restarted == t0.AddSeconds(5), "mapper: slave restart re-anchors to the receive time");
+
+        Mapper_DriftIsCompensatedMonotonically();
+    }
+
+    // A slave clock running percent-fast (wrong clock source, e.g. an RC-derived HSE) must not
+    // produce backward time steps: the drift is slewed away and the axis stays monotonic and
+    // close to the receive time (regression for the 2026-08-10 graph-wipe incident).
+    private static void Mapper_DriftIsCompensatedMonotonically()
+    {
+        var t0 = new DateTime(2026, 8, 10, 20, 0, 0, DateTimeKind.Utc);
+        var mapper = new XcpDaqTimestampMapper(timestampSize: 4, tickSeconds: 1e-6, listCount: 1);
+
+        // 100 Hz for 10 simulated minutes; the slave believes in exact 10 ms cycles while
+        // 1.7 % less wall time passes (measured live on the Nucleo H743ZI2 board).
+        var previous = DateTime.MinValue;
+        var mapped = DateTime.MinValue;
+        double maxErrorSeconds = 0;
+        for (var i = 0; i < 60_000; i++)
+        {
+            var raw = (uint)(1_000_000 + (ulong)i * 10_000);
+            var received = t0.AddSeconds(i * 0.010 / 1.017);
+            mapped = mapper.Map(0, raw, received);
+            Check(mapped >= previous, "mapper: drifting slave clock never moves the axis backwards");
+            previous = mapped;
+            maxErrorSeconds = Math.Max(maxErrorSeconds, Math.Abs((mapped - received).TotalSeconds));
+        }
+
+        Check(maxErrorSeconds < 0.5, "mapper: compensated axis stays close to the receive time");
+
+        // Slave restart while the emitted axis is ahead of the receive time: the hard
+        // re-anchor must not step backwards either (the monotonic guard clamps it).
+        var restartReceive = t0.AddSeconds(60_000 * 0.010 / 1.017 + 0.005);
+        var afterRestart = mapper.Map(0, 100, restartReceive);
+        Check(afterRestart >= mapped, "mapper: hard re-anchor is clamped to stay monotonic");
     }
 
     private static bool CloseTo(DateTime actual, DateTime expected)

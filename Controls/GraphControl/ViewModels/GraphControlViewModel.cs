@@ -24,11 +24,16 @@ using Telerik.Windows.Controls.FileDialogs;
 namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
 [DataContract]
-public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialogAwareControl, IVariableReferenceProvider
+public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialogAwareControl, IVariableReferenceProvider, ILogAwareControl
 {
     #region Const
 
     private const double PlotFontSizeMultiplier = 0.9;
+
+    // Backward timestamps up to this tolerance merge into the last point (host clock
+    // adjustments and timestamp source changes must not wipe the chart); a larger
+    // rewind means a restart (replay, device reboot) and clears the chart as before
+    private const double BackwardTimestampToleranceSeconds = 5.0;
 
     #endregion
     
@@ -36,6 +41,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
 
     private DateTime baseTime;
     private DateTime lastUpdateTime;
+    private bool mergingBackwardSamples;
     private int currentColorIndex;
     private Crosshair cross = null!;
     private Annotation annotation = null!;
@@ -175,6 +181,12 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
     [IgnoreDataMember]
     public Action<string>? SaveDialogDirectoryChanged { get; set; }
 
+    [IgnoreDataMember]
+    public Action<string>? LogInfo { get; set; }
+
+    [IgnoreDataMember]
+    public Action<string>? LogWarn { get; set; }
+
     /// <summary>
     /// Reference na promenne navazane v grafu (ChartVariableBindings + ChartVariables),
     /// nad ramec ControlBase.Variables/LinkedVariables. Pouziva host pri zjistovani pouziti promenne.
@@ -278,8 +290,34 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
         if (chartVariable.XDateTimeVal.Count > 0)
         {
             var lastChartVariableTimestamp = chartVariable.XDateTimeVal[^1];
+            if (timestamp < lastChartVariableTimestamp
+                && (lastChartVariableTimestamp - timestamp).TotalSeconds <= BackwardTimestampToleranceSeconds)
+            {
+                // A small backward step (host clock adjustment, timestamp source change)
+                // folds into the last point; only a real rewind below restarts the chart.
+                // Logged once per episode - consecutive backward samples stay silent.
+                if (!mergingBackwardSamples)
+                {
+                    mergingBackwardSamples = true;
+                    LogWarn?.Invoke(
+                        $"timestamp of '{chartVariable.Variable.Name}' stepped back by " +
+                        $"{(lastChartVariableTimestamp - timestamp).TotalMilliseconds:0} ms — merging into " +
+                        "the last point (host clock adjustment or timestamp source change).");
+                }
+
+                timestamp = lastChartVariableTimestamp;
+                xVal = chartVariable.XVal[^1];
+            }
+            else
+            {
+                mergingBackwardSamples = false;
+            }
+
             if (timestamp < lastChartVariableTimestamp)
             {
+                LogInfo?.Invoke(
+                    $"time axis jumped back by {(lastChartVariableTimestamp - timestamp).TotalSeconds:0.#} s " +
+                    "— chart restarted (replay or data source restart).");
                 ClearChartData(timestamp);
                 xVal = 0;
             }

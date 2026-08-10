@@ -281,6 +281,14 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     private void ConfigureControl(IControlBase controlVm)
     {
+	    if (controlVm is ILogAwareControl logAwareControl && controlVm is ControlBase logControlBase)
+	    {
+		    logAwareControl.LogInfo = message =>
+			    EventAggregator.Publish(new LogMessage(LogLevel.Info, $"{GetControlDisplayName(logControlBase)}: {message}"));
+		    logAwareControl.LogWarn = message =>
+			    EventAggregator.Publish(new LogMessage(LogLevel.Warn, $"{GetControlDisplayName(logControlBase)}: {message}"));
+	    }
+
 	    if (controlVm is IFileDialogAwareControl dialogAwareControl)
 	    {
 		    dialogAwareControl.ConfigureSaveFileDialog = ConfigureGraphControlSaveDialog;
