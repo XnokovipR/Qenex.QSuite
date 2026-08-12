@@ -12,11 +12,29 @@ public class PluginLoader(ILogger? logger = null)
         // Plugins live in subfolders (Drivers/, Protocols/, Controls/) but their NuGet and shared
         // dependencies are deployed to the application base directory. The runtime only resolves
         // assemblies from the app's deps.json and from the plugin's own folder, so this fallback
-        // probes the base directory for anything still unresolved.
+        // probes the base directory — and the plugin folders themselves, so name-based loads
+        // (e.g. docking layout restore) find a plugin assembly even when it was not LoadFrom-ed
+        // yet, instead of requiring a duplicate copy in the base directory.
         AssemblyLoadContext.Default.Resolving += (context, assemblyName) =>
         {
-            var candidate = Path.Combine(AppContext.BaseDirectory, assemblyName.Name + ".dll");
-            return File.Exists(candidate) ? context.LoadFromAssemblyPath(candidate) : null;
+            string[] probeDirs =
+            [
+                AppContext.BaseDirectory,
+                Path.Combine(AppContext.BaseDirectory, "Controls"),
+                Path.Combine(AppContext.BaseDirectory, "Drivers"),
+                Path.Combine(AppContext.BaseDirectory, "Protocols"),
+            ];
+
+            foreach (var probeDir in probeDirs)
+            {
+                var candidate = Path.Combine(probeDir, assemblyName.Name + ".dll");
+                if (File.Exists(candidate))
+                {
+                    return context.LoadFromAssemblyPath(candidate);
+                }
+            }
+
+            return null;
         };
     }
 

@@ -288,16 +288,17 @@ public partial class ShellWindowModel
         try
         {
             shellRadDocking = docking;
-            
+
             Application.Current.MainWindow!.WindowState = ShellWindow.MainAppSettings.WinStyle.WinState;
-            
-            // Load layout settings
-            LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
-            
-            
-            // Load drivers, protocols and controls. Plugin folders live next to the executable;
-            // resolve them from BaseDirectory because the process working directory differs when
-            // the app is started via the .qproj file association or a shortcut.
+
+            // Load drivers, protocols and controls BEFORE any docking layout: layout
+            // restore resolves pane types by assembly NAME, and whichever file wins that
+            // first name-based load owns the assembly identity for the whole session.
+            // Loading the plugins first pins the identity to the plugin folders — a stray
+            // or stale copy elsewhere can then never shadow them. Plugin folders live next
+            // to the executable; resolve them from BaseDirectory because the process
+            // working directory differs when the app is started via the .qproj file
+            // association or a shortcut.
             var pluginBaseDir = AppContext.BaseDirectory;
             pluginLoader = new PluginLoader(logger);
             driverPlugins = pluginLoader.GetPluginDetails<IDriverBase>(Path.Combine(pluginBaseDir, "Drivers"), TransportTypes.Probe);
@@ -309,6 +310,9 @@ public partial class ShellWindowModel
                 ? pluginLoader.GetPluginDetails<IControlBase>(controlsDir)
                 : [];
             controlsViewModel.SetControlPlugins(controlPlugins);
+
+            // Load layout settings (after plugin load — see above)
+            LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
 
             ValidatePythonDllPath();
 
