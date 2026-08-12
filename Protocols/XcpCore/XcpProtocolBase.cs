@@ -1282,7 +1282,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
     #endregion
 
-    #region Operator writes (RAW phase)
+    #region Operator writes
 
     public bool CanWriteVariable(IProtocolVariable protocolVariable)
     {
@@ -1329,8 +1329,9 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
         try
         {
-            // RAW write phase: the operator value is the raw value; the staged engineering-value
-            // write (inverse conversion) will slot in here later.
+            // The stored value is always raw — engineering input is inverted to raw above the
+            // protocol layer (ScalarVariable.TrySetEngValue) — so DOWNLOAD sends it as-is,
+            // the same way the STIM stream does.
             var bytes = session.Codec.EncodeValue(scalarVariable.GetValue(), spec.DataType);
             await session.WriteMemoryAsync(spec.AddressExtension, spec.Address, bytes, ct);
             Logger?.Log(LogLevel.Info,

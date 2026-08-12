@@ -3,6 +3,8 @@ using Qenex.QSuite.Protocols.XcpCore;
 using Qenex.QSuite.Protocols.XcpTcpProtocol;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.QVariables.Values;
+using Qenex.QSuite.Variables.ValueConversion;
+using Qenex.QSuite.Variables.ValuePresentation;
 using Qenex.QSuite.Variables.VariableEvents;
 using ValueDataType = Qenex.QSuite.Variables.QVariables.Values.ValuesGlobal.ValueDataType;
 using static Qenex.QSuite.Tests.XcpProtocolTest.Program;
@@ -14,7 +16,9 @@ namespace Qenex.QSuite.Tests.XcpProtocolTest;
 /// the shared DAQ+STIM configuration transaction, the DIRECTION mode bit, the master's DTO
 /// stream (layout, fresh values after an operator change, TIMESTAMP_FIXED timestamps), the
 /// suppression of direct writes for streamed variables, DAQ coexistence and the no-STIM-resource
-/// fallback to SET_MTA + DOWNLOAD.
+/// fallback to SET_MTA + DOWNLOAD. Also covers the engineering-value write (decision point 21
+/// phase 2): a non-identity linear conversion is inverted above the protocol layer, so both
+/// write paths — the STIM stream and the fallback DOWNLOAD — must carry the raw value.
 /// </summary>
 internal static class TcpStimIntegrationTests
 {
@@ -22,6 +26,8 @@ internal static class TcpStimIntegrationTests
     {
         StimFlow_MasterStreamsDtos_WithDaqCoexistence().GetAwaiter().GetResult();
         NoStimResource_FallsBackToDirectWrites().GetAwaiter().GetResult();
+        EngConversion_StimStream_SendsInvertedRaw().GetAwaiter().GetResult();
+        EngConversion_FallbackDownload_SendsInvertedRaw().GetAwaiter().GetResult();
     }
 
     #region Simulated DAQ+STIM slave harness
@@ -130,6 +136,20 @@ internal static class TcpStimIntegrationTests
         Name = name,
         Values = new Values<double> { Value = 0d, ValueType = ValueDataType.Double }
     };
+
+    /// <summary>Non-identity linear conversion: eng = raw * 5 + 50 (percent of a ±10 raw range),
+    /// so 75 % inverts to raw 5.0 and 60 % to raw 2.0.</summary>
+    private static void AttachPercentPresentation(ScalarVariable variable)
+    {
+        variable.Values.ValPresentation = new Presentation
+        {
+            Name = "StimPercent",
+            Min = 0,
+            Max = 100,
+            Unit = "%",
+            Conversion = new LinearValConversion { Multiplier = 5, Offset = 50 }
+        };
+    }
 
     private static async Task<bool> WaitUntilAsync(Func<bool> condition, int timeoutMs = 2000)
     {
@@ -272,5 +292,48 @@ internal static class TcpStimIntegrationTests
         var setMta = slave.FindSent(p => p[0] == XcpCommand.SetMta);
         Check(setMta != null && BinaryPrimitives.ReadUInt32LittleEndian(setMta.AsSpan(4)) == 0x3000,
             "tcp stim fallback: SET_MTA targets the variable's address");
+    }
+
+    private static async Task EngConversion_StimStream_SendsInvertedRaw()
+    {
+        var (protocol, slave, stimVariable, _) = CreateRunningSetup();
+        AttachPercentPresentation(stimVariable);
+
+        Check(stimVariable.TrySetEngValue(75.0), "eng stim: TrySetEngValue accepts 75 %");
+        Check((double)stimVariable.GetValue() == 5.0, "eng stim: 75 % inverts to raw 5.0 above the protocol");
+
+        await protocol.StartAsync();
+        var streamed = await WaitUntilAsync(() => slave.FindSent(p =>
+            IsStimDto(p) && p.Length == 16 &&
+            BinaryPrimitives.ReadDoubleLittleEndian(p.AsSpan(8)) == 5.0) != null);
+        Check(streamed, "eng stim: the STIM DTO carries the inverted raw value (5.0, not 75)");
+
+        Check(stimVariable.TrySetEngValue(60.0), "eng stim: TrySetEngValue accepts 60 %");
+        var updated = await WaitUntilAsync(() => slave.FindSent(p =>
+            IsStimDto(p) && p.Length == 16 &&
+            BinaryPrimitives.ReadDoubleLittleEndian(p.AsSpan(8)) == 2.0) != null);
+        await protocol.StopAsync();
+
+        Check(updated, "eng stim: a changed engineering value streams as fresh raw (2.0) in the next cycle");
+    }
+
+    private static async Task EngConversion_FallbackDownload_SendsInvertedRaw()
+    {
+        var (protocol, slave, stimVariable, _) = CreateRunningSetup();
+        slave.ConnectResource = 0x05; // CAL + DAQ, no STIM -> operator writes go out directly
+        AttachPercentPresentation(stimVariable);
+        Check(stimVariable.TrySetEngValue(75.0), "eng download: TrySetEngValue accepts 75 %");
+
+        await protocol.StartAsync();
+        await WaitUntilAsync(() => slave.CountSent(XcpCommand.StartStopSynch) >= 1);
+        await protocol.WriteVariableAsync(protocol.Variables.First(v => v.Variable == stimVariable));
+        var written = await WaitUntilAsync(() => slave.CountSent(XcpCommand.Download) >= 1);
+        await protocol.StopAsync();
+
+        Check(written, "eng download: the fallback write reaches DOWNLOAD");
+        var download = slave.FindSent(p => p[0] == XcpCommand.Download);
+        Check(download is { Length: 10 } && download[1] == 8 &&
+              BinaryPrimitives.ReadDoubleLittleEndian(download.AsSpan(2)) == 5.0,
+            "eng download: DOWNLOAD carries the inverted raw value (8 B, 5.0)");
     }
 }
