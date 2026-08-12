@@ -226,7 +226,7 @@ public class ModbusMasterProtocol : ProtocolBase<byte[]>, ITransportProtocol<byt
 
             if (entries.Count == 0)
             {
-                Logger?.Log(LogLevel.Info, "Modbus master: no pollable variables configured; serving writes only.");
+                Logger?.Log(LogLevel.Debug, "Modbus master: no pollable variables configured; serving writes only.");
                 await Task.Delay(Timeout.Infinite, ct);
                 return;
             }

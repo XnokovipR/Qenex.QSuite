@@ -122,6 +122,13 @@ public partial class ShellWindow : Window
 	{
 		MainAppSettings = AppSettings.LoadAppSettingsFromFile(filename) ?? AppSettings.GetDefaultAppSettings();
 
+		// The view model tree is built by InitializeComponent (XAML DataContext) before
+		// the settings file is read - push the persisted log filter in afterwards.
+		if (DataContext is ViewModels.ShellWindowModel shellWindowModel)
+		{
+			shellWindowModel.LogsViewModel.ShowDebugMessages = MainAppSettings.ShowDebugLogMessages;
+		}
+
 		if (Application.Current.MainWindow != null)
 		{
 			var win = Application.Current.MainWindow;

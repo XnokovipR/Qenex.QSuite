@@ -13,14 +13,17 @@ public class GeneralPreferencesViewModel : PropertyChangedBaseWithValidation
 {
     private readonly AppSettings appSettings;
     private readonly Logger logger;
+    private readonly Action? settingsApplied;
     private RadWindow? parentWindow;
 
-    public GeneralPreferencesViewModel(AppSettings appSettings, Logger logger)
+    public GeneralPreferencesViewModel(AppSettings appSettings, Logger logger, Action? settingsApplied = null)
     {
         this.appSettings = appSettings;
         this.logger = logger;
+        this.settingsApplied = settingsApplied;
 
         PythonDllPath = appSettings.ScriptEngine.PythonDllPath;
+        ShowDebugLogMessages = appSettings.ShowDebugLogMessages;
 
         ApplyCommand = new RelayCommand<object>(_ => ApplySettings());
         OkCommand = new RelayCommand<object>(_ =>
@@ -35,6 +38,12 @@ public class GeneralPreferencesViewModel : PropertyChangedBaseWithValidation
     }
 
     public string PythonDllPath
+    {
+        get;
+        set { field = value; OnPropertyChanged(); }
+    }
+
+    public bool ShowDebugLogMessages
     {
         get;
         set { field = value; OnPropertyChanged(); }
@@ -68,10 +77,12 @@ public class GeneralPreferencesViewModel : PropertyChangedBaseWithValidation
         try
         {
             appSettings.ScriptEngine.PythonDllPath = PythonDllPath.Trim();
+            appSettings.ShowDebugLogMessages = ShowDebugLogMessages;
 
             AppSettings.SaveAppSettingsToFile(AppDataPaths.AppSettingsFile, appSettings);
             ErrorMessage = string.Empty;
             logger.Log(LogLevel.Info, "General preferences saved.");
+            settingsApplied?.Invoke();
             return true;
         }
         catch (Exception e)

@@ -19,6 +19,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" VerticalAlignment="Top">
@@ -33,7 +34,12 @@
             <telerik:RadButton Grid.Column="2" MinWidth="72" Content="Browse" Command="{Binding BrowsePythonDllCommand}"/>
         </Grid>
 
-        <q:QTextBlock Grid.Row="1"
+        <CheckBox Grid.Row="1"
+                  Margin="0,12,0,0"
+                  Content="Show debug messages in the log"
+                  IsChecked="{Binding ShowDebugLogMessages, Mode=TwoWay}"/>
+
+        <q:QTextBlock Grid.Row="2"
                       Margin="0,8,0,0"
                       Foreground="Tomato"
                       Text="{Binding ErrorMessage}"
@@ -50,7 +56,7 @@
             </q:QTextBlock.Style>
         </q:QTextBlock>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <telerik:RadButton MinWidth="80" Margin="0,0,8,0" Content="OK" Command="{Binding OkCommand}"/>
             <telerik:RadButton MinWidth="80" Margin="0,0,8,0" Content="Apply" Command="{Binding ApplyCommand}"/>
             <telerik:RadButton MinWidth="80" Content="Cancel" Command="{Binding CancelCommand}"/>

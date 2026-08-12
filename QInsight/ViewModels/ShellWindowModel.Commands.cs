@@ -620,7 +620,8 @@ public partial class ShellWindowModel
 
     private void OpenGeneralPreferences()
     {
-        var generalPreferencesViewModel = new GeneralPreferencesViewModel(ShellWindow.MainAppSettings, logger);
+        var generalPreferencesViewModel = new GeneralPreferencesViewModel(ShellWindow.MainAppSettings, logger,
+            () => LogsViewModel.ShowDebugMessages = ShellWindow.MainAppSettings.ShowDebugLogMessages);
         var generalPreferencesView = new GeneralPreferencesView
         {
             DataContext = generalPreferencesViewModel
@@ -632,9 +633,9 @@ public partial class ShellWindowModel
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Header = "General",
             Width = 640,
-            Height = 220,
+            Height = 250,
             MinWidth = 640,
-            MinHeight = 220,
+            MinHeight = 250,
             ResizeMode = ResizeMode.NoResize,
             Content = generalPreferencesView
         };

@@ -83,7 +83,7 @@ public sealed class XcpMaster(ILogger? logger = null)
                 break;
 
             case XcpPacketKind.ServiceRequest:
-                logger?.Log(LogLevel.Info, $"XCP: service request from slave ({BitConverter.ToString(packet)}).");
+                logger?.Log(LogLevel.Debug, $"XCP: service request from slave ({BitConverter.ToString(packet)}).");
                 break;
 
             case XcpPacketKind.DaqDto:
@@ -100,7 +100,7 @@ public sealed class XcpMaster(ILogger? logger = null)
             case XcpEventCode.CmdPending:
                 // The slave asks to restart timeout detection; the command must NOT be repeated.
                 Interlocked.Increment(ref pendingEventGeneration);
-                logger?.Log(LogLevel.Info, "XCP: EV_CMD_PENDING received, restarting timeout.");
+                logger?.Log(LogLevel.Debug, "XCP: EV_CMD_PENDING received, restarting timeout.");
                 break;
 
             case XcpEventCode.SessionTerminated:
@@ -122,7 +122,7 @@ public sealed class XcpMaster(ILogger? logger = null)
                 break;
 
             default:
-                logger?.Log(LogLevel.Info, $"XCP: event 0x{eventCode:X2} from slave.");
+                logger?.Log(LogLevel.Debug, $"XCP: event 0x{eventCode:X2} from slave.");
                 break;
         }
     }

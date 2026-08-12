@@ -379,7 +379,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
         var entries = BuildPollEntries(daqServedVariables);
         if (entries.Count == 0)
         {
-            Logger?.Log(LogLevel.Info, daqServedVariables == null
+            Logger?.Log(LogLevel.Debug, daqServedVariables == null
                 ? "XCP: no pollable variables configured; serving writes only."
                 : "XCP: all read variables are served by DAQ; polling is idle.");
 
@@ -640,7 +640,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
             }
             catch (XcpErrorException e) when (e.ErrorCode == XcpErrorCode.CmdUnknown)
             {
-                Logger?.Log(LogLevel.Info, "XCP: GET_DAQ_RESOLUTION_INFO not implemented by the slave; using defaults.");
+                Logger?.Log(LogLevel.Debug, "XCP: GET_DAQ_RESOLUTION_INFO not implemented by the slave; using defaults.");
             }
 
             await ValidateChannelsAsync(session, processor, daqChannels, isStim: false, ct);
@@ -752,7 +752,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
             if (daqState != null)
             {
-                Logger?.Log(LogLevel.Info,
+                Logger?.Log(LogLevel.Debug,
                     $"XCP: DAQ started — {daqPlans.Count} list(s) on event channel(s) " +
                     $"{string.Join(", ", daqPlans.Select(p => p.EventChannel))}, {daqState.VariablesInDaq.Count} variable(s), " +
                     (timestampMapper != null
@@ -764,7 +764,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
             if (stimState != null)
             {
-                Logger?.Log(LogLevel.Info,
+                Logger?.Log(LogLevel.Debug,
                     $"XCP: STIM started — {stimPlans.Count} list(s) on event channel(s) " +
                     $"{string.Join(", ", stimPlans.Select(p => p.EventChannel))}, {stimState.VariablesInStim.Count} variable(s)" +
                     (includeStimTimestamp ? ", timestamped (TIMESTAMP_FIXED slave)." : "."));
@@ -949,7 +949,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
             }
             catch (XcpErrorException e) when (e.ErrorCode == XcpErrorCode.CmdUnknown)
             {
-                Logger?.Log(LogLevel.Info,
+                Logger?.Log(LogLevel.Debug,
                     $"XCP: GET_DAQ_EVENT_INFO not implemented by the slave; {direction} event channels are used unvalidated.");
                 return;
             }
@@ -971,7 +971,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                 continue;
             }
 
-            Logger?.Log(LogLevel.Info,
+            Logger?.Log(LogLevel.Debug,
                 $"XCP: {direction} event channel {channel} = '{ecuName}'" +
                 (info.CycleTimeMs is { } cycle ? $", nominal cycle {cycle:0.###} ms." : ", sporadic (no nominal cycle)."));
 

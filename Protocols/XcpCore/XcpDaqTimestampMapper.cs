@@ -79,7 +79,7 @@ public sealed class XcpDaqTimestampMapper(int timestampSize, double tickSeconds,
         if (Math.Abs(errorSeconds) > ReanchorThresholdSeconds)
         {
             reanchors++;
-            logger?.Log(LogLevel.Info,
+            logger?.Log(LogLevel.Debug,
                 $"XCP: DAQ timestamps re-anchored to the receive time ({reanchors}× so far) — " +
                 "slave restart or a transport stall shifted the clocks by more than " +
                 $"{ReanchorThresholdSeconds:0.#} s.");

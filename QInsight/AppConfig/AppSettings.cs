@@ -23,6 +23,9 @@ public class AppSettings
 	[XmlElement("ScriptEngineSettings")] public ScriptEngineSettings ScriptEngine { get; set; } = null!;
 	// Last directory the project Open/Save As dialog was used in; restored across sessions.
 	[XmlElement("LastProjectDirectory")] public string LastProjectDirectory { get; set; } = string.Empty;
+	// Show Trace/Debug rows in the Logs panel (protocol/driver diagnostic detail).
+	// Toggled in General preferences; default off — users see Info and above.
+	[XmlElement("ShowDebugLogMessages")] public bool ShowDebugLogMessages { get; set; }
 
 	#endregion
 
