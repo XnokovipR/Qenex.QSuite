@@ -16,17 +16,22 @@ public class ChartVariableBinding
     public float LineWidth { get; set; } = 1.0f;
 
     [DataMember]
+    public ChartLineStyle LineStyle { get; set; } = ChartLineStyle.Solid;
+
+    [DataMember]
     public int AxisIndex { get; set; }
 
     public ChartVariableBinding()
     {
     }
 
-    public ChartVariableBinding(string variableReference, Color chartColor, float lineWidth = 1.0f, int axisIndex = 0)
+    public ChartVariableBinding(string variableReference, Color chartColor, float lineWidth = 1.0f, int axisIndex = 0,
+        ChartLineStyle lineStyle = ChartLineStyle.Solid)
     {
         VariableReference = variableReference;
         LineWidth = lineWidth;
         AxisIndex = axisIndex;
+        LineStyle = lineStyle;
         SetChartColor(chartColor);
     }
 
@@ -66,6 +71,7 @@ public class ChartVariableBinding
         VariableReference = string.Empty;
         ChartColor = string.Empty;
         LineWidth = 1.0f;
+        LineStyle = ChartLineStyle.Solid;
         AxisIndex = 0;
     }
 }

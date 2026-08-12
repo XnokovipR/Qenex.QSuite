@@ -120,6 +120,15 @@
                                     </telerik:GridViewDataColumn.CellTemplate>
                                 </telerik:GridViewDataColumn>
                                 <telerik:GridViewDataColumn Header="Width" IsFilterable="False" DataMemberBinding="{Binding Path=LineWidth}" IsReadOnly="False"/>
+                                <telerik:GridViewDataColumn Header="Style" IsFilterable="False">
+                                    <telerik:GridViewDataColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <telerik:RadComboBox
+                                                ItemsSource="{Binding DataContext.LineStyles, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
+                                                SelectedItem="{Binding LineStyle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </DataTemplate>
+                                    </telerik:GridViewDataColumn.CellTemplate>
+                                </telerik:GridViewDataColumn>
                                 <telerik:GridViewDataColumn Header="Axis Id" IsFilterable="False">
                                     <telerik:GridViewDataColumn.CellTemplate>
                                         <DataTemplate>

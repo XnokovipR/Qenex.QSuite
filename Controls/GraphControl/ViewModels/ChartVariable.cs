@@ -32,6 +32,20 @@ public class ChartVariable : PropertyChangedBase
     public Color ChartColor { get; set { field = value; OnPropertyChanged(); ChartSignal?.Color = ToScottPlotColor(value); } }
     
     public float LineWidth { get; set { field = value; OnPropertyChanged(); ChartSignal?.LineWidth = value; } }
+
+    public ChartLineStyle LineStyle
+    {
+        get;
+        set
+        {
+            field = value;
+            OnPropertyChanged();
+            if (ChartSignal != null)
+            {
+                ChartSignal.LineStyle.Pattern = value.ToLinePattern();
+            }
+        }
+    }
     
     public bool IsVisible { get; set { field = value; OnPropertyChanged(); ChartSignal?.IsVisible = value; } }
     

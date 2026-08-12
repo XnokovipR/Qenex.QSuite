@@ -88,6 +88,12 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
     [IgnoreDataMember]
     public ObservableCollection<int> AxisNumbers { get; set { field = value; OnPropertyChanged(); } } = [];
 
+    // Options for the Style combo box in the variables grid (ScottPlot default patterns).
+    // Computed getter, NOT an initializer: DataContract deserialization skips constructors
+    // and field initializers, an initialized property would come back null.
+    [IgnoreDataMember]
+    public IReadOnlyList<ChartLineStyle> LineStyles => Enum.GetValues<ChartLineStyle>();
+
     [IgnoreDataMember]
     public ChartVariable SelectedChartVariable { get; set { field = value; OnPropertyChanged(); } }
 
@@ -259,6 +265,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
 
         PlotControl.Refresh();
         chartVariable.LineWidth = GetSavedLineWidth(savedBinding);
+        chartVariable.LineStyle = savedBinding?.LineStyle ?? ChartLineStyle.Solid;
         chartVariable.AxisIndex = savedBinding?.AxisIndex ?? 0;
         RememberChartVariableBinding(chartVariable);
 
@@ -605,12 +612,14 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
                 variableReference,
                 chartVariable.ChartColor,
                 chartVariable.LineWidth,
-                chartVariable.AxisIndex));
+                chartVariable.AxisIndex,
+                chartVariable.LineStyle));
             return;
         }
 
         binding.SetChartColor(chartVariable.ChartColor);
         binding.LineWidth = chartVariable.LineWidth;
+        binding.LineStyle = chartVariable.LineStyle;
         binding.AxisIndex = chartVariable.AxisIndex;
     }
 
@@ -627,7 +636,8 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
                 GetVariableReference(chartVariable.Variable),
                 chartVariable.ChartColor,
                 chartVariable.LineWidth,
-                chartVariable.AxisIndex))
+                chartVariable.AxisIndex,
+                chartVariable.LineStyle))
             .ToList();
         LinkedVariables = ChartVariableBindings
             .Select(binding => binding.VariableReference)
