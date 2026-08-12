@@ -42,10 +42,14 @@ public class ProjectZip
             }
             else if (stream.Key.EndsWith(WorkspaceFileExtension, StringComparison.OrdinalIgnoreCase))
             {
-                var workspace = LoadWorkspaceProjectData(memoryStream, stream.Key, logger);
+                var workspace = LoadWorkspaceProjectData(memoryStream, out var loadFailure);
                 if (workspace != null)
                 {
                     projectData.Workspaces.Add(workspace);
+                }
+                else
+                {
+                    projectData.FailedWorkspaces.Add(loadFailure ?? $"Workspace entry \"{stream.Key}\" could not be loaded.");
                 }
             }
             else if (stream.Key == WorkspaceLayoutEntryName)
@@ -203,17 +207,63 @@ public class ProjectZip
         return stream;
     }
 
-    private static WorkspaceProjectData? LoadWorkspaceProjectData(Stream stream, string entryName, ILogger? logger)
+    private static WorkspaceProjectData? LoadWorkspaceProjectData(MemoryStream stream, out string? loadFailure)
     {
         try
         {
             var serializer = new DataContractSerializer(typeof(WorkspaceProjectData), GetKnownControlTypes());
+            loadFailure = null;
             return serializer.ReadObject(stream) as WorkspaceProjectData;
         }
         catch (Exception e)
         {
-            logger?.Log(LogLevel.Warn, $"Workspace file \"{entryName}\" could not be loaded.", e);
+            loadFailure = DescribeWorkspaceLoadFailure(stream, e);
             return null;
+        }
+    }
+
+    // The serializer exception ("...data contract that is not expected...") does not tell
+    // the user what is actually wrong. Read the raw XML instead and name the real cause:
+    // the workspace by its window title and the control types no loaded assembly provides.
+    private static string DescribeWorkspaceLoadFailure(MemoryStream stream, Exception exception)
+    {
+        try
+        {
+            stream.Position = 0;
+            var document = System.Xml.Linq.XDocument.Load(stream);
+            System.Xml.Linq.XNamespace xsi = "http://www.w3.org/2001/XMLSchema-instance";
+
+            var title = document.Root?.Elements()
+                .FirstOrDefault(element => element.Name.LocalName == "WinTitle")?.Value;
+            var workspaceLabel = string.IsNullOrWhiteSpace(title) ? "workspace" : $"workspace \"{title}\"";
+
+            var knownTypeNames = GetKnownControlTypes()
+                .Select(type => type.Name)
+                .ToHashSet(StringComparer.Ordinal);
+            var missingControls = document.Descendants()
+                .Where(element => element.Name.LocalName == "ControlBase")
+                .Select(element => element.Attribute(xsi + "type")?.Value)
+                .OfType<string>()
+                .Select(typeReference => typeReference[(typeReference.IndexOf(':') + 1)..])
+                .Distinct()
+                .Where(typeName => !knownTypeNames.Contains(typeName))
+                .Select(typeName => typeName.EndsWith("ViewModel", StringComparison.Ordinal)
+                    ? typeName[..^"ViewModel".Length]
+                    : typeName)
+                .ToList();
+
+            if (missingControls.Count > 0)
+            {
+                var controlList = string.Join(", ", missingControls.Select(name => $"\"{name}\""));
+                return $"Control {controlList} is not available in this installation "
+                       + $"(control assembly missing or failed to load) - {workspaceLabel} was skipped.";
+            }
+
+            return $"The {workspaceLabel} could not be loaded: {exception.Message}";
+        }
+        catch
+        {
+            return $"The workspace could not be loaded: {exception.Message}";
         }
     }
 

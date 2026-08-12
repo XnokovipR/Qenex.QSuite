@@ -41,7 +41,7 @@ public class Logger : ILogger
 
 	public void Log(LogLevel level, string message, Exception? exception = default)
 	{
-		Log(new LogMessage(level, message, exception));
+		Log(new LogMessage(level, AppendExceptionDetail(message, exception), exception));
 	}
 
 	public async Task LogAsync(ILogMessage message, CancellationToken ct = default)
@@ -59,7 +59,23 @@ public class Logger : ILogger
 
 	public async Task LogAsync(LogLevel level, string message, Exception? exception = default, CancellationToken ct = default)
 	{
-		await LogAsync(new LogMessage(level, message, exception), ct);
+		await LogAsync(new LogMessage(level, AppendExceptionDetail(message, exception), exception), ct);
+	}
+
+	// Subscribers (the in-app Logs panel) render only Message, so an exception passed
+	// alongside it would be invisible - fold its detail into the text.
+	private static string AppendExceptionDetail(string message, Exception? exception)
+	{
+		if (exception == null)
+		{
+			return message;
+		}
+
+		var baseException = exception.GetBaseException();
+		var detail = ReferenceEquals(baseException, exception) || baseException.Message == exception.Message
+			? exception.Message
+			: $"{exception.Message} -> {baseException.Message}";
+		return $"{message} [{detail}]";
 	}
 
 	public void Enable()

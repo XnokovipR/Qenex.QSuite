@@ -718,7 +718,7 @@ public partial class ShellWindowModel
                 return;
             }
 
-            ReportProjectValidationFindings(projectData, Path.GetFileName(filePath));
+            var findings = ReportProjectValidationFindings(projectData, Path.GetFileName(filePath));
 
             await CloseProjectWorkspacesAsync();
             isEditProjectEnabled = false;
@@ -733,7 +733,7 @@ public partial class ShellWindowModel
             LoadProjectPythonInterpreter(projectData.WorkspaceLayout);
             LoadProjectVariableWatch(projectData.WorkspaceLayout);
             await Application.Current.Dispatcher.InvokeAsync(
-                () => LoadWorkspaceLayoutFromData(projectData.WorkspaceLayout),
+                () => LoadWorkspaceLayoutFromData(projectData.WorkspaceLayout, projectData.FailedWorkspaces.Count > 0),
                 DispatcherPriority.ApplicationIdle);
                 
             currentProjectFilePath = Path.GetFullPath(filePath);
@@ -743,7 +743,17 @@ public partial class ShellWindowModel
             RefreshVariableWatch();
             NotifyRuntimeCommandsCanExecuteChanged();
             RibbonReplayCommand.OnCanExecuteChanged();
-            logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\" opened.");
+            // Exactly one closing log line: clean open = Info, otherwise a single Warn
+            // carrying every finding (the details are not logged anywhere else).
+            if (findings.Count > 0)
+            {
+                logger.Log(LogLevel.Warn,
+                    $"Project file \"{Path.GetFileName(filePath)}\" opened with {findings.Count} issue(s): {string.Join(" | ", findings)}");
+            }
+            else
+            {
+                logger.Log(LogLevel.Info, $"Project file \"{Path.GetFileName(filePath)}\" opened.");
+            }
                 
         }
         catch (Exception e)
@@ -753,24 +763,21 @@ public partial class ShellWindowModel
     }
     
     // Consistency checks of the loaded project file (format version, plugin references,
-    // driver-protocol compatibility, variable references, missing script files). Findings
-    // go to the log and one Alert window; the project opens regardless.
-    private void ReportProjectValidationFindings(ProjectFilesData projectData, string fileName)
+    // driver-protocol compatibility, variable references, missing scripts, failed
+    // workspaces). Findings go into one Alert window; the caller folds them into the
+    // single closing log line. The project opens regardless.
+    private List<string> ReportProjectValidationFindings(ProjectFilesData projectData, string fileName)
     {
         const int maxAlertLines = 15;
 
         var findings = new List<string>(XmlModuleValidator.Validate(projectData.Module, driverPlugins, protocolPlugins));
         findings.AddRange(projectData.MissingScriptFiles.Select(scriptFile =>
             $"Script file \"{scriptFile}\" is listed in the project but missing in the project file."));
+        findings.AddRange(projectData.FailedWorkspaces);
 
         if (findings.Count == 0)
         {
-            return;
-        }
-
-        foreach (var finding in findings)
-        {
-            logger.Log(LogLevel.Warn, $"Project validation: {finding}");
+            return findings;
         }
 
         var alertLines = findings.Take(maxAlertLines).Select(finding => $"• {finding}");
@@ -786,6 +793,8 @@ public partial class ShellWindowModel
             Owner = Application.Current.MainWindow,
             DialogStartupLocation = WindowStartupLocation.CenterOwner
         });
+
+        return findings;
     }
 
     private async Task SaveProjectAsync(object obj)
@@ -1642,7 +1651,7 @@ public partial class ShellWindowModel
         }
     } 
 
-    private void LoadWorkspaceLayoutFromData(byte[]? workspaceLayoutData)
+    private void LoadWorkspaceLayoutFromData(byte[]? workspaceLayoutData, bool workspaceLoadFailed = false)
     {
         if (workspaceLayoutData == null || workspaceLayoutData.Length == 0)
         {
@@ -1658,6 +1667,13 @@ public partial class ShellWindowModel
         }
         catch (Exception e)
         {
+            if (workspaceLoadFailed)
+            {
+                // Expected cascade: the layout references panes of a workspace that was
+                // skipped; the single closing "opened with issue(s)" line names the cause.
+                return;
+            }
+
             logger.Log(LogLevel.Warn, "Open workspace layout from project file failed.", e);
         }
         finally
