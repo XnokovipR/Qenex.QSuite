@@ -89,7 +89,11 @@ public class IssDriver : DriverBase, ITransportSource<string>
         }
 
         runCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        runTask = RunLoopAsync(runCts.Token);
+        // Task.Run: the loop must not inherit the caller's (UI) SynchronizationContext —
+        // a blocked dispatcher (window drag, busy UI) would stall the whole session.
+        // Capture the token now: a racing StopAsync may null runCts before the loop starts.
+        var runToken = runCts.Token;
+        runTask = Task.Run(() => RunLoopAsync(runToken));
         SetState(CommunicationState.Running);
     }
 
