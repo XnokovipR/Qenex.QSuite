@@ -57,6 +57,16 @@ public interface IProtocolBase: ICoreCommunication, IComponentSpecification
     /// </summary>
     string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents);
 
+    /// <summary>
+    /// Called by the owning driver when the transport connection is lost (connected = false)
+    /// and again when it has been re-established (connected = true). Protocols that keep a live
+    /// session (e.g. an XCP CONNECT) use the "lost" signal to abandon the stale session at once
+    /// and re-establish it as soon as the transport is back, instead of discovering the loss
+    /// slowly through repeated command timeouts. Stateless request/response protocols can ignore
+    /// it. Invoked from the driver's run loop, so implementations must be quick and non-blocking.
+    /// </summary>
+    void OnTransportConnectionChanged(bool connected);
+
     IProtocolVariable? CreateProtocolVariable(IVariableBase variable, string commParams, bool isCommunicated);
     IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IVarEvent variableEvent, string id);
     IProtocolVariable? CreateProtocolVariable(IVariableBase variable, IEnumerable<IVarEvent> variableEvents, string commParams, bool isCommunicated);

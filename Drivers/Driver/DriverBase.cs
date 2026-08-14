@@ -61,6 +61,29 @@ public abstract class DriverBase : IDriverBase
         StateChanged?.Invoke(this, new CommunicationStateChangedEventArgs(previousState, state, message));
     }
 
+    /// <summary>
+    /// Tell every hosted protocol that the transport connection was lost (connected = false) or
+    /// re-established (connected = true). Drivers call this from their connect/reconnect logic so
+    /// a protocol with a live session can drop and re-establish it at once, instead of inferring
+    /// the loss from repeated command timeouts. A misbehaving protocol handler must not break the
+    /// driver's recovery, so exceptions are caught and logged.
+    /// </summary>
+    protected void NotifyProtocolsTransportConnectionChanged(bool connected)
+    {
+        foreach (var protocol in Protocols)
+        {
+            try
+            {
+                protocol.OnTransportConnectionChanged(connected);
+            }
+            catch (Exception e)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"Protocol '{protocol.Specification?.Name}' OnTransportConnectionChanged({connected}) threw: {e.Message}");
+            }
+        }
+    }
+
     #region Protocols
 
     public virtual void AddProtocol(IProtocolBase protocol)

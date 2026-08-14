@@ -159,6 +159,7 @@ public class TcpServer : DriverBase, ITransportSource<byte[]>
                 var endpoint = client.Client.RemoteEndPoint?.ToString() ?? "unknown";
                 Logger?.Log(LogLevel.Info, $"TCP server driver '{Label}': client {endpoint} connected.");
                 SetState(CommunicationState.Running, $"Client {endpoint} connected.");
+                NotifyProtocolsTransportConnectionChanged(true);
 
                 try
                 {
@@ -175,6 +176,7 @@ public class TcpServer : DriverBase, ITransportSource<byte[]>
                 }
                 finally
                 {
+                    NotifyProtocolsTransportConnectionChanged(false);
                     CloseClient();
                 }
             }

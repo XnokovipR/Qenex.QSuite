@@ -188,6 +188,7 @@ public class SerialDriver : DriverBase, IProtocolVariableCommandDriver, ITranspo
                 {
                     OpenPort();
                     SetTransmitters(SendChunkAsync);
+                    NotifyProtocolsTransportConnectionChanged(true);
 
                     if (!protocolsStarted)
                     {
@@ -221,6 +222,7 @@ public class SerialDriver : DriverBase, IProtocolVariableCommandDriver, ITranspo
                 }
                 finally
                 {
+                    NotifyProtocolsTransportConnectionChanged(false);
                     SetTransmitters(null);
                     ClosePort();
                 }

@@ -150,6 +150,7 @@ public class TcpClientDriver : DriverBase, IProtocolVariableCommandDriver, ITran
                     await ConnectAsync(ct);
                     reconnectAttempt = 0;
                     SetTransmitters(SendChunkAsync);
+                    NotifyProtocolsTransportConnectionChanged(true);
 
                     if (!protocolsStarted)
                     {
@@ -191,6 +192,7 @@ public class TcpClientDriver : DriverBase, IProtocolVariableCommandDriver, ITran
                 }
                 finally
                 {
+                    NotifyProtocolsTransportConnectionChanged(false);
                     SetTransmitters(null);
                     CloseClient();
                 }

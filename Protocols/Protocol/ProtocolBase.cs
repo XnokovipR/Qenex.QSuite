@@ -110,7 +110,15 @@ public abstract class ProtocolBase<T> : IProtocolBase
         StateMessage = message;
         StateChanged?.Invoke(this, new CommunicationStateChangedEventArgs(previousState, state, message));
     }
-    
+
+    /// <summary>
+    /// Base implementation ignores the transport connection change. Stateful protocols that keep
+    /// a live session (e.g. XCP) override this to drop and re-establish the session promptly.
+    /// </summary>
+    public virtual void OnTransportConnectionChanged(bool connected)
+    {
+    }
+
     #endregion
 
     #region Variables

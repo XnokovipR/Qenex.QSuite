@@ -36,6 +36,13 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
     private CancellationTokenSource? runCts;
     private Task? runTask;
 
+    // Transport connection state pushed down from the owning driver (OnTransportConnectionChanged).
+    // A lost transport cancels the current session at once so the loops stop polling a dead link;
+    // the run loop then waits here until the driver reports the transport back and re-CONNECTs.
+    private volatile bool transportConnected = true;
+    private readonly object sessionLock = new();
+    private CancellationTokenSource? sessionCts;
+
     /// <summary>Live session engine while a session is established; null otherwise. The receive
     /// path of the transport subclass forwards extracted XCP packets to it.</summary>
     protected XcpMaster? Master => master;
@@ -214,14 +221,35 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
         {
             while (!ct.IsCancellationRequested && !exitRequested)
             {
+                // Session-scoped token: cancelled either by the run token (stop) or by
+                // OnTransportConnectionChanged(false) (transport lost) so the session drops at once.
+                CancellationToken sct;
+                lock (sessionLock)
+                {
+                    sessionCts?.Dispose();
+                    sessionCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    sct = sessionCts.Token;
+                }
+
                 try
                 {
-                    await ConnectSessionAsync(ct);
-                    await RunSessionAsync(ct);
+                    await WaitForTransportAsync(ct);
+                    await ConnectSessionAsync(sct);
+                    await RunSessionAsync(sct);
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested || exitRequested)
+                {
+                    throw; // real stop — leave the loop
                 }
                 catch (OperationCanceledException)
                 {
-                    throw;
+                    // Session aborted because the transport was lost (sct cancelled, run token still
+                    // live). Drop the stale session and loop; WaitForTransportAsync blocks until the
+                    // driver reports the transport back, then a fresh CONNECT runs immediately.
+                    Logger?.Log(LogLevel.Info, "XCP: transport lost — session dropped, reconnecting when the transport is back.");
+                    SetState(CommunicationState.Faulted, "Transport lost — reconnecting.");
+                    await TryDisconnectAsync();
+                    master = null;
                 }
                 catch (XcpUnsupportedSlaveException e)
                 {
@@ -245,6 +273,12 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
         }
         finally
         {
+            lock (sessionLock)
+            {
+                sessionCts?.Dispose();
+                sessionCts = null;
+            }
+
             await TryDisconnectAsync();
             master = null;
             if (State != CommunicationState.Faulted)
@@ -252,6 +286,48 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                 SetState(CommunicationState.Stopped, stopMessage);
             }
             exitRequested = false;
+        }
+    }
+
+    /// <summary>
+    /// The owning driver reports transport loss/recovery here. A lost transport cancels the live
+    /// session at once (the run loop then re-CONNECTs as soon as the transport is back), so the
+    /// protocol no longer has to discover the loss through repeated command timeouts.
+    /// </summary>
+    public override void OnTransportConnectionChanged(bool connected)
+    {
+        transportConnected = connected;
+        if (connected)
+        {
+            return;
+        }
+
+        lock (sessionLock)
+        {
+            try
+            {
+                sessionCts?.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Session already torn down — nothing to cancel.
+            }
+        }
+    }
+
+    /// <summary>Blocks until the driver reports the transport connected, so a fresh CONNECT is
+    /// only attempted once there is a live transport to run it on.</summary>
+    private async Task WaitForTransportAsync(CancellationToken ct)
+    {
+        if (transportConnected)
+        {
+            return;
+        }
+
+        Logger?.Log(LogLevel.Debug, $"XCP: waiting for the {TransportName} transport to reconnect...");
+        while (!transportConnected)
+        {
+            await Task.Delay(SchedulerIdleMs, ct);
         }
     }
 

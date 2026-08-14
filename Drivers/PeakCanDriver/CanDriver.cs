@@ -236,6 +236,7 @@ public class CanDriver : DriverBase, IProtocolVariableCommandDriver, ITransportS
                 await protocol.StartAsync(ct);
             }
 
+            NotifyProtocolsTransportConnectionChanged(true);
             SetState(CommunicationState.Running);
 
             while (!ct.IsCancellationRequested && !exitRequested)
@@ -264,6 +265,7 @@ public class CanDriver : DriverBase, IProtocolVariableCommandDriver, ITransportS
         }
         finally
         {
+            NotifyProtocolsTransportConnectionChanged(false);
             foreach (var protocol in Protocols)
             {
                 await protocol.StopAsync(CancellationToken.None);
