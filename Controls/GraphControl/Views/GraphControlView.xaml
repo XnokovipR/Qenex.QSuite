@@ -91,7 +91,8 @@
                             AllowDrop="False"
                             ItemsSource="{Binding ChartVariables, Mode=TwoWay}"
                             SelectedItem="{Binding SelectedChartVariable, Mode=TwoWay}"
-                            ShowGroupPanel="False" 
+                            CanUserDeleteRows="False"
+                            ShowGroupPanel="False"
                             AutoGenerateColumns="False"
                             RowIndicatorVisibility="Collapsed">
                             
@@ -147,7 +148,8 @@
                             AllowDrop="False"
                             ItemsSource="{Binding VerticalAxes, Mode=TwoWay}"
                             SelectedItem="{Binding SelectedVerticalAxis, Mode=TwoWay}"
-                            ShowGroupPanel="False" 
+                            CanUserDeleteRows="False"
+                            ShowGroupPanel="False"
                             AutoGenerateColumns="False"
                             RowIndicatorVisibility="Collapsed">
                             
