@@ -121,10 +121,12 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 
 			if (!wasRun && isRun)
 			{
+				IsLocked = true;
 				OnEditToRun();
 			}
 			else if (wasRun && !isRun)
 			{
+				IsLocked = EditModeLock;
 				OnRunToEdit();
 			}
 		}
@@ -135,6 +137,9 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 	[DataMember]
 	public List<string> LinkedVariables { get; set; }
 
+	[IgnoreDataMember]
+	public bool EditModeLock { get; set; }
+
 	[DataMember]
 	public bool IsLocked
 	{
@@ -142,6 +147,10 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 		set
 		{
 			field = value;
+			if (!isRun)
+			{
+				EditModeLock = value;
+			}
 			OnPropertyChanged();
 			DiagramShape?.AllowDelete = !value;
 			DiagramShape?.AllowCut = !value;
@@ -258,6 +267,12 @@ public abstract class ControlBase : PropertyChangedBaseWithValidation, IControlB
 	{
 		Variables = [];
 		LinkedVariables = [];
+	}
+
+	[OnDeserialized]
+	private void OnDeserialized(StreamingContext context)
+	{
+		EditModeLock = IsLocked;
 	}
 
 	#endregion

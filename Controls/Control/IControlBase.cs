@@ -101,6 +101,13 @@ public interface IControlBase : IComponentSpecification
 	/// Indicates whether the control is locked for editing (moving, resizing, etc.).
 	/// </summary>
 	bool IsLocked { get; set; }
+
+	/// <summary>
+	/// Lock state chosen by the user in edit mode (the Lock tick). IsLocked is forced
+	/// true while running and restored from this value on return to edit mode.
+	/// </summary>
+	bool EditModeLock { get; set; }
+
 	bool IsRun { get; set; }
 	
 	/// <summary>
