@@ -10,6 +10,8 @@ namespace Qenex.QSuite.Controls.XYGraphControl.ViewModels;
 
 public class ChartVariable : PropertyChangedBase
 {
+    public const float MaxLineWidth = 20f;
+
     #region Constructors
 
     public ChartVariable()
@@ -51,7 +53,7 @@ public class ChartVariable : PropertyChangedBase
     
     public Color ChartColor { get; set { field = value; OnPropertyChanged(); ChartSignal?.Color = ToScottPlotColor(value); } }
     
-    public float LineWidth { get; set { field = value; OnPropertyChanged(); ChartSignal?.LineWidth = value; } }
+    public float LineWidth { get; set { field = Math.Min(value, MaxLineWidth); OnPropertyChanged(); ChartSignal?.LineWidth = field; } }
 
     public ChartLineStyle LineStyle
     {
