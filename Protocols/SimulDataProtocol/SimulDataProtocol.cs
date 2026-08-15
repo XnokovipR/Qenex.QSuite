@@ -11,12 +11,14 @@ using Qenex.QSuite.Variables.VariableEvents;
 namespace Qenex.QSuite.Protocols.SimulDataProtocol;
 
 /// <summary>
-/// Simulation source: generates five signal shapes (staircase sine, noisy staircase sine and
-/// three mean-reverting random walks) directly into its variables. Each variable is generated
+/// Simulation source: generates the signal shapes from SimulSignalCatalog (sines, random
+/// walks, LAOS strain/stress pair) directly into its variables. Each variable is generated
 /// in the period of its periodic event, mirroring the poll scheduling of the Modbus/XCP
-/// protocols; the hosting SimDataDriver only starts and stops the protocol.
+/// protocols; the hosting SimDataDriver only starts and stops the protocol. A variable with
+/// direction="write" is a live parameter, not a generated signal: the "nonlin" parameter
+/// drives the harmonic amplitudes of "laosstress" while the simulation runs.
 /// </summary>
-public class SimulDataProtocol : ProtocolBase<int>
+public class SimulDataProtocol : ProtocolBase<int>, IProtocolVariableWriteProtocol
 {
     private const int SchedulerIdleMs = 50;
 
@@ -32,7 +34,7 @@ public class SimulDataProtocol : ProtocolBase<int>
         {
             Name = "SimulDataProtocol",
             Label = "Simulation Signals",
-            Description = "Generates five test signal shapes; each variable in the period of its event. Use with the Simulation driver.",
+            Description = "Generates test signal shapes (sines, walks, LAOS strain/stress pair with a writable nonlinearity parameter); each variable in the period of its event. Use with the Simulation driver.",
             CreatedOn = new DateTime(2021, 11, 23),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
@@ -48,8 +50,9 @@ public class SimulDataProtocol : ProtocolBase<int>
     {
     }
 
-    // "signal" picks one of the five generators (step, noisystep, walk1, walk2, walk3);
-    // the generation rate comes from the referenced event.
+    // "signal" picks one of the catalog generators (step, noisystep, walk1-3, laosstrain,
+    // laosstress) or the writable "nonlin" parameter; optional amp=/freq=/nonlin= tune the
+    // generator, the generation rate comes from the referenced event.
     public override string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
     {
         return string.Join(";",
@@ -258,12 +261,21 @@ public class SimulDataProtocol : ProtocolBase<int>
     {
         var entries = new List<PollEntry>();
         var now = Environment.TickCount64;
+        var nonlinearityProvider = BuildNonlinearityProvider();
 
         foreach (var protocolVariable in Variables)
         {
             if (protocolVariable is not SimulDataProtocolVariable simulVariable ||
                 !simulVariable.IsCommunicated ||
                 simulVariable.ProtocolVariableSpecification is not SimulDataProtocolVariableSpecification spec)
+            {
+                continue;
+            }
+
+            // Parameter variables (the "nonlin" signal or any write/readwrite direction) are
+            // written by the user from controls and read by the generators — never generated
+            // over, whatever direction the configurator saved.
+            if (spec.Direction != CommDirection.Read || spec.Signal == SimulSignalCatalog.NonlinParamKey)
             {
                 continue;
             }
@@ -300,13 +312,33 @@ public class SimulDataProtocol : ProtocolBase<int>
             {
                 ProtocolVariable = simulVariable,
                 Scalar = scalarVariable,
-                Signal = SimulSignalCatalog.Create(ResolveSignalKey(spec, scalarVariable)),
+                Signal = SimulSignalCatalog.Create(ResolveSignalKey(spec, scalarVariable),
+                    new SimulSignalSettings(spec.Amplitude, spec.Frequency, spec.Nonlinearity, nonlinearityProvider)),
                 IntervalMs = intervalMs,
                 NextDueMs = now
             });
         }
 
         return entries;
+    }
+
+    /// <summary>
+    /// Live source of the LAOS nonlinearity: the current value of the writable "nonlin"
+    /// parameter variable, or null when the project has none (generators then fall back
+    /// to the nonlin= commParam value).
+    /// </summary>
+    private Func<double>? BuildNonlinearityProvider()
+    {
+        var parameterScalar = Variables
+            .OfType<SimulDataProtocolVariable>()
+            .Where(v => v.ProtocolVariableSpecification is SimulDataProtocolVariableSpecification
+            {
+                Signal: SimulSignalCatalog.NonlinParamKey
+            })
+            .Select(v => v.Variable as ScalarVariable)
+            .FirstOrDefault(scalar => scalar != null);
+
+        return parameterScalar == null ? null : () => GetSampleValue(parameterScalar);
     }
 
     private string ResolveSignalKey(SimulDataProtocolVariableSpecification spec, ScalarVariable scalarVariable)
@@ -331,6 +363,26 @@ public class SimulDataProtocol : ProtocolBase<int>
     {
         return scalarVariable.Values is Values<double> or Values<float> or Values<long> or Values<ulong>
             or Values<int> or Values<uint> or Values<short> or Values<ushort> or Values<byte> or Values<sbyte>;
+    }
+
+    // Inverse of SetSampleValue: reads the scalar's current raw value as double (used for
+    // live parameter variables).
+    private static double GetSampleValue(ScalarVariable scalarVariable)
+    {
+        return scalarVariable.Values switch
+        {
+            Values<double> doubleValues => doubleValues.Value,
+            Values<float> floatValues => floatValues.Value,
+            Values<long> longValues => longValues.Value,
+            Values<ulong> ulongValues => ulongValues.Value,
+            Values<int> intValues => intValues.Value,
+            Values<uint> uintValues => uintValues.Value,
+            Values<short> shortValues => shortValues.Value,
+            Values<ushort> ushortValues => ushortValues.Value,
+            Values<byte> byteValues => byteValues.Value,
+            Values<sbyte> sbyteValues => sbyteValues.Value,
+            _ => 0.0
+        };
     }
 
     // Values<T>.SetValue does not convert, so the generated double is rounded and clamped
@@ -370,6 +422,32 @@ public class SimulDataProtocol : ProtocolBase<int>
                 sbyteValues.Value = (sbyte)Math.Clamp(Math.Round(sample), sbyte.MinValue, sbyte.MaxValue);
                 break;
         }
+    }
+
+    #endregion
+
+    #region IProtocolVariableWriteProtocol
+
+    /// <summary>Writable are only this protocol's parameter variables (write or readwrite direction).</summary>
+    public bool CanWriteVariable(IProtocolVariable protocolVariable)
+    {
+        return Variables.Contains(protocolVariable)
+               && protocolVariable is SimulDataProtocolVariable
+               {
+                   ProtocolVariableSpecification: SimulDataProtocolVariableSpecification
+                   {
+                       Direction: CommDirection.Write or CommDirection.ReadWrite
+                   }
+               };
+    }
+
+    /// <summary>
+    /// Nothing to transfer: the written value already lives in the variable and the
+    /// generators read it from there on the next sample.
+    /// </summary>
+    public Task WriteVariableAsync(IProtocolVariable protocolVariable, CancellationToken ct = default)
+    {
+        return Task.CompletedTask;
     }
 
     #endregion

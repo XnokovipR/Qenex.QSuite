@@ -16,6 +16,11 @@ public class SimulDataProtocolVariableSpecification : ProtVariableSpecification
     /// <summary>Signal catalog key (see <see cref="SimulSignalCatalog"/>); empty = fallback by value type.</summary>
     public string Signal { get; set; } = string.Empty;
 
+    /// <summary>Optional generator overrides (amp=, freq=, nonlin=); null = signal default.</summary>
+    public double? Amplitude { get; set; }
+    public double? Frequency { get; set; }
+    public double? Nonlinearity { get; set; }
+
     public CommDirection Direction { get; set; } = CommDirection.Read;
 
     public static SimulDataProtocolVariableSpecification CreateDefault(IVarEvent? variableEvent, string id)
@@ -47,8 +52,22 @@ public class SimulDataProtocolVariableSpecification : ProtVariableSpecification
             VariableEvent = variableEvent,
             Direction = direction,
             Id = parameters.GetValueOrDefault("id", string.Empty),
-            Signal = parameters.GetValueOrDefault("signal", string.Empty).ToLowerInvariant()
+            Signal = parameters.GetValueOrDefault("signal", string.Empty).ToLowerInvariant(),
+            Amplitude = ParseDouble(parameters, "amp"),
+            Frequency = ParseDouble(parameters, "freq"),
+            Nonlinearity = ParseDouble(parameters, "nonlin")
         };
+    }
+
+    // Tolerant like the direction parsing: an unparsable number falls back to the signal
+    // default instead of knocking the variable out of communication.
+    private static double? ParseDouble(Dictionary<string, string> parameters, string key)
+    {
+        return parameters.TryGetValue(key, out var text)
+               && double.TryParse(text, System.Globalization.NumberStyles.Float,
+                   System.Globalization.CultureInfo.InvariantCulture, out var value)
+            ? value
+            : null;
     }
 
     private static Dictionary<string, string> ParseCommParams(string commParams)
