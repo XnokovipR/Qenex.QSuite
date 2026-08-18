@@ -454,6 +454,8 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 		    Timestamp = variable.Timestamp,
 		    CommComponents = variable.CommComponents,
 		    Size = variable.Size,
+		    BitShift = variable.BitShift,
+		    BitMask = variable.BitMask,
 		    Values = values
 	    };
     }

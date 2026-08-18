@@ -28,6 +28,8 @@ public static class XmlVariableMapper
                     Label = scalarVariable.Label,
                     Description = scalarVariable.Description,
                     Size = scalarVariable.Size,
+                    BitShift = scalarVariable.BitShift != 0 ? ScalarVariable.FormatBitShift(scalarVariable.BitShift) : null,
+                    BitMask = scalarVariable.BitMask != 0 ? ScalarVariable.FormatBitMask(scalarVariable.BitMask) : null,
                     Values = new XmlValues
                     {
                         DataType = Enum.Parse<XmlValuesDataType>(scalarVariable.Values.ValueType.ToString()),
@@ -108,6 +110,24 @@ public static class XmlVariableMapper
                 {
                     scalarVariable.Size = xmlScalarVariable.Size;
                     scalarVariable.Values = CreateScalarValues(presentationList, xmlScalarVariable.Values, logger);
+
+                    if (ScalarVariable.TryParseBitShift(xmlScalarVariable.BitShift, out var bitShift))
+                    {
+                        scalarVariable.BitShift = bitShift;
+                    }
+                    else
+                    {
+                        logger?.Log(LogLevel.Warn, $"Variable {scalarVariable.Name}: invalid bitShift \"{xmlScalarVariable.BitShift}\" ignored.");
+                    }
+
+                    if (ScalarVariable.TryParseBitMask(xmlScalarVariable.BitMask, out var bitMask))
+                    {
+                        scalarVariable.BitMask = bitMask;
+                    }
+                    else
+                    {
+                        logger?.Log(LogLevel.Warn, $"Variable {scalarVariable.Name}: invalid bitMask \"{xmlScalarVariable.BitMask}\" ignored.");
+                    }
                 }
                 else if (variable is MatrixVariable matrixVariable && xmlVariable is XmlMatrixVariable xmlMatrixVariable)
                 {

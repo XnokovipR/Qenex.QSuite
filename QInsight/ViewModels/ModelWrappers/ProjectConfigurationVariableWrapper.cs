@@ -132,6 +132,24 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
                 value => UpdateScalarState(s => s with { ValueType = Parse<ValuesGlobal.ValueDataType>(value) }),
                 ValuesGlobal.ValueDataTypeDict.Keys.Select(valueType => valueType.ToString())));
             properties.Add(Create("Values", "Length", () => currentState.ScalarState.Length, value => UpdateScalarState(s => s with { Length = Parse<int>(value) })));
+            // Bit field (A2L BIT_MASK style): applied between the raw word and the conversion.
+            // Shift = direction combo (>> right / << left) + bit count; mask is typed as hex (0x0F) or
+            // decimal (15) and only validated here so a typo shows as the row error.
+            properties.Add(Create(
+                    "Values",
+                    "Bit Shift",
+                    () => currentState.ScalarState.BitShiftCount,
+                    value => UpdateScalarState(s => s with { BitShiftCount = ParseBitShiftCount(value) }))
+                .SetPrefix(
+                    [ShiftRightText, ShiftLeftText],
+                    () => currentState.ScalarState.BitShiftLeft ? ShiftLeftText : ShiftRightText,
+                    value => UpdateScalarState(s => s with { BitShiftLeft = value.Trim() == ShiftLeftText })));
+            properties.Add(Create(
+                    "Values",
+                    "Bit Mask",
+                    () => currentState.ScalarState.BitMask,
+                    value => UpdateScalarState(s => s with { BitMask = ValidateBitMask(value) }))
+                .SetUpdateOnLostFocus());
             presentationProperty = Create(
                 "Values",
                 "Presentation",
@@ -258,6 +276,39 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
         scalarVariable.Values.ValPresentation = string.IsNullOrWhiteSpace(state.PresentationName)
             ? null!
             : presentations.First(presentation => presentation.Name.Equals(state.PresentationName, StringComparison.OrdinalIgnoreCase));
+
+        ScalarVariable.TryParseBitMask(state.BitMask, out var bitMask);
+        scalarVariable.BitShift = state.BitShiftLeft ? -state.BitShiftCount : state.BitShiftCount;
+        scalarVariable.BitMask = bitMask;
+    }
+
+    private const string ShiftRightText = ">>";
+    private const string ShiftLeftText = "<<";
+
+    private static int ParseBitShiftCount(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return 0;
+        }
+
+        if (!int.TryParse(value.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var count) || count > 63)
+        {
+            throw new ArgumentException("Bit Shift must be a number of bits 0..63.");
+        }
+
+        return count;
+    }
+
+    // The text stays as the user typed it ("0x0F" = hex, "15" = decimal); it is only validated here.
+    private static string ValidateBitMask(string value)
+    {
+        if (!ScalarVariable.TryParseBitMask(value, out _))
+        {
+            throw new ArgumentException("Bit Mask must be a hex (0x0F) or decimal (15) number, or empty.");
+        }
+
+        return value.Trim();
     }
 
     /// <summary>
@@ -407,14 +458,20 @@ public class ProjectConfigurationVariableWrapper : PropertyChangedBase
     private sealed record ScalarVariableState(
         ValuesGlobal.ValueDataType ValueType,
         int Length,
-        string PresentationName)
+        string PresentationName,
+        bool BitShiftLeft,
+        int BitShiftCount,
+        string BitMask)
     {
         public static ScalarVariableState FromScalarVariable(ScalarVariable scalarVariable)
         {
             return new ScalarVariableState(
                 scalarVariable.Values.ValueType,
                 scalarVariable.Values.Length,
-                scalarVariable.Values.ValPresentation?.Name ?? string.Empty);
+                scalarVariable.Values.ValPresentation?.Name ?? string.Empty,
+                scalarVariable.BitShift < 0,
+                Math.Abs(scalarVariable.BitShift),
+                ScalarVariable.FormatBitMask(scalarVariable.BitMask));
         }
     }
 }

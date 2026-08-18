@@ -562,23 +562,50 @@
                                             VerticalAlignment="Center"
                                             Text="{Binding Name}"/>
 
-                                        <Grid Grid.Column="1">
-                                            <q:QTextBox
-                                                x:Name="ValueTextBox"
-                                                Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                ToolTip="{Binding Error}"/>
+                                        <DockPanel Grid.Column="1">
+                                            <!-- Optional selector in front of the value on the same row
+                                                 (e.g. bit shift direction before the bit count). -->
                                             <telerik:RadComboBox
-                                                x:Name="ValueComboBox"
+                                                x:Name="PrefixComboBox"
+                                                DockPanel.Dock="Left"
+                                                Width="64"
+                                                Margin="0,0,6,0"
                                                 Visibility="Collapsed"
-                                                ItemsSource="{Binding Options}"
-                                                SelectedItem="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                ItemsSource="{Binding PrefixOptions}"
+                                                SelectedItem="{Binding PrefixText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                 ToolTip="{Binding Error}"/>
-                                        </Grid>
+                                            <Grid>
+                                                <q:QTextBox
+                                                    x:Name="ValueTextBox"
+                                                    Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    ToolTip="{Binding Error}"/>
+                                                <!-- Free-form values (e.g. bit mask 0x0F / 15) are committed and
+                                                     validated only when the field loses focus. -->
+                                                <q:QTextBox
+                                                    x:Name="ValueTextBoxLostFocus"
+                                                    Visibility="Collapsed"
+                                                    Text="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                    ToolTip="{Binding Error}"/>
+                                                <telerik:RadComboBox
+                                                    x:Name="ValueComboBox"
+                                                    Visibility="Collapsed"
+                                                    ItemsSource="{Binding Options}"
+                                                    SelectedItem="{Binding ValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    ToolTip="{Binding Error}"/>
+                                            </Grid>
+                                        </DockPanel>
                                     </Grid>
                                     <DataTemplate.Triggers>
                                         <DataTrigger Binding="{Binding HasOptions}" Value="True">
                                             <Setter TargetName="ValueTextBox" Property="Visibility" Value="Collapsed"/>
                                             <Setter TargetName="ValueComboBox" Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding HasPrefixOptions}" Value="True">
+                                            <Setter TargetName="PrefixComboBox" Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding UpdateOnLostFocus}" Value="True">
+                                            <Setter TargetName="ValueTextBox" Property="Visibility" Value="Collapsed"/>
+                                            <Setter TargetName="ValueTextBoxLostFocus" Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
