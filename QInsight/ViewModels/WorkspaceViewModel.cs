@@ -1,8 +1,10 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Qenex.QInsight.AppConfig;
 using Qenex.QInsight.DragDrop;
 using Qenex.QInsight.EventAggregatorMsgs;
@@ -31,10 +33,14 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     private static readonly Brush DarkBackgroundColor = new SolidColorBrush(Color.FromRgb(40, 40, 40));
     private static readonly Brush LightBackgroundColor = new SolidColorBrush(Colors.White);
     
+    private const int SamplePumpIntervalMs = 33;
+
     private bool isViewLoaded;
     private List<ControlBase> controlsToLoad = [];
     private List<IProtocolVariable> activeProtocolVariables = [];
-    private readonly List<(ControlBase Control, IProtocolVariable ProtocolVariable, Func<IProtocolVariable, Task> Handler)> loadedVariableSubscriptions = [];
+    private readonly List<ControlVariableFeed> loadedVariableSubscriptions = [];
+    private DispatcherTimer? samplePumpTimer;
+    private bool samplePumpDraining;
 
     #endregion
     
@@ -648,22 +654,37 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 
     private void UnsubscribeLoadedControlVariables()
     {
-	    foreach (var subscription in loadedVariableSubscriptions)
+	    StopSamplePump();
+	    // The subscription list is mutated from bind/unbind paths (UI or runtime start) while
+	    // the sample pump tick snapshots it on the UI thread — hence the lock on every access.
+	    lock (loadedVariableSubscriptions)
 	    {
-		    subscription.ProtocolVariable.UnsubscribeAsyncValueChanged(subscription.Handler);
-	    }
+		    foreach (var subscription in loadedVariableSubscriptions)
+		    {
+			    subscription.ProtocolVariable.UnsubscribeAsyncValueChanged(subscription.Handler);
+		    }
 
-	    loadedVariableSubscriptions.Clear();
+		    loadedVariableSubscriptions.Clear();
+	    }
     }
 
     private void SubscribeControlVariable(ControlBase control, IProtocolVariable protocolVariable)
     {
-	    if (loadedVariableSubscriptions.Any(s =>
-		    ReferenceEquals(s.Control, control) && ReferenceEquals(s.ProtocolVariable, protocolVariable)))
+	    lock (loadedVariableSubscriptions)
 	    {
-		    return;
+		    if (loadedVariableSubscriptions.Any(s =>
+			    ReferenceEquals(s.Control, control) && ReferenceEquals(s.ProtocolVariable, protocolVariable)))
+		    {
+			    return;
+		    }
 	    }
 
+	    ControlVariableFeed feed = null!;
+	    // The protocol side must never wait for the UI. Off the UI thread the handler only
+	    // freezes the sample (snapshot) and enqueues it for the sample pump; the returned task
+	    // is already completed, so DAQ/poll loops run at their own pace whatever the UI does.
+	    // On the UI thread (operator writes, headless tests without a dispatcher) it updates
+	    // directly so the immediate write feedback stays.
 	    Func<IProtocolVariable, Task> handler = changedProtocolVariable =>
 	    {
 		    var variableSnapshot = CreateVariableSnapshot(changedProtocolVariable.Variable);
@@ -672,14 +693,178 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
 			    return control.UpdateVariableValueAsync(variableSnapshot);
 		    }
 
-		    return Application.Current.Dispatcher
-			    .InvokeAsync(() => control.UpdateVariableValueAsync(variableSnapshot))
-			    .Task
-			    .Unwrap();
+		    feed.Enqueue(variableSnapshot);
+		    return Task.CompletedTask;
+	    };
+
+	    feed = new ControlVariableFeed(keepHistory: control is ISampleHistoryControl)
+	    {
+		    Control = control,
+		    ProtocolVariable = protocolVariable,
+		    Handler = handler
 	    };
 
 	    protocolVariable.SubscribeAsyncValueChanged(handler);
-	    loadedVariableSubscriptions.Add((control, protocolVariable, handler));
+	    lock (loadedVariableSubscriptions)
+	    {
+		    loadedVariableSubscriptions.Add(feed);
+	    }
+
+	    EnsureSamplePumpRunning();
+    }
+
+    private void EnsureSamplePumpRunning()
+    {
+	    if (samplePumpTimer != null)
+	    {
+		    return;
+	    }
+
+	    // No dispatcher = headless run (tests); the subscribe handler then updates directly.
+	    var uiDispatcher = Application.Current?.Dispatcher;
+	    if (uiDispatcher == null)
+	    {
+		    return;
+	    }
+
+	    // Explicitly bound to the APPLICATION dispatcher: subscriptions are also created from
+	    // runtime-start paths off the UI thread, and a timer created there would silently bind
+	    // to a worker dispatcher that never pumps — no tick, no updates. This ctor overload is
+	    // safe to call from any thread and starts the timer itself.
+	    // Background priority: queued samples never outrank user input — that inversion (one
+	    // dispatcher operation per sample at Normal priority) is what froze the UI when two
+	    // boards streamed 10ms DAQ at once.
+	    samplePumpTimer = new DispatcherTimer(
+		    TimeSpan.FromMilliseconds(SamplePumpIntervalMs),
+		    DispatcherPriority.Background,
+		    OnSamplePumpTick,
+		    uiDispatcher);
+    }
+
+    private void StopSamplePump()
+    {
+	    var timer = samplePumpTimer;
+	    if (timer == null)
+	    {
+		    return;
+	    }
+
+	    samplePumpTimer = null;
+	    // Stop on the timer's own dispatcher — this method is also reached from runtime
+	    // start/stop paths off the UI thread and DispatcherTimer is not thread-safe.
+	    if (timer.Dispatcher.CheckAccess())
+	    {
+		    timer.Stop();
+		    timer.Tick -= OnSamplePumpTick;
+	    }
+	    else
+	    {
+		    timer.Dispatcher.InvokeAsync(() =>
+		    {
+			    timer.Stop();
+			    timer.Tick -= OnSamplePumpTick;
+		    });
+	    }
+    }
+
+    private async void OnSamplePumpTick(object? sender, EventArgs e)
+    {
+	    if (samplePumpDraining)
+	    {
+		    return; // a slow previous drain is still awaiting; skip this tick instead of nesting
+	    }
+
+	    samplePumpDraining = true;
+	    try
+	    {
+		    // Copy under the lock: bind/unbind may mutate the list from another thread, and an
+		    // awaited control update may pump nested messages that rebind controls mid-loop.
+		    ControlVariableFeed[] feeds;
+		    lock (loadedVariableSubscriptions)
+		    {
+			    feeds = loadedVariableSubscriptions.ToArray();
+		    }
+
+		    foreach (var feed in feeds)
+		    {
+			    var dropped = feed.TakeDroppedSamples();
+			    if (dropped > 0)
+			    {
+				    EventAggregator.Publish(new LogMessage(LogLevel.Warn,
+					    $"{GetControlDisplayName(feed.Control)}: UI stalled — dropped {dropped} oldest sample(s) of '{feed.ProtocolVariable.Variable.Name}'."));
+			    }
+
+			    await feed.DrainAsync();
+		    }
+	    }
+	    catch (Exception exception)
+	    {
+		    EventAggregator.Publish(new LogMessage(LogLevel.Error, $"Workspace sample pump failed: {exception.Message}"));
+	    }
+	    finally
+	    {
+		    samplePumpDraining = false;
+	    }
+    }
+
+    /// <summary>
+    /// Per (control, variable) feed decoupling protocols from the UI: the protocol thread only
+    /// enqueues a frozen snapshot, the sample pump delivers on its UI tick. History feeds
+    /// (ISampleHistoryControl — graphs, XY, signal peaks) keep every sample in order, bounded
+    /// with drop-oldest; other controls keep only the latest pending sample.
+    /// </summary>
+    private sealed class ControlVariableFeed(bool keepHistory)
+    {
+	    // ~200 s of one 100 Hz DAQ signal; past this the UI has been stalled for minutes and
+	    // dropping the oldest samples beats growing without bound.
+	    private const int HistoryCapacity = 20_000;
+
+	    public required ControlBase Control { get; init; }
+	    public required IProtocolVariable ProtocolVariable { get; init; }
+	    public required Func<IProtocolVariable, Task> Handler { get; init; }
+
+	    private readonly ConcurrentQueue<IVariableBase>? history = keepHistory ? new ConcurrentQueue<IVariableBase>() : null;
+	    private IVariableBase? latest;
+	    private int historyCount;
+	    private int droppedSamples;
+
+	    public void Enqueue(IVariableBase snapshot)
+	    {
+		    if (history == null)
+		    {
+			    Volatile.Write(ref latest, snapshot);
+			    return;
+		    }
+
+		    history.Enqueue(snapshot);
+		    if (Interlocked.Increment(ref historyCount) > HistoryCapacity && history.TryDequeue(out _))
+		    {
+			    Interlocked.Decrement(ref historyCount);
+			    Interlocked.Increment(ref droppedSamples);
+		    }
+	    }
+
+	    public async Task DrainAsync()
+	    {
+		    if (history == null)
+		    {
+			    var snapshot = Interlocked.Exchange(ref latest, null);
+			    if (snapshot != null)
+			    {
+				    await Control.UpdateVariableValueAsync(snapshot);
+			    }
+
+			    return;
+		    }
+
+		    while (history.TryDequeue(out var snapshot))
+		    {
+			    Interlocked.Decrement(ref historyCount);
+			    await Control.UpdateVariableValueAsync(snapshot);
+		    }
+	    }
+
+	    public int TakeDroppedSamples() => Interlocked.Exchange(ref droppedSamples, 0);
     }
 
     /// <summary>
@@ -689,13 +874,22 @@ public class WorkspaceViewModel : WorkspaceViewModelBase
     private void PruneControlSubscriptions(ControlBase control)
     {
 	    var currentReferences = GetControlVariableReferences(control).ToHashSet();
-	    foreach (var subscription in loadedVariableSubscriptions
+	    List<ControlVariableFeed> staleSubscriptions;
+	    lock (loadedVariableSubscriptions)
+	    {
+		    staleSubscriptions = loadedVariableSubscriptions
 			    .Where(s => ReferenceEquals(s.Control, control)
 			        && !currentReferences.Contains(ControlBase.GetVariableReference(s.ProtocolVariable.Variable)))
-			    .ToList())
+			    .ToList();
+	    }
+
+	    foreach (var subscription in staleSubscriptions)
 	    {
 		    subscription.ProtocolVariable.UnsubscribeAsyncValueChanged(subscription.Handler);
-		    loadedVariableSubscriptions.Remove(subscription);
+		    lock (loadedVariableSubscriptions)
+		    {
+			    loadedVariableSubscriptions.Remove(subscription);
+		    }
 	    }
     }
 

@@ -24,7 +24,7 @@ using Telerik.Windows.Controls.FileDialogs;
 namespace Qenex.QSuite.Controls.XYGraphControl.ViewModels;
 
 [DataContract]
-public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVariableReferenceProvider, ILogAwareControl
+public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVariableReferenceProvider, ILogAwareControl, ISampleHistoryControl
 {
     #region Const
 

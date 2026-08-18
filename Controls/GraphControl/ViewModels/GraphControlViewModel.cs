@@ -24,7 +24,7 @@ using Telerik.Windows.Controls.FileDialogs;
 namespace Qenex.QSuite.Controls.GraphControl.ViewModels;
 
 [DataContract]
-public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialogAwareControl, IVariableReferenceProvider, ILogAwareControl
+public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialogAwareControl, IVariableReferenceProvider, ILogAwareControl, ISampleHistoryControl
 {
     #region Const
 

@@ -10,7 +10,7 @@ using Qenex.QSuite.Variables.QVariables;
 namespace Qenex.QSuite.Controls.SignalControl.ViewModels;
 
 [DataContract]
-public class SignalControlViewModel : ControlBase, IVariableWriteControl
+public class SignalControlViewModel : ControlBase, IVariableWriteControl, ISampleHistoryControl
 {
 	private DateTime previousUpdateTime = DateTime.MinValue;
 	private double prevValue;
