@@ -51,22 +51,37 @@
 			<RowDefinition Height="Auto"/>
 			<RowDefinition Height="*"/>
 		</Grid.RowDefinitions>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="Auto"/>
+			<ColumnDefinition Width="*"/>
+		</Grid.ColumnDefinitions>
 
 		<!-- Settings -->
-		<telerik:RadExpander Grid.Row="0" Style="{StaticResource SquareExpanderStyle}" HorizontalAlignment="Left">
+		<telerik:RadExpander Grid.Row="0" Grid.Column="0" Style="{StaticResource SquareExpanderStyle}" HorizontalAlignment="Left">
 			<Grid Margin="5">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="Auto"/>
 					<ColumnDefinition Width="Auto"/>
 				</Grid.ColumnDefinitions>
-				<q:QTextBlock Grid.Column="0" Text="Refresh [ms]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
-				<q:QTextBox Grid.Column="1" Text="{Binding RefreshTime, Mode=TwoWay}"
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
+				<q:QTextBlock Grid.Column="0" Grid.Row="0" Text="Refresh [ms]:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Column="1" Grid.Row="0" Text="{Binding RefreshTime, Mode=TwoWay}"
 				            Margin="8,3,0,0" Width="60" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+
+				<q:QTextBlock Grid.Column="0" Grid.Row="1" Text="Title:" Margin="0,3,0,0" HorizontalAlignment="Left"/>
+				<q:QTextBox Grid.Column="1" Grid.Row="1" Text="{Binding Title, Mode=TwoWay}"
+				            Margin="8,3,0,0" HorizontalAlignment="Left" Height="20" Width="180"/>
 			</Grid>
 		</telerik:RadExpander>
 
+		<q:QTextBlock Grid.Row="0" Grid.Column="1" Margin="10,3,0,0" Text="{Binding Title, Mode=TwoWay}"
+		              HorizontalAlignment="Center" Background="Transparent"/>
+
 		<!-- Bound variables table -->
-		<telerik:RadGridView Grid.Row="1"
+		<telerik:RadGridView Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
 		                     behaviors:ColumnLayoutBehavior.IsEnabled="True"
 		                     behaviors:ColumnLayoutBehavior.Layout="{Binding ColumnLayout, Mode=TwoWay}"
 		                     ItemsSource="{Binding Rows}"

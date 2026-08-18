@@ -101,6 +101,9 @@ public class WatchTableControlViewModel : ControlBase, IVariableWriteControl
 		}
 	} = 250;
 
+	[DataMember]
+	public string Title { get; set { field = value; OnPropertyChanged(); } } = string.Empty;
+
 	/// <summary>Column layout (order + width + visibility) captured from the grid by
 	/// ColumnLayoutBehavior. Serialized into the project and re-applied after load.</summary>
 	[DataMember]
