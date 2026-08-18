@@ -14,9 +14,12 @@ namespace Qenex.QSuite.Protocols.SimulDataProtocol;
 /// Simulation source: generates the signal shapes from SimulSignalCatalog (sines, random
 /// walks, LAOS strain/stress pair) directly into its variables. Each variable is generated
 /// in the period of its periodic event, mirroring the poll scheduling of the Modbus/XCP
-/// protocols; the hosting SimDataDriver only starts and stops the protocol. A variable with
-/// direction="write" is a live parameter, not a generated signal: the "nonlin" parameter
-/// drives the harmonic amplitudes of "laosstress" while the simulation runs.
+/// protocols; the hosting SimDataDriver only starts and stops the protocol. A scalar with
+/// direction="write" is a live parameter, not a generated signal: "nonlin" drives the harmonic
+/// amplitudes of "laosstress", "h1amp".."h4amp"/"h1freq".."h4freq"/"h1phase".."h4phase" tune single harmonics and
+/// "hold" freezes the matrix generators while the simulation runs. A MatrixVariable with the
+/// "thermal" signal is generated as a whole table (axes + data) and, with direction="readWrite",
+/// its cells can be edited from the Matrix control (the edit lands in the raw buffer directly).
 /// </summary>
 public class SimulDataProtocol : ProtocolBase<int>, IProtocolVariableWriteProtocol
 {
@@ -34,7 +37,7 @@ public class SimulDataProtocol : ProtocolBase<int>, IProtocolVariableWriteProtoc
         {
             Name = "SimulDataProtocol",
             Label = "Simulation Signals",
-            Description = "Generates test signal shapes (sines, walks, LAOS strain/stress pair with a writable nonlinearity parameter); each variable in the period of its event. Use with the Simulation driver.",
+            Description = "Generates test signal shapes (sines, walks, LAOS strain/stress pair with writable nonlinearity and per-harmonic amplitude/frequency/phase parameters, thermal-field matrix with a hold parameter); each variable in the period of its event. Use with the Simulation driver.",
             CreatedOn = new DateTime(2021, 11, 23),
             Version = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0),
             Author = "Qenex",
@@ -51,8 +54,9 @@ public class SimulDataProtocol : ProtocolBase<int>, IProtocolVariableWriteProtoc
     }
 
     // "signal" picks one of the catalog generators (step, noisystep, walk1-3, laosstrain,
-    // laosstress) or the writable "nonlin" parameter; optional amp=/freq=/nonlin= tune the
-    // generator, the generation rate comes from the referenced event.
+    // laosstress; thermal for a matrix) or a writable parameter (nonlin, hold, h1amp..h4amp,
+    // h1freq..h4freq, h1phase..h4phase; optional init= power-on default); optional
+    // amp=/freq=/nonlin= tune the generator, the generation rate comes from the referenced event.
     public override string CreateDefaultCommParam(IVariableBase variable, IEnumerable<IVarEvent> variableEvents)
     {
         return string.Join(";",
@@ -189,8 +193,14 @@ public class SimulDataProtocol : ProtocolBase<int>, IProtocolVariableWriteProtoc
     private sealed class PollEntry
     {
         public required SimulDataProtocolVariable ProtocolVariable { get; init; }
-        public required ScalarVariable Scalar { get; init; }
-        public required ISimulSignal Signal { get; init; }
+        public required IVariableBase Variable { get; init; }
+
+        /// <summary>Writes the next sample (scalar) or table (matrix) into the variable for time t [s].</summary>
+        public required Action<double> Generate { get; init; }
+
+        /// <summary>Optional live gate: true = skip this cycle (matrix "hold" parameter).</summary>
+        public Func<bool>? IsHeld { get; init; }
+
         public required long IntervalMs { get; init; }
         public long NextDueMs { get; set; }
     }
@@ -199,6 +209,7 @@ public class SimulDataProtocol : ProtocolBase<int>, IProtocolVariableWriteProtoc
     {
         try
         {
+            await ApplyParameterInitialValuesAsync();
             var entries = BuildPollEntries();
             SetState(CommunicationState.Running, $"Simulation: generating {entries.Count} signal(s).");
 
@@ -223,10 +234,12 @@ public class SimulDataProtocol : ProtocolBase<int>, IProtocolVariableWriteProtoc
                     }
 
                     anyDue = true;
-                    var sample = entry.Signal.Next(clock.Elapsed.TotalSeconds);
-                    SetSampleValue(entry.Scalar, sample);
-                    entry.Scalar.Timestamp = DateTime.UtcNow;
-                    await entry.ProtocolVariable.NotifyValueChangedAsync();
+                    if (entry.IsHeld?.Invoke() != true)
+                    {
+                        entry.Generate(clock.Elapsed.TotalSeconds);
+                        entry.Variable.Timestamp = DateTime.UtcNow;
+                        await entry.ProtocolVariable.NotifyValueChangedAsync();
+                    }
 
                     // Absolute anchoring keeps the average rate exactly on the event period even
                     // though Task.Delay wakes late (Windows timer granularity); a variable that
@@ -261,7 +274,7 @@ public class SimulDataProtocol : ProtocolBase<int>, IProtocolVariableWriteProtoc
     {
         var entries = new List<PollEntry>();
         var now = Environment.TickCount64;
-        var nonlinearityProvider = BuildNonlinearityProvider();
+        var parameterProvider = BuildParameterProvider();
 
         foreach (var protocolVariable in Variables)
         {
@@ -272,24 +285,25 @@ public class SimulDataProtocol : ProtocolBase<int>, IProtocolVariableWriteProtoc
                 continue;
             }
 
-            // Parameter variables (the "nonlin" signal or any write/readwrite direction) are
-            // written by the user from controls and read by the generators — never generated
-            // over, whatever direction the configurator saved.
-            if (spec.Direction != CommDirection.Read || spec.Signal == SimulSignalCatalog.NonlinParamKey)
+            // Parameter variables (nonlin, hold, h{n}amp/h{n}freq/h{n}phase — or any scalar with a
+            // write/readwrite direction) are written by the user from controls and read by the
+            // generators — never generated over, whatever direction the configurator saved.
+            var isMatrix = simulVariable.Variable is MatrixVariable;
+            if (SimulSignalCatalog.IsParameterKey(spec.Signal) || (!isMatrix && spec.Direction != CommDirection.Read))
             {
                 continue;
             }
 
-            if (simulVariable.Variable is not ScalarVariable scalarVariable)
+            // A matrix is generated when readable (read/readWrite); write-only means user data only.
+            if (isMatrix && spec.Direction == CommDirection.Write)
             {
-                Logger?.Log(LogLevel.Warn, $"Simulation: variable '{simulVariable.Variable.Name}' is not scalar; not generated.");
                 continue;
             }
 
             if (spec.VariableEvent is not PeriodicVarEvent periodicEvent)
             {
                 Logger?.Log(LogLevel.Warn,
-                    $"Simulation: variable '{scalarVariable.Name}' has no periodic event ('{spec.VariableEvent?.Name}'); not generated.");
+                    $"Simulation: variable '{simulVariable.Variable.Name}' has no periodic event ('{spec.VariableEvent?.Name}'); not generated.");
                 continue;
             }
 
@@ -297,48 +311,127 @@ public class SimulDataProtocol : ProtocolBase<int>, IProtocolVariableWriteProtoc
             if (intervalMs <= 0)
             {
                 Logger?.Log(LogLevel.Warn,
-                    $"Simulation: variable '{scalarVariable.Name}' has a non-positive period; not generated.");
+                    $"Simulation: variable '{simulVariable.Variable.Name}' has a non-positive period; not generated.");
                 continue;
             }
 
-            if (!SupportsValues(scalarVariable))
-            {
-                Logger?.Log(LogLevel.Warn,
-                    $"Simulation: variable '{scalarVariable.Name}' has an unsupported value type; not generated.");
-                continue;
-            }
+            var settings = new SimulSignalSettings(spec.Amplitude, spec.Frequency, spec.Nonlinearity, parameterProvider);
 
-            entries.Add(new PollEntry
+            switch (simulVariable.Variable)
             {
-                ProtocolVariable = simulVariable,
-                Scalar = scalarVariable,
-                Signal = SimulSignalCatalog.Create(ResolveSignalKey(spec, scalarVariable),
-                    new SimulSignalSettings(spec.Amplitude, spec.Frequency, spec.Nonlinearity, nonlinearityProvider)),
-                IntervalMs = intervalMs,
-                NextDueMs = now
-            });
+                case ScalarVariable scalarVariable:
+                {
+                    if (!SupportsValues(scalarVariable))
+                    {
+                        Logger?.Log(LogLevel.Warn,
+                            $"Simulation: variable '{scalarVariable.Name}' has an unsupported value type; not generated.");
+                        continue;
+                    }
+
+                    var signal = SimulSignalCatalog.Create(ResolveSignalKey(spec, scalarVariable), settings);
+                    entries.Add(new PollEntry
+                    {
+                        ProtocolVariable = simulVariable,
+                        Variable = scalarVariable,
+                        Generate = t => SetSampleValue(scalarVariable, signal.Next(t)),
+                        IntervalMs = intervalMs,
+                        NextDueMs = now
+                    });
+                    break;
+                }
+
+                case MatrixVariable matrixVariable:
+                {
+                    if (!SimulSignalCatalog.IsMatrixKey(spec.Signal))
+                    {
+                        Logger?.Log(LogLevel.Warn,
+                            $"Simulation: matrix variable '{matrixVariable.Name}' needs a matrix signal " +
+                            $"('{SimulSignalCatalog.ThermalMatrixKey}'), got '{spec.Signal}'; not generated.");
+                        continue;
+                    }
+
+                    var layoutError = matrixVariable.ValidateLayout();
+                    if (layoutError != null)
+                    {
+                        Logger?.Log(LogLevel.Warn,
+                            $"Simulation: matrix variable '{matrixVariable.Name}' has an invalid layout ({layoutError}); not generated.");
+                        continue;
+                    }
+
+                    var matrixSignal = SimulSignalCatalog.CreateMatrix(spec.Signal, settings);
+                    entries.Add(new PollEntry
+                    {
+                        ProtocolVariable = simulVariable,
+                        Variable = matrixVariable,
+                        Generate = t => matrixSignal.Fill(matrixVariable, t),
+                        IsHeld = () => (parameterProvider?.Invoke(SimulSignalCatalog.HoldParamKey) ?? 0.0) != 0.0,
+                        IntervalMs = intervalMs,
+                        NextDueMs = now
+                    });
+                    break;
+                }
+
+                default:
+                    Logger?.Log(LogLevel.Warn,
+                        $"Simulation: variable '{simulVariable.Variable.Name}' is neither scalar nor matrix; not generated.");
+                    break;
+            }
         }
 
         return entries;
     }
 
     /// <summary>
-    /// Live source of the LAOS nonlinearity: the current value of the writable "nonlin"
-    /// parameter variable, or null when the project has none (generators then fall back
-    /// to the nonlin= commParam value).
+    /// Power-on defaults of the simulated device: every parameter variable with init= in its
+    /// commParam gets that value written at start and a value-changed notification, so the
+    /// watch table and other controls show the default without any script.
     /// </summary>
-    private Func<double>? BuildNonlinearityProvider()
+    private async Task ApplyParameterInitialValuesAsync()
     {
-        var parameterScalar = Variables
-            .OfType<SimulDataProtocolVariable>()
-            .Where(v => v.ProtocolVariableSpecification is SimulDataProtocolVariableSpecification
+        foreach (var simulVariable in Variables.OfType<SimulDataProtocolVariable>())
+        {
+            if (simulVariable.ProtocolVariableSpecification is not SimulDataProtocolVariableSpecification
+                {
+                    InitialValue: { } initialValue
+                } spec
+                || !SimulSignalCatalog.IsParameterKey(spec.Signal)
+                || simulVariable.Variable is not ScalarVariable scalar
+                || !SupportsValues(scalar))
             {
-                Signal: SimulSignalCatalog.NonlinParamKey
-            })
-            .Select(v => v.Variable as ScalarVariable)
-            .FirstOrDefault(scalar => scalar != null);
+                continue;
+            }
 
-        return parameterScalar == null ? null : () => GetSampleValue(parameterScalar);
+            SetSampleValue(scalar, initialValue);
+            scalar.Timestamp = DateTime.UtcNow;
+            await simulVariable.NotifyValueChangedAsync();
+        }
+    }
+
+    /// <summary>
+    /// Live source of the writable parameters (nonlin, hold, h{n}amp, h{n}freq, h{n}phase): looks up the
+    /// scalar parameter variable by its signal key and returns its current raw value, or null
+    /// when the project has no such parameter (generators then use their commParam/default).
+    /// Returns null when the project has no parameter variables at all.
+    /// </summary>
+    private Func<string, double?>? BuildParameterProvider()
+    {
+        var parameters = new Dictionary<string, ScalarVariable>(StringComparer.Ordinal);
+        foreach (var simulVariable in Variables.OfType<SimulDataProtocolVariable>())
+        {
+            if (simulVariable.ProtocolVariableSpecification is SimulDataProtocolVariableSpecification spec
+                && SimulSignalCatalog.IsParameterKey(spec.Signal)
+                && simulVariable.Variable is ScalarVariable scalar)
+            {
+                parameters.TryAdd(spec.Signal, scalar);
+            }
+        }
+
+        if (parameters.Count == 0)
+        {
+            return null;
+        }
+
+        return key => parameters.TryGetValue(key, out var scalar) ? GetSampleValue(scalar) : null;
     }
 
     private string ResolveSignalKey(SimulDataProtocolVariableSpecification spec, ScalarVariable scalarVariable)
@@ -442,11 +535,30 @@ public class SimulDataProtocol : ProtocolBase<int>, IProtocolVariableWriteProtoc
     }
 
     /// <summary>
-    /// Nothing to transfer: the written value already lives in the variable and the
-    /// generators read it from there on the next sample.
+    /// Nothing to transfer for a scalar: the written value already lives in the variable and the
+    /// generators read it from there on the next sample. For a matrix the queued element writes
+    /// are re-applied over the raw buffer — the generator may have refilled the table between
+    /// the edit and this call, and the edit must win (with "hold" set the generator is idle).
     /// </summary>
     public Task WriteVariableAsync(IProtocolVariable protocolVariable, CancellationToken ct = default)
     {
+        if (protocolVariable.Variable is MatrixVariable matrixVariable)
+        {
+            while (matrixVariable.TryDequeuePendingWrite(out var request))
+            {
+                if (request.ByteOffset < 0 || request.Bytes.Length == 0 ||
+                    request.ByteOffset + request.Bytes.Length > matrixVariable.Size)
+                {
+                    Logger?.Log(LogLevel.Warn,
+                        $"Simulation: pending write of '{matrixVariable.Name}' at byte {request.ByteOffset} " +
+                        "does not fit the matrix layout; skipped.");
+                    continue;
+                }
+
+                request.Bytes.CopyTo(matrixVariable.RawData.AsSpan(request.ByteOffset));
+            }
+        }
+
         return Task.CompletedTask;
     }
 

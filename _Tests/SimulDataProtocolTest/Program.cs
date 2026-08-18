@@ -1,0 +1,377 @@
+// Headless verification of SimulDataProtocol extensions used by the FZU seminar demo:
+//   T1  writable LAOS harmonic parameters (h{n}amp/h{n}freq/h{n}phase) change the stress
+//       waveform live; strain follows h1freq; phases add up / cancel
+//   T2  thermal-field matrix: axes filled once (10 mm pitch), data cells in the expected
+//       temperature range and changing over time; user axis edit survives regeneration
+//   T3  "hold" parameter freezes the matrix data (and releasing it resumes generation)
+//   T4  matrix pending element writes are re-applied over the buffer in WriteVariableAsync
+//   T5  parameter keys are never generated over (scalar with signal="h2amp" keeps its value)
+//   T6  FZU_SeminarDemo.qproj: XmlModule.xml loads through the real mappers (presentations,
+//       conversions, events, variables incl. the matrix), all Sim variables create protocol
+//       variables and the whole set runs (17 Sim variables: 3 generated scalars, 13 params, 1 matrix)
+
+using Qenex.QSuite.Common.CoreComm;
+using System.IO.Compression;
+using System.Xml.Serialization;
+using Qenex.QSuite.LogSystems.LogSystem;
+using Qenex.QSuite.ModuleXmlHandler;
+using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
+using Qenex.QSuite.Protocols.Protocol;
+using Qenex.QSuite.Protocols.SimulDataProtocol;
+using Qenex.QSuite.Variables.QVariables;
+using Qenex.QSuite.Variables.QVariables.Values;
+using Qenex.QSuite.Variables.ValueConversion;
+using Qenex.QSuite.Variables.ValuePresentation;
+using Qenex.QSuite.Variables.VariableEvents;
+using ValueDataType = Qenex.QSuite.Variables.QVariables.Values.ValuesGlobal.ValueDataType;
+
+var results = new List<(string Name, bool Pass, string Detail)>();
+
+await RunTest("T1 LAOS harmonic parameters live", Test1_HarmonicParameters);
+await RunTest("T2 thermal matrix: axes, data range, changing", Test2_ThermalMatrix);
+await RunTest("T3 hold freezes matrix", Test3_Hold);
+await RunTest("T4 matrix pending writes re-applied", Test4_PendingWrites);
+await RunTest("T5 parameters are not generated over", Test5_ParametersUntouched);
+await RunTest("T6 FZU_SeminarDemo.qproj loads and runs", Test6_DemoProject);
+
+Console.WriteLine();
+Console.WriteLine("==== SUMMARY ====");
+foreach (var (name, pass, detail) in results)
+{
+    Console.WriteLine($"{(pass ? "PASS" : "FAIL")}  {name}");
+    if (!string.IsNullOrWhiteSpace(detail)) Console.WriteLine($"      {detail}");
+}
+
+return results.All(r => r.Pass) ? 0 : 1;
+
+async Task RunTest(string name, Func<Task<(bool, string)>> test)
+{
+    Console.WriteLine();
+    Console.WriteLine($"---- {name} ----");
+    try
+    {
+        var (pass, detail) = await test();
+        results.Add((name, pass, detail));
+        Console.WriteLine($"{(pass ? "PASS" : "FAIL")} {detail}");
+    }
+    catch (Exception e)
+    {
+        results.Add((name, false, $"EXCEPTION: {e}"));
+        Console.WriteLine($"FAIL EXCEPTION: {e}");
+    }
+}
+
+// ---------------------------------------------------------------- helpers
+
+static SimulDataProtocol NewProtocol()
+{
+    var logger = new Logger(LogLevel.Info);
+    logger.RegisterSubscriber(new ConsoleLogSubscriber());
+    return new SimulDataProtocol { IsEnabled = true, Logger = logger };
+}
+
+static PeriodicVarEvent Event(string name, int periodMs) => new() { Name = name, Period = periodMs, Unit = TimeUnit.Milisec };
+
+static ScalarVariable DoubleVariable(int id, string name) => new()
+{
+    Id = id,
+    Namespace = "/",
+    Name = name,
+    Label = name,
+    Values = new Values<double> { Value = 0d, ValueType = ValueDataType.Double }
+};
+
+static IPresentation Linear(string name, double multiplier, string unit = "") => new Presentation
+{
+    Name = name, Label = name, Unit = unit, PrintFormat = "",
+    Conversion = new LinearValConversion { Multiplier = multiplier, Offset = 0 }
+};
+
+static MatrixVariable ThermalMatrix(int id)
+{
+    var pos = Linear("posMm", 1, "mm");
+    var temp = Linear("tempC", 0.1, "degC");
+    return new MatrixVariable
+    {
+        Id = id, Namespace = "/", Name = "ThermalField", Label = "Thermal field",
+        DefaultDataType = ValueDataType.UShort,
+        Endianness = MatrixEndianness.Little,
+        XAxis = new MatrixSection { Count = 8, Label = "X [mm]", Presentation = pos },
+        YAxis = new MatrixSection { Count = 6, Label = "Y [mm]", Presentation = pos },
+        Data = new MatrixSection { Presentation = temp }
+    };
+}
+
+static void Add(SimulDataProtocol protocol, IVariableBase variable, IEnumerable<IVarEvent> events, string commParams)
+{
+    var pv = protocol.CreateProtocolVariable(variable, events, commParams, isCommunicated: true)
+             ?? throw new InvalidOperationException($"protocol variable for {variable.Name} not created");
+    protocol.AddVariable(pv);
+}
+
+static double Raw(ScalarVariable v) => v.GetEngValue();
+
+static async Task<(double min, double max)> SampleRange(ScalarVariable v, int ms)
+{
+    double min = double.MaxValue, max = double.MinValue;
+    var end = Environment.TickCount64 + ms;
+    while (Environment.TickCount64 < end)
+    {
+        var x = Raw(v);
+        min = Math.Min(min, x);
+        max = Math.Max(max, x);
+        await Task.Delay(5);
+    }
+    return (min, max);
+}
+
+static double[] DataSnapshot(MatrixVariable m)
+{
+    var d = new double[m.DataCount];
+    for (var i = 0; i < d.Length; i++) d[i] = m.GetEngValue(MatrixSectionKind.Data, i);
+    return d;
+}
+
+// ---------------------------------------------------------------- tests
+
+async Task<(bool, string)> Test1_HarmonicParameters()
+{
+    var protocol = NewProtocol();
+    var events = new IVarEvent[] { Event("e10", 10), Event("e100", 100) };
+    var strain = DoubleVariable(1, "Strain");
+    var stress = DoubleVariable(2, "Stress");
+    var h1amp = DoubleVariable(3, "H1Amp");
+    var h1freq = DoubleVariable(4, "H1Freq");
+    var h2amp = DoubleVariable(5, "H2Amp");
+    var h2freq = DoubleVariable(6, "H2Freq");
+    var h1phase = DoubleVariable(7, "H1Phase");
+    var h2phase = DoubleVariable(8, "H2Phase");
+
+    Add(protocol, strain, events, "direction=\"read\";eventRef=\"e10\";id=\"Strain\";signal=\"laosstrain\"");
+    Add(protocol, stress, events, "direction=\"read\";eventRef=\"e10\";id=\"Stress\";signal=\"laosstress\"");
+    Add(protocol, h1amp, events, "direction=\"write\";eventRef=\"e100\";id=\"H1Amp\";signal=\"h1amp\"");
+    Add(protocol, h1freq, events, "direction=\"write\";eventRef=\"e100\";id=\"H1Freq\";signal=\"h1freq\"");
+    Add(protocol, h2amp, events, "direction=\"write\";eventRef=\"e100\";id=\"H2Amp\";signal=\"h2amp\"");
+    Add(protocol, h2freq, events, "direction=\"write\";eventRef=\"e100\";id=\"H2Freq\";signal=\"h2freq\"");
+    Add(protocol, h1phase, events, "direction=\"write\";eventRef=\"e100\";id=\"H1Phase\";signal=\"h1phase\"");
+    Add(protocol, h2phase, events, "direction=\"write\";eventRef=\"e100\";id=\"H2Phase\";signal=\"h2phase\"");
+
+    // Defaults as init.py sets them: pure fundamental 680 @ 0.5 Hz, no 3rd harmonic.
+    h1amp.TrySetEngValue(680); h1freq.TrySetEngValue(2.0); h2amp.TrySetEngValue(0); h2freq.TrySetEngValue(6.0);
+
+    await protocol.StartAsync();
+    await Task.Delay(100);
+    var s1 = await SampleRange(stress, 1200);   // > 2 periods at 2 Hz
+    var g1 = await SampleRange(strain, 600);
+    var pureOk = s1.max > 600 && s1.max < 720 && s1.min < -600 && s1.min > -720;
+    var strainOk = g1.max > 700 && g1.min < -700; // 800 amplitude, must reach both extremes within 600 ms at 2 Hz
+
+    // Add a strong 3rd harmonic: peak must exceed the fundamental amplitude
+    h2amp.TrySetEngValue(400);
+    await Task.Delay(50);
+    var s2 = await SampleRange(stress, 1200);
+    var harmonicOk = s2.max > 760 || s2.min < -760;
+
+    // Detune the fundamental frequency: strain must slow down (fewer extremes in the window)
+    h1freq.TrySetEngValue(0.2);
+    await Task.Delay(50);
+    var g2 = await SampleRange(strain, 600); // at 0.2 Hz a 600 ms window cannot span both extremes
+    var slowOk = !(g2.max > 700 && g2.min < -700);
+
+    // Phase: two harmonics on the same frequency, in phase -> amplitudes add; 180 deg apart -> cancel
+    h1freq.TrySetEngValue(2.0); h2freq.TrySetEngValue(2.0); h1amp.TrySetEngValue(500); h2amp.TrySetEngValue(500);
+    h1phase.TrySetEngValue(0); h2phase.TrySetEngValue(0);
+    await Task.Delay(50);
+    var s3 = await SampleRange(stress, 1200);
+    var addOk = s3.max > 950 && s3.min < -950;
+    h2phase.TrySetEngValue(180);
+    await Task.Delay(50);
+    var s4 = await SampleRange(stress, 1200);
+    var cancelOk = Math.Abs(s4.max) < 30 && Math.Abs(s4.min) < 30;
+
+    await protocol.StopAsync();
+    var detail = $"pure {s1.min:F0}..{s1.max:F0} (ok={pureOk}); strain {g1.min:F0}..{g1.max:F0} (ok={strainOk}); " +
+                 $"with h2amp=400 {s2.min:F0}..{s2.max:F0} (ok={harmonicOk}); strain @0.2Hz {g2.min:F0}..{g2.max:F0} (ok={slowOk}); " +
+                 $"in phase {s3.min:F0}..{s3.max:F0} (ok={addOk}); 180deg {s4.min:F0}..{s4.max:F0} (ok={cancelOk})";
+    return (pureOk && strainOk && harmonicOk && slowOk && addOk && cancelOk, detail);
+}
+
+async Task<(bool, string)> Test2_ThermalMatrix()
+{
+    var protocol = NewProtocol();
+    var events = new IVarEvent[] { Event("e50", 50) };
+    var matrix = ThermalMatrix(1);
+    Add(protocol, matrix, events, "direction=\"readWrite\";eventRef=\"e50\";id=\"ThermalField\";signal=\"thermal\"");
+
+    var notified = 0;
+    protocol.Variables[0].SubscribeAsyncValueChanged(_ => { Interlocked.Increment(ref notified); return Task.CompletedTask; });
+
+    await protocol.StartAsync();
+    await Task.Delay(300);
+    var snap1 = DataSnapshot(matrix);
+    var xAxisOk = Enumerable.Range(0, 8).All(i => Math.Abs(matrix.GetEngValue(MatrixSectionKind.XAxis, i) - 10 * i) < 1e-9);
+    var yAxisOk = Enumerable.Range(0, 6).All(i => Math.Abs(matrix.GetEngValue(MatrixSectionKind.YAxis, i) - 10 * i) < 1e-9);
+    var rangeOk = snap1.All(t => t >= 24.0 && t <= 66.0) && snap1.Max() > 45.0 && snap1.Min() < 30.0;
+
+    // user edits an axis breakpoint: must survive regeneration (axes written once)
+    matrix.TrySetEngValue(MatrixSectionKind.XAxis, 3, 35);
+    await Task.Delay(300);
+    var snap2 = DataSnapshot(matrix);
+    var changing = snap1.Zip(snap2).Any(p => Math.Abs(p.First - p.Second) > 0.05);
+    var axisEditKept = Math.Abs(matrix.GetEngValue(MatrixSectionKind.XAxis, 3) - 35) < 1e-9;
+    var timestampOk = matrix.Timestamp > DateTime.UtcNow.AddSeconds(-5);
+
+    await protocol.StopAsync();
+    var detail = $"axes ok={xAxisOk && yAxisOk}; range {snap1.Min():F1}..{snap1.Max():F1} ok={rangeOk}; changing={changing}; " +
+                 $"axis edit kept={axisEditKept}; notifications={notified}; timestamp ok={timestampOk}";
+    return (xAxisOk && yAxisOk && rangeOk && changing && axisEditKept && notified > 5 && timestampOk, detail);
+}
+
+async Task<(bool, string)> Test3_Hold()
+{
+    var protocol = NewProtocol();
+    var events = new IVarEvent[] { Event("e50", 50), Event("e100", 100) };
+    var matrix = ThermalMatrix(1);
+    var hold = DoubleVariable(2, "Hold");
+    Add(protocol, matrix, events, "direction=\"readWrite\";eventRef=\"e50\";id=\"ThermalField\";signal=\"thermal\"");
+    Add(protocol, hold, events, "direction=\"write\";eventRef=\"e100\";id=\"Hold\";signal=\"hold\"");
+
+    await protocol.StartAsync();
+    await Task.Delay(200);
+    hold.TrySetEngValue(1);
+    await Task.Delay(120); // let an in-flight cycle finish
+    var frozen = DataSnapshot(matrix);
+    var frozenStamp = matrix.Timestamp;
+    matrix.TrySetEngValue(MatrixSectionKind.Data, 0, 99.9); // user edit while held
+    await Task.Delay(400);
+    var still = DataSnapshot(matrix);
+    var heldOk = frozen.Skip(1).Zip(still.Skip(1)).All(p => Math.Abs(p.First - p.Second) < 1e-9)
+                 && Math.Abs(still[0] - 99.9) < 1e-9
+                 && matrix.Timestamp == frozenStamp;
+
+    hold.TrySetEngValue(0);
+    await Task.Delay(300);
+    var resumed = DataSnapshot(matrix);
+    var resumedOk = still.Zip(resumed).Any(p => Math.Abs(p.First - p.Second) > 0.05) && resumed[0] < 70;
+
+    await protocol.StopAsync();
+    return (heldOk && resumedOk, $"held ok={heldOk}; resumed ok={resumedOk}");
+}
+
+async Task<(bool, string)> Test4_PendingWrites()
+{
+    var protocol = NewProtocol();
+    var events = new IVarEvent[] { Event("e50", 50) };
+    var matrix = ThermalMatrix(1);
+    Add(protocol, matrix, events, "direction=\"readWrite\";eventRef=\"e50\";id=\"ThermalField\";signal=\"thermal\"");
+    var pv = protocol.Variables[0];
+
+    var canWrite = ((IProtocolVariableWriteProtocol)protocol).CanWriteVariable(pv);
+
+    // Simulate the host: set eng value, queue the element bytes, then the protocol write path
+    matrix.TrySetEngValue(MatrixSectionKind.Data, 5, 42.0);
+    var offset = matrix.GetSectionOffset(MatrixSectionKind.Data) + 5 * matrix.GetElementSize(MatrixSectionKind.Data);
+    var bytes = matrix.RawData.AsSpan(offset, 2).ToArray();
+    matrix.EnqueuePendingWrite(new MatrixWriteRequest(offset, bytes));
+    // ...a generator refill in between:
+    matrix.TrySetEngValue(MatrixSectionKind.Data, 5, 30.0);
+    await ((IProtocolVariableWriteProtocol)protocol).WriteVariableAsync(pv);
+    var reapplied = Math.Abs(matrix.GetEngValue(MatrixSectionKind.Data, 5) - 42.0) < 1e-9;
+    var drained = !matrix.TryDequeuePendingWrite(out _);
+
+    // out-of-range request is skipped, not thrown
+    matrix.EnqueuePendingWrite(new MatrixWriteRequest(matrix.Size - 1, new byte[] { 1, 2 }));
+    await ((IProtocolVariableWriteProtocol)protocol).WriteVariableAsync(pv);
+
+    return (canWrite && reapplied && drained, $"canWrite={canWrite}; reapplied={reapplied}; drained={drained}");
+}
+
+async Task<(bool, string)> Test5_ParametersUntouched()
+{
+    var protocol = NewProtocol();
+    var events = new IVarEvent[] { Event("e10", 10) };
+    var stress = DoubleVariable(1, "Stress");
+    var h2amp = DoubleVariable(2, "H2Amp");
+    var readParam = DoubleVariable(3, "H3Amp");   // misconfigured as read: must not fault, stays constant
+    Add(protocol, stress, events, "direction=\"read\";eventRef=\"e10\";id=\"Stress\";signal=\"laosstress\";nonlin=\"0.5\"");
+    Add(protocol, h2amp, events, "direction=\"write\";eventRef=\"e10\";id=\"H2Amp\";signal=\"h2amp\"");
+    Add(protocol, readParam, events, "direction=\"read\";eventRef=\"e10\";id=\"H3Amp\";signal=\"h3amp\"");
+    h2amp.TrySetEngValue(123.0);
+
+    await protocol.StartAsync();
+    await Task.Delay(300);
+    var state = protocol.State;
+    var stateOk = state == CommunicationState.Running;
+    var kept = Math.Abs(Raw(h2amp) - 123.0) < 1e-9;
+    var r = await SampleRange(stress, 1100);
+    var moving = r.max - r.min > 100;
+    await protocol.StopAsync();
+    return (stateOk && kept && moving, $"state={state} ({protocol.StateMessage}); h2amp kept={kept}; stress {r.min:F0}..{r.max:F0} moving={moving}; readParam={Raw(readParam)}");
+}
+
+async Task<(bool, string)> Test6_DemoProject()
+{
+    var qproj = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
+        @"..\..\..\..\..\QInsightSetup\Examples\FZU_SeminarDemo.qproj"));
+    if (!File.Exists(qproj)) return (false, $"missing {qproj}");
+
+    XmlModule module;
+    using (var zip = ZipFile.OpenRead(qproj))
+    using (var stream = zip.GetEntry("XmlModule.xml")!.Open())
+    {
+        module = (XmlModule)new XmlSerializer(typeof(XmlModule)).Deserialize(stream)!;
+    }
+
+    var conversions = XmlComponentMapper.FromXmlConversions(module.Conversions);
+    var presentations = XmlComponentMapper.FromXmlPresentations(module.Presentations, conversions);
+    var events = XmlComponentMapper.FromXmlVarEvents(module.Events);
+    var variables = XmlVariableMapper.FromXmlVariables(module.Variables, presentations);
+
+    var matrix = variables.OfType<MatrixVariable>().SingleOrDefault();
+    var matrixOk = matrix is { XCount: 8, YCount: 6, DataCount: 48, Size: 124 }
+                   && matrix.ValidateLayout() == null
+                   && matrix.Data.Presentation?.Unit == "°C"
+                   && matrix.XAxis?.Presentation?.Unit == "mm";
+
+    var simRef = module.DriverReferences.Single(d => d.Ref == "SimulDataDriver").ProtocolReferences.Single();
+    var protocol = NewProtocol();
+    var created = 0;
+    foreach (var vr in simRef.VariableReferences)
+    {
+        var variable = variables.Single(v => v.Id == vr.Ref);
+        var pv = protocol.CreateProtocolVariable(variable, events, vr.CommParam, vr.IsCommunicated);
+        if (pv != null) { protocol.AddVariable(pv); created++; }
+    }
+
+    var write = (IProtocolVariableWriteProtocol)protocol;
+    var writableCount = protocol.Variables.Count(write.CanWriteVariable);   // 13 params + matrix = 14
+
+    // power-on defaults come from init= in the comm params (no script involved)
+    ScalarVariable S(string name) => variables.OfType<ScalarVariable>().Single(v => v.Name == name);
+    var initNotified = 0;
+    protocol.Variables.Single(pv => pv.Variable.Name == "H1Amp")
+        .SubscribeAsyncValueChanged(_ => { Interlocked.Increment(ref initNotified); return Task.CompletedTask; });
+
+    await protocol.StartAsync();
+    await Task.Delay(1500);
+    var running = protocol.State == CommunicationState.Running;
+    var initOk = Math.Abs(Raw(S("H1Amp")) - 680) < 1e-9 && Math.Abs(Raw(S("H1Freq")) - 0.5) < 1e-9
+                 && Math.Abs(Raw(S("H4Phase")) - 181) < 1e-9 && initNotified == 1;
+    var stress = await SampleRange(S("Stress"), 1100);
+    var noisy = await SampleRange(S("NoisyStep"), 300);
+    var snap = DataSnapshot(matrix!);
+    await protocol.StopAsync();
+
+    var stressOk = stress.max > 600 && stress.min < -600;
+    var noisyOk = noisy.max - noisy.min > 20; // noise +-50 on the staircase
+    var matrixDataOk = snap.Max() > 45 && snap.Min() < 30;
+    var detail = $"vars={variables.Count}; created={created}/17; writable={writableCount}; matrix ok={matrixOk}; init ok={initOk}; running={running} ({protocol.StateMessage}); " +
+                 $"stress {stress.min:F0}..{stress.max:F0}; noisy {noisy.min:F0}..{noisy.max:F0}; matrix {snap.Min():F1}..{snap.Max():F1}";
+    return (variables.Count == 18 && created == 17 && writableCount == 14 && matrixOk && initOk && running && stressOk && noisyOk && matrixDataOk, detail);
+}
+
+sealed class ConsoleLogSubscriber : ILogSubscriber
+{
+    public void Log(ILogMessage message) => Console.WriteLine($"   [log {message.Level}] {message.Message}");
+    public Task LogAsync(ILogMessage message, CancellationToken ct = default) { Log(message); return Task.CompletedTask; }
+}

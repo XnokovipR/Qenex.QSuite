@@ -21,6 +21,13 @@ public class SimulDataProtocolVariableSpecification : ProtVariableSpecification
     public double? Frequency { get; set; }
     public double? Nonlinearity { get; set; }
 
+    /// <summary>
+    /// Optional initial value (init=) of a writable parameter variable: the protocol writes it
+    /// into the variable at every start (the simulated device's power-on default) and notifies,
+    /// so controls show it. Null = the variable keeps whatever value it has.
+    /// </summary>
+    public double? InitialValue { get; set; }
+
     public CommDirection Direction { get; set; } = CommDirection.Read;
 
     public static SimulDataProtocolVariableSpecification CreateDefault(IVarEvent? variableEvent, string id)
@@ -55,7 +62,8 @@ public class SimulDataProtocolVariableSpecification : ProtVariableSpecification
             Signal = parameters.GetValueOrDefault("signal", string.Empty).ToLowerInvariant(),
             Amplitude = ParseDouble(parameters, "amp"),
             Frequency = ParseDouble(parameters, "freq"),
-            Nonlinearity = ParseDouble(parameters, "nonlin")
+            Nonlinearity = ParseDouble(parameters, "nonlin"),
+            InitialValue = ParseDouble(parameters, "init")
         };
     }
 

@@ -201,6 +201,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XcpTcpLiveTest", "_Tests\Xc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XYGraphControl", "Controls\XYGraphControl\XYGraphControl.csproj", "{01BC0598-5DD9-480C-9EE2-8736A475E80F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimulDataProtocolTest", "_Tests\SimulDataProtocolTest\SimulDataProtocolTest.csproj", "{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1051,6 +1053,18 @@ Global
 		{01BC0598-5DD9-480C-9EE2-8736A475E80F}.Release|x64.Build.0 = Release|Any CPU
 		{01BC0598-5DD9-480C-9EE2-8736A475E80F}.Release|x86.ActiveCfg = Release|Any CPU
 		{01BC0598-5DD9-480C-9EE2-8736A475E80F}.Release|x86.Build.0 = Release|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Debug|x64.Build.0 = Debug|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Debug|x86.Build.0 = Debug|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Release|x64.ActiveCfg = Release|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Release|x64.Build.0 = Release|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Release|x86.ActiveCfg = Release|Any CPU
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1135,6 +1149,7 @@ Global
 		{EA09E717-8871-461D-BFFE-3C6A75FB25E6} = {2F390566-E2DF-4D8B-93D9-FEEC53923D27}
 		{F5242EC7-78DB-45BE-B7BC-A61617C55B2C} = {96190788-7C2A-4B67-90FA-516D7D9946CF}
 		{01BC0598-5DD9-480C-9EE2-8736A475E80F} = {BF8D97A9-2A29-4AA7-A1CE-4BE13DA0B234}
+		{D7270CC4-BAE8-4C28-8EA7-751F36A5A7CD} = {96190788-7C2A-4B67-90FA-516D7D9946CF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {30000164-E084-4EF1-818A-1B98829BA5EA}
