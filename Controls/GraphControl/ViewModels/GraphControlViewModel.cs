@@ -82,7 +82,16 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
     [IgnoreDataMember]
     public ObservableCollection<IYAxis> VerticalAxes { get; set { field = value; OnPropertyChanged(); } }
     [IgnoreDataMember]
-    public IYAxis SelectedVerticalAxis { get; set { field = value; OnPropertyChanged(); } }
+    public IYAxis SelectedVerticalAxis { get; set { field = value; OnPropertyChanged(); UpdateRemoveAxisState(); } }
+
+    // Drives the Remove item in the axes grid context menu: the first axis and axes with
+    // signals assigned are not removable — the item is disabled, no message box.
+    [IgnoreDataMember]
+    public bool CanRemoveSelectedAxis { get; private set { field = value; OnPropertyChanged(); } }
+
+    // Tooltip on the (disabled) Remove item explaining why the axis cannot be removed.
+    [IgnoreDataMember]
+    public string? RemoveAxisBlockReason { get; private set { field = value; OnPropertyChanged(); } }
 
     // 1-based cisla os pro comboboxy v UI (drzi se v AddAxis/RemoveAxis)
     [IgnoreDataMember]
@@ -260,6 +269,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
             }
 
             PlotControl.Refresh();
+            UpdateRemoveAxisState();
             return retIndex;
         };
 
@@ -268,8 +278,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
         chartVariable.LineStyle = savedBinding?.LineStyle ?? ChartLineStyle.Solid;
         chartVariable.AxisIndex = savedBinding?.AxisIndex ?? 0;
         RememberChartVariableBinding(chartVariable);
-
-        //PlotControl.Plot.Remove(signal);
+        UpdateRemoveAxisState();
     }
 
     public override Task UpdateVariableValueAsync(IVariableBase variable)
@@ -1034,6 +1043,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
             ? ChartVariables[Math.Min(index, ChartVariables.Count - 1)]
             : null;
 
+        UpdateRemoveAxisState();
         PlotControl?.Refresh();
         RaiseVariableBindingsChanged();
     }
@@ -1063,7 +1073,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
     private void AddAxis(object parameter)
     {
         AddAxis(Edge.Right, VerticalAxes.Count);
-        
+        UpdateRemoveAxisState();
     }
 
     private void AddAxis(Edge edge, int index)
@@ -1124,31 +1134,69 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
     
     private void RemoveAxis(object parameter)
     {
-        if (VerticalAxes.Count > 1 && SelectedVerticalAxis != null)
+        if (SelectedVerticalAxis == null)
         {
-            var index = VerticalAxes.IndexOf(SelectedVerticalAxis);
-            if (index == 0) return;
-            
-            PlotControl.Plot.Axes.Remove(SelectedVerticalAxis);
-            VerticalAxes.Remove(SelectedVerticalAxis);
-            if (AxisNumbers.Count > 0)
-            {
-                AxisNumbers.RemoveAt(AxisNumbers.Count - 1);
-            }
-
-            // Indexy os se posunuly - preváz signaly na platne osy (setter AxisIndex
-            // pres ChangeAxisAction zvaliduje index a znovu priradi ChartSignal.Axes.YAxis)
-            foreach (var chartVariable in ChartVariables)
-            {
-                chartVariable.AxisIndex = Math.Min(chartVariable.AxisIndex, VerticalAxes.Count - 1);
-            }
-
-            if (VerticalAxes.Count > 0)
-            {
-                SelectedVerticalAxis = VerticalAxes[Math.Min(index, VerticalAxes.Count - 1)];
-            }
-            PlotControl.Refresh();
+            return;
         }
+
+        // The first axis is fixed and an axis with signals assigned stays too — the menu
+        // item is disabled with a tooltip explaining why (UpdateRemoveAxisState); this
+        // guard just mirrors that rule for safety.
+        var index = VerticalAxes.IndexOf(SelectedVerticalAxis);
+        if (index < 1 || ChartVariables.Any(cv => cv.AxisIndex == index))
+        {
+            return;
+        }
+
+        PlotControl.Plot.Axes.Remove(SelectedVerticalAxis);
+        VerticalAxes.Remove(SelectedVerticalAxis);
+        if (AxisNumbers.Count > 0)
+        {
+            AxisNumbers.RemoveAt(AxisNumbers.Count - 1);
+        }
+
+        // Axes above the removed one shifted down by one — re-point their signals to keep
+        // them on the same axis object (the AxisIndex setter re-assigns
+        // ChartSignal.Axes.YAxis via ChangeAxisAction).
+        foreach (var chartVariable in ChartVariables.Where(cv => cv.AxisIndex > index).ToList())
+        {
+            chartVariable.AxisIndex--;
+        }
+
+        SelectedVerticalAxis = VerticalAxes[Math.Min(index, VerticalAxes.Count - 1)];
+        PlotControl.Refresh();
+    }
+
+    private void UpdateRemoveAxisState()
+    {
+        if (SelectedVerticalAxis == null || VerticalAxes.Count == 0)
+        {
+            CanRemoveSelectedAxis = false;
+            RemoveAxisBlockReason = "No axis selected.";
+            return;
+        }
+
+        var index = VerticalAxes.IndexOf(SelectedVerticalAxis);
+        if (index < 1)
+        {
+            CanRemoveSelectedAxis = false;
+            RemoveAxisBlockReason = "The first axis is fixed and cannot be removed.";
+            return;
+        }
+
+        var users = ChartVariables
+            .Where(cv => cv.AxisIndex == index && cv.Variable != null)
+            .Select(cv => GetVariableLegendText(cv.Variable))
+            .ToList();
+        if (users.Count > 0)
+        {
+            CanRemoveSelectedAxis = false;
+            RemoveAxisBlockReason = $"The axis is used by: {string.Join(", ", users)}";
+            return;
+        }
+
+        CanRemoveSelectedAxis = true;
+        RemoveAxisBlockReason = null;
     }
 
     #endregion

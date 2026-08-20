@@ -156,8 +156,13 @@
                             <telerik:RadContextMenu.ContextMenu>
                                 <telerik:RadContextMenu>
                                     <telerik:RadMenuItem Header="Add" Command="{Binding AddAxisCommand}"/>
-                                    <telerik:RadMenuItem Header="Remove" Command="{Binding RemoveAxisCommand}"/>
-                                </telerik:RadContextMenu>    
+                                    <!-- The first axis and axes with signals assigned cannot be removed: the item
+                                         is disabled and the tooltip carries the reason (no message box). -->
+                                    <telerik:RadMenuItem Header="Remove" Command="{Binding RemoveAxisCommand}"
+                                                         IsEnabled="{Binding CanRemoveSelectedAxis}"
+                                                         ToolTip="{Binding RemoveAxisBlockReason}"
+                                                         ToolTipService.ShowOnDisabled="True"/>
+                                </telerik:RadContextMenu>
                             </telerik:RadContextMenu.ContextMenu>
                             
                             <telerik:RadGridView.Columns>
