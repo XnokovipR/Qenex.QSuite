@@ -21,6 +21,7 @@
                 <ResourceDictionary Source="pack://application:,,,/Qenex.QSuite.Controls.Control;component/Style/SharedStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <localconverters:RowIndexConverter x:Key="RowIndexConverter"/>
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         </ResourceDictionary>
     </UserControl.Resources>
     
@@ -106,37 +107,49 @@
                                         </DataTemplate>
                                     </telerik:GridViewDataColumn.CellTemplate>
                                 </telerik:GridViewDataColumn>
-                                <telerik:GridViewDataColumn Header="Visibility" IsFilterable="False" DataMemberBinding="{Binding Path=IsVisible}" IsReadOnly="False"/>
+                                <!-- The X-source series is not plotted (it only provides the X coordinate):
+                                     Visibility, Color, Width and Style have no effect on it. Data columns use
+                                     IsReadOnlyBinding; a custom GridViewCell style would drop the default cell
+                                     template (NoXaml) and render the whole cell empty. -->
+                                <telerik:GridViewDataColumn Header="Visibility" IsFilterable="False" DataMemberBinding="{Binding Path=IsVisible}" IsReadOnlyBinding="{Binding IsXAxis}"/>
                                 <telerik:GridViewDataColumn Header="Color" IsFilterable="False" >
                                     <telerik:GridViewDataColumn.CellTemplate>
                                     <DataTemplate>
-                                        <telerik:RadColorPicker 
+                                        <telerik:RadColorPicker
                                             SelectedColor="{Binding ChartColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                            HeaderPalette="Standard" 
-                                            HeaderPaletteVisibility="Visible" 
-                                            MainPalette="Default" 
-                                            StandardPalette="Standard" 
+                                            HeaderPalette="Standard"
+                                            HeaderPaletteVisibility="Visible"
+                                            MainPalette="Default"
+                                            StandardPalette="Standard"
                                             StandardPaletteVisibility="Collapsed"
-                                            NoColorText="Line Color"/>
+                                            NoColorText="Line Color"
+                                            IsEnabled="{Binding IsYSeries}"/>
                                         </DataTemplate>
                                     </telerik:GridViewDataColumn.CellTemplate>
                                 </telerik:GridViewDataColumn>
-                                <telerik:GridViewDataColumn Header="Width" IsFilterable="False" DataMemberBinding="{Binding Path=LineWidth}" IsReadOnly="False"/>
+                                <telerik:GridViewDataColumn Header="Width" IsFilterable="False" DataMemberBinding="{Binding Path=LineWidth}" IsReadOnlyBinding="{Binding IsXAxis}"/>
                                 <telerik:GridViewDataColumn Header="Style" IsFilterable="False">
                                     <telerik:GridViewDataColumn.CellTemplate>
                                         <DataTemplate>
                                             <telerik:RadComboBox
                                                 ItemsSource="{Binding DataContext.LineStyles, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
-                                                SelectedItem="{Binding LineStyle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                SelectedItem="{Binding LineStyle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                IsEnabled="{Binding IsYSeries}"/>
                                         </DataTemplate>
                                     </telerik:GridViewDataColumn.CellTemplate>
                                 </telerik:GridViewDataColumn>
                                 <telerik:GridViewDataColumn Header="Axis Id" IsFilterable="False">
                                     <telerik:GridViewDataColumn.CellTemplate>
                                         <DataTemplate>
-                                            <telerik:RadComboBox
-                                                ItemsSource="{Binding DataContext.AxisNumbers, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
-                                                SelectedItem="{Binding AxisNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <!-- Y series pick a Y axis (rows 2..n); the X-source is pinned to the X row (1). -->
+                                            <Grid>
+                                                <telerik:RadComboBox
+                                                    ItemsSource="{Binding DataContext.AxisNumbers, RelativeSource={RelativeSource AncestorType=telerik:RadGridView}}"
+                                                    SelectedItem="{Binding AxisNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    Visibility="{Binding IsYSeries, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                                <q:QTextBlock Text="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                              Visibility="{Binding IsXAxis, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                            </Grid>
                                         </DataTemplate>
                                     </telerik:GridViewDataColumn.CellTemplate>
                                 </telerik:GridViewDataColumn>
@@ -157,8 +170,13 @@
                             <telerik:RadContextMenu.ContextMenu>
                                 <telerik:RadContextMenu>
                                     <telerik:RadMenuItem Header="Add" Command="{Binding AddAxisCommand}"/>
-                                    <telerik:RadMenuItem Header="Remove" Command="{Binding RemoveAxisCommand}"/>
-                                </telerik:RadContextMenu>    
+                                    <!-- Fixed rows (X + first Y) and axes with signals assigned cannot be removed:
+                                         the item is disabled and the tooltip carries the reason (no message box). -->
+                                    <telerik:RadMenuItem Header="Remove" Command="{Binding RemoveAxisCommand}"
+                                                         IsEnabled="{Binding CanRemoveSelectedAxis}"
+                                                         ToolTip="{Binding RemoveAxisBlockReason}"
+                                                         ToolTipService.ShowOnDisabled="True"/>
+                                </telerik:RadContextMenu>
                             </telerik:RadContextMenu.ContextMenu>
                             
                             <telerik:RadGridView.Columns>
@@ -179,9 +197,11 @@
                                 <telerik:GridViewDataColumn Header="Side" IsFilterable="False">
                                     <telerik:GridViewDataColumn.CellTemplate>
                                         <DataTemplate>
+                                            <!-- The X row (row 1) drives the bottom axis — it has no left/right side. -->
                                             <telerik:RadComboBox
                                                 ItemsSource="{x:Static vm:VerticalAxis.AvailableEdges}"
-                                                SelectedItem="{Binding EdgeSelection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                SelectedItem="{Binding EdgeSelection, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                IsEnabled="{Binding IsEdgeSelectable}"/>
                                         </DataTemplate>
                                     </telerik:GridViewDataColumn.CellTemplate>
                                 </telerik:GridViewDataColumn>

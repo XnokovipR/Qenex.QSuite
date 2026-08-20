@@ -33,6 +33,10 @@ public class ChartVariable : PropertyChangedBase
     // others, hiding this series, relabelling the X axis — lives in the ViewModel).
     public Action<ChartVariable>? XAxisSelectedAction { get; set; }
 
+    // Invoked when this series stops being the X-source (unchecked, or another series took over) —
+    // the ViewModel turns it back into a Y series and waits for a manual X choice.
+    public Action<ChartVariable>? XAxisClearedAction { get; set; }
+
     public IVariableBase Variable { get; set { field = value; OnPropertyChanged(); } } = null!;
 
     // True for the one series that provides the X coordinate; all others are plotted against it.
@@ -44,12 +48,21 @@ public class ChartVariable : PropertyChangedBase
             if (field == value) return;
             field = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(IsYSeries));
             if (value)
             {
                 XAxisSelectedAction?.Invoke(this);
             }
+            else
+            {
+                XAxisClearedAction?.Invoke(this);
+            }
         }
     }
+
+    // The axes combo box in the signals grid only applies to Y series — the X-source is
+    // pinned to the X row (row 1).
+    public bool IsYSeries => !IsXAxis;
     
     public Color ChartColor { get; set { field = value; OnPropertyChanged(); ChartSignal?.Color = ToScottPlotColor(value); } }
     
@@ -95,7 +108,11 @@ public class ChartVariable : PropertyChangedBase
     
     public List<DateTime> XDateTimeVal { get; set; }
     public List<double> XVal { get; set; }
-    public List<double> YVal { get; set; } 
+    public List<double> YVal { get; set; }
+
+    // Y samples whose timestamp the X-source stream has not reached yet (per-variable network
+    // bursts) — paired and plotted once a covering X sample arrives.
+    public List<(DateTime Timestamp, double Value)> PendingY { get; } = [];
 
     public void RefreshVariableLabel()
     {

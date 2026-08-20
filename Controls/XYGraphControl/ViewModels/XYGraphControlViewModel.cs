@@ -37,15 +37,19 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
     
     #region Fields
 
-    private DateTime baseTime;
-
-    // XY graph: latest value of the X-source series, paired with each incoming Y sample.
-    private double latestX;
-    private bool hasX;
+    // XY pairing: X-source sample history (ascending timestamps). Each Y sample looks up /
+    // interpolates its X value by TIMESTAMP; Y samples newer than the X stream wait in the
+    // series' PendingY queue. Never pair by arrival order — network transports deliver
+    // per-variable bursts and arrival-order pairing draws staircases from clean signals.
+    private List<DateTime> xTimes = [];
+    private List<double> xValues = [];
     private DateTime lastUpdateTime;
     private int currentColorIndex;
     private Color backgroundColor;
     private Color foregroundColor;
+    // Guards ApplyXRowToPlot from painting the bottom axis with the default (transparent)
+    // color before the first theme update arrives.
+    private bool isThemeApplied;
     private int axesFontSize;
     private int plotFontSize;
 
@@ -80,9 +84,19 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
     [IgnoreDataMember]
     public ObservableCollection<IYAxis> VerticalAxes { get; set { field = value; OnPropertyChanged(); } }
     [IgnoreDataMember]
-    public IYAxis SelectedVerticalAxis { get; set { field = value; OnPropertyChanged(); } }
+    public IYAxis SelectedVerticalAxis { get; set { field = value; OnPropertyChanged(); UpdateRemoveAxisState(); } }
 
-    // 1-based cisla os pro comboboxy v UI (drzi se v AddAxis/RemoveAxis)
+    // Drives the Remove item in the axes grid context menu: fixed rows (X + first Y) and axes
+    // with signals assigned are not removable — the item is disabled, no message box.
+    [IgnoreDataMember]
+    public bool CanRemoveSelectedAxis { get; private set { field = value; OnPropertyChanged(); } }
+
+    // Tooltip on the (disabled) Remove item explaining why the axis cannot be removed.
+    [IgnoreDataMember]
+    public string? RemoveAxisBlockReason { get; private set { field = value; OnPropertyChanged(); } }
+
+    // 1-based cisla Y os pro combobox v Signals gridu (2..n; cislo 1 je pevny radek X).
+    // Drzi se v AddAxis/RemoveAxis.
     [IgnoreDataMember]
     public ObservableCollection<int> AxisNumbers { get; set { field = value; OnPropertyChanged(); } } = [];
 
@@ -217,13 +231,26 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
         // (which needs X ascending). XVal now holds the X-source value per sample, not time.
         var signal = PlotControl.Plot.Add.Scatter(chartVariable.XVal, chartVariable.YVal, ChartVariable.ToScottPlotColor(c));
         signal.LegendText = GetVariableLegendText(variable);
-        // signal.MarkerShape = MarkerShape.Asterisk;
-        // signal.MarkerSize = 50; 
+        // Line only: Scatter draws a marker on every point by default, which makes a dense
+        // live curve look beaded/rough (SignalXY in GraphControl has no markers either).
+        signal.MarkerSize = 0;
         chartVariable.ChartSignal = signal;
         chartVariable.ChartColor = c;
         chartVariable.Variable = variable;
         chartVariable.ChangeAxisAction += axisIndex =>
         {
+            // The X-source is pinned to the X row (index 0). Its hidden scatter still gets a
+            // registered Y axis so render/autoscale never touches the bare frame axis.
+            if (chartVariable.IsXAxis)
+            {
+                if (VerticalAxes.Count > 1)
+                {
+                    signal.Axes.YAxis = VerticalAxes[1];
+                }
+
+                return 0;
+            }
+
             var retIndex = GetValidVerticalAxisIndex(axisIndex);
             if (retIndex >= 0)
             {
@@ -231,14 +258,16 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
             }
 
             PlotControl.Refresh();
+            UpdateRemoveAxisState();
             return retIndex;
         };
         chartVariable.XAxisSelectedAction = SetXSource;
+        chartVariable.XAxisClearedAction = ClearXSource;
 
         PlotControl.Refresh();
         chartVariable.LineWidth = GetSavedLineWidth(savedBinding);
         chartVariable.LineStyle = savedBinding?.LineStyle ?? ChartLineStyle.Solid;
-        chartVariable.AxisIndex = savedBinding?.AxisIndex ?? 0;
+        chartVariable.AxisIndex = savedBinding?.AxisIndex ?? 1;
         RememberChartVariableBinding(chartVariable);
 
         // Restore the persisted X-source selection (raises SetXSource via the setter).
@@ -246,8 +275,14 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
         {
             chartVariable.IsXAxis = true;
         }
+        else if (savedBinding == null && ChartVariables.Count == 1)
+        {
+            // The first signal dropped on a fresh graph becomes the X-source automatically;
+            // the following ones are Y series (default: first Y axis, row 2).
+            chartVariable.IsXAxis = true;
+        }
 
-        //PlotControl.Plot.Remove(signal);
+        UpdateRemoveAxisState();
     }
 
     public override Task UpdateVariableValueAsync(IVariableBase variable)
@@ -263,23 +298,145 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
         // The X-source series only provides the X coordinate for the others; it is not plotted.
         if (chartVariable.IsXAxis)
         {
-            latestX = value;
-            hasX = true;
+            AppendXSample(timestamp, value);
             return Task.CompletedTask;
         }
 
         // A Y series can only be plotted once an X-source has produced a value to pair with.
-        if (!hasX) return Task.CompletedTask;
+        if (xTimes.Count == 0) return Task.CompletedTask;
 
-        // Append the (X, Y) point and drop points older than the persistence window — the rolling
-        // trail that keeps a live Lissajous/hysteresis loop instead of an ever-growing curve.
-        chartVariable.XDateTimeVal.Add(timestamp);
-        chartVariable.XVal.Add(latestX);
-        chartVariable.YVal.Add(value);
-        PrunePersistence(chartVariable, timestamp);
+        // Pair by TIMESTAMP, never by arrival order: network transports (eth/XCP) deliver
+        // samples in per-variable bursts, and pairing each Y with the latest received X turned
+        // two clean sines into a staircase (a whole Y burst shared one X value).
+        if (timestamp <= xTimes[^1])
+        {
+            AppendPoint(chartVariable, timestamp, GetXValueAt(timestamp), value);
+            RefreshThrottled(timestamp);
+        }
+        else
+        {
+            // Y is ahead of the X stream — hold it until an X sample covers its time.
+            chartVariable.PendingY.Add((timestamp, value));
+        }
 
-        RefreshPlotForValue(timestamp, latestX, value, chartVariable);
         return Task.CompletedTask;
+    }
+
+    /// <summary>Records an X-source sample into the pairing history (ascending timestamps;
+    /// a backward jump means restart and starts a fresh history) and releases any waiting
+    /// Y samples the X stream now covers.</summary>
+    private void AppendXSample(DateTime timestamp, double value)
+    {
+        if (xTimes.Count > 0 && timestamp < xTimes[^1])
+        {
+            xTimes.Clear();
+            xValues.Clear();
+        }
+
+        xTimes.Add(timestamp);
+        xValues.Add(value);
+
+        // History only needs to cover the persistence window (plus slack for late Y bursts).
+        var cutoff = timestamp.AddMilliseconds(-PersistenceMs - 1000);
+        var drop = 0;
+        while (drop < xTimes.Count - 1 && xTimes[drop] < cutoff)
+        {
+            drop++;
+        }
+
+        if (drop > 0)
+        {
+            xTimes.RemoveRange(0, drop);
+            xValues.RemoveRange(0, drop);
+        }
+
+        FlushPendingY(timestamp);
+    }
+
+    /// <summary>Emits the buffered Y samples whose timestamps the X stream has reached.</summary>
+    private void FlushPendingY(DateTime now)
+    {
+        var flushed = false;
+        foreach (var cv in ChartVariables)
+        {
+            if (cv.IsXAxis || cv.PendingY.Count == 0)
+            {
+                continue;
+            }
+
+            var take = 0;
+            while (take < cv.PendingY.Count && cv.PendingY[take].Timestamp <= now)
+            {
+                var (t, v) = cv.PendingY[take];
+                AppendPoint(cv, t, GetXValueAt(t), v);
+                take++;
+            }
+
+            if (take > 0)
+            {
+                cv.PendingY.RemoveRange(0, take);
+                flushed = true;
+            }
+        }
+
+        if (flushed)
+        {
+            RefreshThrottled(now);
+        }
+    }
+
+    /// <summary>X value at the given time: exact sample when one exists, otherwise linear
+    /// interpolation between the surrounding X samples (clamped at the history edges).</summary>
+    private double GetXValueAt(DateTime timestamp)
+    {
+        var index = xTimes.BinarySearch(timestamp);
+        if (index >= 0)
+        {
+            // Equal timestamps are legal (the DAQ timestamp mapper clamps backward steps to
+            // keep the axis monotonic) — take the newest of the duplicates.
+            while (index + 1 < xTimes.Count && xTimes[index + 1] == xTimes[index])
+            {
+                index++;
+            }
+
+            return xValues[index];
+        }
+
+        index = ~index;
+        if (index == 0)
+        {
+            return xValues[0];
+        }
+
+        if (index >= xTimes.Count)
+        {
+            return xValues[^1];
+        }
+
+        var t0 = xTimes[index - 1];
+        var t1 = xTimes[index];
+        var fraction = (timestamp - t0).TotalMilliseconds / (t1 - t0).TotalMilliseconds;
+        return xValues[index - 1] + (xValues[index] - xValues[index - 1]) * fraction;
+    }
+
+    private void AppendPoint(ChartVariable chartVariable, DateTime timestamp, double xVal, double yVal)
+    {
+        chartVariable.XDateTimeVal.Add(timestamp);
+        chartVariable.XVal.Add(xVal);
+        chartVariable.YVal.Add(yVal);
+        PrunePersistence(chartVariable, timestamp);
+    }
+
+    /// <summary>Forgets the X history and all waiting Y samples (X-source changed/removed,
+    /// graph cleared) — pairing starts over with the next X sample.</summary>
+    private void ResetPairingState()
+    {
+        xTimes.Clear();
+        xValues.Clear();
+        foreach (var cv in ChartVariables)
+        {
+            cv.PendingY.Clear();
+        }
     }
 
     /// <summary>
@@ -289,15 +446,17 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
     /// </summary>
     private void SetXSource(ChartVariable xSource)
     {
+        // Clearing IsXAxis raises XAxisClearedAction -> ClearXSource turns the former X-source
+        // back into a Y series (visible, first Y axis) and wipes the paired points.
         foreach (var other in ChartVariables.Where(cv => !ReferenceEquals(cv, xSource) && cv.IsXAxis).ToList())
         {
             other.IsXAxis = false;
-            other.IsVisible = true;
         }
 
         xSource.IsVisible = false;
+        xSource.AxisIndex = 0;
 
-        hasX = false;
+        ResetPairingState();
         foreach (var cv in ChartVariables)
         {
             cv.XDateTimeVal.Clear();
@@ -305,13 +464,35 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
             cv.YVal.Clear();
         }
 
-        // The X axis label is the X-source signal's name (no separate setting).
-        if (PlotControl != null)
-        {
-            PlotControl.Plot.Axes.Bottom.Label.Text = xSource.Variable != null ? GetVariableLegendText(xSource.Variable) : string.Empty;
-        }
+        // The X row governs the bottom axis; its label falls back to the X-source signal name.
+        ApplyXRowToPlot();
 
         RememberChartVariableBinding(xSource);
+        UpdateRemoveAxisState();
+        PlotControl?.Refresh();
+    }
+
+    /// <summary>
+    /// The series stopped being the X-source (unchecked, or another series took over): it becomes
+    /// a normal Y series on the first Y axis again. Paired points are dropped and the graph waits
+    /// for a manual X choice — no other series is silently promoted to X.
+    /// </summary>
+    private void ClearXSource(ChartVariable former)
+    {
+        former.IsVisible = true;
+        former.AxisIndex = 1;
+
+        ResetPairingState();
+        foreach (var cv in ChartVariables)
+        {
+            cv.XDateTimeVal.Clear();
+            cv.XVal.Clear();
+            cv.YVal.Clear();
+        }
+
+        ApplyXRowToPlot();
+        RememberChartVariableBinding(former);
+        UpdateRemoveAxisState();
         PlotControl?.Refresh();
     }
 
@@ -354,48 +535,106 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
         ClearGraph(null!);
     }
 
-    private void ClearChartData(DateTime newBaseTime)
+    // Throttle the redraw so a fast sample stream does not repaint on every point. The axis
+    // fit runs on the same throttle — never per sample (no unthrottled redraw storm).
+    private void RefreshThrottled(DateTime timestamp)
     {
-        foreach (var chartVariable in ChartVariables)
-        {
-            chartVariable.XDateTimeVal.Clear();
-            chartVariable.XVal.Clear();
-            chartVariable.YVal.Clear();
-        }
-
-        baseTime = newBaseTime;
-        lastUpdateTime = DateTime.MinValue;
-    }
-
-    private void RefreshPlotForValue(DateTime timestamp, double xVal, double val, ChartVariable chartVariable)
-    {
-        var axisIndex = GetValidVerticalAxisIndex(chartVariable.AxisIndex);
-        if (axisIndex < 0)
-        {
-            return;
-        }
-
-        if (axisIndex != chartVariable.AxisIndex)
-        {
-            chartVariable.AxisIndex = axisIndex;
-        }
-
-        if (((VerticalAxis)VerticalAxes[axisIndex]).IsAutoScale)
-        {
-            RecalculateVerticalAxisLimits(xVal, val, axisIndex);
-        }
-
-        // XY graph: the X axis is a value axis (a chosen signal), not a scrolling time axis —
-        // do NOT re-anchor the X limits to the latest sample. X autoscale/limits are handled like Y.
-
-        // Throttle the redraw so a fast sample stream does not repaint on every point.
         if (lastUpdateTime == DateTime.MinValue
             || timestamp < lastUpdateTime
             || (timestamp - lastUpdateTime).TotalMilliseconds > RefreshThrottleMs)
         {
+            UpdateAxesFromData();
             PlotControl.Refresh();
             lastUpdateTime = timestamp;
         }
+    }
+
+    /// <summary>
+    /// Applies the axes settings to the plot from the live data window. Autoscale = FIT: the
+    /// axis follows the min/max of the currently buffered (persistence-window) points, shrinking
+    /// as well as growing — an XY graph is a value-vs-value view, an oscilloscope-style fit, not
+    /// the grow-only expansion a running time graph uses. Manual axes hold their Min/Max (the X
+    /// row is re-applied to the bottom axis here, so runtime edits and toggles take effect
+    /// immediately).
+    /// </summary>
+    private void UpdateAxesFromData()
+    {
+        // Only an autoscale CHANGE touches the bottom axis. A manual X row is applied when the
+        // user edits it (RefreshAction -> ApplyXRowToPlot) and never re-asserted here — a
+        // per-refresh slam made runtime mouse zoom/pan and range changes impossible.
+        var xRow = GetXAxisRow();
+        if (xRow != null
+            && xRow.IsAutoScale
+            && TryGetDataRange(cv => cv.XVal, _ => true, out var xMin, out var xMax))
+        {
+            PadRange(ref xMin, ref xMax);
+            if (xRow.SetRangeQuiet(xMin, xMax))
+            {
+                PlotControl.Plot.Axes.SetLimitsX(xRow.Min, xRow.Max);
+            }
+        }
+
+        // Y axes are real plot axes — writing Min/Max is enough, no SetLimitsY needed.
+        for (var i = 1; i < VerticalAxes.Count; i++)
+        {
+            if (VerticalAxes[i] is not VerticalAxis yAxis || !yAxis.IsAutoScale)
+            {
+                continue;
+            }
+
+            var axisIndex = i;
+            if (TryGetDataRange(cv => cv.YVal, cv => cv.AxisIndex == axisIndex, out var yMin, out var yMax))
+            {
+                PadRange(ref yMin, ref yMax);
+                yAxis.SetRangeQuiet(yMin, yMax);
+            }
+        }
+    }
+
+    /// <summary>Min/max over the buffered points of all visible Y series matching the filter.
+    /// False when no such points exist (the axis then keeps its current limits).</summary>
+    private bool TryGetDataRange(Func<ChartVariable, List<double>> values, Func<ChartVariable, bool> filter, out double min, out double max)
+    {
+        min = double.MaxValue;
+        max = double.MinValue;
+        var found = false;
+
+        foreach (var chartVariable in ChartVariables)
+        {
+            if (chartVariable.IsXAxis || !chartVariable.IsVisible || !filter(chartVariable))
+            {
+                continue;
+            }
+
+            var list = values(chartVariable);
+            for (var i = 0; i < list.Count; i++)
+            {
+                var val = list[i];
+                if (val < min) min = val;
+                if (val > max) max = val;
+                found = true;
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>5% margin around the fitted range; a degenerate (single-value) range gets a
+    /// fixed band so the axis never collapses to zero span. The result is rounded to a tidy
+    /// value (the margin absorbs the rounding), so the axes grid shows e.g. 5.25 instead of
+    /// 5.2500000000000003 — long raw doubles also blew up the auto-sized Min/Max columns.</summary>
+    private static void PadRange(ref double min, ref double max)
+    {
+        var span = max - min;
+        var pad = span > 0
+            ? span * 0.05
+            : Math.Max(Math.Abs(max) * 0.05, 1.0);
+        min -= pad;
+        max += pad;
+
+        var digits = Math.Clamp(2 - (int)Math.Floor(Math.Log10(max - min)), 0, 15);
+        min = Math.Round(min, digits);
+        max = Math.Round(max, digits);
     }
 
     public override void UpdateThemeSettingsControl(System.Windows.Media.Color bgColor, System.Windows.Media.Color fgColor, int fontSize)
@@ -407,6 +646,7 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
         axesFontSize = (int)Math.Round(PlotFontSizeMultiplier * fontSize * scale);
         backgroundColor = bgColor.ToScottPlotColor();
         foregroundColor = fgColor.ToScottPlotColor();
+        isThemeApplied = true;
 
         // Legend
         PlotControl.Plot.Legend.FontSize = axesFontSize;
@@ -427,9 +667,9 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
         PlotControl.Plot.Axes.Title.IsVisible = false;
         
         
-        // Set horizontal axes. In an XY graph X is a chosen signal, not time — the label is the
-        // X-source signal name (set in SetXSource), so it is NOT reset here (that would wipe it).
-        PlotControl.Plot.Axes.SetLimitsX(-10, 10);
+        // Set horizontal axes. In an XY graph X is a chosen signal, not time — label, limits,
+        // visibility and custom color come from the X row (ApplyXRowToPlot below); only the
+        // theme-driven styling is set here.
         PlotControl.Plot.Axes.Bottom.Label.FontSize = plotFontSize;
         PlotControl.Plot.Axes.Bottom.Label.Bold = false;   
         PlotControl.Plot.Axes.Bottom.TickLabelStyle.FontSize = axesFontSize;
@@ -465,7 +705,8 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
         // Grid
         var gridColor = new Color((foregroundColor.R + backgroundColor.R)/2, (foregroundColor.G + backgroundColor.G)/2, (foregroundColor.B + backgroundColor.B)/2, 0.2f);
         PlotControl.Plot.Grid.LineColor = gridColor;
-        PlotControl.Plot.Grid.YAxis = VerticalAxes[0];
+        // Row 0 is the X row (not a plot axis) — the grid follows the first Y axis.
+        PlotControl.Plot.Grid.YAxis = VerticalAxes[1];
         PlotControl.Plot.Grid.YAxisStyle.MajorLineStyle.IsVisible = true;
         PlotControl.Plot.Grid.YAxisStyle.MajorLineStyle.Color = gridColor;
      
@@ -479,7 +720,10 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
 
             axis.FrameLineStyle.Color = foregroundColor;
         }
-        
+
+        // Re-apply the X row on top of the theme styling (custom color, label, limits).
+        ApplyXRowToPlot();
+
         PlotControl.Plot.ShowLegend();
         PlotControl.Refresh();
     }
@@ -495,6 +739,9 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
         VerticalAxisBindings ??= [];
         VerticalAxes ??= [];
         AxisNumbers ??= [];
+        // Field initializers are skipped by DataContract deserialization.
+        xTimes ??= [];
+        xValues ??= [];
         currentColorIndex = Math.Max(currentColorIndex, 0);
 
         RemoveChartVariableCommand = new RelayCommand<object>(RemoveChartVariable);
@@ -521,6 +768,11 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
         PlotControl.Plot.Axes.Left.TickGenerator = new ScottPlot.TickGenerators.EmptyTickGenerator();
         // Prava vychozi osa: stejna pojistka (dnes ticky nema jen diky prazdnym limitum)
         PlotControl.Plot.Axes.Right.TickGenerator = new ScottPlot.TickGenerators.EmptyTickGenerator();
+
+        // The two fixed rows (X + first Y) exist from the moment the control lands on the
+        // workspace — the axes are configurable before any signal is bound.
+        RestoreVerticalAxes();
+        UpdateRemoveAxisState();
     }
 
     [OnDeserialized]
@@ -630,6 +882,8 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
             .ToList();
     }
 
+    // The axes grid always holds at least two fixed rows: row 0 = the X row (configuration
+    // driving the bottom axis, never a plot Y axis), row 1 = the first Y axis.
     private void RestoreVerticalAxes()
     {
         if (VerticalAxes.Count > 0)
@@ -639,28 +893,47 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
 
         if (VerticalAxisBindings.Count == 0)
         {
-            AddAxis(Edge.Left, 0);
+            AddXAxisRow(null);
+            AddAxis(Edge.Left, 1);
+            return;
+        }
+
+        // The X row is persisted as the first binding, marked by Edge.Bottom. Older saves
+        // (pre X-row format) contain only Y rows — prepend a default X row in front of them.
+        var startIndex = 0;
+        if (VerticalAxisBindings[0].Edge == Edge.Bottom)
+        {
+            AddXAxisRow(VerticalAxisBindings[0]);
+            startIndex = 1;
         }
         else
         {
-            for (var i = 0; i < VerticalAxisBindings.Count; i++)
-            {
-                AddAxis(VerticalAxisBindings[i], i);
-            }
+            AddXAxisRow(null);
+        }
+
+        for (var i = startIndex; i < VerticalAxisBindings.Count; i++)
+        {
+            AddAxis(VerticalAxisBindings[i], VerticalAxes.Count);
+        }
+
+        if (VerticalAxes.Count < 2)
+        {
+            AddAxis(Edge.Left, 1);
         }
     }
 
     private int GetValidVerticalAxisIndex(int axisIndex)
     {
         RestoreVerticalAxes();
-        if (VerticalAxes.Count == 0)
+        if (VerticalAxes.Count < 2)
         {
             return -1;
         }
 
-        return axisIndex >= 0 && axisIndex < VerticalAxes.Count
+        // Y series live on rows 1.. — row 0 is the fixed X row.
+        return axisIndex >= 1 && axisIndex < VerticalAxes.Count
             ? axisIndex
-            : 0;
+            : 1;
     }
 
     private void UpdateVerticalAxisTheme()
@@ -676,32 +949,49 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
         }
     }
 
-    private void RecalculateVerticalAxisLimits(double xVal, double yVal, int axisIndex)
+    private VerticalAxis? GetXAxisRow()
     {
-        // The axis is identified by its index, never by Name - the name is user-editable.
-        if (VerticalAxes[axisIndex] is not VerticalAxis yAxis)
+        RestoreVerticalAxes();
+        return VerticalAxes.OfType<VerticalAxis>().FirstOrDefault(a => a.IsXAxisRow);
+    }
+
+    /// <summary>
+    /// Propagates the X row onto the bottom axis: label (custom, or the X-source signal name),
+    /// visibility, custom color (theme color when unset) and limits.
+    /// </summary>
+    private void ApplyXRowToPlot()
+    {
+        if (PlotControl == null)
         {
             return;
         }
 
-        var top = yAxis.Max;
-        var bottom = yAxis.Min;
+        var xRow = GetXAxisRow();
+        if (xRow == null)
+        {
+            return;
+        }
 
-        // Written through Minimum/Maximum, not the raw ScottPlot range - the axes settings grid
-        // binds to these properties, and a manual edit only reaches the axis when the entered
-        // value differs from them.
-        if (yVal > top)
+        var bottom = PlotControl.Plot.Axes.Bottom;
+        var xSource = ChartVariables.FirstOrDefault(cv => cv.IsXAxis);
+        bottom.Label.Text = !string.IsNullOrWhiteSpace(xRow.AxisLabel)
+            ? xRow.AxisLabel
+            : xSource?.Variable != null
+                ? GetVariableLegendText(xSource.Variable)
+                : string.Empty;
+        bottom.IsVisible = xRow.IsVisible;
+
+        if (xRow.AxisColor.HasValue || isThemeApplied)
         {
-            yAxis.Maximum = yVal * 1.1;
+            var color = xRow.AxisColor?.ToScottPlotColor() ?? foregroundColor;
+            bottom.FrameLineStyle.Color = color;
+            bottom.MajorTickStyle.Color = color;
+            bottom.MinorTickStyle.Color = color;
+            bottom.TickLabelStyle.ForeColor = color;
+            bottom.Label.ForeColor = color;
         }
-        else if (yVal < bottom && yVal > 0)
-        {
-            yAxis.Minimum = yVal * 0.7;
-        }
-        else if (yVal < bottom && yVal < 0)
-        {
-            yAxis.Minimum = yVal * 1.1;
-        }
+
+        PlotControl.Plot.Axes.SetLimitsX(xRow.Min, xRow.Max);
     }
 
     private static string GetVariableLegendText(IVariableBase variable)
@@ -888,6 +1178,22 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
             ? ChartVariables[Math.Min(index, ChartVariables.Count - 1)]
             : null;
 
+        if (selected.IsXAxis)
+        {
+            // The X-source was removed: no silent promotion of another series — clear the
+            // paired points and wait for a manual X choice.
+            ResetPairingState();
+            foreach (var cv in ChartVariables)
+            {
+                cv.XDateTimeVal.Clear();
+                cv.XVal.Clear();
+                cv.YVal.Clear();
+            }
+
+            ApplyXRowToPlot();
+        }
+
+        UpdateRemoveAxisState();
         PlotControl?.Refresh();
         RaiseVariableBindingsChanged();
     }
@@ -901,23 +1207,57 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
     
     private void ClearGraph(object parameter)
     {
-        baseTime = DateTime.MinValue;
-        lastUpdateTime = baseTime;
+        lastUpdateTime = DateTime.MinValue;
 
+        ResetPairingState();
         foreach (var chartVariable in ChartVariables)
         {
             chartVariable.XDateTimeVal.Clear();
             chartVariable.XVal.Clear();
             chartVariable.YVal.Clear();
         }
-        
+
         PlotControl.Refresh();
     }
     
     private void AddAxis(object parameter)
     {
         AddAxis(Edge.Right, VerticalAxes.Count);
-        
+        UpdateRemoveAxisState();
+    }
+
+    /// <summary>
+    /// Creates the fixed X row (row 0 of the axes grid). Configuration only — never registered
+    /// in the plot (no vertical ruler); its values drive the bottom axis via ApplyXRowToPlot.
+    /// Persisted as the first VerticalAxisBinding, marked by Edge.Bottom.
+    /// </summary>
+    private void AddXAxisRow(VerticalAxisBinding? axisBinding)
+    {
+        var xRow = new VerticalAxis(Edge.Bottom)
+        {
+            IsXAxisRow = true,
+            Name = string.IsNullOrWhiteSpace(axisBinding?.Name) ? "X" : axisBinding.Name,
+            AxisLabel = axisBinding?.Label ?? string.Empty,
+            IsVisible = axisBinding?.IsVisible ?? true,
+            IsAutoScale = axisBinding?.IsAutoScale ?? true,
+        };
+
+        if (axisBinding != null && axisBinding.TryGetAxisColor(out var axisColor))
+        {
+            xRow.AxisColor = axisColor;
+        }
+
+        VerticalAxes.Add(xRow);
+
+        xRow.RefreshAction = () =>
+        {
+            ApplyXRowToPlot();
+            PlotControl.Refresh();
+        };
+
+        xRow.Minimum = axisBinding?.Minimum ?? -10.0;
+        xRow.Maximum = axisBinding?.Maximum ?? 10.0;
+        ApplyXRowToPlot();
     }
 
     private void AddAxis(Edge edge, int index)
@@ -978,31 +1318,68 @@ public class XYGraphControlViewModel : ControlBase, IFileDialogAwareControl, IVa
     
     private void RemoveAxis(object parameter)
     {
-        if (VerticalAxes.Count > 1 && SelectedVerticalAxis != null)
+        if (SelectedVerticalAxis is not VerticalAxis axis)
         {
-            var index = VerticalAxes.IndexOf(SelectedVerticalAxis);
-            if (index == 0) return;
-            
-            PlotControl.Plot.Axes.Remove(SelectedVerticalAxis);
-            VerticalAxes.Remove(SelectedVerticalAxis);
-            if (AxisNumbers.Count > 0)
-            {
-                AxisNumbers.RemoveAt(AxisNumbers.Count - 1);
-            }
-
-            // Indexy os se posunuly - preváz signaly na platne osy (setter AxisIndex
-            // pres ChangeAxisAction zvaliduje index a znovu priradi ChartSignal.Axes.YAxis)
-            foreach (var chartVariable in ChartVariables)
-            {
-                chartVariable.AxisIndex = Math.Min(chartVariable.AxisIndex, VerticalAxes.Count - 1);
-            }
-
-            if (VerticalAxes.Count > 0)
-            {
-                SelectedVerticalAxis = VerticalAxes[Math.Min(index, VerticalAxes.Count - 1)];
-            }
-            PlotControl.Refresh();
+            return;
         }
+
+        // Rows 0 (X) and 1 (first Y) are fixed, and an axis with signals assigned stays too —
+        // the menu item is disabled with a tooltip explaining why (UpdateRemoveAxisState);
+        // this guard just mirrors that rule for safety.
+        var index = VerticalAxes.IndexOf(axis);
+        if (index < 2 || ChartVariables.Any(cv => !cv.IsXAxis && cv.AxisIndex == index))
+        {
+            return;
+        }
+
+        PlotControl.Plot.Axes.Remove(axis);
+        VerticalAxes.Remove(axis);
+        if (AxisNumbers.Count > 0)
+        {
+            AxisNumbers.RemoveAt(AxisNumbers.Count - 1);
+        }
+
+        // Rows above the removed one shifted down by one — re-point their signals (the
+        // AxisIndex setter re-assigns ChartSignal.Axes.YAxis via ChangeAxisAction).
+        foreach (var chartVariable in ChartVariables.Where(cv => !cv.IsXAxis && cv.AxisIndex > index).ToList())
+        {
+            chartVariable.AxisIndex--;
+        }
+
+        SelectedVerticalAxis = VerticalAxes[Math.Min(index, VerticalAxes.Count - 1)];
+        PlotControl.Refresh();
+    }
+
+    private void UpdateRemoveAxisState()
+    {
+        if (SelectedVerticalAxis is not VerticalAxis axis || VerticalAxes.Count == 0)
+        {
+            CanRemoveSelectedAxis = false;
+            RemoveAxisBlockReason = "No axis selected.";
+            return;
+        }
+
+        var index = VerticalAxes.IndexOf(axis);
+        if (index < 2)
+        {
+            CanRemoveSelectedAxis = false;
+            RemoveAxisBlockReason = "The X axis and the first Y axis are fixed and cannot be removed.";
+            return;
+        }
+
+        var users = ChartVariables
+            .Where(cv => !cv.IsXAxis && cv.AxisIndex == index && cv.Variable != null)
+            .Select(cv => GetVariableLegendText(cv.Variable))
+            .ToList();
+        if (users.Count > 0)
+        {
+            CanRemoveSelectedAxis = false;
+            RemoveAxisBlockReason = $"The axis is used by: {string.Join(", ", users)}";
+            return;
+        }
+
+        CanRemoveSelectedAxis = true;
+        RemoveAxisBlockReason = null;
     }
 
     #endregion
