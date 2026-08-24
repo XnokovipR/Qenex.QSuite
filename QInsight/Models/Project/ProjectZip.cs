@@ -4,12 +4,21 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Xml.Serialization;
 using Qenex.QLibs.XmlInOut;
+using Qenex.QSuite.Helpers.ProjectFile;
 using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.ModuleXmlHandler;
 using Qenex.QSuite.ModuleXmlHandler.XmlStructure;
 
 namespace Qenex.QInsight.Models.Project;
+
+/// <summary>Outcome of opening a project file. Data is set only for Success;
+/// PasswordRequired / WrongPasswordOrCorrupt drive the password prompt loop.</summary>
+public class ProjectOpenResult
+{
+    public ProjectUnzipStatus Status { get; init; } = ProjectUnzipStatus.Error;
+    public ProjectFilesData? Data { get; init; }
+}
 
 public class ProjectZip
 {
@@ -20,12 +29,18 @@ public class ProjectZip
 
     #region Zip / unzip project file
 
-    public static async Task<ProjectFilesData?> UnzipProjectFileAsync(string zipFilePath, ILogger? logger = null)
+    public static async Task<ProjectOpenResult> UnzipProjectFileAsync(string zipFilePath, string? password = null, ILogger? logger = null)
     {
         var projectData = new ProjectFilesData(logger);
 
-        var prjZip = new Qenex.QSuite.Helpers.ProjectFile.ProjectZip();
-        var streams = prjZip.Unzip(zipFilePath);
+        var prjZip = new Qenex.QSuite.Helpers.ProjectFile.ProjectZip(logger);
+        var unzipResult = prjZip.UnzipProject(zipFilePath, password);
+        if (unzipResult.Status != ProjectUnzipStatus.Success)
+        {
+            return new ProjectOpenResult { Status = unzipResult.Status };
+        }
+
+        var streams = unzipResult.Streams;
 
         var scriptFiles = new Dictionary<string, string>();
         
@@ -70,7 +85,7 @@ public class ProjectZip
 
         if (projectData.Module == null)
         {
-            return null;
+            return new ProjectOpenResult();
         }
 
         foreach (var script in projectData.Module.Scripts)
@@ -84,12 +99,8 @@ public class ProjectZip
                 projectData.MissingScriptFiles.Add(script.FileName);
             }
         }
-        
-        // test all properties of the projectData
-        var isAllPropertiesLoaded = projectData?.Module != null;
-        if (!isAllPropertiesLoaded) return null;
 
-        return projectData;
+        return new ProjectOpenResult { Status = ProjectUnzipStatus.Success, Data = projectData };
     }
 
     public static async Task ZipProjectFileAsync(
@@ -98,6 +109,7 @@ public class ProjectZip
         IEnumerable<WorkspaceProjectData> workspaces,
         IEnumerable<ScriptDocumentProjectData> scriptDocuments,
         Stream? workspaceLayoutStream,
+        string? password = null,
         ILogger? logger = null)
     {
         var prjZip = new Qenex.QSuite.Helpers.ProjectFile.ProjectZip(logger);
@@ -106,7 +118,7 @@ public class ProjectZip
         var xmlModule = xmlModuleHandler.CreateXmlModule(realProjectData.Module);
         var streams = CreateProjectStreams(xmlModule, workspaces, scriptDocuments, workspaceLayoutStream);
 
-        await prjZip.ZipAsync(zipFilePath, streams);
+        await prjZip.ZipProjectAsync(zipFilePath, streams, password);
     }
 
     #endregion

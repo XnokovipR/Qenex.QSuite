@@ -20,6 +20,7 @@ using Qenex.QSuite.Common.PluginManager;
 using Qenex.QSuite.Controls.Control;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
+using ProjectUnzipStatus = Qenex.QSuite.Helpers.ProjectFile.ProjectUnzipStatus;
 using Qenex.QSuite.ModuleXmlHandler;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Scripting.ScriptingEngine;
@@ -106,6 +107,7 @@ public partial class ShellWindowModel
     public RelayCommandAsync<RadDocking> RibbonSaveProjectCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonSaveProjectAsCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonCloseProjectCommand { get; set; }
+    public RelayCommand<object> RibbonProjectPasswordCommand { get; set; }
     public RelayCommandAsync<RadDocking> RibbonAddWorkspaceCommand { get; set; }
     public RelayCommand<RadDocking> RibbonRemoveWorkspaceCommand { get; set; }
     public RelayCommand<object> RibbonProjectConfigurationProjectCommand { get; set; }
@@ -157,6 +159,7 @@ public partial class ShellWindowModel
         RibbonSaveProjectCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsync, _ => CanUseProjectCommand());
         RibbonSaveProjectAsCommand = new RelayCommandAsync<RadDocking>(SaveProjectAsAsync, _ => CanUseProjectCommand());
         RibbonCloseProjectCommand = new RelayCommandAsync<RadDocking>(CloseProjectAsync, _ => CanUseProjectCommand());
+        RibbonProjectPasswordCommand = new RelayCommand<object>(_ => ManageProjectPassword(), _ => CanUseProjectCommand());
         RibbonAddWorkspaceCommand = new RelayCommandAsync<RadDocking>(AddWorkspaceAsync, _ => CanUseProjectCommand());
         RibbonRemoveWorkspaceCommand = new RelayCommand<RadDocking>(RemoveWorkspace, _ => CanUseProjectCommand());
         RibbonProjectConfigurationProjectCommand = new RelayCommand<object>(
@@ -716,8 +719,31 @@ public partial class ShellWindowModel
                 }
             }
 
-            var projectData = await ProjectZip.UnzipProjectFileAsync(filePath, logger);
-            if (projectData == null)
+            // Password flow: first try without a password; a protected file answers
+            // PasswordRequired and the prompt loop runs until success or Cancel.
+            string? password = null;
+            ProjectOpenResult openResult;
+            while (true)
+            {
+                openResult = await ProjectZip.UnzipProjectFileAsync(filePath, password, logger);
+                if (openResult.Status is ProjectUnzipStatus.PasswordRequired or ProjectUnzipStatus.WrongPasswordOrCorrupt)
+                {
+                    password = PromptProjectPassword(
+                        Path.GetFileName(filePath),
+                        isRetry: openResult.Status == ProjectUnzipStatus.WrongPasswordOrCorrupt);
+                    if (password == null)
+                    {
+                        return;
+                    }
+
+                    continue;
+                }
+
+                break;
+            }
+
+            var projectData = openResult.Data;
+            if (openResult.Status != ProjectUnzipStatus.Success || projectData == null)
             {
                 logger?.Log(LogLevel.Warn, $"Failed to load project file \"{Path.GetFileName(filePath)}\".");
                 return;
@@ -742,6 +768,7 @@ public partial class ShellWindowModel
                 DispatcherPriority.ApplicationIdle);
                 
             currentProjectFilePath = Path.GetFullPath(filePath);
+            currentProjectPassword = password;
             SetProjectWindowTitle(currentProjectFilePath);
             ChangeIsProjectMade(true);
             ClearReplayDataLogImportState();
@@ -880,7 +907,7 @@ public partial class ShellWindowModel
             var workspaces = CreateWorkspaceProjectData();
             var scriptDocuments = CreateScriptDocumentProjectData();
             using var workspaceLayoutStream = CreateWorkspaceLayoutStream(shellRadDocking);
-            await ProjectZip.ZipProjectFileAsync(filePath, realProjectData, workspaces, scriptDocuments, workspaceLayoutStream, logger);
+            await ProjectZip.ZipProjectFileAsync(filePath, realProjectData, workspaces, scriptDocuments, workspaceLayoutStream, currentProjectPassword, logger);
                 
             if (hasProjectBackup)
             {
@@ -993,6 +1020,73 @@ public partial class ShellWindowModel
         return promptViewModel.Decision;
     }
 
+    /// <summary>Modal password prompt for opening a protected project. Returns the
+    /// entered password, or null when the user cancels the open.</summary>
+    private static string? PromptProjectPassword(string fileName, bool isRetry)
+    {
+        var promptViewModel = new ProjectPasswordPromptViewModel(fileName, isRetry);
+        var promptView = new ProjectPasswordPromptView
+        {
+            DataContext = promptViewModel
+        };
+
+        var promptDialog = new RadWindow
+        {
+            Owner = Application.Current.MainWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Header = "Project Password",
+            Width = 420,
+            Height = 220,
+            MinWidth = 420,
+            MinHeight = 220,
+            ResizeMode = ResizeMode.NoResize,
+            Content = promptView
+        };
+
+        promptViewModel.SetParentWindow(promptDialog);
+        promptDialog.ShowDialog();
+        return promptViewModel.EnteredPassword;
+    }
+
+    /// <summary>Ribbon Password button: set, change or remove the password of the open
+    /// project. The change is held in memory and takes effect on the next save.</summary>
+    private void ManageProjectPassword()
+    {
+        var passwordViewModel = new ProjectPasswordViewModel(currentProjectPassword);
+        var passwordView = new ProjectPasswordView
+        {
+            DataContext = passwordViewModel
+        };
+
+        var passwordDialog = new RadWindow
+        {
+            Owner = Application.Current.MainWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Header = "Project Password",
+            Width = 480,
+            Height = 340,
+            MinWidth = 480,
+            MinHeight = 340,
+            ResizeMode = ResizeMode.NoResize,
+            Content = passwordView
+        };
+
+        passwordViewModel.SetParentWindow(passwordDialog);
+        passwordDialog.ShowDialog();
+
+        switch (passwordViewModel.Action)
+        {
+            case ProjectPasswordAction.Set:
+                currentProjectPassword = passwordViewModel.ResultPassword;
+                logger.Log(LogLevel.Info, "Project password set. It will be applied when the project is saved.");
+                break;
+            case ProjectPasswordAction.Remove:
+                currentProjectPassword = null;
+                logger.Log(LogLevel.Info, "Project password removed. The change will be applied when the project is saved.");
+                break;
+        }
+    }
+
     private Task<bool> ConfirmCloseProjectAsync(string content, string header)
     {
         var closeConfirmed = new TaskCompletionSource<bool>();
@@ -1027,6 +1121,7 @@ public partial class ShellWindowModel
         isEditPresentationEnabled = false;
         isEditEventEnabled = false;
         currentProjectFilePath = null;
+        currentProjectPassword = null;
         SetProjectWindowTitle(currentProjectFilePath);
         ChangeIsProjectMade(false);
         ClearReplayDataLogImportState();
@@ -1049,6 +1144,7 @@ public partial class ShellWindowModel
         realProjectData = RealProjectData.CreateEmptyProjectData(ShellWindow.MainAppSettings.ScriptEngine, logger);
         solutionExplorerViewModel.ReloadProjectData(realProjectData);
         currentProjectFilePath = null;
+        currentProjectPassword = null;
         SetProjectWindowTitle(currentProjectFilePath);
         ChangeIsProjectMade(true);
         ClearReplayDataLogImportState();
@@ -2593,6 +2689,7 @@ public partial class ShellWindowModel
         RibbonSaveProjectCommand.OnCanExecuteChanged();
         RibbonSaveProjectAsCommand.OnCanExecuteChanged();
         RibbonCloseProjectCommand.OnCanExecuteChanged();
+        RibbonProjectPasswordCommand.OnCanExecuteChanged();
         RibbonAddWorkspaceCommand.OnCanExecuteChanged();
         RibbonRemoveWorkspaceCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationProjectCommand.OnCanExecuteChanged();
@@ -2638,6 +2735,7 @@ public partial class ShellWindowModel
         RibbonSaveProjectCommand.OnCanExecuteChanged();
         RibbonSaveProjectAsCommand.OnCanExecuteChanged();
         RibbonCloseProjectCommand.OnCanExecuteChanged();
+        RibbonProjectPasswordCommand.OnCanExecuteChanged();
         RibbonAddWorkspaceCommand.OnCanExecuteChanged();
         RibbonRemoveWorkspaceCommand.OnCanExecuteChanged();
         RibbonProjectConfigurationProjectCommand.OnCanExecuteChanged();

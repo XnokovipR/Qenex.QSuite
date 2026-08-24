@@ -49,6 +49,9 @@ public partial class ShellWindowModel : PropertyChangedBaseWithValidation
 	private bool isEditPresentationEnabled;
 	private bool isEditEventEnabled;
 	private string? currentProjectFilePath;
+	// Password of the open project (null = built-in key). Kept for saves and applied
+	// or cleared via the ribbon Password dialog; never persisted anywhere.
+	private string? currentProjectPassword;
 	private ScriptingContext? pythonInterpreterStandaloneContext;
 
 	// ViewModels
