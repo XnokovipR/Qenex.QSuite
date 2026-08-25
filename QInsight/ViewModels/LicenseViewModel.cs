@@ -1,5 +1,4 @@
 using System.Windows;
-using Qenex.Licensing;
 using Qenex.QInsight.Licensing;
 using Qenex.QLibs.QUI;
 using Qenex.QSuite.LogSystems.LogSystem;

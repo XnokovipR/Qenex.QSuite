@@ -33,7 +33,6 @@
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.142" />
-    <PackageReference Include="Qenex.Licensing" Version="1.0.0" />
     <PackageReference Include="Qenex.QLibs.QUI" Version="1.0.10" />
     <PackageReference Include="Qenex.QLibs.QUI.TelerikDocking" Version="1.0.18" />
     <PackageReference Include="Qenex.QLibs.QUI.WPF" Version="1.0.7" />
