@@ -82,6 +82,17 @@ Stopped. Fail-open, nečtou `licenseService`. Build 0 errors.
 
 Fail-open, nečte `licenseService`. **Nezkresluje data** (neposkytne žádná). Build 0 errors.
 
+### Controls — nezávislé kopie `SealValid` (2 brány: bind + live data)
+
+Reakce v doméně UI prvku, fail-open, nečte `licenseService`, nezkresluje data.
+Live-data brána je **cached** (`bool? xLiveSealOk`) — ověření **jednou**, ne na
+každou hodnotu (perf + beacon).
+
+| # | Metoda | Control (soubor) | Brány (metody) | Reakce při `false` |
+|---|--------|------------------|----------------|--------------------|
+| C1 | `GraphSealValid()` | `Controls/GraphControl/ViewModels/GraphControlViewModel.cs` | `BindVariable` + `UpdateVariableValueAsync` (cached) | nejde nabindovat proměnnou; nechodí live data (graf se neaktualizuje) |
+| C2 | `WatchSealValid()` | `Controls/WatchTableControl/ViewModels/WatchTableControlViewModel.cs` | `BindVariable` + `UpdateVariableValueAsync` (cached) | nejde nabindovat proměnnou; nechodí live data (tabulka se neaktualizuje) |
+
 ---
 
 ## Plánované validátory (plugin fáze — zatím NEnasazeno)
@@ -92,9 +103,7 @@ POZOR měřák: **nesmí zkreslit naměřená data** (spíš „odmítni/nezačn
 | Plugin | Assembly | Stav | Poznámka k reakci |
 |--------|----------|------|-------------------|
 | Modbus Slave | `ModbusSlaveProtocol` | ☐ | volitelně později (na PC se Slave skoro nepoužívá) |
-| Graph | `GraphControl` | ☐ | vykreslování |
-| WatchTable | `WatchTableControl` | ☐ | |
-| Signal | `SignalControl` | ☐ | |
+| Signal | `SignalControl` | ✗ | VYNECHÁNO (Radek 2026-08-26 — mezní přínos, controls jsou za komunikací) |
 
 (Čisté transporty `TcpClientDriver`/`TcpServerDriver` VYPADLY — nulové know-how.)
 
@@ -118,6 +127,11 @@ POZOR měřák: **nesmí zkreslit naměřená data** (spíš „odmítni/nezačn
   Radkem kvůli konzistenci — pozor: `ModbusCore` (engine, know-how) tím NENÍ
   chráněné, cracker by mohl obejít reimplementací tenkého wrapperu. Slave zatím
   vynechán (na PC se skoro nepoužívá). Build 0 errors. NECOMMITNUTO.
+- **v1 controls — 2026-08-26** — nasazeny C1 `GraphSealValid` (GraphControl) a
+  C2 `WatchSealValid` (WatchTableControl); 2 brány: `BindVariable` (nejde
+  nabindovat) + `UpdateVariableValueAsync` **cached** (nechodí live data).
+  Fail-open, v ViewModelu (MVVM), nezkresluje data. Oba controls build 0 errors.
+  NECOMMITNUTO. **SignalControl VYNECHÁN** (Radek — mezní přínos).
 
 ---
 
@@ -135,3 +149,5 @@ ne číslo. Přesto orientační přehled, kde přesně to hledat:
 | D2 | `SinkSealValid` | `Drivers/FileDataLoggerDriver/FileDataLoggerDriver.cs` | 242 | 553 |
 | P1 | `SessionSealValid` | `Protocols/XcpCore/XcpProtocolBase.cs` | 171 | 1475 |
 | P2 | `MasterSealValid` | `Protocols/ModbusMasterProtocol/ModbusMasterProtocol.cs` | 158 | 555 |
+| C1 | `GraphSealValid` | `Controls/GraphControl/ViewModels/GraphControlViewModel.cs` | 245 bind / 291 live | 1216 |
+| C2 | `WatchSealValid` | `Controls/WatchTableControl/ViewModels/WatchTableControlViewModel.cs` | 248 bind / 302 live | 359 |
