@@ -13,6 +13,11 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\QInsight\QInsight.csproj" />
+      <!-- DOCASNE: test si sam, nezavisle na QInsightu, referencuje serverovou
+           licencni knihovnu jen kvuli podpisu testovacich tokenu (CreateKeyPair/Sign).
+           QInsight tuto referenci uz nema (anti-tamper, commit 65529fb). Detail viz
+           komentar v Program.cs. -->
+      <PackageReference Include="Qenex.Licensing" Version="1.0.0" />
     </ItemGroup>
 
 </Project>

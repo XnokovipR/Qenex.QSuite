@@ -1,10 +1,32 @@
+// =============================================================================
+// POZOR – DOCASNE RESENI (uvedom si to, az sem priste sahnes):
+//
+// Tento test referencuje serverovou licencni knihovnu `Qenex.Licensing` PRIMO
+// a nezavisle (vlastni PackageReference v .csproj), a to JEN kvuli podpisu
+// testovacich tokenu – LicenseToken.CreateKeyPair()/Sign() (privatni klic,
+// serverova strana). QInsight tuto knihovnu uz zamerne NEreferencuje kvuli
+// anti-tamper (licencovani natvrdo do QInsightu, commit 65529fb) – proto se
+// test na tranzitivni referenci pres QInsight uz spolehnout nemuze.
+//
+// Validaci (to, co se opravdu testuje) bere test z QInsightu
+// (namespace Qenex.QInsight.Licensing).
+//
+// CILOVY STAV (az se budou vyrabet kopie validace): misto serveroveho balicku
+// dat testu vlastni maly test-only ECDsa signer, aby test nevisel na serverovem
+// baliku. PREDLOHA validace se do testu NElinkuje - je jen v gitu, nikde
+// nereferencovana. Viz pametovy zaznam license-antitamper-plan.
+// =============================================================================
+
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using Qenex.Licensing;
 using Qenex.QInsight.Licensing;
+// Podpisova (serverova) strana jen pro fabrikaci testovacich tokenu.
+// Aliasy schvalne, aby nekolidovaly se stejnojmennymi typy v Qenex.QInsight.Licensing (CS0104).
+using LicenseToken = Qenex.Licensing.LicenseToken;
+using LicenseClaims = Qenex.Licensing.LicenseClaims;
 using Qenex.QSuite.Common.CoreComm;
 using Qenex.QSuite.Drivers.Driver;
 using Qenex.QSuite.LogSystems.LogSystem;
