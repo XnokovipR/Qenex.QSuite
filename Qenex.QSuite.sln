@@ -205,6 +205,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimulDataProtocolTest", "_T
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QprojContainerTest", "Helpers\_Tests\Integral\QprojContainerTest\QprojContainerTest.csproj", "{7E6E4622-1424-4601-A182-E616B0C08AAA}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_LicenseGuard", "_LicenseGuard", "{FD8658F5-CB02-4572-B8A3-E991F931B4A2}"
+	ProjectSection(SolutionItems) = preProject
+		_LicenseGuard\LicenseSealCopies.md = _LicenseGuard\LicenseSealCopies.md
+		_LicenseGuard\LicenseSealTemplate.cs = _LicenseGuard\LicenseSealTemplate.cs
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
