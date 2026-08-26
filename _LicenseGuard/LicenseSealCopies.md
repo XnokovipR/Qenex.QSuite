@@ -73,6 +73,14 @@ Stopped. Fail-open, nečtou `licenseService`. Build 0 errors.
 | D1 | `ChannelSealValid()` | `Drivers/PeakCanDriver/CanDriver.cs` | `StartAsync`, PŘED `SetState(Starting)` | `SetState(Stopped); return` → driver nenaběhne → PeakCAN/protokol (XCP…) **nekomunikuje** |
 | D2 | `SinkSealValid()` | `Drivers/FileDataLoggerDriver/FileDataLoggerDriver.cs` | `StartAsync`, PŘED `SetState(Starting)` | `SetState(Disabled); return` → **nezaloží soubor, neukládá hodnoty** |
 
+### Protokoly — nezávislé kopie `SealValid` (reakce = tiše nenaběhne, BEZ logu)
+
+| # | Metoda | Protokol (soubor) | Místo vložení | Reakce při `false` |
+|---|--------|-------------------|---------------|--------------------|
+| P1 | `SessionSealValid()` | `Protocols/XcpCore/XcpProtocolBase.cs` (báze pro XCP **CAN i TCP**) | `StartAsync`, PŘED `SetState(Starting)` | `SetState(Stopped); return` → run loop nenaběhne → **XCP nekomunikuje** (žádné DAQ/polling, žádná data) |
+
+Fail-open, nečte `licenseService`. **Nezkresluje data** (neposkytne žádná). Build 0 errors.
+
 ---
 
 ## Plánované validátory (plugin fáze — zatím NEnasazeno)
@@ -82,8 +90,7 @@ POZOR měřák: **nesmí zkreslit naměřená data** (spíš „odmítni/nezačn
 
 | Plugin | Assembly | Stav | Poznámka k reakci |
 |--------|----------|------|-------------------|
-| XCP | `XcpCore` | ☐ | **první na řadě**; jádro protokolu |
-| Modbus | `ModbusCore` | ☐ | |
+| Modbus | `ModbusCore` | ☐ | **další na řadě**; jádro protokolu |
 | Graph | `GraphControl` | ☐ | vykreslování |
 | WatchTable | `WatchTableControl` | ☐ | |
 | Signal | `SignalControl` | ☐ | |
@@ -101,3 +108,22 @@ POZOR měřák: **nesmí zkreslit naměřená data** (spíš „odmítni/nezačn
 - **v1 drivery — 2026-08-26** — nasazeny D1 `ChannelSealValid` (PeakCanDriver) a
   D2 `SinkSealValid` (FileDataLoggerDriver); reakce tiche „nenabehne" bez logu,
   fail-open. Oba drivery build 0 errors. NECOMMITNUTO.
+- **v1 XCP — 2026-08-26** — nasazen P1 `SessionSealValid` v
+  `Protocols/XcpCore/XcpProtocolBase.cs` (báze XCP CAN i TCP); reakce tichá
+  „nenaběhne" (`SetState(Stopped)`), bez logu, fail-open. Build 0 errors. NECOMMITNUTO.
+
+---
+
+## Mapa řádků (k commitu XCP 2026-08-26)
+
+Řádky se s edity posouvají — **stabilní kotva je název metody + `StartAsync`/handler**,
+ne číslo. Přesto orientační přehled, kde přesně to hledat:
+
+| # | Metoda | Soubor | Řádek volání | Řádek definice |
+|---|--------|--------|--------------|----------------|
+| V1a | `TemplateSealValid` | `QInsight/ViewModels/ShellWindowModel.Commands.cs` | 662 | 2852 |
+| V1b | `ArchiveSealValid` | `QInsight/ViewModels/ShellWindowModel.Commands.cs` | 713 | 2934 |
+| V2 | `RuntimeSealValid` | `QInsight/ViewModels/ShellWindowModel.Commands.cs` | 1648 | 3016 |
+| D1 | `ChannelSealValid` | `Drivers/PeakCanDriver/CanDriver.cs` | 94 | 533 |
+| D2 | `SinkSealValid` | `Drivers/FileDataLoggerDriver/FileDataLoggerDriver.cs` | 242 | 553 |
+| P1 | `SessionSealValid` | `Protocols/XcpCore/XcpProtocolBase.cs` | 171 | 1475 |

@@ -4,6 +4,11 @@ using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.Protocol;
 using Qenex.QSuite.Variables.QVariables;
 using Qenex.QSuite.Variables.VariableEvents;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Win32;
 
 namespace Qenex.QSuite.Protocols.XcpCore;
 
@@ -160,6 +165,12 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
         if (State == CommunicationState.Running || runTask is { IsCompleted: false })
         {
+            return Task.CompletedTask;
+        }
+
+        if (!SessionSealValid())
+        {
+            SetState(CommunicationState.Stopped);
             return Task.CompletedTask;
         }
 
@@ -1457,4 +1468,86 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
     }
 
     #endregion
+
+    // LICENSE-SEAL COPY v1 — sync z _LicenseGuard/LicenseSealTemplate.cs
+    // Nezavisly licencni check (necte licenseService). true=licencovano/nejasne (fail-open),
+    // false=jiste nelicencovano. Reakce (nenastartovat) je v StartAsym.
+    private static bool SessionSealValid()
+    {
+        try
+        {
+            const string pem =
+                "-----BEGIN PUBLIC KEY-----\n" +
+                "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOACOwsviai2bRt16xogoH6vXPVtV\n" +
+                "ziUZNXothbQLrl6y3K3GZfh49fajb50QT1zJ9XGjhJOc6SRNACtipO8eiA==\n" +
+                "-----END PUBLIC KEY-----";
+            const string product = "QInsight";
+            const string prefix = "QLIC1";
+
+            static byte[] Dec(string v)
+            {
+                var s = v.Replace('-', '+').Replace('_', '/');
+                return Convert.FromBase64String(s.PadRight(s.Length + (4 - s.Length % 4) % 4, '='));
+            }
+
+            static string? Field(JsonElement o, string n)
+            {
+                if (o.ValueKind != JsonValueKind.Object) return null;
+                foreach (var p in o.EnumerateObject())
+                    if (string.Equals(p.Name, n, StringComparison.OrdinalIgnoreCase))
+                        return p.Value.ValueKind == JsonValueKind.String ? p.Value.GetString() : null;
+                return null;
+            }
+
+            var baseDir = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            if (string.IsNullOrEmpty(baseDir)) return true;
+            var path = Path.Combine(baseDir, "Qenex", "QInsight", "license.json");
+            if (!File.Exists(path)) return false;
+
+            string? token;
+            using (var sd = JsonDocument.Parse(File.ReadAllText(path)))
+                token = Field(sd.RootElement, "Token");
+            if (string.IsNullOrWhiteSpace(token)) return false;
+
+            var parts = token.Split('.');
+            if (parts.Length != 3 || parts[0] != prefix) return true;
+
+            var payload = Dec(parts[1]);
+            var signature = Dec(parts[2]);
+
+            using (var key = ECDsa.Create())
+            {
+                key.ImportFromPem(pem);
+                if (!key.VerifyData(payload, signature, HashAlgorithmName.SHA256)) return false;
+            }
+
+            using (var pd = JsonDocument.Parse(payload))
+            {
+                var pr = Field(pd.RootElement, "Product");
+                if (pr is not null && !string.Equals(pr, product, StringComparison.Ordinal)) return false;
+
+                var fp = Field(pd.RootElement, "MachineFingerprint");
+                if (fp is not null)
+                {
+                    string src;
+                    try
+                    {
+                        using var rk = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Cryptography");
+                        var g = rk?.GetValue("MachineGuid") as string;
+                        src = string.IsNullOrWhiteSpace(g) ? Environment.MachineName : g;
+                    }
+                    catch { src = Environment.MachineName; }
+
+                    var mine = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(src)));
+                    if (!string.Equals(fp, mine, StringComparison.Ordinal)) return false;
+                }
+            }
+
+            return true;
+        }
+        catch
+        {
+            return true; // fail-open
+        }
+    }
 }
