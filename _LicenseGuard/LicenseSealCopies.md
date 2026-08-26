@@ -62,6 +62,17 @@ runtime se nespustí. Žádná hláška navíc → splývá s běžným nelicenc
 
 **Nasazeno:** v1, 2026-08-26. Build 0 errors. NECOMMITNUTO.
 
+### Drivery — nezávislé kopie `SealValid` (reakce = tiše nenaběhne, BEZ logu)
+
+Reakce je **tichá** (žádný Error do UI logu — zvoleno kvůli stealthu, aby útočníka
+navedlo míň). Efekt je přesto **viditelný** přes chybějící data / stav driveru
+Stopped. Fail-open, nečtou `licenseService`. Build 0 errors.
+
+| # | Metoda | Driver (soubor) | Místo vložení | Reakce při `false` |
+|---|--------|-----------------|---------------|--------------------|
+| D1 | `ChannelSealValid()` | `Drivers/PeakCanDriver/CanDriver.cs` | `StartAsync`, PŘED `SetState(Starting)` | `SetState(Stopped); return` → driver nenaběhne → PeakCAN/protokol (XCP…) **nekomunikuje** |
+| D2 | `SinkSealValid()` | `Drivers/FileDataLoggerDriver/FileDataLoggerDriver.cs` | `StartAsync`, PŘED `SetState(Starting)` | `SetState(Disabled); return` → **nezaloží soubor, neukládá hodnoty** |
+
 ---
 
 ## Plánované validátory (plugin fáze — zatím NEnasazeno)
@@ -73,8 +84,6 @@ POZOR měřák: **nesmí zkreslit naměřená data** (spíš „odmítni/nezačn
 |--------|----------|------|-------------------|
 | XCP | `XcpCore` | ☐ | **první na řadě**; jádro protokolu |
 | Modbus | `ModbusCore` | ☐ | |
-| PeakCAN | `PeakCanDriver` | ☐ | proprietární PCAN API |
-| FileDataLogger | `FileDataLoggerDriver` | ☐ | formát datalogu |
 | Graph | `GraphControl` | ☐ | vykreslování |
 | WatchTable | `WatchTableControl` | ☐ | |
 | Signal | `SignalControl` | ☐ | |
@@ -89,3 +98,6 @@ POZOR měřák: **nesmí zkreslit naměřená data** (spíš „odmítni/nezačn
   `SealValid` + nasazení `TemplateSealValid` (New), `ArchiveSealValid` (Open),
   `RuntimeSealValid` (Connect) do `ShellWindowModel.Commands.cs`. Fail-open.
   Dočasná log-sonda přidána, ověřena a **odstraněna**. QInsight build 0 errors.
+- **v1 drivery — 2026-08-26** — nasazeny D1 `ChannelSealValid` (PeakCanDriver) a
+  D2 `SinkSealValid` (FileDataLoggerDriver); reakce tiche „nenabehne" bez logu,
+  fail-open. Oba drivery build 0 errors. NECOMMITNUTO.
