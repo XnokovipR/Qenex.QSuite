@@ -78,6 +78,7 @@ Stopped. Fail-open, nečtou `licenseService`. Build 0 errors.
 | # | Metoda | Protokol (soubor) | Místo vložení | Reakce při `false` |
 |---|--------|-------------------|---------------|--------------------|
 | P1 | `SessionSealValid()` | `Protocols/XcpCore/XcpProtocolBase.cs` (báze pro XCP **CAN i TCP**) | `StartAsync`, PŘED `SetState(Starting)` | `SetState(Stopped); return` → run loop nenaběhne → **XCP nekomunikuje** (žádné DAQ/polling, žádná data) |
+| P2 | `MasterSealValid()` | `Protocols/ModbusMasterProtocol/ModbusMasterProtocol.cs` (wrapper — **možnost B**) | `StartAsync`, PŘED `SetState(Starting)` | `SetState(Stopped); return` → protokol nenaběhne → **Modbus Master nepolluje** (žádná data) |
 
 Fail-open, nečte `licenseService`. **Nezkresluje data** (neposkytne žádná). Build 0 errors.
 
@@ -90,7 +91,7 @@ POZOR měřák: **nesmí zkreslit naměřená data** (spíš „odmítni/nezačn
 
 | Plugin | Assembly | Stav | Poznámka k reakci |
 |--------|----------|------|-------------------|
-| Modbus | `ModbusCore` | ☐ | **další na řadě**; jádro protokolu |
+| Modbus Slave | `ModbusSlaveProtocol` | ☐ | volitelně později (na PC se Slave skoro nepoužívá) |
 | Graph | `GraphControl` | ☐ | vykreslování |
 | WatchTable | `WatchTableControl` | ☐ | |
 | Signal | `SignalControl` | ☐ | |
@@ -111,6 +112,12 @@ POZOR měřák: **nesmí zkreslit naměřená data** (spíš „odmítni/nezačn
 - **v1 XCP — 2026-08-26** — nasazen P1 `SessionSealValid` v
   `Protocols/XcpCore/XcpProtocolBase.cs` (báze XCP CAN i TCP); reakce tichá
   „nenaběhne" (`SetState(Stopped)`), bez logu, fail-open. Build 0 errors. NECOMMITNUTO.
+- **v1 Modbus Master — 2026-08-26** — nasazen P2 `MasterSealValid` v
+  `Protocols/ModbusMasterProtocol/ModbusMasterProtocol.cs` (`StartAsync`, reakce
+  `SetState(Stopped)`), stejný vzor jako XCP. **Možnost B** (wrapper) zvolena
+  Radkem kvůli konzistenci — pozor: `ModbusCore` (engine, know-how) tím NENÍ
+  chráněné, cracker by mohl obejít reimplementací tenkého wrapperu. Slave zatím
+  vynechán (na PC se skoro nepoužívá). Build 0 errors. NECOMMITNUTO.
 
 ---
 
@@ -127,3 +134,4 @@ ne číslo. Přesto orientační přehled, kde přesně to hledat:
 | D1 | `ChannelSealValid` | `Drivers/PeakCanDriver/CanDriver.cs` | 94 | 533 |
 | D2 | `SinkSealValid` | `Drivers/FileDataLoggerDriver/FileDataLoggerDriver.cs` | 242 | 553 |
 | P1 | `SessionSealValid` | `Protocols/XcpCore/XcpProtocolBase.cs` | 171 | 1475 |
+| P2 | `MasterSealValid` | `Protocols/ModbusMasterProtocol/ModbusMasterProtocol.cs` | 158 | 555 |
