@@ -9,6 +9,8 @@
         <RootNamespace>Qenex.QSuite.Protocols.XcpCore</RootNamespace>
         <AssemblyVersion>1.0.0.0</AssemblyVersion>
         <FileVersion>1.0.0.0</FileVersion>
+        <EazfuscatorIntegration>MSBuild</EazfuscatorIntegration>
+        <EazfuscatorActiveConfigurations>Debug;Release</EazfuscatorActiveConfigurations>
     </PropertyGroup>
 
     <ItemGroup>
@@ -16,5 +18,9 @@
       <ProjectReference Include="..\..\Variables\VariableEvents\VariableEvents.csproj" />
       <ProjectReference Include="..\..\Common\CoreComm\CoreComm.csproj" />
     </ItemGroup>
+
+    <!-- Eazfuscator.NET: obfuskace jako soucast buildu (jen kdyz je nastroj nainstalovany) -->
+    <Import Condition="'$(EAZFUSCATOR_NET_HOME)' != '' and Exists('$(EAZFUSCATOR_NET_HOME)\Integration\MSBuild\Eazfuscator.NET.targets')"
+            Project="$(EAZFUSCATOR_NET_HOME)\Integration\MSBuild\Eazfuscator.NET.targets" />
 
 </Project>

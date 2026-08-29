@@ -7,6 +7,8 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <RootNamespace>Qenex.QSuite.Controls.GraphControl</RootNamespace>
         <AssemblyName>Qenex.QSuite.Controls.GraphControl</AssemblyName>
+        <EazfuscatorIntegration>MSBuild</EazfuscatorIntegration>
+        <EazfuscatorActiveConfigurations>Debug;Release</EazfuscatorActiveConfigurations>
     </PropertyGroup>
 
     <ItemGroup>
@@ -42,5 +44,9 @@
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
       <Exec Command="xcopy /Y &quot;$(TargetPath)&quot; &quot;..\..\QInsight\bin\$(Configuration)\net10.0-windows\Controls\&quot;" />
     </Target>
+
+    <!-- Eazfuscator.NET: obfuskace jako soucast buildu (jen kdyz je nastroj nainstalovany) -->
+    <Import Condition="'$(EAZFUSCATOR_NET_HOME)' != '' and Exists('$(EAZFUSCATOR_NET_HOME)\Integration\MSBuild\Eazfuscator.NET.targets')"
+            Project="$(EAZFUSCATOR_NET_HOME)\Integration\MSBuild\Eazfuscator.NET.targets" />
 
 </Project>
