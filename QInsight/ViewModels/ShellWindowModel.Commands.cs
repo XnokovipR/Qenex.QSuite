@@ -2849,6 +2849,7 @@ public partial class ShellWindowModel
     // Independent license seal check (defense in depth; intentionally a standalone
     // copy, not a shared helper). true = licensed or indeterminate (fail-open),
     // false = confidently unlicensed.
+    [System.Reflection.Obfuscation(Feature = "code control flow obfuscation", Exclude = false)]
     private static bool TemplateSealValid()
     {
         try
@@ -2931,6 +2932,7 @@ public partial class ShellWindowModel
     // Independent license seal check (defense in depth; intentionally a standalone
     // copy, not a shared helper). true = licensed or indeterminate (fail-open),
     // false = confidently unlicensed.
+    [System.Reflection.Obfuscation(Feature = "code control flow obfuscation", Exclude = false)]
     private static bool ArchiveSealValid()
     {
         try
@@ -3013,6 +3015,7 @@ public partial class ShellWindowModel
     // Independent license seal check (defense in depth; intentionally a standalone
     // copy, not a shared helper). true = licensed or indeterminate (fail-open),
     // false = confidently unlicensed.
+    [System.Reflection.Obfuscation(Feature = "code control flow obfuscation", Exclude = false)]
     private static bool RuntimeSealValid()
     {
         try

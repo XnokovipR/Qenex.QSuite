@@ -109,6 +109,32 @@ POZOR měřák: **nesmí zkreslit naměřená data** (spíš „odmítni/nezačn
 
 ---
 
+## Obfuskace validátorů (2026-08-31)
+
+Každý z 9 `SealValid` nese **per-metoda** atribut, který zapne control-flow
+obfuskaci právě jen na té chladné metodě:
+
+```csharp
+[System.Reflection.Obfuscation(Feature = "code control flow obfuscation", Exclude = false)]
+private static bool XSealValid()
+```
+
+- **Proč per-metoda:** control-flow má per-volání runtime náklad → na horkých
+  cestách (příjem CAN/DAQ, sample pump, grafy) je ZAKÁZÁN. Default OFF, takže
+  všude jinde nula. Validátory jsou chladné (New/Open/Connect/StartAsync/bind) →
+  tam si control-flow dovolíme.
+- **XcpProtocol** (tenký CAN wrapper, HORKÁ cesta, BEZ validátoru) měl chybně
+  assembly-wide control-flow → **odstraněn** (`Protocols/XcpProtocol/Properties/
+  ObfuscationAttributes.cs` je teď komentář bez atributu). Validátor XCP je
+  v `XcpCore` (`SessionSealValid`), ne tady.
+- **String encryption:** Eazfuscator ho umí přepnout **jen per-assembly** (CHM
+  ch04s06 — nelze per metoda/třída). Default ON. „String encryption jen na
+  validátorech" tedy NELZE. **ROZHODNUTO Radek 2026-08-31: nechat globálně ON**
+  (nic nevypnuto). Při naměřené regresi vypnout jen na dotčené horké DLL.
+- Ověřeno: solution Rebuild Debug 0 errors; XcpCore/GraphControl/Protocol DLL
+  obfuskované (`SealValid` symbol pryč, `SuppressIldasm` přítomen). Necommitnuto,
+  čeká na Radkův runtime test na H723 (dotPeek kontrola control-flow ve validátoru).
+
 ## Historie verzí
 
 - **v1 — 2026-08-26** — pivot z „mazání tokenu" na funkční validátory. Předloha

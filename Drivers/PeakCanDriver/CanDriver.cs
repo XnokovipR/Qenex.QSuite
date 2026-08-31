@@ -530,6 +530,7 @@ public class CanDriver : DriverBase, IProtocolVariableCommandDriver, ITransportS
     // LICENSE-SEAL COPY v1 — sync z _LicenseGuard/LicenseSealTemplate.cs
     // Nezavisly licencni check (necte licenseService). true=licencovano/nejasne (fail-open),
     // false=jiste nelicencovano. Reakce (nenastartovat) je v StartAsync.
+    [System.Reflection.Obfuscation(Feature = "code control flow obfuscation", Exclude = false)]
     private static bool ChannelSealValid()
     {
         try

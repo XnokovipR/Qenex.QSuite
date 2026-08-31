@@ -1213,6 +1213,7 @@ public class GraphControlViewModel : ControlBase, IHasMousePosition, IFileDialog
     // LICENSE-SEAL COPY v1 — sync z _LicenseGuard/LicenseSealTemplate.cs
     // Nezavisly licencni check (necte licenseService). true=licencovano/nejasne (fail-open),
     // false=jiste nelicencovano. Reakce (nenastartovat) je v StartAsym.
+    [System.Reflection.Obfuscation(Feature = "code control flow obfuscation", Exclude = false)]
     private static bool GraphSealValid()
     {
         try
