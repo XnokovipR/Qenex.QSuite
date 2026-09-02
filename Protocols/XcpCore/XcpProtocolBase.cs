@@ -629,7 +629,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
     {
         public required XcpDaqDecoder Decoder { get; init; }
         public required XcpCodec Codec { get; init; }
-        public required DaqTarget[][][] Targets { get; init; } // [daq list][odt][entry], mirrors the combined plans
+        public required DaqTarget?[][][] Targets { get; init; } // [daq list][odt][entry], mirrors the combined plans; null = ODT 0 filler
         public required Channel<DaqDto> Dtos { get; init; }
         public required IReadOnlySet<IProtocolVariable> VariablesInDaq { get; init; }
         public XcpDaqTimestampMapper? TimestampMapper { get; set; } // null = stamp with receive time
@@ -786,7 +786,8 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
                 var variablesInDaq = daqTargets
                     .SelectMany(list => list.SelectMany(odt => odt))
-                    .Select(IProtocolVariable (target) => target.ProtocolVariable)
+                    .Where(target => target != null)
+                    .Select(IProtocolVariable (target) => target!.ProtocolVariable)
                     .ToHashSet();
 
                 var droppedDtos = 0L;
@@ -1101,11 +1102,14 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
     }
 
     /// <summary>
-    /// Packs each channel's entries into ODTs (first-fit, configuration order). ODT capacity is
-    /// MAX_DTO minus the identification field (and the timestamp in ODT 0); entry size is further
-    /// capped by MAX_ODT_ENTRY_SIZE_DAQ. Oversized variables are skipped with a warning.
+    /// Packs each channel's entries into ODTs via <see cref="XcpOdtPacker"/> (first-fit over all
+    /// ODTs of the list, configuration order). ODT capacity is MAX_DTO minus the identification
+    /// field (and the timestamp in ODT 0); entry size is capped by MAX_ODT_ENTRY_SIZE_DAQ.
+    /// Oversized variables are skipped with a warning. When nothing fits beside the timestamp in
+    /// ODT 0 (classic CAN: 8 B DTO, 2 B header, 4 B timestamp) ODT 0 carries a filler entry whose
+    /// target is null — the consumer discards it.
     /// </summary>
-    private (List<XcpDaqListPlan> Plans, DaqTarget[][][] Targets) PackDaqLists(
+    private (List<XcpDaqListPlan> Plans, DaqTarget?[][][] Targets) PackDaqLists(
         SortedDictionary<ushort, List<DaqTarget>> channels, XcpConnectResponse connectInfo,
         XcpDaqProcessorInfo processor, XcpDaqResolutionInfo? resolution, int timestampSize)
     {
@@ -1113,62 +1117,64 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
         var headerSize = processor.DtoHeaderSize;
 
         var plans = new List<XcpDaqListPlan>();
-        var targets = new List<DaqTarget[][]>();
+        var targets = new List<DaqTarget?[][]>();
 
         foreach (var (channel, channelTargets) in channels)
         {
-            var odts = new List<List<XcpDaqEntryPlan>>();
-            var odtTargets = new List<List<DaqTarget>>();
+            var items = channelTargets
+                .Select(t => new XcpOdtPacker.Item((byte)t.Spec.Size, t.Spec.AddressExtension, t.Spec.Address))
+                .ToList();
+            var packed = XcpOdtPacker.Pack(items, connectInfo.MaxDto, headerSize, timestampSize, maxEntrySize,
+                maxOdts: 0xFC, allowFiller: true);
 
-            foreach (var target in channelTargets)
+            foreach (var (itemIndex, reason) in packed.Rejected)
             {
-                var size = target.Spec.Size;
-                var capacityNext = connectInfo.MaxDto - headerSize - (odts.Count == 0 ? timestampSize : 0);
-                if (size > maxEntrySize || size > capacityNext)
-                {
-                    Logger?.Log(LogLevel.Warn,
-                        $"XCP: variable '{target.Scalar.Name}' ({size} B) does not fit a DAQ packet " +
-                        $"(MAX_ODT_ENTRY_SIZE {maxEntrySize}, free ODT capacity {capacityNext}); it falls back to polling.");
-                    continue;
-                }
-
-                var capacityCurrent = connectInfo.MaxDto - headerSize - (odts.Count <= 1 ? timestampSize : 0);
-                if (odts.Count == 0 ||
-                    odts[^1].Sum(e => (int)e.Size) + size > capacityCurrent ||
-                    odts[^1].Count == byte.MaxValue)
-                {
-                    odts.Add([]);
-                    odtTargets.Add([]);
-                }
-
-                odts[^1].Add(new XcpDaqEntryPlan((byte)size, target.Spec.AddressExtension, target.Spec.Address));
-                odtTargets[^1].Add(target);
+                var target = channelTargets[itemIndex];
+                Logger?.Log(LogLevel.Warn, reason == XcpOdtPacker.RejectReason.TooLarge
+                    ? $"XCP: variable '{target.Scalar.Name}' ({target.Spec.Size} B) does not fit a DAQ packet " +
+                      $"(MAX_ODT_ENTRY_SIZE {maxEntrySize}, ODT payload {connectInfo.MaxDto - headerSize} B); it falls back to polling."
+                    : $"XCP: variable '{target.Scalar.Name}' does not fit the DAQ list of event channel {channel} " +
+                      "(all 252 ODTs are used); it falls back to polling.");
             }
 
-            if (odts.Count == 0)
+            if (packed.Odt0Unfillable)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"XCP: DAQ list of event channel {channel}: the {timestampSize}-byte slave timestamp leaves no room " +
+                    $"for an entry in ODT 0 (MAX_DTO {connectInfo.MaxDto}); its variables fall back to polling. " +
+                    "Consider daqTimestamps=master.");
+                continue;
+            }
+
+            if (packed.Odts.Count == 0)
             {
                 continue;
             }
 
-            if (odts.Count > 0xFC)
+            if (packed.Odt0HasFiller)
             {
-                throw new XcpProtocolException(
-                    $"DAQ list for event channel {channel} needs {odts.Count} ODTs; at most 252 are addressable.");
+                Logger?.Log(LogLevel.Debug,
+                    $"XCP: DAQ list of event channel {channel}: no variable fits beside the timestamp in ODT 0; " +
+                    "ODT 0 carries a filler entry that is ignored on receive.");
             }
 
-            plans.Add(new XcpDaqListPlan(channel, odts.Select(IReadOnlyList<XcpDaqEntryPlan> (o) => o).ToList()));
-            targets.Add(odtTargets.Select(o => o.ToArray()).ToArray());
+            plans.Add(new XcpDaqListPlan(channel,
+                packed.Odts.Select(IReadOnlyList<XcpDaqEntryPlan> (o) => o.Select(slot => slot.Entry).ToList()).ToList()));
+            targets.Add(packed.Odts
+                .Select(o => o.Select(slot => slot.IsFiller ? null : channelTargets[slot.ItemIndex]).ToArray())
+                .ToArray());
         }
 
         return (plans, targets.ToArray());
     }
 
     /// <summary>
-    /// Packs each STIM channel's entries into ODTs (first-fit, configuration order — the mirror
-    /// of <see cref="PackDaqLists"/> with the STIM-side limits): ODT capacity is MAX_DTO minus
-    /// the identification field (and the timestamp in ODT 0 of timestamped lists); entry size is
-    /// capped by MAX_ODT_ENTRY_SIZE_STIM, and address and size must be multiples of
-    /// GRANULARITY_ODT_ENTRY_SIZE_STIM. Non-conforming variables fall back to direct writes (S5).
+    /// Packs each STIM channel's entries into ODTs (the mirror of <see cref="PackDaqLists"/> with
+    /// the STIM-side limits): ODT capacity is MAX_DTO minus the identification field (and the
+    /// timestamp in ODT 0 of timestamped lists); entry size is capped by MAX_ODT_ENTRY_SIZE_STIM,
+    /// and address and size must be multiples of GRANULARITY_ODT_ENTRY_SIZE_STIM. No filler is
+    /// ever written to the ECU: a timestamped STIM list whose ODT 0 stays empty is not built.
+    /// Non-conforming variables fall back to direct writes (S5).
     /// </summary>
     private (List<XcpDaqListPlan> Plans, DaqTarget[][][] Targets) PackStimLists(
         SortedDictionary<ushort, List<DaqTarget>> channels, XcpConnectResponse connectInfo,
@@ -1183,9 +1189,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
         foreach (var (channel, channelTargets) in channels)
         {
-            var odts = new List<List<XcpDaqEntryPlan>>();
-            var odtTargets = new List<List<DaqTarget>>();
-
+            var candidates = new List<DaqTarget>();
             foreach (var target in channelTargets)
             {
                 var size = target.Spec.Size;
@@ -1197,43 +1201,46 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                     continue;
                 }
 
-                var capacityNext = connectInfo.MaxDto - headerSize - (odts.Count == 0 ? timestampSize : 0);
-                if (size > maxEntrySize || size > capacityNext)
-                {
-                    Logger?.Log(LogLevel.Warn,
-                        $"XCP: variable '{target.Scalar.Name}' ({size} B) does not fit a STIM packet " +
-                        $"(MAX_ODT_ENTRY_SIZE_STIM {maxEntrySize}, free ODT capacity {capacityNext}); it falls back to direct writes on change.");
-                    continue;
-                }
-
-                var capacityCurrent = connectInfo.MaxDto - headerSize - (odts.Count <= 1 ? timestampSize : 0);
-                if (odts.Count == 0 ||
-                    odts[^1].Sum(e => (int)e.Size) + size > capacityCurrent ||
-                    odts[^1].Count == byte.MaxValue)
-                {
-                    odts.Add([]);
-                    odtTargets.Add([]);
-                }
-
-                odts[^1].Add(new XcpDaqEntryPlan((byte)size, target.Spec.AddressExtension, target.Spec.Address));
-                odtTargets[^1].Add(target);
+                candidates.Add(target);
             }
 
-            if (odts.Count == 0)
+            var items = candidates
+                .Select(t => new XcpOdtPacker.Item((byte)t.Spec.Size, t.Spec.AddressExtension, t.Spec.Address))
+                .ToList();
+            // The STIM PID window is 0x00..0xBF (narrower than DAQ), so a list is limited to
+            // 192 ODTs even before the slave assigns FIRST_PIDs.
+            var packed = XcpOdtPacker.Pack(items, connectInfo.MaxDto, headerSize, timestampSize, maxEntrySize,
+                maxOdts: 0xC0, allowFiller: false);
+
+            foreach (var (itemIndex, reason) in packed.Rejected)
+            {
+                var target = candidates[itemIndex];
+                Logger?.Log(LogLevel.Warn, reason == XcpOdtPacker.RejectReason.TooLarge
+                    ? $"XCP: variable '{target.Scalar.Name}' ({target.Spec.Size} B) does not fit a STIM packet " +
+                      $"(MAX_ODT_ENTRY_SIZE_STIM {maxEntrySize}, ODT payload {connectInfo.MaxDto - headerSize} B); it falls back to direct writes on change."
+                    : $"XCP: variable '{target.Scalar.Name}' does not fit the STIM list of event channel {channel} " +
+                      "(all 192 ODTs are used); it falls back to direct writes on change.");
+            }
+
+            if (packed.Odt0Unfillable)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"XCP: STIM list of event channel {channel}: the {timestampSize}-byte timestamp leaves no room " +
+                    $"for an entry in ODT 0 (MAX_DTO {connectInfo.MaxDto}); its variables fall back to direct writes on change.");
+                continue;
+            }
+
+            if (packed.Odts.Count == 0)
             {
                 continue;
             }
 
-            // The STIM PID window is 0x00..0xBF (narrower than DAQ), so a list is limited to
-            // 192 ODTs even before the slave assigns FIRST_PIDs.
-            if (odts.Count > 0xC0)
-            {
-                throw new XcpProtocolException(
-                    $"STIM list for event channel {channel} needs {odts.Count} ODTs; at most 192 are addressable.");
-            }
-
-            plans.Add(new XcpDaqListPlan(channel, odts.Select(IReadOnlyList<XcpDaqEntryPlan> (o) => o).ToList(), IsStim: true));
-            targets.Add(odtTargets.Select(o => o.ToArray()).ToArray());
+            plans.Add(new XcpDaqListPlan(channel,
+                packed.Odts.Select(IReadOnlyList<XcpDaqEntryPlan> (o) => o.Select(slot => slot.Entry).ToList()).ToList(),
+                IsStim: true));
+            targets.Add(packed.Odts
+                .Select(o => o.Select(slot => candidates[slot.ItemIndex]).ToArray())
+                .ToArray());
         }
 
         return (plans, targets.ToArray());
@@ -1349,6 +1356,11 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
             foreach (var entry in decoded)
             {
                 var target = daq.Targets[entry.ListIndex][entry.OdtIndex][entry.EntryIndex];
+                if (target == null)
+                {
+                    continue; // ODT 0 filler (timestamp carrier), see XcpOdtPacker
+                }
+
                 object value;
                 try
                 {

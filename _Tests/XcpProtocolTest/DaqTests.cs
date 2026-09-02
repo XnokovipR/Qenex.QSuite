@@ -20,9 +20,64 @@ internal static class DaqTests
         Decoder_AbsolutePid();
         Mapper_SlaveSpacingWrapAndFallbacks();
         Settings_DaqTimestamps();
+        Packer_FirstFitAndOdt0Filler();
         Master_ConfigureAndStartDaq_Sequence().GetAwaiter().GetResult();
         Master_GetDaqEventInfo_UploadsName().GetAwaiter().GetResult();
     }
+
+    #region ODT packer (P4)
+
+    /// <summary>Classic CAN geometry: MAX_DTO 8, 2 B identification field, 4 B timestamp in
+    /// ODT 0 — 2 B free beside the timestamp, 6 B in every other ODT.</summary>
+    private static void Packer_FirstFitAndOdt0Filler()
+    {
+        static XcpOdtPacker.Item Item(byte size, uint address) => new(size, 0, address);
+        static int[] Ids(IReadOnlyList<XcpOdtPacker.Slot> odt) => odt.Select(s => s.ItemIndex).ToArray();
+
+        // Three 4 B variables, slave timestamps on: none fits ODT 0 -> filler + one ODT each.
+        var can = XcpOdtPacker.Pack([Item(4, 0x100), Item(4, 0x200), Item(4, 0x300)],
+            maxDto: 8, headerSize: 2, timestampSizeOdt0: 4, maxEntrySize: 6, maxOdts: 0xFC, allowFiller: true);
+        Check(can.Rejected.Count == 0, "packer CAN: 4 B variables are not rejected (P4)");
+        Check(can.Odts.Count == 4, $"packer CAN: filler ODT 0 + 3 ODTs (got {can.Odts.Count})");
+        Check(can.Odt0HasFiller && can.Odts[0] is [{ IsFiller: true, Entry: { Size: 2, Address: 0x100 } }],
+            "packer CAN: ODT 0 carries a 2 B filler aliasing the first entry");
+        Check(Ids(can.Odts[1]).SequenceEqual([0]) && Ids(can.Odts[2]).SequenceEqual([1]) && Ids(can.Odts[3]).SequenceEqual([2]),
+            "packer CAN: one 4 B entry per ODT 1..3 in configuration order");
+
+        // A 1 B variable configured after the 4 B ones lands in ODT 0 (first-fit), no filler.
+        var small = XcpOdtPacker.Pack([Item(4, 0x100), Item(4, 0x200), Item(1, 0x300)],
+            maxDto: 8, headerSize: 2, timestampSizeOdt0: 4, maxEntrySize: 6, maxOdts: 0xFC, allowFiller: true);
+        Check(!small.Odt0HasFiller && Ids(small.Odts[0]).SequenceEqual([2]),
+            "packer CAN: a later 1 B variable fills ODT 0 instead of a filler");
+        Check(small.Odts.Count == 3 && Ids(small.Odts[1]).SequenceEqual([0]) && Ids(small.Odts[2]).SequenceEqual([1]),
+            "packer CAN: first-fit keeps the 4 B entries in ODT 1 and 2");
+
+        // Master timestamps (none in the stream): 6 B per ODT, greedy fill.
+        var plain = XcpOdtPacker.Pack([Item(4, 0x100), Item(2, 0x200), Item(4, 0x300), Item(2, 0x400)],
+            maxDto: 8, headerSize: 2, timestampSizeOdt0: 0, maxEntrySize: 6, maxOdts: 0xFC, allowFiller: true);
+        Check(plain.Odts.Count == 2 && Ids(plain.Odts[0]).SequenceEqual([0, 1]) && Ids(plain.Odts[1]).SequenceEqual([2, 3]),
+            "packer CAN/master ts: 4+2 B pairs fill 6 B ODTs");
+
+        // STIM never gets a filler: a timestamped STIM list whose ODT 0 stays empty is not built.
+        var stim = XcpOdtPacker.Pack([Item(4, 0x100), Item(4, 0x200)],
+            maxDto: 8, headerSize: 2, timestampSizeOdt0: 4, maxEntrySize: 6, maxOdts: 0xC0, allowFiller: false);
+        Check(stim.Odt0Unfillable && stim.Odts.Count == 0, "packer STIM: no filler, list reported unfillable");
+
+        // Oversized entries are rejected, the rest still packs; the Ethernet geometry is unchanged.
+        var eth = XcpOdtPacker.Pack([Item(4, 0x100), Item(8, 0x200), Item(200, 0x300), Item(2, 0x400)],
+            maxDto: 248, headerSize: 4, timestampSizeOdt0: 4, maxEntrySize: 100, maxOdts: 0xFC, allowFiller: true);
+        Check(eth.Rejected is [(2, XcpOdtPacker.RejectReason.TooLarge)], "packer ETH: 200 B entry > MAX_ODT_ENTRY_SIZE rejected");
+        Check(eth.Odts.Count == 1 && Ids(eth.Odts[0]).SequenceEqual([0, 1, 3]) && !eth.Odt0HasFiller,
+            "packer ETH: the remaining entries share ODT 0 beside the timestamp");
+
+        // ODT limit: 8 B DTOs, 4 B entries, at most 2 ODTs -> the third entry has no ODT left.
+        var limit = XcpOdtPacker.Pack([Item(4, 0x100), Item(4, 0x200), Item(4, 0x300)],
+            maxDto: 8, headerSize: 2, timestampSizeOdt0: 0, maxEntrySize: 6, maxOdts: 2, allowFiller: true);
+        Check(limit.Rejected is [(2, XcpOdtPacker.RejectReason.NoOdtLeft)] && limit.Odts.Count == 2,
+            "packer: entries beyond the addressable ODTs are rejected with NoOdtLeft");
+    }
+
+    #endregion
 
     #region eventExtraParams
 
