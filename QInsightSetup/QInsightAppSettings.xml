@@ -22,4 +22,8 @@
   <ScriptEngineSettings>
     <PythonDllPath></PythonDllPath>
   </ScriptEngineSettings>
+  <ProjectConfigurationWindow>
+    <Width>1200</Width>
+    <Height>780</Height>
+  </ProjectConfigurationWindow>
 </AppSettings>

@@ -484,6 +484,56 @@ public partial class ShellWindowModel
 
     #region Ribbon command methods
 
+    private const double ProjectConfigurationDialogMinWidth = 600;
+    private const double ProjectConfigurationDialogMinHeight = 450;
+
+    /// <summary>
+    /// Remembered dialog size clamped to the application window (a modal dialog larger than its
+    /// owner would hide its own edges); unset or nonsense values fall back to the defaults.
+    /// </summary>
+    private static (double Width, double Height) GetProjectConfigurationDialogSize(Window? owner)
+    {
+        var remembered = ShellWindow.MainAppSettings.ProjectConfigurationWindow;
+        var width = remembered.Width > 0 ? remembered.Width : AppSettings.ProjectConfigurationDefaultWidth;
+        var height = remembered.Height > 0 ? remembered.Height : AppSettings.ProjectConfigurationDefaultHeight;
+
+        if (owner is { ActualWidth: > 0, ActualHeight: > 0 })
+        {
+            width = Math.Min(width, owner.ActualWidth);
+            height = Math.Min(height, owner.ActualHeight);
+        }
+
+        return (Math.Max(width, ProjectConfigurationDialogMinWidth), Math.Max(height, ProjectConfigurationDialogMinHeight));
+    }
+
+    private void RememberProjectConfigurationDialogSize(double width, double height)
+    {
+        if (width <= 0 || height <= 0 || double.IsNaN(width) || double.IsNaN(height))
+        {
+            return;
+        }
+
+        var remembered = ShellWindow.MainAppSettings.ProjectConfigurationWindow;
+        if (Math.Abs(remembered.Width - width) < 1 && Math.Abs(remembered.Height - height) < 1)
+        {
+            return;
+        }
+
+        remembered.Width = Math.Round(width);
+        remembered.Height = Math.Round(height);
+
+        // Persist right away (like the preference dialogs do) so the size survives a crash or
+        // a forced exit; the file is small.
+        try
+        {
+            AppSettings.SaveAppSettingsToFile(AppDataPaths.AppSettingsFile, ShellWindow.MainAppSettings);
+        }
+        catch (Exception ex)
+        {
+            eventAggregator.Publish(new LogMessage(LogLevel.Warn, $"Could not save the application settings: {ex.Message}"));
+        }
+    }
+
     private void OpenProjectConfiguration(ProjectConfigurationSection selectedSection)
     {
         var projectConfigurationViewModel = new ProjectConfigurationViewModel(
@@ -506,17 +556,32 @@ public partial class ShellWindowModel
             DataContext = projectConfigurationViewModel
         };
 
+        // The dialog opens with the size the user last gave it (QInsightAppSettings.xml),
+        // never larger than the application window it is centred on.
+        var owner = Application.Current.MainWindow;
+        var (width, height) = GetProjectConfigurationDialogSize(owner);
+
         var projectConfigurationDialog = new RadWindow()
         {
-            Owner = Application.Current.MainWindow,
+            Owner = owner,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Header = "Project Configuration",
-            Width = 1200,
-            Height = 780,
-            MinWidth = 600,
-            MinHeight = 450,
+            Width = width,
+            Height = height,
+            MinWidth = ProjectConfigurationDialogMinWidth,
+            MinHeight = ProjectConfigurationDialogMinHeight,
             ResizeMode = ResizeMode.CanResize,
             Content = projectConfigurationView
+        };
+
+        // Captured while the window is still laid out (PreviewClosed); a maximized dialog keeps
+        // the previously remembered size so it does not come back maximized-sized next time.
+        projectConfigurationDialog.PreviewClosed += (_, _) =>
+        {
+            if (projectConfigurationDialog.WindowState == WindowState.Normal)
+            {
+                RememberProjectConfigurationDialogSize(projectConfigurationDialog.ActualWidth, projectConfigurationDialog.ActualHeight);
+            }
         };
 
         projectConfigurationViewModel.SetParentWindow(projectConfigurationDialog);

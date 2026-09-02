@@ -15,12 +15,22 @@ public class AppSettings
 
 	#endregion
 
+	#region Constants
+
+	public const double ProjectConfigurationDefaultWidth = 1200;
+	public const double ProjectConfigurationDefaultHeight = 780;
+
+	#endregion
+
 	#region Properties
 
 	[XmlElement("IsAppSettingRead")] public bool IsAppSettingRead { get; set; }
 	[XmlElement("WindowStyle")] public WindowStyle WinStyle { get; set; } = null!;
 	[XmlElement("DesignManager")] public DesignManager Design { get; set; } = null!;
 	[XmlElement("ScriptEngineSettings")] public ScriptEngineSettings ScriptEngine { get; set; } = null!;
+	// Last size the user gave the Project Configuration dialog; restored on the next open,
+	// clamped to the application window. Missing in older files -> defaults (EnsureDefaults).
+	[XmlElement("ProjectConfigurationWindow")] public DialogWindowSize ProjectConfigurationWindow { get; set; } = null!;
 	// Last directory the project Open/Save As dialog was used in; restored across sessions.
 	[XmlElement("LastProjectDirectory")] public string LastProjectDirectory { get; set; } = string.Empty;
 	// Show Trace/Debug rows in the Logs panel (protocol/driver diagnostic detail).
@@ -76,8 +86,12 @@ public class AppSettings
 			ScriptEngine = new ScriptEngineSettings()
 			{
 				PythonDllPath = string.Empty
+			},
+			ProjectConfigurationWindow = new DialogWindowSize()
+			{
+				Width = ProjectConfigurationDefaultWidth,
+				Height = ProjectConfigurationDefaultHeight
 			}
-			
 		};
 	}
 
@@ -92,6 +106,7 @@ public class AppSettings
 		settings.WinStyle ??= defaults.WinStyle;
 		settings.Design ??= defaults.Design;
 		settings.ScriptEngine ??= defaults.ScriptEngine;
+		settings.ProjectConfigurationWindow ??= defaults.ProjectConfigurationWindow;
 		settings.LastProjectDirectory ??= string.Empty;
 		return settings;
 	}
