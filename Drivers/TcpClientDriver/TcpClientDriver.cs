@@ -98,6 +98,16 @@ public class TcpClientDriver : DriverBase, IProtocolVariableCommandDriver, ITran
     public override async Task StopAsync(CancellationToken ct = default)
     {
         SetState(CommunicationState.Stopping);
+
+        // Protocols first, while the connection is up and the read loop still delivers data: an
+        // XCP master sends DISCONNECT on stop and needs the slave's response. Closing the socket
+        // first cut that response off and every stop ended with a DISCONNECT timeout. The loop
+        // teardown below stops the protocols again (idempotent) for the abnormal paths.
+        if (runTask is { IsCompleted: false } && stream != null)
+        {
+            await StopProtocolsAsync();
+        }
+
         exitRequested = true;
 
         if (runCts != null)
@@ -206,11 +216,7 @@ public class TcpClientDriver : DriverBase, IProtocolVariableCommandDriver, ITran
         {
             if (protocolsStarted)
             {
-                foreach (var protocol in Protocols)
-                {
-                    await protocol.StopAsync(CancellationToken.None);
-                }
-
+                await StopProtocolsAsync();
                 SetTransmitters(null);
             }
 

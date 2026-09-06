@@ -111,6 +111,17 @@ public class CanDriver : DriverBase, IProtocolVariableCommandDriver, ITransportS
     public override async Task StopAsync(CancellationToken ct = default)
     {
         SetState(CommunicationState.Stopping);
+
+        // Protocols first, while the receive loop still reads the bus: an XCP master sends
+        // DISCONNECT on stop and the slave's response has to reach it. Stopping the loop first
+        // left that response unread in the PCAN queue and every stop ended with a DISCONNECT
+        // timeout. The loop teardown below stops the protocols again (idempotent) for the
+        // abnormal paths.
+        if (runTask is { IsCompleted: false })
+        {
+            await StopProtocolsAsync();
+        }
+
         exitRequested = true;
 
         if (runCts != null)
@@ -276,10 +287,9 @@ public class CanDriver : DriverBase, IProtocolVariableCommandDriver, ITransportS
         finally
         {
             NotifyProtocolsTransportConnectionChanged(false);
+            await StopProtocolsAsync();
             foreach (var protocol in Protocols)
             {
-                await protocol.StopAsync(CancellationToken.None);
-
                 if (protocol is ITransportProtocol<CanFrame> transportProtocol)
                 {
                     transportProtocol.SetTransmitter(null);

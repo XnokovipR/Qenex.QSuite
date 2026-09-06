@@ -84,6 +84,30 @@ public abstract class DriverBase : IDriverBase
         }
     }
 
+    /// <summary>
+    /// Stops every hosted protocol. Drivers call this twice per stop on purpose: first from their
+    /// StopAsync while the receive path is still alive — a session protocol such as an XCP master
+    /// sends DISCONNECT here and needs the transport to deliver the slave's response — and again
+    /// from the run loop teardown, which also covers the abnormal paths (transport lost, loop
+    /// failed). Protocol StopAsync implementations are idempotent. A failing protocol must not
+    /// keep the driver from stopping, so exceptions are caught and logged.
+    /// </summary>
+    protected async Task StopProtocolsAsync()
+    {
+        foreach (var protocol in Protocols)
+        {
+            try
+            {
+                await protocol.StopAsync(CancellationToken.None);
+            }
+            catch (Exception e)
+            {
+                Logger?.Log(LogLevel.Warn,
+                    $"Protocol '{protocol.Specification?.Name}' failed to stop: {e.Message}");
+            }
+        }
+    }
+
     #region Protocols
 
     public virtual void AddProtocol(IProtocolBase protocol)
