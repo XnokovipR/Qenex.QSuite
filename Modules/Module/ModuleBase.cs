@@ -251,10 +251,26 @@ public abstract class ModuleBase : IModuleBase
 
     public virtual async Task StartAsync(CancellationToken ct = default)
     {
+        // Python is optional (see ScriptingContext.GetStartDecision): a project with a script
+        // enabled for this mode cannot start without Python; scripts that are all disabled
+        // only produce a warning; a project without scripts starts silently.
+        var scriptingDecision = Scripting.GetStartDecision();
+        if (scriptingDecision == ScriptingStartDecision.EnabledScriptsBlocked)
+        {
+            throw new InvalidOperationException(Scripting.BuildBlockedStartMessage());
+        }
+
         SetState(CommunicationState.Starting);
-        RegisterScriptWrittenVariableRouting();
-        await Scripting.InitializeSharedScopeAsync(Variables);
-        SubscribeOnValueChangedScriptTriggers();
+        if (scriptingDecision == ScriptingStartDecision.PythonEnabled)
+        {
+            RegisterScriptWrittenVariableRouting();
+            await Scripting.InitializeSharedScopeAsync(Variables);
+            SubscribeOnValueChangedScriptTriggers();
+        }
+        else if (scriptingDecision == ScriptingStartDecision.DisabledScriptsOnly)
+        {
+            Logger?.Log(LogLevel.Warn, Scripting.BuildDisabledScriptsWarning());
+        }
 
         var sinkDrivers = Drivers
             .Where(driver => driver is IProtocolVariableSinkDriver)

@@ -36,6 +36,9 @@ public class ScriptingContext
     private bool suppressLateExecutionOutput;
     private static readonly object pythonInitLock = new();
     private static bool pythonRuntimeInitialized;
+    // True between a successful InitializeSharedScope and DisposeSharedScope. A session
+    // started with Python disabled never initializes the scope, so Stop must not touch Python.
+    private bool sharedScopeStarted;
     
     #region Constructors
 
@@ -58,6 +61,7 @@ public class ScriptingContext
     public IList<OnValueChangedScriptTrigger> OnValueChangedScriptTriggers { get; set; }
     public ScriptEngineSettings EngineSettings { get; set; }
     public bool IsReplayMode { get; set; }
+    public bool IsPythonEnabled => EngineSettings.UsePythonScripts;
 
     /// <summary>
     /// Invoked after a script successfully writes a variable value (raw or eng). The host
@@ -72,7 +76,46 @@ public class ScriptingContext
     #endregion
 
     #region Scope
-    
+
+    /// <summary>
+    /// Decides how a runtime/replay session may start with respect to Python. Python is
+    /// optional: with it disabled the session still starts unless the project has a script
+    /// enabled for the current mode (Runtime flag, or Replay flag in replay mode).
+    /// </summary>
+    public ScriptingStartDecision GetStartDecision()
+    {
+        if (IsPythonEnabled)
+        {
+            return ScriptingStartDecision.PythonEnabled;
+        }
+
+        if (Scripts.Count == 0)
+        {
+            return ScriptingStartDecision.NoScripts;
+        }
+
+        return Scripts.Any(IsScriptEnabledForCurrentMode)
+            ? ScriptingStartDecision.EnabledScriptsBlocked
+            : ScriptingStartDecision.DisabledScriptsOnly;
+    }
+
+    public string BuildBlockedStartMessage()
+    {
+        var session = IsReplayMode ? "Replay" : "Runtime";
+        var names = string.Join(", ", Scripts.Where(IsScriptEnabledForCurrentMode).Select(script => $"\"{script.FileName}\""));
+        return $"{session} cannot start: the project contains enabled Python script(s) ({names}) but Python scripting is disabled. "
+               + "Enable 'Use Python scripts' in Options -> Preferences -> General, or disable the script(s) in Project Configuration -> Scripts.";
+    }
+
+    public string BuildDisabledScriptsWarning()
+    {
+        return "The project contains Python script(s), but Python scripting is disabled (Options -> Preferences -> General); no script will run.";
+    }
+
+    private bool IsScriptEnabledForCurrentMode(IScriptBase script)
+    {
+        return IsReplayMode ? script.IsReplayEnabled : script.IsEnabled;
+    }
 
     public async Task InitializeSharedScopeAsync(IList<IVariableBase> variables)
     {
@@ -116,6 +159,7 @@ public class ScriptingContext
             }
             
             SharedScope = Py.CreateScope("qenex_scripts_shared");
+            sharedScopeStarted = true;
 
             foreach (var binding in VariableBindings)
             {
@@ -197,6 +241,11 @@ if "__qenex_interactive_console" not in globals():
             if (pythonRuntimeInitialized) return;
             if (PythonEngine.IsInitialized) { pythonRuntimeInitialized = true; return; }
 
+            if (!EngineSettings.UsePythonScripts)
+            {
+                throw new InvalidOperationException("Python scripting is disabled. Enable 'Use Python scripts' in Options -> Preferences -> General.");
+            }
+
             if (string.IsNullOrWhiteSpace(EngineSettings.PythonDllPath))
             {
                 throw new InvalidOperationException("Python DLL path is not configured.");
@@ -217,6 +266,12 @@ if "__qenex_interactive_console" not in globals():
     
     public async Task DisposeSharedScopeAsync(CancellationToken ct = default)
     {
+        if (!sharedScopeStarted)
+        {
+            // Session ran without Python (disabled in preferences): nothing to shut down.
+            return;
+        }
+
         RequestStop();
         await StopPeriodicScriptsAsync();
         if (!HasAbandonedExecutions)
@@ -270,6 +325,7 @@ if "__qenex_interactive_console" not in globals():
             SharedScope?.Dispose();
             SharedScope = null;
         }
+        sharedScopeStarted = false;
         stdoutWriter = null!;
         stderrWriter = null!;
     }
@@ -396,7 +452,9 @@ if "__qenex_interactive_console" not in globals():
 
         if (SharedScope == null)
         {
-            logger?.Log(LogLevel.Warn, $"Manual script \"{script.FileName}\" cannot run because the scripting context is not running.");
+            logger?.Log(LogLevel.Warn, IsPythonEnabled
+                ? $"Manual script \"{script.FileName}\" cannot run because the scripting context is not running."
+                : $"Manual script \"{script.FileName}\" cannot run because Python scripting is disabled (Options -> Preferences -> General).");
             return false;
         }
 

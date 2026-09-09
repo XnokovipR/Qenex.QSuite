@@ -8,7 +8,7 @@
              xmlns:vm="clr-namespace:Qenex.QInsight.ViewModels"
              mc:Ignorable="d"
              MinWidth="600"
-             MinHeight="180"
+             MinHeight="220"
              d:DataContext="{d:DesignInstance vm:GeneralPreferencesViewModel, IsDesignTimeCreatable=False}">
     <UserControl.Resources>
         <Style TargetType="{x:Type q:QTextBox}" BasedOn="{StaticResource {x:Type TextBox}}"/>
@@ -16,30 +16,38 @@
 
     <Grid Margin="12">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" VerticalAlignment="Top">
+        <!-- Python is optional: the DLL path applies only while scripts are enabled. -->
+        <CheckBox Grid.Row="0"
+                  Content="Use Python scripts"
+                  IsChecked="{Binding UsePythonScripts, Mode=TwoWay}"/>
+
+        <Grid Grid.Row="1" Margin="0,8,0,0" VerticalAlignment="Top" IsEnabled="{Binding UsePythonScripts}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="120"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <q:QTextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" Text="Python Dll Path"/>
+            <!-- Left margin 3 = FocusVisualMargin of the Windows11 CheckBox template, so the label
+                 lines up with the check boxes above and below. -->
+            <q:QTextBlock Grid.Column="0" Margin="3,0,12,0" VerticalAlignment="Center" Text="Python Dll Path"/>
             <q:QTextBox Grid.Column="1" Margin="0,0,6,0" Text="{Binding PythonDllPath, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"/>
             <telerik:RadButton Grid.Column="2" MinWidth="72" Content="Browse" Command="{Binding BrowsePythonDllCommand}"/>
         </Grid>
 
-        <CheckBox Grid.Row="1"
+        <CheckBox Grid.Row="2"
                   Margin="0,12,0,0"
                   Content="Show debug messages in the log"
                   IsChecked="{Binding ShowDebugLogMessages, Mode=TwoWay}"/>
 
-        <q:QTextBlock Grid.Row="2"
+        <q:QTextBlock Grid.Row="3"
                       Margin="0,8,0,0"
                       Foreground="Tomato"
                       Text="{Binding ErrorMessage}"
@@ -56,7 +64,7 @@
             </q:QTextBlock.Style>
         </q:QTextBlock>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
             <telerik:RadButton MinWidth="80" Margin="0,0,8,0" Content="OK" Command="{Binding OkCommand}"/>
             <telerik:RadButton MinWidth="80" Margin="0,0,8,0" Content="Apply" Command="{Binding ApplyCommand}"/>
             <telerik:RadButton MinWidth="80" Content="Cancel" Command="{Binding CancelCommand}"/>

@@ -75,18 +75,19 @@ public class PythonInterpreterViewModel : WorkspaceViewModelBase
         AddToHistory(input);
         AppendText(Environment.NewLine);
 
-        var scriptingContext = await scriptingContextProvider();
-        if (scriptingContext?.SharedScope == null)
-        {
-            AppendSystemLine("Python shared scope is not initialized.");
-            currentPrompt = PrimaryPrompt;
-            AppendPrompt();
-            return;
-        }
-
         try
         {
             IsExecuting = true;
+            // The provider throws when Python is disabled in preferences or fails to load;
+            // the message is shown in the console like any other error.
+            var scriptingContext = await scriptingContextProvider();
+            if (scriptingContext?.SharedScope == null)
+            {
+                AppendSystemLine("Python shared scope is not initialized.");
+                currentPrompt = PrimaryPrompt;
+                return;
+            }
+
             var result = await scriptingContext.ExecuteInteractiveAsync(input);
             AppendResult(result);
             currentPrompt = result.IsIncomplete ? ContinuationPrompt : PrimaryPrompt;

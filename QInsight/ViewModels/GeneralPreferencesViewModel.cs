@@ -22,6 +22,7 @@ public class GeneralPreferencesViewModel : PropertyChangedBaseWithValidation
         this.logger = logger;
         this.settingsApplied = settingsApplied;
 
+        UsePythonScripts = appSettings.ScriptEngine.UsePythonScripts;
         PythonDllPath = appSettings.ScriptEngine.PythonDllPath;
         ShowDebugLogMessages = appSettings.ShowDebugLogMessages;
 
@@ -35,6 +36,14 @@ public class GeneralPreferencesViewModel : PropertyChangedBaseWithValidation
         });
         CancelCommand = new RelayCommand<object>(_ => parentWindow?.Close());
         BrowsePythonDllCommand = new RelayCommand<object>(_ => BrowsePythonDll());
+    }
+
+    // Python is optional. When enabled, the DLL path is mandatory and must exist (validated
+    // on Apply); when disabled, the path is kept but ignored by the application.
+    public bool UsePythonScripts
+    {
+        get;
+        set { field = value; OnPropertyChanged(); }
     }
 
     public string PythonDllPath
@@ -74,9 +83,26 @@ public class GeneralPreferencesViewModel : PropertyChangedBaseWithValidation
 
     private bool ApplySettings()
     {
+        var pythonDllPath = PythonDllPath.Trim();
+        if (UsePythonScripts)
+        {
+            if (string.IsNullOrWhiteSpace(pythonDllPath))
+            {
+                ErrorMessage = "Python Dll Path must be set when 'Use Python scripts' is enabled.";
+                return false;
+            }
+
+            if (!File.Exists(pythonDllPath))
+            {
+                ErrorMessage = $"The Python DLL '{pythonDllPath}' does not exist.";
+                return false;
+            }
+        }
+
         try
         {
-            appSettings.ScriptEngine.PythonDllPath = PythonDllPath.Trim();
+            appSettings.ScriptEngine.UsePythonScripts = UsePythonScripts;
+            appSettings.ScriptEngine.PythonDllPath = pythonDllPath;
             appSettings.ShowDebugLogMessages = ShowDebugLogMessages;
 
             AppSettings.SaveAppSettingsToFile(AppDataPaths.AppSettingsFile, appSettings);

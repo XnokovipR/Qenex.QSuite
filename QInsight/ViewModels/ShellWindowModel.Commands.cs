@@ -205,7 +205,12 @@ public partial class ShellWindowModel
         RibbonThemePreferencesCommand = new RelayCommand<object>(_ => OpenThemePreferences(), _ => CanOpenThemePreferences());
         RibbonGeneralPreferencesCommand = new RelayCommand<object>(_ => OpenGeneralPreferences(), _ => CanOpenGeneralPreferences());
 
-        RibbonPythonInterpreterCommand = new RelayCommand<RadDocking>(OpenPythonInterpreter);
+        // The interpreter needs the Python runtime; with Python disabled in preferences the
+        // ribbon button is inactive regardless of the open project. CanExecute is first queried
+        // while the XAML loads, before the settings file is read (MainAppSettings still null);
+        // the state is re-evaluated once settings are loaded (OnLoaded) and after Apply.
+        RibbonPythonInterpreterCommand = new RelayCommand<RadDocking>(OpenPythonInterpreter,
+            _ => ShellWindow.MainAppSettings?.ScriptEngine.UsePythonScripts == true);
         RibbonVariableWatchCommand = new RelayCommand<RadDocking>(OpenVariableWatch);
         
         RibbonLicenseCommand = new RelayCommand<object>(_ => OpenLicenseDialog());
@@ -241,20 +246,26 @@ public partial class ShellWindowModel
 
     #endregion
 
-    // Warns when Python scripting is not usable: the DLL path is either not configured or
-    // points to a missing file. The application keeps running; only scripts cannot start.
+    // Python is optional: with 'Use Python scripts' off nothing is reported. With it on, warns
+    // when the DLL path is not configured or points to a missing file (e.g. Python was
+    // uninstalled since the preferences were saved). The application keeps running.
     private void ValidatePythonDllPath()
     {
-        var pythonDllPath = ShellWindow.MainAppSettings.ScriptEngine.PythonDllPath;
-        if (string.IsNullOrWhiteSpace(pythonDllPath))
+        var scriptEngine = ShellWindow.MainAppSettings.ScriptEngine;
+        if (!scriptEngine.UsePythonScripts)
         {
-            eventAggregator.Publish(new LogMessage(LogLevel.Warn,
-                "The Python DLL path is not set; Python scripting is unavailable. Set it in Options -> Preferences -> General."));
+            return;
         }
-        else if (!File.Exists(pythonDllPath))
+
+        if (string.IsNullOrWhiteSpace(scriptEngine.PythonDllPath))
         {
             eventAggregator.Publish(new LogMessage(LogLevel.Warn,
-                $"The Python DLL '{pythonDllPath}' does not exist; Python scripting is unavailable. Fix the path in Options -> Preferences -> General."));
+                "Python scripting is enabled but the Python DLL path is not set; scripts cannot run. Set it in Options -> Preferences -> General."));
+        }
+        else if (!File.Exists(scriptEngine.PythonDllPath))
+        {
+            eventAggregator.Publish(new LogMessage(LogLevel.Warn,
+                $"Python scripting is enabled but the Python DLL '{scriptEngine.PythonDllPath}' does not exist; scripts cannot run. Fix the path in Options -> Preferences -> General."));
         }
     }
 
@@ -322,6 +333,7 @@ public partial class ShellWindowModel
             LoadSettingsFromFile(shellRadDocking, editModeSettingLayoutFile);
 
             ValidatePythonDllPath();
+            RibbonPythonInterpreterCommand.OnCanExecuteChanged();
 
             // License gate: with no valid license (missing file, failed validation or
             // expired token) the ribbon is locked to Help — bring the user straight to
@@ -697,7 +709,11 @@ public partial class ShellWindowModel
     private void OpenGeneralPreferences()
     {
         var generalPreferencesViewModel = new GeneralPreferencesViewModel(ShellWindow.MainAppSettings, logger,
-            () => LogsViewModel.ShowDebugMessages = ShellWindow.MainAppSettings.ShowDebugLogMessages);
+            () =>
+            {
+                LogsViewModel.ShowDebugMessages = ShellWindow.MainAppSettings.ShowDebugLogMessages;
+                RibbonPythonInterpreterCommand.OnCanExecuteChanged();
+            });
         var generalPreferencesView = new GeneralPreferencesView
         {
             DataContext = generalPreferencesViewModel
@@ -709,9 +725,9 @@ public partial class ShellWindowModel
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Header = "General",
             Width = 640,
-            Height = 250,
+            Height = 290,
             MinWidth = 640,
-            MinHeight = 250,
+            MinHeight = 290,
             ResizeMode = ResizeMode.NoResize,
             Content = generalPreferencesView
         };
@@ -1676,6 +1692,11 @@ public partial class ShellWindowModel
 
     private async Task<ScriptingContext?> GetPythonInterpreterScriptingContextAsync()
     {
+        if (!ShellWindow.MainAppSettings.ScriptEngine.UsePythonScripts)
+        {
+            throw new InvalidOperationException("Python scripting is disabled. Enable 'Use Python scripts' in Options -> Preferences -> General.");
+        }
+
         if (IsRuntimeStarted && realProjectData?.Module.Scripting.SharedScope != null)
         {
             return realProjectData.Module.Scripting;

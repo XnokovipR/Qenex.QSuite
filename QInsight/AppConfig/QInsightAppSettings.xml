@@ -19,7 +19,8 @@
     <DarkThemeTextBoxBackgroundColor>30,30,30</DarkThemeTextBoxBackgroundColor>
     <DarkThemeControlBackgroundColor>40,40,40</DarkThemeControlBackgroundColor>
   </DesignManager>
-    <ScriptEngineSettings>
+  <ScriptEngineSettings>
+    <UsePythonScripts>true</UsePythonScripts>
     <PythonDllPath>c:\Users\radek\AppData\Local\Python\pythoncore-3.13-64\python313.dll</PythonDllPath>
   </ScriptEngineSettings>
 </AppSettings>

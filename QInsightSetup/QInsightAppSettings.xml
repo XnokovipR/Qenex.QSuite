@@ -20,6 +20,7 @@
     <DarkThemeControlBackgroundColor>40,40,40</DarkThemeControlBackgroundColor>
   </DesignManager>
   <ScriptEngineSettings>
+    <UsePythonScripts>false</UsePythonScripts>
     <PythonDllPath></PythonDllPath>
   </ScriptEngineSettings>
   <ProjectConfigurationWindow>
