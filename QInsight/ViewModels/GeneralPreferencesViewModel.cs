@@ -36,6 +36,7 @@ public class GeneralPreferencesViewModel : PropertyChangedBaseWithValidation
         });
         CancelCommand = new RelayCommand<object>(_ => parentWindow?.Close());
         BrowsePythonDllCommand = new RelayCommand<object>(_ => BrowsePythonDll());
+        DetectPythonCommand = new RelayCommand<object>(_ => DetectPython());
     }
 
     // Python is optional. When enabled, the DLL path is mandatory and must exist (validated
@@ -71,10 +72,25 @@ public class GeneralPreferencesViewModel : PropertyChangedBaseWithValidation
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
+    /// <summary>Result of the last Detect (which Python was picked); cleared by an error.</summary>
+    public string InfoMessage
+    {
+        get;
+        private set
+        {
+            field = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasInfo));
+        }
+    } = string.Empty;
+
+    public bool HasInfo => !string.IsNullOrWhiteSpace(InfoMessage);
+
     public RelayCommand<object> ApplyCommand { get; }
     public RelayCommand<object> OkCommand { get; }
     public RelayCommand<object> CancelCommand { get; }
     public RelayCommand<object> BrowsePythonDllCommand { get; }
+    public RelayCommand<object> DetectPythonCommand { get; }
 
     public void SetParentWindow(RadWindow window)
     {
@@ -116,6 +132,35 @@ public class GeneralPreferencesViewModel : PropertyChangedBaseWithValidation
             ErrorMessage = e.Message;
             logger.Log(LogLevel.Error, $"Save general preferences failed: {e.Message}", e);
             return false;
+        }
+    }
+
+    // Detect: fills the DLL path from the newest supported 64-bit CPython registered on this
+    // machine (python.org installer, per-user or all-users), so the user does not have to find
+    // python3xx.dll under AppData by hand. Other found versions are listed in the log.
+    private void DetectPython()
+    {
+        var installations = PythonInstallationLocator.FindSupported();
+        if (installations.Count == 0)
+        {
+            InfoMessage = string.Empty;
+            ErrorMessage = $"No 64-bit CPython {PythonInstallationLocator.SupportedRangeText} installation was found. " +
+                           "Install it from python.org (Windows installer, 64-bit) or locate python3xx.dll with Browse.";
+            logger.Log(LogLevel.Warn, "Python detection: no supported 64-bit CPython installation found in the registry (HKCU/HKLM Software\\Python\\PythonCore).");
+            return;
+        }
+
+        var selected = installations[0];
+        PythonDllPath = selected.DllPath;
+        ErrorMessage = string.Empty;
+        InfoMessage = installations.Count == 1
+            ? $"Detected Python {selected.Version} ({selected.Source}): {selected.DllPath}"
+            : $"Detected Python {selected.Version} ({selected.Source}): {selected.DllPath} — " +
+              $"{installations.Count - 1} other supported version(s) found, see the log.";
+        logger.Log(LogLevel.Info, $"Python detection: using {selected.Version} at {selected.DllPath}.");
+        foreach (var other in installations.Skip(1))
+        {
+            logger.Log(LogLevel.Info, $"Python detection: also found {other.Version} ({other.Source}) at {other.DllPath}.");
         }
     }
 

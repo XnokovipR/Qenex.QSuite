@@ -281,6 +281,80 @@ public partial class ShellWindowModel
             eventAggregator.Publish(new LogMessage(LogLevel.Error, $"Failed to open the documentation page {url}."));
         }
     }
+
+    private const string PythonInstallDocsSlug = "getting-started/installation#python-optional";
+
+    // Python setup guard before a runtime/replay start. The module would refuse the start
+    // (enabled scripts while Python is disabled) or fail loading the runtime (DLL path not set
+    // or missing); instead of a bare log line the user gets a prompt that leads straight to
+    // Preferences or to the installation chapter of the documentation. Returns false when the
+    // start must not proceed. Expects Scripting.IsReplayMode already set for the session.
+    private bool EnsurePythonReadyForStart(ScriptingContext scripting)
+    {
+        string? problem = null;
+        switch (scripting.GetStartDecision())
+        {
+            case ScriptingStartDecision.EnabledScriptsBlocked:
+                problem = scripting.BuildBlockedStartMessage();
+                break;
+            case ScriptingStartDecision.PythonEnabled:
+                var dllPath = scripting.EngineSettings.PythonDllPath;
+                if (string.IsNullOrWhiteSpace(dllPath))
+                {
+                    problem = "Python scripting is enabled but the Python DLL path is not set, so the session cannot start.";
+                }
+                else if (!File.Exists(dllPath))
+                {
+                    problem = $"Python scripting is enabled but the Python DLL '{dllPath}' does not exist, so the session cannot start.";
+                }
+
+                break;
+        }
+
+        if (problem == null)
+        {
+            return true;
+        }
+
+        logger.Log(LogLevel.Error, problem);
+        ShowPythonSetupPrompt(problem);
+        return false;
+    }
+
+    private void ShowPythonSetupPrompt(string message)
+    {
+        var promptViewModel = new PythonSetupPromptViewModel(message);
+        var promptView = new PythonSetupPromptView
+        {
+            DataContext = promptViewModel
+        };
+
+        var promptDialog = new RadWindow
+        {
+            Owner = Application.Current.MainWindow,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Header = "Python Setup Required",
+            Width = 620,
+            Height = 300,
+            MinWidth = 620,
+            MinHeight = 300,
+            ResizeMode = ResizeMode.NoResize,
+            Content = promptView
+        };
+
+        promptViewModel.SetParentWindow(promptDialog);
+        promptDialog.ShowDialog();
+
+        switch (promptViewModel.Decision)
+        {
+            case PythonSetupDecision.OpenPreferences:
+                OpenGeneralPreferences();
+                break;
+            case PythonSetupDecision.OpenDocumentation:
+                OpenDocumentation(PythonInstallDocsSlug);
+                break;
+        }
+    }
     
     #region Window command methods
 
@@ -725,9 +799,9 @@ public partial class ShellWindowModel
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Header = "General",
             Width = 640,
-            Height = 290,
+            Height = 330,
             MinWidth = 640,
-            MinHeight = 290,
+            MinHeight = 330,
             ResizeMode = ResizeMode.NoResize,
             Content = generalPreferencesView
         };
@@ -1761,11 +1835,16 @@ public partial class ShellWindowModel
             return;
         }
 
+        realProjectData.Module.Scripting.IsReplayMode = false;
+        if (!EnsurePythonReadyForStart(realProjectData.Module.Scripting))
+        {
+            return;
+        }
+
         LoadSettingsFromFile(shellRadDocking, runtimeSettingLayoutFile);
         try
         {
             ConfigureDataLoggerFileNames();
-            realProjectData.Module.Scripting.IsReplayMode = false;
             await realProjectData.Module.StartAsync();
             SetRuntimeStartedState(true);
             SetRuntimeCommandStates(true);
@@ -1949,6 +2028,13 @@ public partial class ShellWindowModel
         if (replayProtocol == null)
         {
             logger.Log(LogLevel.Warn, "No DataLogReplayProtocol found in replay driver.");
+            return;
+        }
+
+        realProjectData.Module.Scripting.IsReplayMode = true;
+        if (!EnsurePythonReadyForStart(realProjectData.Module.Scripting))
+        {
+            realProjectData.Module.Scripting.IsReplayMode = false;
             return;
         }
 
