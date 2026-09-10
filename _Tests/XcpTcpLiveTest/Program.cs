@@ -16,13 +16,15 @@ namespace Qenex.QSuite.Tests.XcpTcpLiveTest;
 /// variable specs it polls (or acquires via DAQ) for a few seconds, prints the values and
 /// optionally writes.
 ///
-///   XcpTcpLiveTest &lt;ip&gt; &lt;port&gt; [name:type:0xADDRESS[:ext][:daq=CHANNEL][:write=VALUE]] ...
+///   XcpTcpLiveTest &lt;ip&gt; &lt;port&gt; [ts=slave|master] [name:type:0xADDRESS[:ext][:daq=CHANNEL][:write=VALUE]] ...
 ///   e.g. XcpTcpLiveTest 127.0.0.1 5555 global_counter:UInt:0x1A0 heat_energy:Double:0x1A8
 ///        flow_rate:Float:0x10004:write=0.5
 ///        XcpTcpLiveTest 127.0.0.1 5555 global_counter:UInt:0x1A0:daq=0 heat_energy:Double:0x1A8:daq=1
 ///
 /// daq=N binds the variable to ECU event channel N (measurement via a DAQ list instead of
-/// polling; the channel's ECU name is validated and logged at connect). Addresses come from the
+/// polling; the channel's ECU name is validated and logged at connect). ts=slave (default) puts
+/// DAQ samples onto the ECU clock (daqTimestamps=slave), ts=master stamps them with the PC
+/// receive time (daqTimestamps=master, no timestamp on the wire with a QFW SDK slave). Addresses come from the
 /// A2L file the slave generates (ECU_ADDRESS). Exit code 0 = session established (and every
 /// acquired variable changed at least once).
 /// </summary>
@@ -32,7 +34,7 @@ internal static class Program
     {
         if (args.Length < 2)
         {
-            Console.WriteLine("usage: XcpTcpLiveTest <ip> <port> [name:type:0xADDRESS[:write=VALUE]] ...");
+            Console.WriteLine("usage: XcpTcpLiveTest <ip> <port> [ts=slave|master] [name:type:0xADDRESS[:ext][:daq=CHANNEL][:write=VALUE]] ...");
             return 2;
         }
 
@@ -43,6 +45,27 @@ internal static class Program
     private static async Task<int> Run(string ip, int port, string[] variableSpecs)
     {
         var logger = new ConsoleLogger();
+
+        // ts=slave|master -> the protocol's daqTimestamps setting (DAQ time axis source).
+        var timestampMode = "slave";
+        var specs = new List<string>();
+        foreach (var arg in variableSpecs)
+        {
+            if (!arg.StartsWith("ts=", StringComparison.OrdinalIgnoreCase))
+            {
+                specs.Add(arg);
+                continue;
+            }
+
+            timestampMode = arg["ts=".Length..].ToLowerInvariant();
+            if (timestampMode is not ("slave" or "master"))
+            {
+                Console.WriteLine($"invalid option '{arg}' (expected ts=slave or ts=master)");
+                return 2;
+            }
+        }
+
+        variableSpecs = specs.ToArray();
 
         var driver = new TcpClientDriver
         {
@@ -58,7 +81,7 @@ internal static class Program
         {
             IsEnabled = true,
             Logger = logger,
-            RawSettings = "timeoutMs=1000"
+            RawSettings = $"timeoutMs=1000;daqTimestamps={timestampMode}"
         };
         protocol.SetConfiguration();
         protocol.StateChanged += (_, e) => Console.WriteLine($"[state] protocol: {e.CurrentState} {e.Message}");
@@ -132,7 +155,8 @@ internal static class Program
 
         Console.WriteLine($"connecting to {ip}:{port} with {polled.Count} variable(s) " +
                           $"({polled.Count - daqVariableCount} polled, {daqVariableCount} via DAQ" +
-                          $"{(daqEvents.Count == 0 ? "" : $" on channel(s) {string.Join(", ", daqEvents.Keys)}")})...");
+                          $"{(daqEvents.Count == 0 ? "" : $" on channel(s) {string.Join(", ", daqEvents.Keys)}")}), " +
+                          $"daqTimestamps={timestampMode}...");
         await driver.StartAsync();
 
         var connected = await WaitUntilAsync(() => protocol.State == CommunicationState.Running, 8000);
