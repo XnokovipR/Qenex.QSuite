@@ -66,8 +66,10 @@ VIAddVersionKey /LANG=0 "LegalCopyright" "(c) ${APP_PUBLISHER}"
 !define MUI_ABORTWARNING
 
 ; Stranky instalace: uvitani -> licence -> volba cesty -> instalace -> dokonceni
+; Licence = QENEX Software License Agreement v1.0 (EN/CZ dle zvoleneho jazyka instalatoru);
+; zdroj textu: QenexAi\Standa\KnowledgeBase\Legal\*.txt, RTF generovano z nej (nemenit rucne).
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "${SETUP_DIR}\QInsightLicense.rtf"
+!insertmacro MUI_PAGE_LICENSE "$(LicenseFile)"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 
@@ -87,6 +89,10 @@ VIAddVersionKey /LANG=0 "LegalCopyright" "(c) ${APP_PUBLISHER}"
 !insertmacro MUI_LANGUAGE "English"
 !insertmacro MUI_LANGUAGE "Czech"
 !insertmacro MUI_RESERVEFILE_LANGDLL
+
+; Licencni text podle jazyka (LicenseLangString musi byt az za MUI_LANGUAGE)
+LicenseLangString LicenseFile ${LANG_ENGLISH} "${SETUP_DIR}\QInsightLicense-en.rtf"
+LicenseLangString LicenseFile ${LANG_CZECH}   "${SETUP_DIR}\QInsightLicense-cs.rtf"
 
 ;--------------------------------
 ; Texty

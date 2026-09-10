@@ -36,7 +36,7 @@ DisableProgramGroupPage=yes
 ; Uvodni stranka s logem
 DisableWelcomePage=no
 ; Potvrzeni licencnich podminek
-LicenseFile=QInsightLicense.rtf
+LicenseFile=QInsightLicense-en.rtf
 OutputDir=D:\Projects\Qenex\Release\QInsight
 OutputBaseFilename=QInsight-Setup-{#MyAppVersion}
 SetupIconFile=..\QInsight\Icons\QInsight.ico
