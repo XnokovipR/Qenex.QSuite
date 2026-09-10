@@ -170,6 +170,12 @@ internal static class DaqTests
         Check(Math.Abs(resolution.TimestampTickSeconds - 1e-3) < 1e-12,
             "codec: tick duration = TICKS x UNIT (1 tick of 1 ms)");
 
+        // QFW SDK shape (0.10.0+): same size and unit, bit 3 clear = the SET_DAQ_LIST_MODE
+        // timestamp bit decides whether ODT 0 carries a timestamp.
+        Check(codec.ParseDaqResolutionInfoResponse([0xFF, 0x01, 0x08, 0x01, 0x08, 0x64, 0x01, 0x00])
+                  is { TimestampSize: 4, TimestampFixed: false },
+            "codec: GET_DAQ_RESOLUTION_INFO without TIMESTAMP_FIXED = timestamps by list mode bit");
+
         // XCPlite on a 1 us clock reports unit 1 ns with 1000 ticks -> 1 us per tick (TICKS x UNIT,
         // never UNIT / TICKS - the inverse reading froze the DAQ time axis on live hardware).
         var xcplite = codec.ParseDaqResolutionInfoResponse([0xFF, 0x01, 0xF8, 0x01, 0xF8, 0x0C, 0xE8, 0x03]);

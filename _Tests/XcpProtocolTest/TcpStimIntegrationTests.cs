@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.XcpCore;
 using Qenex.QSuite.Protocols.XcpTcpProtocol;
 using Qenex.QSuite.Variables.QVariables;
@@ -14,11 +15,13 @@ namespace Qenex.QSuite.Tests.XcpProtocolTest;
 /// <summary>
 /// End-to-end STIM over the XcpTcp protocol against a simulated XCP-on-Ethernet slave (S1–S7):
 /// the shared DAQ+STIM configuration transaction, the DIRECTION mode bit, the master's DTO
-/// stream (layout, fresh values after an operator change, TIMESTAMP_FIXED timestamps), the
-/// suppression of direct writes for streamed variables, DAQ coexistence and the no-STIM-resource
-/// fallback to SET_MTA + DOWNLOAD. Also covers the engineering-value write (decision point 21
-/// phase 2): a non-identity linear conversion is inverted above the protocol layer, so both
-/// write paths — the STIM stream and the fallback DOWNLOAD — must carry the raw value.
+/// stream (layout, fresh values after an operator change), the suppression of direct writes for
+/// streamed variables, DAQ coexistence and the no-STIM-resource fallback to SET_MTA + DOWNLOAD.
+/// Both timestamp shapes are covered: the legacy TIMESTAMP_FIXED slave (XCPlite), whose STIM
+/// lists must run timestamped, and the QFW SDK slave (0.10.0+), whose STIM lists are plain
+/// header + data. Also covers the engineering-value write (decision point 21 phase 2): a
+/// non-identity linear conversion is inverted above the protocol layer, so both write paths —
+/// the STIM stream and the fallback DOWNLOAD — must carry the raw value.
 /// </summary>
 internal static class TcpStimIntegrationTests
 {
@@ -28,7 +31,14 @@ internal static class TcpStimIntegrationTests
         NoStimResource_FallsBackToDirectWrites().GetAwaiter().GetResult();
         EngConversion_StimStream_SendsInvertedRaw().GetAwaiter().GetResult();
         EngConversion_FallbackDownload_SendsInvertedRaw().GetAwaiter().GetResult();
+        QfwShape_StimUntimestamped_DaqTimestamped().GetAwaiter().GetResult();
+        QfwShape_MasterTimestamps_NoTimestampsAtAll().GetAwaiter().GetResult();
     }
+
+    /// <summary>GET_DAQ_RESOLUTION_INFO timestamp mode: 4-byte timestamps, unit 1 ms; bit 3 =
+    /// TIMESTAMP_FIXED (legacy XCPlite) or clear = controlled by the SET_DAQ_LIST_MODE bit (QFW SDK).</summary>
+    private const byte TimestampModeFixed = 0x6C;
+    private const byte TimestampModeByListBit = 0x64;
 
     #region Simulated DAQ+STIM slave harness
 
@@ -39,6 +49,7 @@ internal static class TcpStimIntegrationTests
 
         public readonly List<byte[]> SentPackets = [];
         public byte ConnectResource = 0x0D; // CAL + DAQ + STIM
+        public byte TimestampMode = TimestampModeFixed;
 
         public SimulatedStimSlave(XcpTcp xcpTcpProtocol)
         {
@@ -118,8 +129,9 @@ internal static class TcpStimIntegrationTests
             XcpCommand.Upload => [0xFF, (byte)'l', (byte)'o', (byte)'o', (byte)'p'],
             // XCPlite shape: dynamic lists, timestamps, overload via PID, ODT+FIL+DAQW, ext per DAQ.
             XcpCommand.GetDaqProcessorInfo => [0xFF, 0x51, 0x00, 0x00, 0x04, 0x00, 0x00, 0xF0],
-            // Fixed 4-byte timestamps (unit 1 ms, 1 tick); STIM granularity 1, max entry 250.
-            XcpCommand.GetDaqResolutionInfo => [0xFF, 0x01, 0xFA, 0x01, 0xFA, 0x6C, 0x01, 0x00],
+            // 4-byte timestamps (unit 1 ms, 1 tick), fixed or by list bit per TimestampMode;
+            // STIM granularity 1, max entry 250.
+            XcpCommand.GetDaqResolutionInfo => [0xFF, 0x01, 0xFA, 0x01, 0xFA, TimestampMode, 0x01, 0x00],
             // Channel supports DAQ and STIM (0x04 | 0x08), 4-char name, nominal cycle 10 ms.
             XcpCommand.GetDaqEventInfo => [0xFF, 0x8C, 0xFF, 0x04, 0x01, 0x07, 0x00],
             XcpCommand.FreeDaq or XcpCommand.AllocDaq or XcpCommand.AllocOdt or XcpCommand.AllocOdtEntry
@@ -168,12 +180,13 @@ internal static class TcpStimIntegrationTests
     }
 
     private static (XcpTcp Protocol, SimulatedStimSlave Slave, ScalarVariable StimVariable, ScalarVariable DaqVariable)
-        CreateRunningSetup()
+        CreateRunningSetup(string rawSettings = "timeoutMs=\"100\"", ILogger? logger = null)
     {
         var protocol = new XcpTcp
         {
             IsEnabled = true,
-            RawSettings = "timeoutMs=\"100\""
+            Logger = logger,
+            RawSettings = rawSettings
         };
         protocol.SetConfiguration();
 
@@ -221,7 +234,8 @@ internal static class TcpStimIntegrationTests
         Check(started, "tcp stim: configuration ran through to START_STOP_SYNCH");
 
         // Both lists configured in one transaction: list 0 = DAQ on channel 1 (timestamp bit),
-        // list 1 = STIM on channel 2 (direction + timestamp bit — TIMESTAMP_FIXED slave).
+        // list 1 = STIM on channel 2 (direction + timestamp bit — a legacy TIMESTAMP_FIXED slave
+        // rejects switching the timestamp off; see the QfwShape_* tests for the normal case).
         var modes = slave.AllSent(p => p[0] == XcpCommand.SetDaqListMode);
         Check(modes.Count == 2, "tcp stim: SET_DAQ_LIST_MODE sent for both lists (S4 shared transaction)");
         var daqMode = modes.FirstOrDefault(p => BinaryPrimitives.ReadUInt16LittleEndian(p.AsSpan(2)) == 0);
@@ -335,5 +349,94 @@ internal static class TcpStimIntegrationTests
         Check(download is { Length: 10 } && download[1] == 8 &&
               BinaryPrimitives.ReadDoubleLittleEndian(download.AsSpan(2)) == 5.0,
             "eng download: DOWNLOAD carries the inverted raw value (8 B, 5.0)");
+    }
+
+    /// <summary>Reads the SET_DAQ_LIST_MODE packets of the shared transaction: mode byte of the
+    /// DAQ list (0) and of the STIM list (1).</summary>
+    private static (byte? DaqMode, byte? StimMode) ReadListModes(SimulatedStimSlave slave)
+    {
+        var modes = slave.AllSent(p => p[0] == XcpCommand.SetDaqListMode);
+        var daq = modes.FirstOrDefault(p => BinaryPrimitives.ReadUInt16LittleEndian(p.AsSpan(2)) == 0);
+        var stim = modes.FirstOrDefault(p => BinaryPrimitives.ReadUInt16LittleEndian(p.AsSpan(2)) == 1);
+        return (daq?[1], stim?[1]);
+    }
+
+    /// <summary>QFW SDK shape (no TIMESTAMP_FIXED), default daqTimestamps=slave: the DAQ list
+    /// requests timestamps, the STIM list runs untimestamped — DIRECTION only, and the master's
+    /// STIM DTO is the 4-byte header followed directly by the data.</summary>
+    private static async Task QfwShape_StimUntimestamped_DaqTimestamped()
+    {
+        var logger = new CapturingLogger();
+        var (protocol, slave, stimVariable, daqVariable) = CreateRunningSetup(logger: logger);
+        slave.TimestampMode = TimestampModeByListBit;
+        stimVariable.SetValue(3.25);
+
+        await protocol.StartAsync();
+        var started = await WaitUntilAsync(() => slave.CountSent(XcpCommand.StartStopSynch) >= 1);
+        Check(started, "qfw stim: configuration ran through to START_STOP_SYNCH");
+
+        var (daqMode, stimMode) = ReadListModes(slave);
+        Check(daqMode == XcpDaqListModeBits.Timestamp,
+            "qfw stim: DAQ list requests slave timestamps (bit set, daqTimestamps=slave)");
+        Check(stimMode == XcpDaqListModeBits.Direction,
+            "qfw stim: STIM list carries DIRECTION only — no timestamp bit for a non-fixed slave");
+
+        var landed = await WaitUntilAsync(() => slave.FindSent(p =>
+            IsStimDto(p) && p.Length == 4 + 8 &&
+            BinaryPrimitives.ReadDoubleLittleEndian(p.AsSpan(4)) == 3.25) != null);
+        Check(landed, "qfw stim: STIM DTO is header + data, the value starts right after the 4-byte header");
+        Check(slave.FindSent(p => IsStimDto(p) && p.Length != 4 + 8) == null,
+            "qfw stim: no STIM DTO carries a timestamp");
+
+        // The DAQ direction keeps its timestamp: a slave DTO with the DWORD timestamp lands.
+        var dto = new byte[4 + 4 + 8];
+        dto[0] = 0x00;
+        dto[1] = 0xAA;
+        BinaryPrimitives.WriteUInt16LittleEndian(dto.AsSpan(2), 0);
+        BinaryPrimitives.WriteUInt32LittleEndian(dto.AsSpan(4), 1000);
+        BinaryPrimitives.WriteDoubleLittleEndian(dto.AsSpan(8), 42.0);
+        await slave.SendToMasterAsync(dto);
+        var daqLanded = await WaitUntilAsync(() => (double)daqVariable.GetValue() == 42.0);
+        await protocol.StopAsync();
+
+        Check(daqLanded, "qfw stim: the timestamped DAQ DTO still decodes into its variable");
+        Check(logger.Has(LogLevel.Info, "DAQ started") && logger.Has(LogLevel.Info, "slave timestamps on"),
+            "qfw stim: 'DAQ started … slave timestamps on' is logged at INFO");
+        Check(logger.Has(LogLevel.Info, "STIM started"),
+            "qfw stim: 'STIM started' is logged at INFO");
+    }
+
+    /// <summary>QFW SDK shape with daqTimestamps=master: neither list carries the timestamp bit,
+    /// so no timestamp travels in either direction — the STIM DTO and the DAQ DTO are both
+    /// header + data.</summary>
+    private static async Task QfwShape_MasterTimestamps_NoTimestampsAtAll()
+    {
+        var (protocol, slave, stimVariable, daqVariable) = CreateRunningSetup("timeoutMs=\"100\";daqTimestamps=\"master\"");
+        slave.TimestampMode = TimestampModeByListBit;
+        stimVariable.SetValue(3.25);
+
+        await protocol.StartAsync();
+        var started = await WaitUntilAsync(() => slave.CountSent(XcpCommand.StartStopSynch) >= 1);
+        Check(started, "qfw master: configuration ran through to START_STOP_SYNCH");
+
+        var (daqMode, stimMode) = ReadListModes(slave);
+        Check(daqMode == 0x00, "qfw master: DAQ list has the timestamp bit clear (daqTimestamps=master)");
+        Check(stimMode == XcpDaqListModeBits.Direction, "qfw master: STIM list carries DIRECTION only");
+
+        var streamed = await WaitUntilAsync(() => slave.FindSent(p =>
+            IsStimDto(p) && p.Length == 4 + 8 &&
+            BinaryPrimitives.ReadDoubleLittleEndian(p.AsSpan(4)) == 3.25) != null);
+        Check(streamed, "qfw master: STIM DTO is header + data");
+
+        var dto = new byte[4 + 8];
+        dto[0] = 0x00;
+        dto[1] = 0xAA;
+        BinaryPrimitives.WriteUInt16LittleEndian(dto.AsSpan(2), 0);
+        BinaryPrimitives.WriteDoubleLittleEndian(dto.AsSpan(4), 42.0);
+        await slave.SendToMasterAsync(dto);
+        var daqLanded = await WaitUntilAsync(() => (double)daqVariable.GetValue() == 42.0);
+        await protocol.StopAsync();
+
+        Check(daqLanded, "qfw master: the untimestamped DAQ DTO decodes into its variable");
     }
 }

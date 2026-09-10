@@ -1,4 +1,51 @@
+using Qenex.QSuite.LogSystems.LogSystem;
+
 namespace Qenex.QSuite.Tests.XcpProtocolTest;
+
+/// <summary>Collects protocol log lines so tests can assert on level and wording.</summary>
+internal sealed class CapturingLogger : ILogger
+{
+    public readonly List<(LogLevel Level, string Message)> Entries = [];
+
+    public bool Has(LogLevel level, string fragment)
+    {
+        lock (Entries)
+        {
+            return Entries.Any(e => e.Level == level && e.Message.Contains(fragment, StringComparison.Ordinal));
+        }
+    }
+
+    public bool HasAny(LogLevel level)
+    {
+        lock (Entries)
+        {
+            return Entries.Any(e => e.Level == level);
+        }
+    }
+
+    public void RegisterSubscriber(ILogSubscriber subscriber) { }
+    public void UnRegisterSubscriber(ILogSubscriber subscriber) { }
+    public void Log(ILogMessage message) { }
+
+    public void Log(LogLevel level, string message, Exception? exception = default)
+    {
+        lock (Entries)
+        {
+            Entries.Add((level, message));
+        }
+    }
+
+    public Task LogAsync(ILogMessage message, CancellationToken ct) => Task.CompletedTask;
+
+    public Task LogAsync(LogLevel level, string message, Exception? exception = default, CancellationToken ct = default)
+    {
+        Log(level, message, exception);
+        return Task.CompletedTask;
+    }
+
+    public void Enable() { }
+    public void Disable() { }
+}
 
 /// <summary>Console-style unit tests for the XCP protocol (repo convention, same as the other
 /// _Tests projects). Exit code 0 = all passed.</summary>

@@ -352,10 +352,12 @@ public sealed class XcpMaster(ILogger? logger = null)
     /// transaction: FREE_DAQ → ALLOC_DAQ/ALLOC_ODT/ALLOC_ODT_ENTRY → WRITE_DAQ per entry →
     /// SET_DAQ_LIST_MODE → START_STOP_DAQ_LIST (select) → START_STOP_SYNCH (start selected).
     /// STIM lists (S4) differ only in their mode byte: the DIRECTION bit, with the timestamp
-    /// bit governed by <paramref name="includeStimTimestamp"/> (TIMESTAMP_FIXED slaves reject
-    /// switching it off with ERR_CMD_SYNTAX). A timeout retry restarts from FREE_DAQ, so the
-    /// slave never keeps a half-built config. Returns FIRST_PID per list (meaningful for
-    /// absolute-PID identification only).
+    /// bit governed by <paramref name="includeStimTimestamp"/>. The timestamp bit is the
+    /// master's choice per list (QFW SDK slaves honour it for DAQ and STIM alike; the caller
+    /// sets it for DAQ only with daqTimestamps=slave and for STIM only when a legacy
+    /// TIMESTAMP_FIXED slave would reject switching it off with ERR_CMD_SYNTAX). A timeout
+    /// retry restarts from FREE_DAQ, so the slave never keeps a half-built config. Returns
+    /// FIRST_PID per list (meaningful for absolute-PID identification only).
     /// </summary>
     public Task<byte[]> ConfigureAndStartDaqAsync(IReadOnlyList<XcpDaqListPlan> lists, bool includeTimestamp,
         bool includeStimTimestamp = false, CancellationToken ct = default)

@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Qenex.QSuite.Common.CoreComm;
+using Qenex.QSuite.LogSystems.LogSystem;
 using Qenex.QSuite.Protocols.XcpCore;
 using Qenex.QSuite.Protocols.XcpTcpProtocol;
 using Qenex.QSuite.Variables.QVariables;
@@ -11,10 +12,12 @@ using static Qenex.QSuite.Tests.XcpProtocolTest.Program;
 namespace Qenex.QSuite.Tests.XcpProtocolTest;
 
 /// <summary>
-/// End-to-end DAQ over the XcpTcp protocol against a simulated XCP-on-Ethernet slave (the XCPlite
-/// shape: ODT+FIL+DAQW identification, fixed 32-bit timestamps): setup sequence, DTO decoding into
-/// variables (D5 stage 4a: PC receive time), polling coexistence (D4) and the no-DAQ-resource
-/// fallback to polling.
+/// End-to-end DAQ over the XcpTcp protocol against a simulated XCP-on-Ethernet slave
+/// (ODT+FIL+DAQW identification, 32-bit timestamps) in both timestamp shapes: the legacy
+/// TIMESTAMP_FIXED slave (XCPlite) and the QFW SDK slave (0.10.0+), where the master's
+/// SET_DAQ_LIST_MODE timestamp bit decides whether ODT 0 carries a timestamp at all. Covers the
+/// setup sequence, DTO decoding into variables with and without the timestamp, both daqTimestamps
+/// settings, polling coexistence (D4) and the no-DAQ-resource fallback to polling.
 /// </summary>
 internal static class TcpDaqIntegrationTests
 {
@@ -22,7 +25,17 @@ internal static class TcpDaqIntegrationTests
     {
         DaqFlow_DtoLandsInVariable_PollingCoexists().GetAwaiter().GetResult();
         NoDaqResource_FallsBackToPolling().GetAwaiter().GetResult();
+        QfwShape_MasterTimestamps_NoTimestampOnTheWire().GetAwaiter().GetResult();
+        QfwShape_SlaveTimestamps_BitSetAndDtoDecoded().GetAwaiter().GetResult();
+        FixedSlave_MasterTimestamps_BitStaysSetTimestampIgnored().GetAwaiter().GetResult();
+        NoResolutionInfo_SlaveMode_WarnsAndRunsOnReceiveTime().GetAwaiter().GetResult();
+        NoResolutionInfo_MasterMode_NoteOnly().GetAwaiter().GetResult();
     }
+
+    /// <summary>GET_DAQ_RESOLUTION_INFO timestamp mode: 4-byte timestamps, unit 1 ms; bit 3 =
+    /// TIMESTAMP_FIXED (legacy XCPlite) or clear = controlled by the SET_DAQ_LIST_MODE bit (QFW SDK).</summary>
+    private const byte TimestampModeFixed = 0x6C;
+    private const byte TimestampModeByListBit = 0x64;
 
     #region Simulated DAQ slave harness
 
@@ -33,6 +46,8 @@ internal static class TcpDaqIntegrationTests
 
         public readonly List<byte[]> SentPackets = [];
         public byte ConnectResource = 0x05; // CAL + DAQ
+        public byte TimestampMode = TimestampModeFixed;
+        public bool ResolutionInfoSupported = true; // false = ERR_CMD_UNKNOWN on GET_DAQ_RESOLUTION_INFO
         public byte[] PolledMemory = new byte[8];
 
         public SimulatedDaqSlave(XcpTcp xcpTcpProtocol)
@@ -105,8 +120,11 @@ internal static class TcpDaqIntegrationTests
             XcpCommand.Upload => [0xFF, (byte)'l', (byte)'o', (byte)'o', (byte)'p'],
             // XCPlite shape: dynamic lists, timestamps, overload via PID, ODT+FIL+DAQW, ext per DAQ.
             XcpCommand.GetDaqProcessorInfo => [0xFF, 0x51, 0x00, 0x00, 0x02, 0x00, 0x00, 0xF0],
-            // Fixed 4-byte timestamps (unit 1 ms, 1 tick); max ODT entry 250 bytes.
-            XcpCommand.GetDaqResolutionInfo => [0xFF, 0x01, 0xFA, 0x01, 0xFA, 0x6C, 0x01, 0x00],
+            // 4-byte timestamps (unit 1 ms, 1 tick), fixed or by list bit per TimestampMode;
+            // max ODT entry 250 bytes.
+            XcpCommand.GetDaqResolutionInfo => ResolutionInfoSupported
+                ? [0xFF, 0x01, 0xFA, 0x01, 0xFA, TimestampMode, 0x01, 0x00]
+                : [0xFE, XcpErrorCode.CmdUnknown],
             // DAQ-capable channel, 4-char name ("loop" via UPLOAD), nominal cycle 1 ms.
             XcpCommand.GetDaqEventInfo => [0xFF, 0x84, 0xFF, 0x04, 0x01, 0x06, 0x00],
             XcpCommand.FreeDaq or XcpCommand.AllocDaq or XcpCommand.AllocOdt or XcpCommand.AllocOdtEntry
@@ -140,13 +158,33 @@ internal static class TcpDaqIntegrationTests
         return condition();
     }
 
+    /// <summary>ODT 0 of DAQ list 0 in the ODT+FIL+DAQW identification, optionally with the
+    /// DWORD timestamp, followed by one 8-byte double.</summary>
+    private static byte[] BuildDaqDto(uint? timestamp, double value)
+    {
+        var dto = new byte[4 + (timestamp.HasValue ? 4 : 0) + 8];
+        dto[0] = 0x00;
+        dto[1] = 0xAA;
+        BinaryPrimitives.WriteUInt16LittleEndian(dto.AsSpan(2), 0);
+        var offset = 4;
+        if (timestamp is { } ticks)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(dto.AsSpan(4), ticks);
+            offset = 8;
+        }
+
+        BinaryPrimitives.WriteDoubleLittleEndian(dto.AsSpan(offset), value);
+        return dto;
+    }
+
     private static (XcpTcp Protocol, SimulatedDaqSlave Slave, ScalarVariable DaqVariable, ScalarVariable PolledVariable)
-        CreateRunningSetup()
+        CreateRunningSetup(string rawSettings = "timeoutMs=\"100\"", ILogger? logger = null)
     {
         var protocol = new XcpTcp
         {
             IsEnabled = true,
-            RawSettings = "timeoutMs=\"100\""
+            Logger = logger,
+            RawSettings = rawSettings
         };
         protocol.SetConfiguration();
 
@@ -198,8 +236,8 @@ internal static class TcpDaqIntegrationTests
         Check(pollLanded, "tcp daq: the polled variable still updates via SHORT_UPLOAD (D4 coexistence)");
 
         var setMode = slave.FindSent(XcpCommand.SetDaqListMode);
-        Check(setMode != null && (setMode[1] & 0x10) != 0,
-            "tcp daq: SET_DAQ_LIST_MODE carries the timestamp bit (fixed timestamps)");
+        Check(setMode != null && (setMode[1] & XcpDaqListModeBits.Timestamp) != 0,
+            "tcp daq: SET_DAQ_LIST_MODE carries the timestamp bit (daqTimestamps=slave, default)");
         Check(setMode != null && BinaryPrimitives.ReadUInt16LittleEndian(setMode.AsSpan(4)) == 1,
             "tcp daq: DAQ list bound to ECU event channel 1 (daqId from eventExtraParams)");
 
@@ -234,5 +272,121 @@ internal static class TcpDaqIntegrationTests
                     p[0] == XcpCommand.ShortUpload && BinaryPrimitives.ReadUInt32LittleEndian(p.AsSpan(4)) == 0x1000),
                 "tcp daq fallback: SHORT_UPLOAD reads the DAQ variable's address");
         }
+    }
+
+    /// <summary>QFW SDK shape with daqTimestamps=master: the master leaves the timestamp bit
+    /// clear, the slave sends no timestamp and ODT 0 is pure data (full capacity).</summary>
+    private static async Task QfwShape_MasterTimestamps_NoTimestampOnTheWire()
+    {
+        var (protocol, slave, daqVariable, _) = CreateRunningSetup("timeoutMs=\"100\";daqTimestamps=\"master\"");
+        slave.TimestampMode = TimestampModeByListBit;
+
+        await protocol.StartAsync();
+        var daqStarted = await WaitUntilAsync(() => slave.CountSent(XcpCommand.StartStopSynch) >= 1);
+        Check(daqStarted, "qfw daq master: configuration ran through to START_STOP_SYNCH");
+
+        await slave.SendToMasterAsync(BuildDaqDto(timestamp: null, 7.75));
+        var landed = await WaitUntilAsync(() => (double)daqVariable.GetValue() == 7.75);
+        await protocol.StopAsync();
+
+        var setMode = slave.FindSent(XcpCommand.SetDaqListMode);
+        Check(setMode != null && (setMode[1] & XcpDaqListModeBits.Timestamp) == 0,
+            "qfw daq master: SET_DAQ_LIST_MODE leaves the timestamp bit clear (daqTimestamps=master)");
+        Check(landed, "qfw daq master: an untimestamped DTO (4 B header + data) decodes into the variable");
+    }
+
+    /// <summary>QFW SDK shape with the default daqTimestamps=slave: the master sets the bit and
+    /// the slave answers with a DWORD timestamp in ODT 0 ahead of the data.</summary>
+    private static async Task QfwShape_SlaveTimestamps_BitSetAndDtoDecoded()
+    {
+        var (protocol, slave, daqVariable, _) = CreateRunningSetup();
+        slave.TimestampMode = TimestampModeByListBit;
+
+        await protocol.StartAsync();
+        var daqStarted = await WaitUntilAsync(() => slave.CountSent(XcpCommand.StartStopSynch) >= 1);
+        Check(daqStarted, "qfw daq slave: configuration ran through to START_STOP_SYNCH");
+
+        await slave.SendToMasterAsync(BuildDaqDto(timestamp: 123456, 7.75));
+        var landed = await WaitUntilAsync(() => (double)daqVariable.GetValue() == 7.75);
+        await protocol.StopAsync();
+
+        var setMode = slave.FindSent(XcpCommand.SetDaqListMode);
+        Check(setMode != null && (setMode[1] & XcpDaqListModeBits.Timestamp) != 0,
+            "qfw daq slave: SET_DAQ_LIST_MODE requests slave timestamps (daqTimestamps=slave)");
+        Check(landed, "qfw daq slave: the DTO with the DWORD timestamp in ODT 0 decodes into the variable");
+    }
+
+    /// <summary>Legacy TIMESTAMP_FIXED slave with daqTimestamps=master: the slave sends
+    /// timestamps regardless, so the master keeps the bit set for the packet layout and skips the
+    /// timestamp when decoding (compatibility path, e.g. XCPlite).</summary>
+    private static async Task FixedSlave_MasterTimestamps_BitStaysSetTimestampIgnored()
+    {
+        var (protocol, slave, daqVariable, _) = CreateRunningSetup("timeoutMs=\"100\";daqTimestamps=\"master\"");
+        slave.TimestampMode = TimestampModeFixed;
+
+        await protocol.StartAsync();
+        var daqStarted = await WaitUntilAsync(() => slave.CountSent(XcpCommand.StartStopSynch) >= 1);
+        Check(daqStarted, "legacy fixed daq master: configuration ran through to START_STOP_SYNCH");
+
+        await slave.SendToMasterAsync(BuildDaqDto(timestamp: 123456, 7.75));
+        var landed = await WaitUntilAsync(() => (double)daqVariable.GetValue() == 7.75);
+        await protocol.StopAsync();
+
+        var setMode = slave.FindSent(XcpCommand.SetDaqListMode);
+        Check(setMode != null && (setMode[1] & XcpDaqListModeBits.Timestamp) != 0,
+            "legacy fixed daq master: SET_DAQ_LIST_MODE keeps the timestamp bit (TIMESTAMP_FIXED slave sends it anyway)");
+        Check(landed, "legacy fixed daq master: the timestamp in ODT 0 is skipped and the value decodes");
+    }
+
+    /// <summary>A slave without GET_DAQ_RESOLUTION_INFO: no timestamp size is known, so DAQ runs
+    /// untimestamped on the PC receive time. With daqTimestamps=slave that contradicts the
+    /// configuration, so the log carries a warning; the DAQ still starts and decodes.</summary>
+    private static async Task NoResolutionInfo_SlaveMode_WarnsAndRunsOnReceiveTime()
+    {
+        var logger = new CapturingLogger();
+        var (protocol, slave, daqVariable, _) = CreateRunningSetup(logger: logger);
+        slave.ResolutionInfoSupported = false;
+
+        await protocol.StartAsync();
+        var daqStarted = await WaitUntilAsync(() => slave.CountSent(XcpCommand.StartStopSynch) >= 1);
+        Check(daqStarted, "no resolution info: DAQ still runs through to START_STOP_SYNCH");
+
+        await slave.SendToMasterAsync(BuildDaqDto(timestamp: null, 7.75));
+        var landed = await WaitUntilAsync(() => (double)daqVariable.GetValue() == 7.75);
+        await protocol.StopAsync();
+
+        var setMode = slave.FindSent(XcpCommand.SetDaqListMode);
+        Check(setMode != null && (setMode[1] & XcpDaqListModeBits.Timestamp) == 0,
+            "no resolution info: SET_DAQ_LIST_MODE cannot request timestamps (size unknown)");
+        Check(landed, "no resolution info: the untimestamped DTO decodes into the variable");
+        Check(logger.Has(LogLevel.Warn, "GET_DAQ_RESOLUTION_INFO"),
+            "no resolution info (daqTimestamps=slave): a WARN names the missing GET_DAQ_RESOLUTION_INFO");
+        Check(logger.Has(LogLevel.Warn, "daqTimestamps=slave"),
+            "no resolution info (daqTimestamps=slave): the WARN says the configured ECU time axis is not honoured");
+        Check(logger.Has(LogLevel.Info, "DAQ started") && logger.Has(LogLevel.Info, "slave timestamps off"),
+            "no resolution info: 'DAQ started … slave timestamps off' is logged at INFO (visible without Debug)");
+    }
+
+    /// <summary>Same slave with daqTimestamps=master: the outcome matches the configuration, so
+    /// the missing command is only noted at INFO — no warning.</summary>
+    private static async Task NoResolutionInfo_MasterMode_NoteOnly()
+    {
+        var logger = new CapturingLogger();
+        var (protocol, slave, daqVariable, _) = CreateRunningSetup("timeoutMs=\"100\";daqTimestamps=\"master\"", logger);
+        slave.ResolutionInfoSupported = false;
+
+        await protocol.StartAsync();
+        var daqStarted = await WaitUntilAsync(() => slave.CountSent(XcpCommand.StartStopSynch) >= 1);
+        Check(daqStarted, "no resolution info (master): DAQ runs through to START_STOP_SYNCH");
+
+        await slave.SendToMasterAsync(BuildDaqDto(timestamp: null, 7.75));
+        var landed = await WaitUntilAsync(() => (double)daqVariable.GetValue() == 7.75);
+        await protocol.StopAsync();
+
+        Check(landed, "no resolution info (master): the untimestamped DTO decodes into the variable");
+        Check(logger.Has(LogLevel.Info, "GET_DAQ_RESOLUTION_INFO"),
+            "no resolution info (master): the missing command is noted at INFO");
+        Check(!logger.HasAny(LogLevel.Warn),
+            "no resolution info (master): no warning — the receive-time axis is what was configured");
     }
 }

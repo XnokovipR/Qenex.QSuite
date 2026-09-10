@@ -60,8 +60,9 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
     protected abstract int SessionTimeoutMs { get; }
 
     /// <summary>DAQ time axis source per the daqTimestamps setting: true = ECU timestamps
-    /// (default), false = PC receive time (a TIMESTAMP_FIXED slave still sends them,
-    /// they are then ignored).</summary>
+    /// (default; the SET_DAQ_LIST_MODE timestamp bit is set), false = PC receive time (the bit
+    /// stays clear, so a QFW SDK slave sends no timestamps at all; a legacy TIMESTAMP_FIXED
+    /// slave still sends them and they are ignored).</summary>
     protected abstract bool UseSlaveDaqTimestamps { get; }
 
     /// <summary>Transport name for diagnostics, e.g. "CAN" or "TCP".</summary>
@@ -731,7 +732,15 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
             }
             catch (XcpErrorException e) when (e.ErrorCode == XcpErrorCode.CmdUnknown)
             {
-                Logger?.Log(LogLevel.Debug, "XCP: GET_DAQ_RESOLUTION_INFO not implemented by the slave; using defaults.");
+                // Without the resolution info no timestamp size is known: DAQ then runs on the PC
+                // receive time whatever daqTimestamps says, and the ODT entry limits fall back to
+                // defaults. A configured ECU time axis that is silently not delivered is worth a
+                // warning; in master mode the outcome matches the setting, so a note is enough.
+                Logger?.Log(UseSlaveDaqTimestamps ? LogLevel.Warn : LogLevel.Info,
+                    "XCP: the slave does not implement GET_DAQ_RESOLUTION_INFO — DAQ runs without slave timestamps " +
+                    "(samples carry the PC receive time" +
+                    (UseSlaveDaqTimestamps ? "; daqTimestamps=slave cannot be honoured" : "") +
+                    "), ODT entry limits use defaults.");
             }
 
             await ValidateChannelsAsync(session, processor, daqChannels, isStim: false, ct);
@@ -743,9 +752,11 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                 return (null, null);
             }
 
-            // Standard choice via the SET_DAQ_LIST_MODE timestamp bit: request slave timestamps
-            // when configured (daqTimestamps=slave); a TIMESTAMP_FIXED slave sends them always,
-            // so the packet layout must include them even in master mode.
+            // The SET_DAQ_LIST_MODE timestamp bit is the master's choice: set it only with
+            // daqTimestamps=slave. A QFW SDK slave (0.10.0+) then sends a DWORD timestamp in ODT 0
+            // and otherwise nothing, so with daqTimestamps=master ODT 0 keeps its full data
+            // capacity. Compatibility: a legacy TIMESTAMP_FIXED slave (e.g. XCPlite) sends
+            // timestamps always, so the packet layout must include them even in master mode.
             var slaveTimestampSize = resolution?.TimestampSize ?? 0;
             var includeTimestamp = daqChannels.Count > 0 && slaveTimestampSize > 0 &&
                                    (UseSlaveDaqTimestamps || resolution is { TimestampFixed: true });
@@ -756,8 +767,10 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
                 Logger?.Log(LogLevel.Warn, "XCP: no variable fits into a DAQ packet; DAQ variables fall back to polling.");
             }
 
-            // S4: a TIMESTAMP_FIXED slave rejects switching the timestamp off (ERR_CMD_SYNTAX),
-            // so STIM lists then run timestamped and the master emits its clock in ODT 0.
+            // S4: STIM lists run untimestamped (bit clear; a QFW SDK slave takes ODT 0 as pure
+            // data). Compatibility only: a legacy TIMESTAMP_FIXED slave rejects switching the
+            // timestamp off (ERR_CMD_SYNTAX), so its STIM lists run timestamped and the master
+            // emits its clock in ODT 0.
             var includeStimTimestamp = stimChannels.Count > 0 && slaveTimestampSize > 0 &&
                                        resolution is { TimestampFixed: true };
             var stimTimestampSize = includeStimTimestamp ? slaveTimestampSize : 0;
@@ -842,9 +855,11 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
             var stimState = BuildStimState(session, processor, resolution, stimPlans, stimTargets,
                 daqPlans.Count, firstPids, includeStimTimestamp ? slaveTimestampSize : 0);
 
+            // Info, not Debug: which clock the DAQ time axis comes from is an operational fact the
+            // user must be able to see in the normal log (one line per Start).
             if (daqState != null)
             {
-                Logger?.Log(LogLevel.Debug,
+                Logger?.Log(LogLevel.Info,
                     $"XCP: DAQ started — {daqPlans.Count} list(s) on event channel(s) " +
                     $"{string.Join(", ", daqPlans.Select(p => p.EventChannel))}, {daqState.VariablesInDaq.Count} variable(s), " +
                     (timestampMapper != null
@@ -856,7 +871,7 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
 
             if (stimState != null)
             {
-                Logger?.Log(LogLevel.Debug,
+                Logger?.Log(LogLevel.Info,
                     $"XCP: STIM started — {stimPlans.Count} list(s) on event channel(s) " +
                     $"{string.Join(", ", stimPlans.Select(p => p.EventChannel))}, {stimState.VariablesInStim.Count} variable(s)" +
                     (includeStimTimestamp ? ", timestamped (TIMESTAMP_FIXED slave)." : "."));
@@ -1305,9 +1320,10 @@ public abstract class XcpProtocolBase<TFrame> : ProtocolBase<TFrame>, ITransport
         }
     }
 
-    /// <summary>Encodes and sends one complete STIM list (all ODTs back-to-back). The ODT-0
-    /// timestamp — required by TIMESTAMP_FIXED slaves — is the master's free-running time since
-    /// session start, scaled to slave ticks.</summary>
+    /// <summary>Encodes and sends one complete STIM list (all ODTs back-to-back). STIM lists
+    /// are normally untimestamped; only for a legacy TIMESTAMP_FIXED slave does ODT 0 carry a
+    /// timestamp — the master's free-running time since session start, scaled to slave
+    /// ticks.</summary>
     private async Task SendStimListAsync(StimSessionState stim, StimList list, CancellationToken ct)
     {
         var session = master ?? throw new XcpProtocolException("Not connected to the XCP slave.");
