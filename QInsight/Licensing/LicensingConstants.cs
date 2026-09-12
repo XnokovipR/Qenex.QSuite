@@ -12,6 +12,11 @@ public static class LicensingConstants
     /// allowed by the Free tier, counted across the whole project. Other tiers are unlimited.</summary>
     public const int FreeMaxCommunicatedSignals = 5;
 
+    /// <summary>Continuous runtime allowed per Start for the Free and Trial tiers. When it elapses
+    /// QInsight switches back to edit mode on its own (Info log only); Start is allowed again.
+    /// Moved here from the QFW SDK evaluation limit (CEO decision 2026-09-12). Commercial is unlimited.</summary>
+    public static readonly TimeSpan FreeTrialRuntimeLimit = TimeSpan.FromMinutes(30);
+
     /// <summary>Production ECDSA P-256 public key used for offline token validation.
     /// The matching private key exists only on the license server.</summary>
     public const string PublicKeyPem = """

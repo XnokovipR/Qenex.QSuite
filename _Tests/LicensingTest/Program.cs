@@ -65,6 +65,7 @@ internal static class Program
         FreeTier_HasCommunicatedSignalLimit();
         NonFreeTierOrNoLicense_HasNoCommunicatedSignalLimit();
         CommunicatedSignals_CountsOnlyCommunicatedVariablesAcrossDriversAndProtocols();
+        FreeAndTrialTiers_HaveRuntimeTimeLimit_CommercialDoesNot();
 
         Console.WriteLine(failures == 0 ? "ALL TESTS PASSED" : $"{failures} TEST(S) FAILED");
         return failures == 0 ? 0 : 1;
@@ -298,6 +299,30 @@ internal static class Program
         Check(CommunicatedSignals.BuildOverLimitMessage(6, 5)
               == "Free license: the project has 6 communicated signals, the limit is 5.",
             "over-limit message names count and limit");
+    }
+
+    private static void FreeAndTrialTiers_HaveRuntimeTimeLimit_CommercialDoesNot()
+    {
+        var keys = LicenseToken.CreateKeyPair();
+        foreach (var tier in new[] { "Free", "Trial" })
+        {
+            using var harness = new Harness(keys.PublicKeyPem);
+            harness.StoreToken(keys.PrivateKeyPem, MakeClaims() with { Tier = tier });
+            harness.Service.LoadStoredLicense();
+            Check(harness.Service.IsRuntimeTimeLimited, $"{tier} tier -> runtime time limit applies");
+        }
+
+        using var commercialHarness = new Harness(keys.PublicKeyPem);
+        commercialHarness.StoreToken(keys.PrivateKeyPem, MakeClaims() with { Tier = "Commercial" });
+        commercialHarness.Service.LoadStoredLicense();
+        Check(!commercialHarness.Service.IsRuntimeTimeLimited, "Commercial tier -> no runtime time limit");
+
+        using var unlicensedHarness = new Harness(keys.PublicKeyPem);
+        unlicensedHarness.Service.LoadStoredLicense();
+        Check(!unlicensedHarness.Service.IsRuntimeTimeLimited,
+            "no license -> no timer (runtime is blocked by the license guard itself)");
+
+        Check(LicensingConstants.FreeTrialRuntimeLimit == TimeSpan.FromMinutes(30), "Free/Trial runtime limit is 30 minutes");
     }
 
     private static void NonFreeTierOrNoLicense_HasNoCommunicatedSignalLimit()

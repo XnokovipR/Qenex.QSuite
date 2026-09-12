@@ -59,6 +59,7 @@ public partial class ShellWindowModel
     private bool canStopReplay;
     private bool isHandlingLicenseLoss;
     private bool isLicenseDialogOpen;
+    private DispatcherTimer? runtimeTimeLimitTimer;
     private bool isUpdatingReplayPositionFromDriver;
     private bool isUpdatingReplayPositionTextFromPosition;
     private int replaySeekRequestVersion;
@@ -1848,6 +1849,7 @@ public partial class ShellWindowModel
             await realProjectData.Module.StartAsync();
             SetRuntimeStartedState(true);
             SetRuntimeCommandStates(true);
+            StartRuntimeTimeLimit();
         }
         catch (Exception e)
         {
@@ -2569,6 +2571,11 @@ public partial class ShellWindowModel
 
     private void SetRuntimeStartedState(bool runtimeStarted)
     {
+        if (!runtimeStarted)
+        {
+            StopRuntimeTimeLimit();
+        }
+
         if (IsRuntimeStarted != runtimeStarted)
         {
             IsRuntimeStarted = runtimeStarted;
@@ -2585,6 +2592,62 @@ public partial class ShellWindowModel
             scriptViewModel.IsRuntimeRunning = runtimeStarted;
         }
     }
+
+    /// <summary>Free/Trial runtime limit (CEO decision 2026-09-12: the QFW SDK evaluation limit
+    /// moved into QInsight). One timer per Start; when it elapses the runtime is stopped exactly
+    /// like the ribbon Stop and only an Info line is logged - Start is allowed again. Replay is
+    /// not limited. Commercial never starts the timer. The tier check is intentionally inline
+    /// next to the other license guards (no shared patchable helper).</summary>
+    private void StartRuntimeTimeLimit()
+    {
+        StopRuntimeTimeLimit();
+        if (!licenseService.IsRuntimeTimeLimited)
+        {
+            return;
+        }
+
+        var limit = LicensingConstants.FreeTrialRuntimeLimit;
+        runtimeTimeLimitTimer = new DispatcherTimer { Interval = limit };
+        runtimeTimeLimitTimer.Tick += OnRuntimeTimeLimitElapsed;
+        runtimeTimeLimitTimer.Start();
+        logger.Log(LogLevel.Info,
+            $"{RuntimeTimeLimitTierName} license: measurement runs for {limit.TotalMinutes:0} minutes per start, then QInsight returns to edit mode.");
+    }
+
+    private void StopRuntimeTimeLimit()
+    {
+        if (runtimeTimeLimitTimer is null)
+        {
+            return;
+        }
+
+        runtimeTimeLimitTimer.Stop();
+        runtimeTimeLimitTimer.Tick -= OnRuntimeTimeLimitElapsed;
+        runtimeTimeLimitTimer = null;
+    }
+
+    private async void OnRuntimeTimeLimitElapsed(object? sender, EventArgs e)
+    {
+        StopRuntimeTimeLimit();
+        if (!IsRuntimeStarted || isReplayMode)
+        {
+            return;
+        }
+
+        logger.Log(LogLevel.Info,
+            $"{RuntimeTimeLimitTierName} license: the {LicensingConstants.FreeTrialRuntimeLimit.TotalMinutes:0}-minute runtime limit was reached, switching to edit mode. "
+            + "Press Start to measure again, or upgrade to a Commercial license for unlimited runtime.");
+        try
+        {
+            await DisconnectAsync(shellRadDocking);
+        }
+        catch (Exception ex)
+        {
+            logger.Log(LogLevel.Error, ex.Message);
+        }
+    }
+
+    private string RuntimeTimeLimitTierName => licenseService.CurrentClaims?.Tier ?? "Free";
 
     private void RefreshVariableWatch()
     {

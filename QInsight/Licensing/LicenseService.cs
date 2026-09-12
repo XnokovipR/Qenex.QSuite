@@ -70,6 +70,12 @@ public class LicenseService : IDisposable
 
     public bool IsFreeTier => string.Equals(CurrentClaims?.Tier, "Free", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>Free and Trial tiers run for LicensingConstants.FreeTrialRuntimeLimit per Start;
+    /// Commercial (and any other paid tier) has no runtime limit.</summary>
+    public bool IsRuntimeTimeLimited =>
+        string.Equals(CurrentClaims?.Tier, "Free", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(CurrentClaims?.Tier, "Trial", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Evaluated at call time so a token crossing its hard expiry blocks the runtime
     /// even between revalidation ticks.</summary>
     public bool IsRuntimeAllowed =>
